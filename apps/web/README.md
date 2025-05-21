@@ -1,14 +1,13 @@
+# web/
 
----
-
-#### `apps/web/README.md`
-```markdown
-# Web App
-
-Next.js dashboard for managers and administrators.
+Next.js application for gym managers and admins.
 
 ## Setup
-```bash
-cd apps/web
-pnpm install
-pnpm dev
+1. `cd apps/web`
+2. `npm install`
+3. `npm run dev`
+
+## Features
+- Class scheduling & templates
+- Subscription & payment management
+- Analytics dashboard

@@ -1,5 +1,3 @@
-### `services/README.md`
-```markdown
 # services/
 
 Non-UI processes and servers.

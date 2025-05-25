@@ -62,8 +62,8 @@ export default function PendingScreen() {
 
         {/* Description */}
         <Text style={styles.description}>
-          Your account status is pending and is waiting for review{'\n'}
-          from the gym manager. We will notify you when you're{'\n'}
+          Your account status is pending and is waiting for review
+          from the gym manager. We will notify you when you're
           account has been approved
         </Text>
       </View>
@@ -151,15 +151,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   exclamationBar: {
-    width: 8,
-    height: 40,
+    width: 18,
+    height: 50,
     backgroundColor: '#000',
     borderRadius: 4,
     marginBottom: 8,
   },
   exclamationDot: {
-    width: 8,
-    height: 8,
+    width: 18,
+    height: 18,
     backgroundColor: '#000',
     borderRadius: 4,
   },

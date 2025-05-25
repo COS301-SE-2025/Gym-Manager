@@ -1,11 +1,9 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import LoginScreen from '../screens/LoginScreen';
-import RegisterScreen from '../screens/RegisterScreen';
+import PendingScreen from '../screens/auth/PendingScreen';
 
 export type AuthStackParamList = {
-  Login: undefined;
-  Register: undefined;
+  Pending: undefined;
 };
 
 const Stack = createStackNavigator<AuthStackParamList>();
@@ -13,13 +11,12 @@ const Stack = createStackNavigator<AuthStackParamList>();
 export default function AuthNavigator() {
   return (
     <Stack.Navigator
-      initialRouteName="Login"
+      initialRouteName="Pending"
       screenOptions={{
         headerShown: false,
       }}
     >
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="Pending" component={PendingScreen} />
     </Stack.Navigator>
   );
 } 

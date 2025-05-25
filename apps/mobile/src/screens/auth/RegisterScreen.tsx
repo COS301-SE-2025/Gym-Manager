@@ -10,7 +10,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import TrainwiseLogo from '../components/TrainwiseLogo';
+import TrainwiseLogo from '../../components/common/TrainwiseLogo';
 
 const { width } = Dimensions.get('window');
 
@@ -137,8 +137,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 30,
+    marginTop: 100,
+    marginBottom: 10,
   },
   registerButtonText: {
     color: '#1a1a1a',

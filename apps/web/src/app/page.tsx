@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import "./login.css"
+import Image from "next/image";
 
 export default function Home() {
   const [email, setEmail] = useState('');
@@ -17,7 +18,7 @@ export default function Home() {
     <div className="login-container">
     <div className="login-card">
         <div className="logo">
-
+            <Image src="/trainwiselogo.svg" alt="Logo" width={354} height={81} priority/>
         </div>
         <div className="login-header">
           <h1>Sign in to your account</h1>

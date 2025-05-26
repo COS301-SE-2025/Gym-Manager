@@ -52,6 +52,10 @@ a:hover {
   background-color: #748c24;
 }
 
+a:active {
+  background-color: #d8ff3d;
+}
+
 .dashboard-content {
   flex: 1;
   background-color: #0f0f0f;
@@ -75,4 +79,7 @@ a:hover {
 
 .logout:hover {
   background-color: #748c24;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
 }

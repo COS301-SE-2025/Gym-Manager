@@ -11,8 +11,7 @@ export default function DashboardLayout({
         <div className="dashboard-layout">
             <nav className="sidebar">
                 <div className="logo-holder">
-                    <Image src="/logo.png" alt="LOGO" width={100} height={100}/>
-                    <h2 className="sidebar-title">Trainwise</h2>
+                    <Image src="/trainwiselogo.svg" alt="Logo" width={295} height={67} priority/> {/* original size= width: 354 , height:81*/}
                 </div>
                 <ul className="sidebar-nav">
                     <li><Link href="/dashboard">Home</Link></li>

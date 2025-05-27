@@ -72,7 +72,18 @@ export const getAllClasses = async (req: AuthenticatedRequest, res: Response) =>
   //     .where(eq(classes.coachId, userId));
   // } else 
   if (roles.includes('member') || roles.includes('admin') || roles.includes('manager')) {
-    classesList = await db.select().from(classes);
+    classesList = await db
+      .select({
+        classId: classes.classId,
+        scheduledDate: classes.scheduledDate,
+        scheduledTime: classes.scheduledTime,
+        capacity: classes.capacity,
+        coachId: classes.coachId,
+        workoutId: classes.workoutId,
+        workoutName: workouts.workoutName,
+      })
+      .from(classes)
+      .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId));
   } else {
     return res.status(403).json({ error: 'Unauthorized' });
   }

@@ -12,6 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import TrainwiseLogo from '../../components/common/TrainwiseLogo';
 import axios from 'axios';
+import { storeToken, storeUser } from '../../utils/authStorage';
 
 const { width } = Dimensions.get('window');
 
@@ -24,13 +25,27 @@ export default function LoginScreen() {
     // Handle login logic here
     console.log('Login pressed', { email, password });
     axios.post('http://localhost:3000/login', { email, password })
-      .then(response => {
+      .then(async response => {
         console.log('Login response:', response.data);
+
+        if (response.data && response.data.token) {
+          await storeToken(response.data.token);
+        } else {
+          console.error('Login response does not contain a token.');
+          return;
+        }
+
+        if (response.data && response.data.user) {
+          await storeUser(response.data.user);
+        } else {
+          console.warn('Login response does not contain user information.');
+        }
+
         // Add role-based navigation
-        if (response.data && response.data.roles) {
-          const roles = response.data.roles;
+        if (response.data && response.data.user && response.data.user.roles) {
+          const roles = response.data.user.roles;
           if (roles.includes('member') && roles.includes('coach')) {
-            navigation.navigate('RoleSelectionScreen' as never);
+            navigation.navigate('RoleSelection' as never);
           } else if (roles.includes('member')) {
             navigation.navigate('Home' as never);
           } else {
@@ -39,7 +54,7 @@ export default function LoginScreen() {
             navigation.navigate('Home' as never); // Or a default screen
           }
         } else {
-          console.error('Login response does not contain roles information.');
+          console.error('Login response does not contain user roles information.');
           // Fallback navigation if roles are not present
           navigation.navigate('Home' as never);
         }

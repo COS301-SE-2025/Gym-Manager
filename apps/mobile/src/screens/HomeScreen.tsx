@@ -42,6 +42,7 @@ interface ApiUpcomingClass {
   capacity: number; // Total capacity
   scheduledDate: string;
   scheduledTime: string;
+  workoutName?: string; // Added workoutName, make it optional for now
   // workoutId: number; // Available, but we need workoutName
   // coachId: number; // Available, but we need coachName
   // Potentially other fields from the 'classes' table
@@ -84,11 +85,11 @@ export default function HomeScreen() {
         });
         const formattedBookedClasses: ClassItem[] = bookedResponse.data.map(apiClass => ({
           id: apiClass.bookingId,
-          name: apiClass.workoutName || 'N/A',
+          name: apiClass.workoutName || ' ',
           time: apiClass.scheduledTime ? new Date(`1970-01-01T${apiClass.scheduledTime}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A',
           date: apiClass.scheduledDate ? new Date(apiClass.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
-          capacity: 'N/A', // Placeholder - not in API response
-          instructor: 'N/A', // Placeholder - not in API response
+          capacity: ' ', // Placeholder - not in API response
+          instructor: ' ', // Placeholder - not in API response
           isBooked: true,
         }));
         setBookedClasses(formattedBookedClasses);
@@ -112,11 +113,11 @@ export default function HomeScreen() {
         });
         const formattedUpcomingClasses: ClassItem[] = upcomingResponse.data.map(apiClass => ({
             id: apiClass.classId.toString(),
-            name: 'Fitness Class', // Placeholder - workoutName not directly available
+            name: apiClass.workoutName || 'Fitness Class', // Use workoutName, fallback to placeholder
             time: apiClass.scheduledTime ? new Date(`1970-01-01T${apiClass.scheduledTime}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A',
             date: apiClass.scheduledDate ? new Date(apiClass.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
             capacity: `0/${apiClass.capacity}`, // Placeholder - current bookings not available, showing 0 booked
-            instructor: 'Instructor TBA', // Placeholder - coachName not directly available
+            instructor: ' ', // Placeholder - coachName not directly available
             isBooked: false, // Or logic to check if already booked by this user
         }));
         setUpcomingClasses(formattedUpcomingClasses);
@@ -228,8 +229,10 @@ export default function HomeScreen() {
         <IconLogo width={50} height={46} />
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeText}>
-            Welcome, {currentUser?.firstName || 'User'} 👋
+            Welcome
+            {/*, {currentUser?.firstName || 'User'} */} 👋
           </Text>
+          {/*}
           <View style={styles.passContainer}>
             <Text style={styles.passText}>Your Pass</Text>
             <View style={styles.progressContainer}>
@@ -239,6 +242,7 @@ export default function HomeScreen() {
               <Text style={styles.progressText}>2/3</Text>
             </View>
           </View>
+          */}
         </View>
       </View>
 

@@ -1,0 +1,93 @@
+CREATE TABLE Users (
+    user_id SERIAL PRIMARY KEY,
+    first_name TEXT NOT NULL,
+	last_name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    phone TEXT,
+    password_hash TEXT NOT NULL
+);
+
+CREATE TYPE USER_ROLE AS ENUM ('member','coach','admin','manager');
+
+CREATE TABLE UserRoles (
+  user_id    INT NOT NULL REFERENCES Users(user_id) ON DELETE CASCADE,
+  user_role       USER_ROLE NOT NULL,
+  PRIMARY KEY (user_id, user_role)
+);
+
+CREATE TYPE MEMBERSHIP_STATUS AS ENUM ('pending','approved','suspended','cancelled');
+
+CREATE TABLE Members (
+  user_id            INT PRIMARY KEY REFERENCES Users(user_id) ON DELETE CASCADE,
+  status             MEMBERSHIP_STATUS NOT NULL DEFAULT 'pending',
+  credits_balance    INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE Coaches (
+  user_id      INT PRIMARY KEY REFERENCES Users(user_id) ON DELETE CASCADE,
+  bio           TEXT
+);
+
+CREATE TABLE Admins (
+  user_id      			INT PRIMARY KEY REFERENCES Users(user_id) ON DELETE CASCADE,
+  authorisation         TEXT
+);
+
+CREATE TABLE Managers (
+	user_id   INT PRIMARY KEY REFERENCES Users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE Workouts (
+    workout_id SERIAL PRIMARY KEY,
+	workout_name VARCHAR(255) NOT NULL, 
+    workout_content TEXT NOT NULL
+);
+
+CREATE TABLE Classes ( 
+    class_id SERIAL PRIMARY KEY,
+	capacity INTEGER NOT NULL,  -- num avaulable is derived in SQL
+    scheduled_date DATE NOT NULL,
+	scheduled_time TIME NOT NULL,
+    duration_minutes INTEGER NOT NULL,
+    coach_id INTEGER REFERENCES Coaches(user_id),
+	workout_id INTEGER REFERENCES Workouts(workout_id),
+    created_by INTEGER REFERENCES Admins(user_id), -- admin who scheduled it
+    created_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE ClassBookings (
+    booking_id SERIAL PRIMARY KEY,
+    class_id INTEGER REFERENCES Classes(class_id) ON DELETE CASCADE,
+    member_id INTEGER REFERENCES Members(user_id) ON DELETE CASCADE,
+    booked_at TIMESTAMP DEFAULT now(),
+    UNIQUE (class_id, member_id)
+);
+
+
+
+
+INSERT INTO Users (
+  first_name,
+  last_name,
+  email,
+  phone,
+  password_hash
+) VALUES (
+  'Jane',
+  'Smith',
+  'jane.smith@example.com',
+  '555-1234',
+  'pbkdf2_sha256$260000$…$…'  -- your hashed password here
+);
+
+
+
+
+
+
+
+
+
+
+
+

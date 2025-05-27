@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,13 @@ import {
   StatusBar,
   ScrollView,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import IconLogo from '../components/common/IconLogo';
 import BookingSheet from '../components/BookingSheet';
 import CancelSheet from '../components/CancelSheet';
+import axios from 'axios';
+import { getToken, getUser, User } from '../utils/authStorage';
 
 const { width } = Dimensions.get('window');
 
@@ -25,30 +28,22 @@ interface ClassItem {
   isBooked?: boolean;
 }
 
+interface ApiBookedClass {
+  bookingId: string;
+  classId: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  workoutName: string;
+}
+
 export default function HomeScreen() {
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
   const [selectedCancelClass, setSelectedCancelClass] = useState<ClassItem | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const bookedClasses: ClassItem[] = [
-    // {
-    //   id: '1',
-    //   name: 'Workout 1',
-    //   time: '06:00',
-    //   date: 'Tomorrow',
-    //   capacity: '8/12',
-    //   instructor: 'John Doe',
-    //   isBooked: true,
-    // },
-    // {
-    //   id: '2',
-    //   name: 'Workout 2',
-    //   time: '06:00',
-    //   date: 'Tomorrow',
-    //   capacity: '8/12',
-    //   instructor: 'John Doe',
-    //   isBooked: true,
-    // },
-  ];
+  const [bookedClasses, setBookedClasses] = useState<ClassItem[]>([]);
+  const [isLoadingBooked, setIsLoadingBooked] = useState<boolean>(true);
+  const [bookedError, setBookedError] = useState<string | null>(null);
 
   const upcomingClasses: ClassItem[] = [
     {
@@ -82,7 +77,7 @@ export default function HomeScreen() {
       date: 'Tomorrow',
       capacity: '8/12',
       instructor: 'John Doe',
-      },
+    },
     {
       id: '6',
       name: 'Workout 1',
@@ -92,6 +87,53 @@ export default function HomeScreen() {
       instructor: 'John Doe',
     },
   ];
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      const user = await getUser();
+      setCurrentUser(user);
+
+      setIsLoadingBooked(true);
+      setBookedError(null);
+      try {
+        const token = await getToken();
+        if (!token) {
+          setBookedError("Authentication token not found. Please login again.");
+          setIsLoadingBooked(false);
+          return;
+        }
+
+        const response = await axios.get<ApiBookedClass[]>('http://localhost:3000/member/getBookedClass', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const formattedClasses: ClassItem[] = response.data.map(apiClass => ({
+          id: apiClass.bookingId,
+          name: apiClass.workoutName || 'N/A',
+          time: apiClass.scheduledTime ? new Date(`1970-01-01T${apiClass.scheduledTime}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A',
+          date: apiClass.scheduledDate ? new Date(apiClass.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
+          capacity: 'N/A',
+          instructor: 'N/A',
+          isBooked: true,
+        }));
+        
+        setBookedClasses(formattedClasses);
+      } catch (error: any) {
+        console.error('Failed to fetch booked classes:', error);
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+            setBookedError('Session expired. Please login again.');
+        } else {
+            setBookedError('Failed to load your booked classes. Please swipe down to refresh or try again later.');
+        }
+      } finally {
+        setIsLoadingBooked(false);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
 
   const handleCancelClass = (classId: string) => {
     const classToCancel = bookedClasses.find(c => c.id === classId);
@@ -185,7 +227,9 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <IconLogo width={50} height={46} />
         <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>Welcome, Jason 👋</Text>
+          <Text style={styles.welcomeText}>
+            Welcome, {currentUser?.firstName || 'User'} 👋
+          </Text>
           <View style={styles.passContainer}>
             <Text style={styles.passText}>Your Pass</Text>
             <View style={styles.progressContainer}>
@@ -202,7 +246,13 @@ export default function HomeScreen() {
         {/* Booked Classes Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Booked Classes</Text>
-          {bookedClasses.length > 0 ? (
+          {isLoadingBooked ? (
+            <ActivityIndicator size="large" color="#D8FF3E" style={{ marginTop: 20 }} />
+          ) : bookedError ? (
+            <View style={styles.emptyStateContainer}> 
+              <Text style={styles.errorText}>{bookedError}</Text>
+            </View>
+          ) : bookedClasses.length > 0 ? (
             <ScrollView 
               horizontal 
               showsHorizontalScrollIndicator={false}
@@ -476,5 +526,11 @@ const styles = StyleSheet.create({
     color: '#D8FF3E',
     fontSize: 14,
     fontWeight: '600',
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 16,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
 }); 

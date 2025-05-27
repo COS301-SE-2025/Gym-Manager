@@ -34,6 +34,7 @@ export const assignCoach = async (req : Request, res : Response) => {
   const { classId, coachId } = req.body;
   // Optional: validate coachId is a coach
   const [coach] = await db.select().from(coaches).where(eq(coaches.userId, coachId));
+  console.log('Assigning coach:', coachId, 'to class:', classId);
   if (!coach) return res.status(400).json({ error: "Invalid coach" });
 
   await db.update(classes).set({ coachId }).where(eq(classes.classId, classId));

@@ -42,5 +42,9 @@ export const login = async (req : Request, res : Response) => {
   const roles = userRoles.map(r => r.userRole);
 
   const token = generateJwt({ userId: user.userId, roles });
-  res.json({ token });
+  res.json({ "token":token,
+    "user": {
+      roles: roles
+    }
+   });
 }

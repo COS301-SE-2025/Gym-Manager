@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { db } from '../db/client';
 import { classes, workouts, coaches, members, classbookings, userroles } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
+import { AuthenticatedRequest } from '../middleware/auth';
 
 export const getCoachAssignedClasses = async (req : Request, res: Response) => {
   if (!req.user) {
@@ -13,8 +14,9 @@ export const getCoachAssignedClasses = async (req : Request, res: Response) => {
   res.json(assignedClasses);
 };
 
-export const getCoachClassesWithWorkouts = async (req : Request, res: Response) => {
+export const getCoachClassesWithWorkouts = async (req : AuthenticatedRequest, res: Response) => {
   if (!req.user) {
+    console.log('Unauthorized access attempt');
     return res.status(401).json({ error: "Unauthorized" });
   }
   const coachId = req.user.userId;

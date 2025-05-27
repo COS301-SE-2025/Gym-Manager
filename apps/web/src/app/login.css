@@ -1,5 +1,5 @@
 html, body {
-  background-color: #0f0f0f;
+  background-color: #1E1E1E;
 }
 
 .login-container {
@@ -7,11 +7,11 @@ html, body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #0f0f0f;
+  background-color: #1E1E1E;
 }
 
 .login-card {
-  background: #0f0606;
+  background: #434343;
   border-radius: 8px;
   padding: 40px;
   width: 100%;

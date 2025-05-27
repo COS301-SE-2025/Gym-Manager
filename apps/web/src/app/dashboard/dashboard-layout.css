@@ -1,16 +1,16 @@
 body {
-  background-color: #0f0f0f;
+  background-color: #1E1E1E;
   color: whitesmoke;
 }
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
-  background-color: #0f0f0f;
+  background-color: #1E1E1E;
 }
 
 .sidebar {
   width: 300px;
-  background-color: #0f0f0f;
+  background-color: #1E1E1E;
   border-right: 1px solid #000;
 }
 
@@ -27,16 +27,16 @@ body {
   padding: 0;
   margin: 0;
   width: 100%;
-  background-color: #0f0f0f;
+  background-color: #1E1E1E;
 }
 
 .logo-holder {
-  background-color: #0f0f0f;
+  background-color: #1E1E1E;
 }
 .sidebar-nav li {
   border: #0f0f0f solid 1px;
   width: 100%;
-  background-color: #1e1e1e;
+  background-color: #434343;
 }
 
 .sidebar-nav a {
@@ -73,7 +73,7 @@ a:active {
   padding: 8px 12px;
   font-size: larger;
   border: #0f0f0f solid 1px;
-  background-color: #1e1e1e;
+  background-color: #434343;
   color: white;
 }
 

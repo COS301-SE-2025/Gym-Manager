@@ -54,3 +54,32 @@ describe('register()', () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 });
+
+describe('login()', () => {
+  it('returns token on valid creds', async () => {
+    (db.select as jest.Mock)
+      // first select (user)
+      .mockReturnValueOnce(builder([{ userId:1, passwordHash:'hash' }]))
+      // second select (roles)
+      .mockReturnValueOnce(builder([{ userRole:'member' }]));
+
+    const req = { body:{ email:'x', password:'pw' } } as Request;
+    const res = mockRes();
+
+    await login(req, res);
+
+    expect(res.json).toHaveBeenCalledWith({
+      token:'fake.jwt', user:{ roles:['member'] }
+    });
+  });
+
+  it('401 on bad password', async () => {
+    (db.select as jest.Mock).mockReturnValue(builder([{ userId:1, passwordHash:'h' }]));
+    (authUtils.verifyPassword as jest.Mock).mockResolvedValue(false);
+    const req = { body:{ email:'x', password:'bad' } } as Request;
+    const res = mockRes();
+
+    await login(req, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+});

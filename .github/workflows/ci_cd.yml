@@ -43,18 +43,23 @@ jobs:
         working-directory: ./apps/web
 
   lint:
-    name: Lint API + UI
-    runs-on: ubuntu-latest
-    needs: setup
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+  name: Lint API + UI
+  runs-on: ubuntu-latest
+  needs: setup
+  steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
 
-      - name: Lint Web UI
-        run: npm run lint
-        working-directory: ./apps/web
+    - name: Install Web UI dependencies
+      run: npm install
+      working-directory: ./apps/web
+
+    - name: Lint Web UI
+      run: npm run lint
+      working-directory: ./apps/web
+
 
   test:
     name: Run Unit
@@ -73,7 +78,7 @@ jobs:
 
       - name: Run API Tests
         run: npm test
-        working-directory: ./src/api
+        working-directory: ./services/api
 
   deploy:
     name: Deploy to Production

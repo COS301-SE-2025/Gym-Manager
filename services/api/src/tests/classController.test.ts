@@ -32,3 +32,13 @@ describe('getCoachAssignedClasses', () => {
     expect(res.json).toHaveBeenCalledWith([{ classId: 5 }]);
   });
 });
+
+describe('getCoachClassesWithWorkouts', () => {
+  it('returns joined class + workout list', async () => {
+    const rows = [{ classId: 5, workoutName: 'HIIT' }];
+    (db.select as jest.Mock).mockReturnValue(builder(rows));
+    const res = mockRes();
+    await ctrl.getCoachClassesWithWorkouts(mockReq(), res);
+    expect(res.json).toHaveBeenCalledWith(rows);
+  });
+});

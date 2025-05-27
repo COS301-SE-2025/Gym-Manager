@@ -1,10 +1,10 @@
 // === services/api/src/routes/classes.ts ===
 import express from 'express';
-import { viewClasses, bookClass } from '../controllers/classController';
-import { requireRole } from '../middleware/roles';
+import { createClass } from '../controllers/classController';
+import { isAuthenticated } from '../middleware/auth';
+
 const router = express.Router();
 
-router.get('/', viewClasses);
-router.post('/:id/book', requireRole('member'), bookClass);
+router.post('/classes', isAuthenticated, createClass);
 
 export default router;

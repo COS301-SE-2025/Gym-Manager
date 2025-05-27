@@ -1,17 +1,17 @@
 // === services/api/src/index.ts ===
 import express from 'express';
-import cors from 'cors';
-import authRoutes from './routes/auth';
-import classRoutes from './routes/classes';
+import bodyParser from 'body-parser';
 import scheduleRoutes from './routes/schedule';
-import { authMiddleware } from './middleware/auth';
+import classRoutes from './routes/classes';
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+const port = process.env.PORT || 3000;
 
-app.use('/auth', authRoutes);
-app.use('/classes', authMiddleware, classRoutes);
-app.use('/schedule', authMiddleware, scheduleRoutes);
+app.use(bodyParser.json());
+app.use(scheduleRoutes);
+app.use(classRoutes);
 
-app.listen(3001, () => console.log('API running on http://localhost:3001'));
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
+

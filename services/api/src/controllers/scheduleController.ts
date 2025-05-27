@@ -1,15 +1,12 @@
 // === services/api/src/controllers/scheduleController.ts ===
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 
-export const createSchedule = async (req: Request, res: Response) => {
-  // TODO: insert class schedule into DB
-  const { name, time } = req.body;
-  res.json({ success: true, name, time });
+export const createSchedule = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    // Your logic here
+    res.status(201).json({ message: 'Schedule created successfully' });
+  } catch (err) {
+    next(err);
+  }
 };
 
-export const assignCoach = async (req: Request, res: Response) => {
-  const scheduleId = req.params.id;
-  const { coachId } = req.body;
-  // TODO: update schedule to assign coach
-  res.json({ success: true, scheduleId, coachId });
-};

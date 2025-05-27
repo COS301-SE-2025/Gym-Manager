@@ -36,6 +36,17 @@ interface ApiBookedClass {
   workoutName: string;
 }
 
+// Define a type for the API response item for All Classes
+interface ApiUpcomingClass {
+  classId: number; // Assuming classId is number from schema
+  capacity: number; // Total capacity
+  scheduledDate: string;
+  scheduledTime: string;
+  // workoutId: number; // Available, but we need workoutName
+  // coachId: number; // Available, but we need coachName
+  // Potentially other fields from the 'classes' table
+}
+
 export default function HomeScreen() {
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
   const [selectedCancelClass, setSelectedCancelClass] = useState<ClassItem | null>(null);
@@ -45,90 +56,79 @@ export default function HomeScreen() {
   const [isLoadingBooked, setIsLoadingBooked] = useState<boolean>(true);
   const [bookedError, setBookedError] = useState<string | null>(null);
 
-  const upcomingClasses: ClassItem[] = [
-    {
-      id: '2',
-      name: 'Workout 1',
-      time: '06:00',
-      date: 'Tomorrow',
-      capacity: '8/12',
-      instructor: 'John Doe',
-    },
-    {
-      id: '3',
-      name: 'Workout 1',
-      time: '06:00',
-      date: 'Tomorrow',
-      capacity: '8/12',
-      instructor: 'John Doe',
-    },
-    {
-      id: '4',
-      name: 'Workout 1',
-      time: '06:00',
-      date: 'Tomorrow',
-      capacity: '8/12',
-      instructor: 'John Doe',
-    },
-    {
-      id: '5',
-      name: 'Workout 1',
-      time: '06:00',
-      date: 'Tomorrow',
-      capacity: '8/12',
-      instructor: 'John Doe',
-    },
-    {
-      id: '6',
-      name: 'Workout 1',
-      time: '06:00',
-      date: 'Tomorrow',
-      capacity: '8/12',
-      instructor: 'John Doe',
-    },
-  ];
+  const [upcomingClasses, setUpcomingClasses] = useState<ClassItem[]>([]);
+  const [isLoadingUpcoming, setIsLoadingUpcoming] = useState<boolean>(true);
+  const [upcomingError, setUpcomingError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchInitialData = async () => {
+      // Fetch User
       const user = await getUser();
       setCurrentUser(user);
+      const token = await getToken();
 
+      if (!token) {
+        setBookedError("Authentication token not found. Please login again.");
+        setIsLoadingBooked(false);
+        setUpcomingError("Authentication token not found. Please login again.");
+        setIsLoadingUpcoming(false);
+        return;
+      }
+
+      // --- Fetch Booked Classes ---
       setIsLoadingBooked(true);
       setBookedError(null);
       try {
-        const token = await getToken();
-        if (!token) {
-          setBookedError("Authentication token not found. Please login again.");
-          setIsLoadingBooked(false);
-          return;
-        }
-
-        const response = await axios.get<ApiBookedClass[]>('http://localhost:3000/member/getBookedClass', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        const bookedResponse = await axios.get<ApiBookedClass[]>('http://localhost:3000/member/getBookedClass', {
+          headers: { 'Authorization': `Bearer ${token}` }
         });
-
-        const formattedClasses: ClassItem[] = response.data.map(apiClass => ({
+        const formattedBookedClasses: ClassItem[] = bookedResponse.data.map(apiClass => ({
           id: apiClass.bookingId,
           name: apiClass.workoutName || 'N/A',
           time: apiClass.scheduledTime ? new Date(`1970-01-01T${apiClass.scheduledTime}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A',
           date: apiClass.scheduledDate ? new Date(apiClass.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
-          capacity: 'N/A',
-          instructor: 'N/A',
+          capacity: 'N/A', // Placeholder - not in API response
+          instructor: 'N/A', // Placeholder - not in API response
           isBooked: true,
         }));
-        
-        setBookedClasses(formattedClasses);
+        setBookedClasses(formattedBookedClasses);
       } catch (error: any) {
         console.error('Failed to fetch booked classes:', error);
         if (axios.isAxiosError(error) && error.response?.status === 401) {
             setBookedError('Session expired. Please login again.');
         } else {
-            setBookedError('Failed to load your booked classes. Please swipe down to refresh or try again later.');
+            setBookedError('Failed to load your booked classes.');
         }
       } finally {
         setIsLoadingBooked(false);
+      }
+
+      // --- Fetch Upcoming Classes ---
+      setIsLoadingUpcoming(true);
+      setUpcomingError(null);
+      try {
+        const upcomingResponse = await axios.get<ApiUpcomingClass[]>('http://localhost:3000/member/getAllClasses', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const formattedUpcomingClasses: ClassItem[] = upcomingResponse.data.map(apiClass => ({
+            id: apiClass.classId.toString(),
+            name: 'Fitness Class', // Placeholder - workoutName not directly available
+            time: apiClass.scheduledTime ? new Date(`1970-01-01T${apiClass.scheduledTime}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A',
+            date: apiClass.scheduledDate ? new Date(apiClass.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
+            capacity: `0/${apiClass.capacity}`, // Placeholder - current bookings not available, showing 0 booked
+            instructor: 'Instructor TBA', // Placeholder - coachName not directly available
+            isBooked: false, // Or logic to check if already booked by this user
+        }));
+        setUpcomingClasses(formattedUpcomingClasses);
+      } catch (error: any) {
+        console.error('Failed to fetch upcoming classes:', error);
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+            setUpcomingError('Session expired. Please login again.');
+        } else {
+            setUpcomingError('Failed to load upcoming classes.');
+        }
+      } finally {
+        setIsLoadingUpcoming(false);
       }
     };
 
@@ -280,9 +280,27 @@ export default function HomeScreen() {
         {/* Upcoming Classes Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Upcoming Classes</Text>
-          <View style={styles.upcomingClassesContainer}>
-            {upcomingClasses.map(renderUpcomingClass)}
-          </View>
+          {isLoadingUpcoming ? (
+            <ActivityIndicator size="large" color="#D8FF3E" style={{ marginTop: 20 }} />
+          ) : upcomingError ? (
+            <View style={styles.emptyStateContainer}> 
+                <Text style={styles.errorText}>{upcomingError}</Text>
+            </View>
+          ) : upcomingClasses.length > 0 ? (
+            <View style={styles.upcomingClassesContainer}>
+                {upcomingClasses.map(renderUpcomingClass)}
+            </View>
+          ) : (
+            <View style={styles.emptyStateContainer}>
+              <View style={styles.emptyStateIcon}>
+                <Text style={styles.emptyStateIconText}>✨</Text>
+              </View>
+              <Text style={styles.emptyStateTitle}>No Upcoming Classes</Text>
+              <Text style={styles.emptyStateDescription}>
+                Check back soon for new classes and schedules!
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -532,5 +550,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     paddingHorizontal: 20,
+    paddingVertical: 10,
   },
 }); 

@@ -19,7 +19,7 @@ export default function Home() {
   event.preventDefault();
 
   try {
-    const response = await axios.post<LoginResponse>('http://localhost:3000/login', { email, password },
+    const response = await axios.post<LoginResponse>('http://localhost:4000/login', { email, password },
       {
         headers: {
           'Content-Type': 'application/json',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,14 @@ import {
   StatusBar,
   ScrollView,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
+import { useFocusEffect } from '@react-navigation/native';
 import IconLogo from '../../components/common/IconLogo';
 import { CoachStackParamList } from '../../navigation/CoachNavigator';
+import axios from 'axios';
+import { getToken } from '../../utils/authStorage';
 
 const { width } = Dimensions.get('window');
 
@@ -26,55 +30,98 @@ interface WorkoutItem {
   instructor: string;
 }
 
-export default function CoachHomeScreen({ navigation }: CoachHomeScreenProps) {
-  const setWorkouts: WorkoutItem[] = [
-    {
-      id: '1',
-      name: 'Workout 1',
-      time: '5:45AM',
-      date: 'Tomorrow',
-      capacity: '8/12',
-      instructor: 'Vansh Sood',
-    },
-  ];
+interface ApiCoachClass {
+  classId: number;
+  scheduledDate: string;
+  scheduledTime: string;
+  capacity: number;
+  workoutId: number | null;
+  coachId: number;
+  workoutName?: string;
+}
 
-  const yourClasses: WorkoutItem[] = [
-    {
-      id: '1',
-      name: 'Workout 1',
-      time: '5:45AM',
-      date: 'Tomorrow',
-      capacity: '8/12',
-      instructor: 'Vansh Sood',
-    },
-    {
-      id: '2',
-      name: 'Workout 1',
-      time: '5:45AM',
-      date: 'Tomorrow',
-      capacity: '8/12',
-      instructor: 'Vansh Sood',
-    },
-    {
-      id: '3',
-      name: 'Workout 1',
-      time: '5:45AM',
-      date: 'Tomorrow',
-      capacity: '8/12',
-      instructor: 'Vansh Sood',
-    },
-    {
-      id: '4',
-      name: 'Workout 1',
-      time: '5:45AM',
-      date: 'Tomorrow',
-      capacity: '8/12',
-      instructor: 'Vansh Sood',
-    },
-  ];
+export default function CoachHomeScreen({ navigation }: CoachHomeScreenProps) {
+  const [setWorkoutsData, setSetWorkoutsData] = useState<WorkoutItem[]>([]);
+  const [yourClassesData, setYourClassesData] = useState<WorkoutItem[]>([]);
+  const [isLoadingSetWorkouts, setIsLoadingSetWorkouts] = useState<boolean>(true);
+  const [isLoadingYourClasses, setIsLoadingYourClasses] = useState<boolean>(true);
+  const [setWorkoutsError, setSetWorkoutsError] = useState<string | null>(null);
+  const [yourClassesError, setYourClassesError] = useState<string | null>(null);
+
+  const fetchCoachClasses = async () => {
+    setIsLoadingSetWorkouts(true);
+    setIsLoadingYourClasses(true);
+    setSetWorkoutsError(null);
+    setYourClassesError(null);
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const response = await axios.get<ApiCoachClass[]>(
+        'http://localhost:3000/coach/assignedClasses',
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      // Transform API data to WorkoutItem format
+      const transformedClasses: WorkoutItem[] = response.data.map(apiClass => ({
+        id: apiClass.classId.toString(),
+        name: apiClass.workoutName || 'Setup Workout',
+        time: apiClass.scheduledTime ? 
+          new Date(`1970-01-01T${apiClass.scheduledTime}Z`).toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false 
+          }) : 'N/A',
+        date: apiClass.scheduledDate ? 
+          new Date(apiClass.scheduledDate).toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric' 
+          }) : 'N/A',
+        capacity: `0/${apiClass.capacity}`, // Placeholder for current bookings
+        instructor: 'You', // Since these are coach's own classes
+      }));
+
+      // Separate classes based on whether they have a workout assigned
+      const classesNeedingWorkout = transformedClasses.filter((_, index) => 
+        response.data[index].workoutId === null
+      );
+      const classesWithWorkout = transformedClasses.filter((_, index) => 
+        response.data[index].workoutId !== null
+      );
+
+      setSetWorkoutsData(classesNeedingWorkout);
+      setYourClassesData(classesWithWorkout);
+
+    } catch (error: any) {
+      console.error('Failed to fetch coach classes:', error);
+      const errorMessage = axios.isAxiosError(error) && error.response?.status === 401
+        ? 'Session expired. Please login again.'
+        : 'Failed to load your classes.';
+      
+      setSetWorkoutsError(errorMessage);
+      setYourClassesError(errorMessage);
+    } finally {
+      setIsLoadingSetWorkouts(false);
+      setIsLoadingYourClasses(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCoachClasses();
+  }, []);
+
+  // Refresh data when screen comes into focus (e.g., returning from SetWorkoutScreen)
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchCoachClasses();
+    }, [])
+  );
 
   const handleSetWorkout = (workoutId: string) => {
-    const workout = setWorkouts.find(w => w.id === workoutId);
+    const workout = setWorkoutsData.find(w => w.id === workoutId);
     if (workout) {
       navigation.navigate('SetWorkout', {
         workout: {
@@ -87,7 +134,7 @@ export default function CoachHomeScreen({ navigation }: CoachHomeScreenProps) {
   };
 
   const handleEditWorkout = (workoutId: string) => {
-    const workout = yourClasses.find(w => w.id === workoutId);
+    const workout = yourClassesData.find(w => w.id === workoutId);
     if (workout) {
       navigation.navigate('EditWorkout', {
         workout: {
@@ -106,7 +153,7 @@ export default function CoachHomeScreen({ navigation }: CoachHomeScreenProps) {
           <Text style={styles.workoutDate}>{workout.date}</Text>
           <Text style={styles.workoutTime}>{workout.time}</Text>
         </View>
-        <Text style={styles.workoutCapacity}>{workout.capacity}</Text>
+        {/*<Text style={styles.workoutCapacity}>{workout.capacity}</Text> */}
       </View>
       
       <View style={styles.workoutContent}>
@@ -131,20 +178,20 @@ export default function CoachHomeScreen({ navigation }: CoachHomeScreenProps) {
           <Text style={styles.classDate}>{workout.date}</Text>
           <Text style={styles.classTime}>{workout.time}</Text>
         </View>
-        <Text style={styles.classCapacity}>{workout.capacity}</Text>
+       {/*<Text style={styles.workoutCapacity}>{workout.capacity}</Text> */}
       </View>
       
       <View style={styles.classContent}>
         <View style={styles.classDetails}>
-          <Text style={styles.classInstructorName}>{workout.instructor}</Text>
+          {/*<Text style={styles.classInstructorName}>{workout.instructor}</Text> */}
           <Text style={styles.className}>{workout.name}</Text>
         </View>
-        <TouchableOpacity 
+        {/*<TouchableOpacity 
           style={styles.editWorkoutButton}
           onPress={() => handleEditWorkout(workout.id)}
         >
           <Text style={styles.editWorkoutButtonText}>Edit Workout</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </View>
   );
@@ -173,22 +220,38 @@ export default function CoachHomeScreen({ navigation }: CoachHomeScreenProps) {
         {/* Set Workouts Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Set Workouts</Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.setWorkoutsContainer}
-            style={styles.setWorkoutsScrollView}
-          >
-            {setWorkouts.map(renderSetWorkoutCard)}
-          </ScrollView>
+          {isLoadingSetWorkouts ? (
+            <ActivityIndicator size="large" color="#D8FF3E" style={{ marginTop: 20 }} />
+          ) : setWorkoutsError ? (
+            <Text style={styles.errorText}>{setWorkoutsError}</Text>
+          ) : setWorkoutsData.length > 0 ? (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.setWorkoutsContainer}
+              style={styles.setWorkoutsScrollView}
+            >
+              {setWorkoutsData.map(renderSetWorkoutCard)}
+            </ScrollView>
+          ) : (
+            <Text style={styles.emptyText}>No classes need workout assignments</Text>
+          )}
         </View>
 
         {/* Your Classes Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your Classes</Text>
-          <View style={styles.yourClassesContainer}>
-            {yourClasses.map(renderYourClassCard)}
-          </View>
+          {isLoadingYourClasses ? (
+            <ActivityIndicator size="large" color="#D8FF3E" style={{ marginTop: 20 }} />
+          ) : yourClassesError ? (
+            <Text style={styles.errorText}>{yourClassesError}</Text>
+          ) : yourClassesData.length > 0 ? (
+            <View style={styles.yourClassesContainer}>
+              {yourClassesData.map(renderYourClassCard)}
+            </View>
+          ) : (
+            <Text style={styles.emptyText}>No classes with assigned workouts</Text>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -439,5 +502,18 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     fontSize: 12,
     fontWeight: '600',
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 16,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  emptyText: {
+    color: '#888',
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 20,
   },
 }); 

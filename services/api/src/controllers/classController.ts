@@ -9,7 +9,18 @@ export const getCoachAssignedClasses = async (req : AuthenticatedRequest, res: R
     return res.status(401).json({ error: "Unauthorized" });
   }
   const coachId = req.user.userId;
-  const assignedClasses = await db.select().from(classes)
+  const assignedClasses = await db
+    .select({
+      classId: classes.classId,
+      scheduledDate: classes.scheduledDate,
+      scheduledTime: classes.scheduledTime,
+      capacity: classes.capacity,
+      workoutId: classes.workoutId,
+      coachId: classes.coachId,
+      workoutName: workouts.workoutName,
+    })
+    .from(classes)
+    .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
     .where(eq(classes.coachId, coachId));
   res.json(assignedClasses);
 };
@@ -46,6 +57,36 @@ export const assignWorkoutToClass = async (req : AuthenticatedRequest, res : Res
 
   await db.update(classes).set({ workoutId }).where(eq(classes.classId, classId));
   res.json({ success: true });
+};
+
+export const createWorkout = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  
+  const { workoutName, workoutContent } = req.body;
+  
+  // Validate input
+  if (!workoutName || !workoutContent) {
+    return res.status(400).json({ error: "Workout name and content are required" });
+  }
+  
+  try {
+    // Insert new workout
+    const [newWorkout] = await db.insert(workouts).values({
+      workoutName: workoutName.trim(),
+      workoutContent: workoutContent.trim(),
+    }).returning({ workoutId: workouts.workoutId });
+    
+    res.json({ 
+      success: true, 
+      workoutId: newWorkout.workoutId,
+      message: "Workout created successfully" 
+    });
+  } catch (error) {
+    console.error('Error creating workout:', error);
+    res.status(500).json({ error: "Failed to create workout" });
+  }
 };
 
 export const getAllClasses = async (req: AuthenticatedRequest, res: Response) => {

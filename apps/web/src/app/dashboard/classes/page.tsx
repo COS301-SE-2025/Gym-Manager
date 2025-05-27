@@ -1,3 +1,7 @@
 export default function ClassesPage() {
-    return(<p>Classes</p>);
+    return(
+        <div className="grid-container">
+
+        </div>
+    );
 }

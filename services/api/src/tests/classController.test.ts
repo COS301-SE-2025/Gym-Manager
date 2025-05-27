@@ -62,3 +62,21 @@ describe('assignWorkoutToClass', () => {
     expect(res.status).toHaveBeenCalledWith(403);
   });
 });
+
+describe('getAllClasses', () => {
+  it('member sees full list', async () => {
+    (db.select as jest.Mock)
+      .mockReturnValueOnce(builder([{ role: 'member' }])) // roles lookup
+      .mockReturnValueOnce(builder([{ classId: 1 }, { classId: 2 }])); // classes
+    const res = mockRes();
+    await ctrl.getAllClasses(mockReq(), res);
+    expect(res.json).toHaveBeenCalledWith([{ classId: 1 }, { classId: 2 }]);
+  });
+
+  it('unknown role - 403', async () => {
+    (db.select as jest.Mock).mockReturnValue(builder([{ role: 'alien' }]));
+    const res = mockRes();
+    await ctrl.getAllClasses(mockReq(), res);
+    expect(res.status).toHaveBeenCalledWith(403);
+  });
+});

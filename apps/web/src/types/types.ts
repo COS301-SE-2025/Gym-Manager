@@ -14,4 +14,3 @@ export interface GymClass {
     capacity: number;
     enrolled: number;
 }
-

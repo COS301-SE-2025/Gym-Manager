@@ -1,4 +1,8 @@
 'use server'
 export default function MembersPage() {
-    return(<p>Members</p>);
+    return(
+        <p>
+            members
+        </p>
+    );
 }

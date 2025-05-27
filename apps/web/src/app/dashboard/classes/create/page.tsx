@@ -1,4 +1,14 @@
 'use server'
+
 export default function CreateClassPage() {
-    return(<p>create class</p>);
+    return(
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Descrption</th>
+                <th></th>
+                <th></th>    
+            </tr>
+        </table>
+    );
 }

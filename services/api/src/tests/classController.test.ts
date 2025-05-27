@@ -42,3 +42,23 @@ describe('getCoachClassesWithWorkouts', () => {
     expect(res.json).toHaveBeenCalledWith(rows);
   });
 });
+
+describe('assignWorkoutToClass', () => {
+  it('updates class when coach owns it', async () => {
+    (db.select as jest.Mock).mockReturnValue(builder([{ classId: 7 }]));
+    (db.update as jest.Mock).mockReturnValue(builder());
+    const req = mockReq(1, { body: { classId: 7, workoutId: 3 } });
+    const res = mockRes();
+    await ctrl.assignWorkoutToClass(req, res);
+    expect(db.update).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ success: true });
+  });
+
+    it('403 when coach does NOT own it', async () => {
+    (db.select as jest.Mock).mockReturnValue(builder([]));
+    const req = mockReq(1, { body: { classId: 77, workoutId: 3 } });
+    const res = mockRes();
+    await ctrl.assignWorkoutToClass(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+  });
+});

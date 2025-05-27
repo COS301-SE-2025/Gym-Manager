@@ -3,17 +3,62 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import "./login.css"
 import Image from "next/image";
+import axios from 'axios';
 
 export default function Home() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
+  interface LoginResponse {
+    token: string;
+    user: {
+      roles: string[];
+    };
+  }
   const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  event.preventDefault();
 
-    //request sent here
-    router.push('/dashboard'); //if successful
-  };
+  try {
+    const response = await axios.post<LoginResponse>('http://localhost:3000/login', { email, password },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.STATIC_JWT}`
+        }
+      });
+
+    console.log('Login response:', response.data);
+
+    if (!response.data?.token) {
+      console.error('No token received in response');
+      return;
+    }
+
+    // Store token in localStorage
+    localStorage.setItem('authToken', response.data.token);
+
+    // Store user data if available
+    if (response.data.user) {
+      localStorage.setItem('userData', JSON.stringify(response.data.user));
+    }
+
+    // Role-based navigation (only checking for admin)
+    if (response.data.user?.roles?.includes('admin')) {
+      router.push('/dashboard');
+    } else {
+      router.push('/'); // Redirect to home or unauthorized page
+      // Alternatively, show an error message:
+      // alert('You do not have admin privileges');
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    if (axios.isAxiosError(error)) {
+      alert('Login failed');
+    } else {
+      alert('An unexpected error occurred');
+    }
+  }
+};
   return (
     <div className="login-container">
     <div className="login-card">

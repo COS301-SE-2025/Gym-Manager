@@ -30,13 +30,29 @@ export const createClass = async (req : Request, res : Response) => {
   res.json(created);
 };
 
-export const assignCoach = async (req : Request, res : Response) => {
+export const assignCoach = async (req: Request, res: Response) => {
   const { classId, coachId } = req.body;
-  // Optional: validate coachId is a coach
-  const [coach] = await db.select().from(coaches).where(eq(coaches.userId, coachId));
-  console.log('Assigning coach:', coachId, 'to class:', classId);
-  if (!coach) return res.status(400).json({ error: "Invalid coach" });
+  if (!classId || !coachId) {
+    return res.status(400).json({ error: 'classId and coachId are required' });
+  }
 
-  await db.update(classes).set({ coachId }).where(eq(classes.classId, classId));
+  console.log('Assigning coach:', coachId, 'to class:', classId);
+
+  const [coach] = await db
+    .select()
+    .from(coaches)
+    .where(eq(coaches.userId, coachId));
+
+  if (!coach) {
+    console.error('Coach not found for ID:', coachId);
+    return res.status(400).json({ error: 'Invalid coach' });
+  }
+
+  await db
+    .update(classes)
+    .set({ coachId })
+    .where(eq(classes.classId, classId));
+
   res.json({ success: true });
 };
+

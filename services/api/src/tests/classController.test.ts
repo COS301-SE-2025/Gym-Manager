@@ -111,4 +111,16 @@ describe('bookClass', () => {
     expect(res.json).toHaveBeenCalledWith({ success: true });
   });
 
+  it('400 on duplicate booking', async () => {
+    (db.select as jest.Mock)
+      .mockReturnValueOnce(builder([{ status: 'approved' }]))
+      .mockReturnValueOnce(builder([{ classId: 1, capacity: 10 }]))
+      .mockReturnValueOnce(builder([{ bookingId: 99 }])); // duplicate
+
+    const req = mockReq(1, { body: { classId: 1 } });
+    const res = mockRes();
+    await ctrl.bookClass(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
 });

@@ -118,7 +118,13 @@ export const bookClass = async (req : AuthenticatedRequest, res : Response) => {
     return res.status(401).json({ error: "Unauthorized" });
   }
   const memberId = req.user.userId;
-  const { classId } = req.body;
+  const { classId: classIdStr } = req.body;
+
+  // Parse classId to integer
+  const classId = parseInt(classIdStr, 10);
+  if (isNaN(classId)) {
+    return res.status(400).json({ error: "Invalid class ID format" });
+  }
 
   // Check if member exists and is approved
   const [member] = await db.select().from(members).where(eq(members.userId, memberId));

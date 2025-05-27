@@ -80,3 +80,35 @@ describe('getAllClasses', () => {
     expect(res.status).toHaveBeenCalledWith(403);
   });
 });
+
+
+describe('getMemberClasses', () => {
+  it('returns bookings for member', async () => {
+    const rows = [{ bookingId: 9, classId: 3 }];
+    (db.select as jest.Mock).mockReturnValue(builder(rows));
+    const res = mockRes();
+    await ctrl.getMemberClasses(mockReq(), res);
+    expect(res.json).toHaveBeenCalledWith(rows);
+  });
+});
+
+
+describe('bookClass', () => {
+  it('books successfully', async () => {
+    // sequence of SELECTs inside bookClass
+    (db.select as jest.Mock)
+      .mockReturnValueOnce(builder([{ status: 'approved' }])) // member
+      .mockReturnValueOnce(builder([{ classId: 1, capacity: 10 }])) // class
+      .mockReturnValueOnce(builder([])) // dup check
+      .mockReturnValueOnce(builder([])); // count
+
+    (db.insert as jest.Mock).mockReturnValue(builder()); // booking
+
+    const req = mockReq(1, { body: { classId: 1 } });
+    const res = mockRes();
+    await ctrl.bookClass(req, res);
+    expect(db.insert).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ success: true });
+  });
+
+});

@@ -1,13 +1,15 @@
 // === services/api/src/controllers/classController.ts ===
 import { Request, Response, NextFunction } from 'express';
+import pool from '../db';
 
-export const createClass = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getClasses = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Your logic here
-    res.status(201).json({ message: 'Class created successfully' });
+    const result = await pool.query('SELECT * FROM classes');
+    res.json(result.rows);
   } catch (err) {
     next(err);
   }
 };
+
 
 

@@ -1,18 +1,23 @@
 // === services/api/src/index.ts ===
 import dotenv from 'dotenv';
 dotenv.config();
+import cors from 'cors';
 import express from 'express';
 import bodyParser from 'body-parser';
-import authRoutes from './routes/auth';
 import scheduleRoutes from './routes/schedule';
 import classRoutes from './routes/classes';
+import authRoutes from './routes/auth';
 
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 4000;
 
+app.use(cors({
+  origin: 'http://localhost:3000', 
+  credentials: true,
+}));
 app.use(bodyParser.json());
-app.use(authRoutes)
+app.use(authRoutes);
 app.use(scheduleRoutes);
 app.use(classRoutes);
 

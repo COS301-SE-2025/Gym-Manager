@@ -1,11 +1,12 @@
 // === services/api/src/routes/schedule.ts ===
 import express from 'express';
-import { createSchedule } from '../controllers/scheduleController';
+import { createSchedule, assignCoach } from '../controllers/scheduleController';
 import { isAuthenticated } from '../middleware/auth';
 
 const router = express.Router();
 
-router.post('/schedule', isAuthenticated, createSchedule);
+router.post('/schedule/create', createSchedule);
+router.post('/schedule/assign-coach', isAuthenticated, assignCoach);
 
 export default router;
 

@@ -1,5 +1,5 @@
 import { db } from '../db/client';  // your Drizzle client
-import { users, userroles, members, coaches } from '../db/schema';
+import { users, userroles, members, coaches, managers, admins } from '../db/schema';
 import { hashPassword, verifyPassword, generateJwt } from '../middleware/auth'; // your auth utils
 import { eq } from 'drizzle-orm';
 import { Request, Response } from 'express';
@@ -36,6 +36,18 @@ export const register = async (req : Request, res : Response) => {
     await db.insert(coaches).values({
       userId: newUser.userId,
       bio: '' // default bio
+    });
+  }
+
+  if(roles.includes('manager')) {
+   await db.insert(managers).values({
+      userId: newUser.userId // default empty permissions
+    });
+  }
+
+  if(roles.includes('admin')) {
+    await db.insert(admins).values({
+      userId: newUser.userId,// default empty permissions
     });
   }
 

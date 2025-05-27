@@ -8,6 +8,8 @@ import {
   Dimensions,
   SafeAreaView,
   StatusBar,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import TrainwiseLogo from '../../components/common/TrainwiseLogo';
@@ -16,57 +18,164 @@ import { storeToken, storeUser } from '../../utils/authStorage';
 
 const { width } = Dimensions.get('window');
 
+interface ValidationErrors {
+  email?: string;
+  password?: string;
+}
+
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
 
-  const handleLogin = () => {
-    // Handle login logic here
-    console.log('Login pressed', { email, password });
-    axios.post('http://localhost:3000/login', { email, password })
-      .then(async response => {
-        console.log('Login response:', response.data);
+  // Email validation function
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
-        if (response.data && response.data.token) {
-          await storeToken(response.data.token);
+  // Real-time validation
+  const validateField = (field: 'email' | 'password', value: string) => {
+    const newErrors = { ...errors };
+
+    switch (field) {
+      case 'email':
+        if (!value.trim()) {
+          newErrors.email = 'Email is required';
+        } else if (!validateEmail(value)) {
+          newErrors.email = 'Please enter a valid email address';
         } else {
-          console.error('Login response does not contain a token.');
-          return;
+          delete newErrors.email;
         }
-
-        if (response.data && response.data.user) {
-          await storeUser(response.data.user);
+        break;
+      case 'password':
+        if (!value.trim()) {
+          newErrors.password = 'Password is required';
+        } else if (value.length < 0) {
+          newErrors.password = 'Password must be at least 6 characters';
         } else {
-          console.warn('Login response does not contain user information.');
+          delete newErrors.password;
         }
+        break;
+    }
 
-        // Add role-based navigation
-        if (response.data && response.data.user && response.data.user.roles) {
-          const roles = response.data.user.roles;
-          if (roles.includes('member') && roles.includes('coach')) {
-            navigation.navigate('RoleSelection' as never);
-          } else if (roles.includes('member')) {
-            navigation.navigate('Home' as never);
-          } else {
-            // Default navigation or error handling if roles are not as expected
-            console.warn('User roles not recognized for navigation:', roles);
-            navigation.navigate('Home' as never); // Or a default screen
-          }
+    setErrors(newErrors);
+  };
+
+  // Form validation
+  const validateForm = (): boolean => {
+    const newErrors: ValidationErrors = {};
+
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!validateEmail(email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!password.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 0) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (errors.email) {
+      validateField('email', value);
+    }
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (errors.password) {
+      validateField('password', value);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      console.log('Login pressed', { email, password });
+      const response = await axios.post('http://localhost:3000/login', { 
+        email: email.trim().toLowerCase(), 
+        password 
+      });
+
+      console.log('Login response:', response.data);
+
+      if (response.data && response.data.token) {
+        await storeToken(response.data.token);
+      } else {
+        console.error('Login response does not contain a token.');
+        Alert.alert('Login Error', 'Invalid response from server. Please try again.');
+        return;
+      }
+
+      if (response.data && response.data.user) {
+        await storeUser(response.data.user);
+      } else {
+        console.warn('Login response does not contain user information.');
+      }
+
+      // Add role-based navigation
+      if (response.data && response.data.user && response.data.user.roles) {
+        const roles = response.data.user.roles;
+        if (roles.includes('member') && roles.includes('coach')) {
+          navigation.navigate('RoleSelection' as never);
+        } else if (roles.includes('member')) {
+          navigation.navigate('Home' as never);
         } else {
-          console.error('Login response does not contain user roles information.');
-          // Fallback navigation if roles are not present
+          console.warn('User roles not recognized for navigation:', roles);
           navigation.navigate('Home' as never);
         }
-      })
-      .catch(error => {
-        console.error('Login error:', error);
-      });
+      } else {
+        console.error('Login response does not contain user roles information.');
+        navigation.navigate('Home' as never);
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (axios.isAxiosError(error) && error.response) {
+        switch (error.response.status) {
+          case 401:
+            errorMessage = 'Invalid email or password. Please check your credentials.';
+            break;
+          case 404:
+            errorMessage = 'Account not found. Please check your email or register.';
+            break;
+          case 500:
+            errorMessage = 'Server error. Please try again later.';
+            break;
+          default:
+            errorMessage = error.response.data?.message || 'Login failed. Please try again.';
+        }
+      } else if (error.code === 'NETWORK_ERROR') {
+        errorMessage = 'Network error. Please check your internet connection.';
+      }
+      
+      Alert.alert('Login Failed', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const navigateToRegister = () => {
     navigation.navigate('Register' as never);
   };
+
+  const isFormValid = !errors.email && !errors.password && email.trim() && password.trim();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -83,39 +192,73 @@ export default function LoginScreen() {
         <View style={styles.inputContainer}>
           <Text style={styles.label}>EMAIL</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              errors.email && styles.inputError
+            ]}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={handleEmailChange}
+            onBlur={() => validateField('email', email)}
             placeholder="youremail@example.com"
             placeholderTextColor="#666"
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            editable={!isLoading}
           />
+          {errors.email && (
+            <Text style={styles.errorText}>{errors.email}</Text>
+          )}
         </View>
 
         {/* Password Input */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>PASSWORD</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              errors.password && styles.inputError
+            ]}
             value={password}
-            onChangeText={setPassword}
-            placeholder="12345"
+            onChangeText={handlePasswordChange}
+            onBlur={() => validateField('password', password)}
+            placeholder="Enter your password"
             placeholderTextColor="#666"
             secureTextEntry
             autoCapitalize="none"
+            editable={!isLoading}
           />
+          {errors.password && (
+            <Text style={styles.errorText}>{errors.password}</Text>
+          )}
         </View>
 
         {/* Login Button */}
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>Login</Text>
+        <TouchableOpacity 
+          style={[
+            styles.loginButton,
+            (!isFormValid || isLoading) && styles.disabledButton
+          ]} 
+          onPress={handleLogin}
+          disabled={!isFormValid || isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#1a1a1a" />
+          ) : (
+            <Text style={styles.loginButtonText}>Login</Text>
+          )}
         </TouchableOpacity>
 
         {/* Register Link */}
-        <TouchableOpacity style={styles.registerLink} onPress={navigateToRegister}>
-          <Text style={styles.registerLinkText}>REGISTER</Text>
+        <TouchableOpacity 
+          style={styles.registerLink} 
+          onPress={navigateToRegister}
+          disabled={isLoading}
+        >
+          <Text style={[
+            styles.registerLinkText,
+            isLoading && styles.disabledText
+          ]}>REGISTER</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -135,7 +278,7 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     flex: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
   },
   inputContainer: {
     marginBottom: 25,
@@ -157,6 +300,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#3a3a3a',
   },
+  inputError: {
+    borderColor: '#FF6B6B',
+    borderWidth: 2,
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
   loginButton: {
     backgroundColor: '#9ACD32',
     borderRadius: 8,
@@ -164,6 +317,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 150,
     marginBottom: 10,
+  },
+  disabledButton: {
+    backgroundColor: '#666',
+    opacity: 0.6,
   },
   loginButtonText: {
     color: '#1a1a1a',
@@ -178,5 +335,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: 1,
+  },
+  disabledText: {
+    opacity: 0.5,
   },
 }); 

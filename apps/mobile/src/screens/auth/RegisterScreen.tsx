@@ -23,6 +23,7 @@ export default function RegisterScreen() {
   const handleRegister = () => {
     // Handle registration logic here
     console.log('Register pressed', { fullName, email, password });
+
   };
 
   const navigateToLogin = () => {

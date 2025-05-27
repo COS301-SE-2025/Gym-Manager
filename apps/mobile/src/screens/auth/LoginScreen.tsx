@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import TrainwiseLogo from '../../components/common/TrainwiseLogo';
+import axios from 'axios';
 
 const { width } = Dimensions.get('window');
 
@@ -22,6 +23,14 @@ export default function LoginScreen() {
   const handleLogin = () => {
     // Handle login logic here
     console.log('Login pressed', { email, password });
+    axios.post('http://localhost:3000/login', { email, password })
+      .then(response => {
+        console.log('Login response:', response.data);
+        navigation.navigate('Home' as never);
+      })
+      .catch(error => {
+        console.error('Login error:', error);
+      });
   };
 
   const navigateToRegister = () => {

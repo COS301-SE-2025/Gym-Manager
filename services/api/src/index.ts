@@ -1,12 +1,13 @@
 // === services/api/src/index.ts ===
+import dotenv from 'dotenv';
+dotenv.config();
 import cors from 'cors';
 import express from 'express';
 import bodyParser from 'body-parser';
 import scheduleRoutes from './routes/schedule';
 import classRoutes from './routes/classes';
 import authRoutes from './routes/auth';
-import dotenv from 'dotenv';
-dotenv.config();
+
 
 const app = express();
 const port = process.env.PORT || 4000;

@@ -9,56 +9,29 @@ export default function Home() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
-  interface LoginResponse {
-    token: string;
-    user: {
-      roles: string[];
-    };
-  }
-  const handleSubmit = async (event: React.FormEvent) => {
-  event.preventDefault();
 
-  try {
-    const response = await axios.post<LoginResponse>('http://localhost:4000/login', { email, password },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.STATIC_JWT}`
+const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const response = await axios.post(
+        `http://localhost:4000/login`,
+        { email, password },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }
-      });
+      );
 
-    console.log('Login response:', response.data);
-
-    if (!response.data?.token) {
-      console.error('No token received in response');
-      return;
-    }
-
-    // Store token in localStorage
-    localStorage.setItem('authToken', response.data.token);
-
-    // Store user data if available
-    if (response.data.user) {
-      localStorage.setItem('userData', JSON.stringify(response.data.user));
-    }
-
-    // Role-based navigation (only checking for admin)
-    if (response.data.user?.roles?.includes('admin')) {
+      localStorage.setItem('authToken', response.data.token);
+      
       router.push('/dashboard');
-    } else {
-      router.push('/'); // Redirect to home or unauthorized page
-      // Alternatively, show an error message:
-      // alert('You do not have admin privileges');
+    } catch (err) {
+      console.error('Login error:', err);
     }
-  } catch (error) {
-    console.error('Login error:', error);
-    if (axios.isAxiosError(error)) {
-      alert('Login failed');
-    } else {
-      alert('An unexpected error occurred');
-    }
-  }
-};
+  };
+
   return (
     <div className="login-container">
     <div className="login-card">

@@ -48,28 +48,37 @@ export const assignWorkoutToClass = async (req : AuthenticatedRequest, res : Res
   res.json({ success: true });
 };
 
-// export const getAllClasses = async (req : Request, res : Response) => {
-//   if (!req.user) {
-//     return res.status(401).json({ error: "Unauthorized" });
-//   }
-//   const userId = req.user.userId;
-//   const userRole = await db.select().from(userroles).where(eq(userroles.userId, userId));
-//   if (userRole.length === 0) {
-//     return res.status(403).json({ error: "Unauthorized" });
-//   }
-//   const role = userRole;
-//   let classesList;
-//   if (role === 'coach') {
-//     // Get classes assigned to coach
-//     classesList = await db.select().from(classes).where(eq(classes.coachId, userId));
-//   } else if (role === 'member') {
-//     // Get all classes
-//     classesList = await db.select().from(classes);
-//   } else {
-//     return res.status(403).json({ error: "Unauthorized" });
-//   }
-//   res.json(classesList);
-// }
+export const getAllClasses = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const userId = req.user.userId;
+
+  const rows = await db
+    .select({ role: userroles.userRole })
+    .from(userroles)
+    .where(eq(userroles.userId, userId));
+  if (rows.length === 0) return res.status(403).json({ error: 'Unauthorized' });
+
+  const roles = rows.map(r => r.role as string);   // ['member', 'coach', …]
+  let classesList;
+
+  // COACHES WILL BE IGNORED FOR NOW BECAUSE THEY CAN'T HAVE CLASSES WITHOUT MEMBERSHIP ROLE.
+  // IF THIS NEEDS TO CHANGE, LET ME KNOW
+
+  // if (roles.includes('coach')) {
+  //   classesList = await db
+  //     .select()
+  //     .from(classes)
+  //     .where(eq(classes.coachId, userId));
+  // } else 
+  if (roles.includes('member') || roles.includes('admin') || roles.includes('manager')) {
+    classesList = await db.select().from(classes);
+  } else {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  res.json(classesList);
+};
 
 export const getMemberClasses = async (req : AuthenticatedRequest, res : Response) => {
   if (!req.user) {

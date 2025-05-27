@@ -1,6 +1,6 @@
 // === services/api/src/routes/classes.ts ===
 import express from 'express';
-import { getCoachAssignedClasses, getCoachClassesWithWorkouts, assignWorkoutToClass, getMemberClasses, bookClass } from '../controllers/classController';
+import { getCoachAssignedClasses, getCoachClassesWithWorkouts, assignWorkoutToClass, getMemberClasses, bookClass, getAllClasses } from '../controllers/classController';
 
 import { isAuthenticated } from '../middleware/auth';
 
@@ -11,6 +11,7 @@ router.get('/coach/workoutsAssigned', isAuthenticated, getCoachClassesWithWorkou
 router.post('/coach/assignWorkout', isAuthenticated, assignWorkoutToClass);
 router.get('/member/getBookedClass',  isAuthenticated, getMemberClasses);
 router.post('/member/bookClass', isAuthenticated, bookClass);
+router.get('/member/getAllClasses', isAuthenticated, getAllClasses);
 
 
 export default router;

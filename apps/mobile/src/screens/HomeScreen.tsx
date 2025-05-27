@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Dimensions,
 } from 'react-native';
 import IconLogo from '../components/common/IconLogo';
+import BookingSheet from '../components/BookingSheet';
+import CancelSheet from '../components/CancelSheet';
 
 const { width } = Dimensions.get('window');
 
@@ -24,25 +26,28 @@ interface ClassItem {
 }
 
 export default function HomeScreen() {
+  const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
+  const [selectedCancelClass, setSelectedCancelClass] = useState<ClassItem | null>(null);
+
   const bookedClasses: ClassItem[] = [
-    {
-      id: '1',
-      name: 'Workout 1',
-      time: '06:00',
-      date: 'Tomorrow',
-      capacity: '8/12',
-      instructor: 'John Doe',
-      isBooked: true,
-    },
-    {
-      id: '2',
-      name: 'Workout 2',
-      time: '06:00',
-      date: 'Tomorrow',
-      capacity: '8/12',
-      instructor: 'John Doe',
-      isBooked: true,
-    },
+    // {
+    //   id: '1',
+    //   name: 'Workout 1',
+    //   time: '06:00',
+    //   date: 'Tomorrow',
+    //   capacity: '8/12',
+    //   instructor: 'John Doe',
+    //   isBooked: true,
+    // },
+    // {
+    //   id: '2',
+    //   name: 'Workout 2',
+    //   time: '06:00',
+    //   date: 'Tomorrow',
+    //   capacity: '8/12',
+    //   instructor: 'John Doe',
+    //   isBooked: true,
+    // },
   ];
 
   const upcomingClasses: ClassItem[] = [
@@ -89,11 +94,35 @@ export default function HomeScreen() {
   ];
 
   const handleCancelClass = (classId: string) => {
-    console.log('Cancel class:', classId);
+    const classToCancel = bookedClasses.find(c => c.id === classId);
+    if (classToCancel) {
+      setSelectedCancelClass(classToCancel);
+    }
   };
 
   const handleBookClass = (classId: string) => {
-    console.log('Book class:', classId);
+    const classToBook = upcomingClasses.find(c => c.id === classId);
+    if (classToBook) {
+      setSelectedClass(classToBook);
+    }
+  };
+
+  const handleConfirmBooking = (classId: string) => {
+    console.log('Booking confirmed for class:', classId);
+    // Here you would typically make an API call to book the class
+  };
+
+  const handleConfirmCancellation = (classId: string) => {
+    console.log('Cancellation confirmed for class:', classId);
+    // Here you would typically make an API call to cancel the class
+  };
+
+  const handleCloseSheet = () => {
+    setSelectedClass(null);
+  };
+
+  const handleCloseCancelSheet = () => {
+    setSelectedCancelClass(null);
   };
 
   const renderBookedClass = (classItem: ClassItem) => (
@@ -173,14 +202,29 @@ export default function HomeScreen() {
         {/* Booked Classes Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Booked Classes</Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.bookedClassesContainer}
-            style={styles.bookedClassesScrollView}
-          >
-            {bookedClasses.map(renderBookedClass)}
-          </ScrollView>
+          {bookedClasses.length > 0 ? (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.bookedClassesContainer}
+              style={styles.bookedClassesScrollView}
+            >
+              {bookedClasses.map(renderBookedClass)}
+            </ScrollView>
+          ) : (
+            <View style={styles.emptyStateContainer}>
+              <View style={styles.emptyStateIcon}>
+                <Text style={styles.emptyStateIconText}>📅</Text>
+              </View>
+              <Text style={styles.emptyStateTitle}>No Booked Classes</Text>
+              <Text style={styles.emptyStateDescription}>
+                You haven't booked any classes yet. Browse upcoming classes below to get started with your fitness journey.
+              </Text>
+              <TouchableOpacity style={styles.emptyStateButton}>
+                <Text style={styles.emptyStateButtonText}>Explore Classes</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Upcoming Classes Section */}
@@ -191,6 +235,20 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <BookingSheet
+        visible={selectedClass !== null}
+        classItem={selectedClass}
+        onBook={handleConfirmBooking}
+        onClose={handleCloseSheet}
+      />
+
+      <CancelSheet
+        visible={selectedCancelClass !== null}
+        classItem={selectedCancelClass}
+        onCancel={handleConfirmCancellation}
+        onClose={handleCloseCancelSheet}
+      />
     </SafeAreaView>
   );
 }
@@ -371,5 +429,52 @@ const styles = StyleSheet.create({
   progressText: {
     color: '#888',
     fontSize: 12,
+  },
+  emptyStateContainer: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  emptyStateIcon: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#333',
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  emptyStateIconText: {
+    fontSize: 32,
+  },
+  emptyStateTitle: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyStateDescription: {
+    color: '#888',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 16,
+  },
+  emptyStateButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#D8FF3E',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  emptyStateButtonText: {
+    color: '#D8FF3E',
+    fontSize: 14,
+    fontWeight: '600',
   },
 }); 

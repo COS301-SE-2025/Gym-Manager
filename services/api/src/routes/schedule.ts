@@ -5,7 +5,7 @@ import { isAuthenticated } from '../middleware/auth';
 
 const router = express.Router();
 
-router.post('/schedule/create', createSchedule);
+router.post('/schedule/create', isAuthenticated, createSchedule);
 router.post('/schedule/assign-coach', isAuthenticated, assignCoach);
 
 export default router;

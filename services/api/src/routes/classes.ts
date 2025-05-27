@@ -6,11 +6,11 @@ import { isAuthenticated } from '../middleware/auth';
 
 const router = express.Router();
 
-router.post('/coach/assignedClasses', getCoachAssignedClasses);
-router.get('/coach/workoutsAssigned', getCoachClassesWithWorkouts);
-router.post('/coach/assignWorkout', assignWorkoutToClass);
-router.get('/member/getBookedClass',  getMemberClasses);
-router.post('/member/bookClass', bookClass);
+router.post('/coach/assignedClasses', isAuthenticated, getCoachAssignedClasses);
+router.get('/coach/workoutsAssigned', isAuthenticated, getCoachClassesWithWorkouts);
+router.post('/coach/assignWorkout', isAuthenticated, assignWorkoutToClass);
+router.get('/member/getBookedClass',  isAuthenticated, getMemberClasses);
+router.post('/member/bookClass', isAuthenticated, bookClass);
 
 
 export default router;

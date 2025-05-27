@@ -12,6 +12,16 @@ jest.mock('../db/client', () => ({
   },
 }));
 
+// --- Helpers ------------
+const mockReq = (uid = 1, extras = {}): Request =>
+  ({ user: { userId: uid }, ...extras } as unknown as Request);
+
+const mockRes = (): Response => {
+  const r: any = {};
+  r.status = jest.fn().mockReturnValue(r);
+  r.json   = jest.fn().mockReturnValue(r);
+  return r as Response;
+};
 
 // --- Tests ------------
 describe('getCoachAssignedClasses', () => {

@@ -1,4 +1,4 @@
-// === apps/api/src/index.ts ===
+// === services/api/src/index.ts ===
 import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth';

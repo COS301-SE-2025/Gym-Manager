@@ -1,4 +1,4 @@
-// === apps/api/src/routes/classes.ts ===
+// === services/api/src/routes/classes.ts ===
 import express from 'express';
 import { viewClasses, bookClass } from '../controllers/classController';
 import { requireRole } from '../middleware/roles';

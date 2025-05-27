@@ -1,4 +1,4 @@
-// === apps/api/src/middleware/roles.ts ===
+// === services/api/src/middleware/roles.ts ===
 import { Request, Response, NextFunction } from 'express';
 
 export const requireRole = (role: string) => {

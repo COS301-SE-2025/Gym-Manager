@@ -1,4 +1,4 @@
-// === apps/api/src/routes/schedule.ts ===
+// === services/api/src/routes/schedule.ts ===
 import express from 'express';
 import { createSchedule, assignCoach } from '../controllers/scheduleController';
 import { requireRole } from '../middleware/roles';

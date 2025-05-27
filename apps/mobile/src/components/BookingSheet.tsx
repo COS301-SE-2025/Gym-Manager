@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Dimensions,
   Modal,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -24,16 +25,20 @@ interface ClassItem {
 interface BookingSheetProps {
   visible: boolean;
   classItem: ClassItem | null;
-  onBook: (classId: string) => void;
+  onBook: (classId: string) => Promise<boolean>;
   onClose: () => void;
 }
 
 export default function BookingSheet({ visible, classItem, onBook, onClose }: BookingSheetProps) {
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(height)).current;
+  const [isBooking, setIsBooking] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   useEffect(() => {
     if (visible) {
+      setIsBooking(false);
+      setBookingError(null);
       // Fade in backdrop
       Animated.timing(backdropOpacity, {
         toValue: 1,
@@ -66,9 +71,24 @@ export default function BookingSheet({ visible, classItem, onBook, onClose }: Bo
 
   if (!classItem) return null;
 
-  const handleBook = () => {
-    onBook(classItem.id);
-    onClose();
+  const handleBook = async () => {
+    if (isBooking) return;
+
+    setIsBooking(true);
+    setBookingError(null);
+    try {
+      const success = await onBook(classItem.id);
+      if (success) {
+        onClose();
+      } else {
+        setBookingError('Booking failed. Please try again or check your connection.');
+      }
+    } catch (error) {
+      console.error("Booking sheet caught error:", error);
+      setBookingError('An unexpected error occurred during booking.');
+    } finally {
+      setIsBooking(false);
+    }
   };
 
   return (
@@ -136,15 +156,30 @@ export default function BookingSheet({ visible, classItem, onBook, onClose }: Bo
               </Text>
             </View>
 
+            {/* Display Booking Error */}
+            {bookingError && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{bookingError}</Text>
+              </View>
+            )}
+
             {/* Book Button */}
-            <TouchableOpacity style={styles.bookButtonContainer} onPress={handleBook}>
+            <TouchableOpacity 
+              style={[styles.bookButtonContainer, isBooking && styles.disabledButton]} 
+              onPress={handleBook}
+              disabled={isBooking}
+            >
               <LinearGradient
-                colors={['#D8FF3E', '#B8E02E']}
+                colors={isBooking ? ['#aaa', '#999'] : ['#D8FF3E', '#B8E02E']}
                 style={styles.bookButton}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
               >
-                <Text style={styles.bookButtonText}>Book Class</Text>
+                {isBooking ? (
+                  <ActivityIndicator size="small" color="#1a1a1a" />
+                ) : (
+                  <Text style={styles.bookButtonText}>Book Class</Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -252,6 +287,9 @@ const styles = StyleSheet.create({
   bookButtonContainer: {
     marginTop: 'auto',
   },
+  disabledButton: {
+    opacity: 0.7,
+  },
   bookButton: {
     paddingVertical: 18,
     marginBottom: 15,
@@ -277,5 +315,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  errorContainer: {
+    backgroundColor: '#4B0000',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#FFC0CB',
+    fontSize: 14,
+    textAlign: 'center',
   },
 }); 

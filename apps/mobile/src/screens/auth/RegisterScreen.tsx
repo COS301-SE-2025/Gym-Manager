@@ -11,18 +11,29 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import TrainwiseLogo from '../../components/common/TrainwiseLogo';
+import axios from 'axios';
 
 const { width } = Dimensions.get('window');
 
 export default function RegisterScreen() {
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const navigation = useNavigation();
 
   const handleRegister = () => {
     // Handle registration logic here
-    console.log('Register pressed', { fullName, email, password });
+    console.log('Register pressed', { firstName, lastName, email, password });
+    axios.post('http://localhost:3000/register', { firstName, lastName, email, phone, password })
+        .then(response => {
+        console.log('Register response:', response.data);
+        navigation.navigate('RoleSelection' as never);
+      })
+      .catch(error => {
+        console.error('Register error:', error);
+      });
 
   };
 
@@ -36,21 +47,51 @@ export default function RegisterScreen() {
       
       {/* Logo */}
       <View style={styles.logoContainer}>
-        <TrainwiseLogo width={280} height={64} />
+        <TrainwiseLogo width={270} height={54} />
       </View>
 
       {/* Form Container */}
       <View style={styles.formContainer}>
         {/* Full Name Input */}
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>FULL NAME</Text>
+          <Text style={styles.label}>FIRST NAME</Text>
           <TextInput
             style={styles.input}
-            value={fullName}
-            onChangeText={setFullName}
-            placeholder="John Pork"
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="John"
             placeholderTextColor="#666"
             autoCapitalize="words"
+            autoCorrect={false}
+          />
+        </View>
+
+        {/* Last Name Input */}
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>LAST NAME</Text>
+          <TextInput
+            style={styles.input}
+            value={lastName}
+            onChangeText={setLastName}
+            placeholder="Pork"
+            placeholderTextColor="#666"
+            autoCapitalize="words"
+            autoCorrect={false}
+          />
+        </View>
+
+        {/* Phone Input */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>PHONE</Text>
+          <TextInput
+            style={styles.input}
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="1234567890"
+            placeholderTextColor="#666"
+            keyboardType="phone-pad"
+            autoCapitalize="none"
             autoCorrect={false}
           />
         </View>
@@ -106,8 +147,8 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 60,
-    marginBottom: 60,
+    marginTop: 20,
+    marginBottom: 20,
   },
   formContainer: {
     flex: 1,
@@ -138,7 +179,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 100,
+    marginTop: 50,
     marginBottom: 10,
   },
   registerButtonText: {

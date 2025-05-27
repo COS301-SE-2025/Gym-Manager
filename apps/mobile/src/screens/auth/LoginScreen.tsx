@@ -26,7 +26,23 @@ export default function LoginScreen() {
     axios.post('http://localhost:3000/login', { email, password })
       .then(response => {
         console.log('Login response:', response.data);
-        navigation.navigate('Home' as never);
+        // Add role-based navigation
+        if (response.data && response.data.roles) {
+          const roles = response.data.roles;
+          if (roles.includes('member') && roles.includes('coach')) {
+            navigation.navigate('RoleSelectionScreen' as never);
+          } else if (roles.includes('member')) {
+            navigation.navigate('Home' as never);
+          } else {
+            // Default navigation or error handling if roles are not as expected
+            console.warn('User roles not recognized for navigation:', roles);
+            navigation.navigate('Home' as never); // Or a default screen
+          }
+        } else {
+          console.error('Login response does not contain roles information.');
+          // Fallback navigation if roles are not present
+          navigation.navigate('Home' as never);
+        }
       })
       .catch(error => {
         console.error('Login error:', error);

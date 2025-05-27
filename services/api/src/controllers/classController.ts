@@ -185,5 +185,6 @@ export const bookClass = async (req : AuthenticatedRequest, res : Response) => {
 
   // Book class
   await db.insert(classbookings).values({ classId, memberId });
+  await db.update(classes).set({ capacity: cls.capacity - 1 }).where(eq(classes.classId, classId));
   res.json({ success: true });
 };

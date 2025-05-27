@@ -4,7 +4,7 @@ import { classes, workouts, coaches, members, classbookings, userroles } from '.
 import { eq, and } from 'drizzle-orm';
 import { AuthenticatedRequest } from '../middleware/auth';
 
-export const getCoachAssignedClasses = async (req : Request, res: Response) => {
+export const getCoachAssignedClasses = async (req : AuthenticatedRequest, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -33,7 +33,7 @@ export const getCoachClassesWithWorkouts = async (req : AuthenticatedRequest, re
   res.json(classWithWorkouts);
 };
 
-export const assignWorkoutToClass = async (req : Request, res : Response) => {
+export const assignWorkoutToClass = async (req : AuthenticatedRequest, res : Response) => {
   if (!req.user) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -71,7 +71,7 @@ export const assignWorkoutToClass = async (req : Request, res : Response) => {
 //   res.json(classesList);
 // }
 
-export const getMemberClasses = async (req : Request, res : Response) => {
+export const getMemberClasses = async (req : AuthenticatedRequest, res : Response) => {
   if (!req.user) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -93,7 +93,7 @@ export const getMemberClasses = async (req : Request, res : Response) => {
   res.json(bookedClasses);
 };
 
-export const bookClass = async (req : Request, res : Response) => {
+export const bookClass = async (req : AuthenticatedRequest, res : Response) => {
   if (!req.user) {
     return res.status(401).json({ error: "Unauthorized" });
   }

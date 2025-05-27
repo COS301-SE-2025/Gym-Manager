@@ -6,7 +6,7 @@ import { isAuthenticated } from '../middleware/auth';
 
 const router = express.Router();
 
-router.post('/coach/assignedClasses', isAuthenticated, getCoachAssignedClasses);
+router.get('/coach/assignedClasses', isAuthenticated, getCoachAssignedClasses);
 router.get('/coach/workoutsAssigned', isAuthenticated, getCoachClassesWithWorkouts);
 router.post('/coach/assignWorkout', isAuthenticated, assignWorkoutToClass);
 router.get('/member/getBookedClass',  isAuthenticated, getMemberClasses);

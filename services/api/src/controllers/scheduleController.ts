@@ -3,6 +3,8 @@ import { classes, coaches, workouts } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { Request, Response } from 'express';
 
+import { AuthenticatedRequest } from '../middleware/auth';
+
 export const createSchedule = async (req: Request, res: Response) => {
   // Could represent a schedule entity or just bulk create classes - adjust as needed.
   // Assuming schedule means creating multiple classes at once
@@ -16,7 +18,7 @@ export const createSchedule = async (req: Request, res: Response) => {
   res.json(createdClasses);
 };
 
-export const createClass = async (req : Request, res : Response) => {
+export const createClass = async (req : AuthenticatedRequest, res : Response) => {
   const { capacity, scheduledDate, scheduledTime, durationMinutes, coachId, workoutId, createdBy } = req.body;
   const [created] = await db.insert(classes).values({
     capacity,
@@ -30,7 +32,7 @@ export const createClass = async (req : Request, res : Response) => {
   res.json(created);
 };
 
-export const assignCoach = async (req: Request, res: Response) => {
+export const assignCoach = async (req: AuthenticatedRequest, res: Response) => {
   const { classId, coachId } = req.body;
   if (!classId || !coachId) {
     return res.status(400).json({ error: 'classId and coachId are required' });

@@ -23,3 +23,34 @@ const mockRes = (): Response => {
   res.json   = jest.fn().mockReturnValue(res);
   return res as Response;
 };
+
+// --- tests ------------
+describe('register()', () => {
+  it('creates user & returns token', async () => {
+    (db.select as jest.Mock).mockReturnValue(builder([]));          // no dup
+    (db.insert as jest.Mock).mockReturnValue(builder([{ userId: 1 }]));
+
+    const req = { body: {
+      firstName:'Jane', lastName:'Doe', email:'j@x', phone:'1', password:'pw'
+    }} as Request;
+    const res = mockRes();
+
+    await register(req, res);
+
+    expect(db.insert).toHaveBeenCalled();
+    expect(authUtils.generateJwt).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 1 })
+    );
+    expect(res.json).toHaveBeenCalledWith({ token: 'fake.jwt' });
+  });
+
+  it('rejects duplicate email', async () => {
+    (db.select as jest.Mock).mockReturnValue(builder([{ userId: 9 }]));
+    const req = { body:{ email:'dup', password:'pw' } } as Request;
+    const res = mockRes();
+
+    await register(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+});

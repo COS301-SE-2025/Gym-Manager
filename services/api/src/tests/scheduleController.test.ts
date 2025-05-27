@@ -34,3 +34,37 @@ describe('createClass', () => {
     expect(res.json).toHaveBeenCalledWith({ classId: 123 });
   });
 });
+
+describe('createSchedule', () => {
+  it('creates multiple classes from schedule array', async () => {
+    (db.insert as jest.Mock).mockReturnValue(builder([{ classId: 1 }]));
+    const req = { body: { schedule: [ {}, {} ] } } as Request; // 2 items
+    const res = resMock();
+
+    await ctrl.createSchedule(req, res);
+
+    expect(db.insert).toHaveBeenCalledTimes(2);
+    expect(res.json).toHaveBeenCalledWith([{ classId: 1 }, { classId: 1 }]);
+  });
+});
+
+describe('assignCoach', () => {
+  it('400 if coach missing', async () => {
+    (db.select as jest.Mock).mockReturnValue(builder([]));
+    const req = { body: { classId: 1, coachId: 99 } } as Request;
+    const res = resMock();
+
+    await ctrl.assignCoach(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it('updates when coach exists', async () => {
+    (db.select as jest.Mock).mockReturnValue(builder([{ userId: 7 }]));
+    (db.update as jest.Mock).mockReturnValue(builder());
+    const req = { body: { classId: 1, coachId: 7 } } as Request;
+    const res = resMock();
+
+    await ctrl.assignCoach(req, res);
+    expect(res.json).toHaveBeenCalledWith({ success: true });
+  });
+});

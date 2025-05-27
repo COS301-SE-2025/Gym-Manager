@@ -112,7 +112,7 @@ export const getAllClasses = async (req: AuthenticatedRequest, res: Response) =>
   //     .from(classes)
   //     .where(eq(classes.coachId, userId));
   // } else 
-  if (roles.includes('member') || roles.includes('admin') || roles.includes('manager')) {
+  if (roles.includes('member')) {
     classesList = await db
       .select({
         classId: classes.classId,

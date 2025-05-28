@@ -3,17 +3,35 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import "./login.css"
 import Image from "next/image";
+import axios from 'axios';
 
 export default function Home() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
 
-    //request sent here
-    router.push('/dashboard'); //if successful
+const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const response = await axios.post(
+        `http://localhost:4000/login`,
+        { email, password },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      localStorage.setItem('authToken', response.data.token);
+      
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Login error:', err);
+    }
   };
+
   return (
     <div className="login-container">
     <div className="login-card">

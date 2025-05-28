@@ -64,7 +64,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
       // Step 1: Create a new workout
       const createWorkoutResponse = await axios.post(
-        'http://localhost:3000/coach/createWorkout',
+        'http://localhost:4000/coach/createWorkout',
         {
           workoutName: workoutName.trim(),
           workoutContent: workoutDescription.trim(),
@@ -80,7 +80,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
       // Step 2: Assign the workout to the class
       const assignWorkoutResponse = await axios.post(
-        'http://localhost:3000/coach/assignWorkout',
+        'http://localhost:4000/coach/assignWorkout',
         {
           classId: parseInt(workout.id), // Convert string ID to number
           workoutId: workoutId,

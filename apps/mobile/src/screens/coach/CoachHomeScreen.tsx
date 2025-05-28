@@ -61,7 +61,7 @@ export default function CoachHomeScreen({ navigation }: CoachHomeScreenProps) {
       }
 
       const response = await axios.get<ApiCoachClass[]>(
-        'http://localhost:3000/coach/assignedClasses',
+        'http://localhost:4000/coach/assignedClasses',
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
 

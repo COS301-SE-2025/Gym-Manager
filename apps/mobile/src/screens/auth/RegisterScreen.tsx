@@ -196,7 +196,7 @@ export default function RegisterScreen() {
 
     try {
       console.log('Register pressed', { firstName, lastName, email, password });
-      const response = await axios.post('http://localhost:3000/register', { 
+      const response = await axios.post('http://localhost:4000/register', { 
         firstName: firstName.trim(), 
         lastName: lastName.trim(), 
         email: email.trim().toLowerCase(), 

@@ -67,7 +67,7 @@ export default function HomeScreen() {
     setIsLoadingBooked(true);
     setBookedError(null);
     try {
-      const bookedResponse = await axios.get<ApiBookedClass[]>('http://localhost:3000/member/getBookedClass', {
+      const bookedResponse = await axios.get<ApiBookedClass[]>('http://localhost:4000/member/getBookedClass', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const formattedBookedClasses: ClassItem[] = bookedResponse.data.map(apiClass => ({
@@ -96,7 +96,7 @@ export default function HomeScreen() {
     setIsLoadingUpcoming(true);
     setUpcomingError(null);
     try {
-      const upcomingResponse = await axios.get<ApiUpcomingClass[]>('http://localhost:3000/member/getAllClasses', {
+      const upcomingResponse = await axios.get<ApiUpcomingClass[]>('http://localhost:4000/member/getAllClasses', {
           headers: { 'Authorization': `Bearer ${token}` }
       });
       const formattedUpcomingClasses: ClassItem[] = upcomingResponse.data.map(apiClass => ({
@@ -174,7 +174,7 @@ export default function HomeScreen() {
       // The classId parameter for the API should be the numeric class ID.
       // The `classId` argument to this function is already the correct ID (as a string).
       const response = await axios.post(
-        'http://localhost:3000/member/bookClass',
+        'http://localhost:4000/member/bookClass',
         { classId: classId }, 
         { headers: { 'Authorization': `Bearer ${token}` } }
       );

@@ -2,7 +2,7 @@
 
 > Gym manager is a specialized management software solution purpose-built for HIIT (HighIntensity Interval Training) gyms. Unlike other fitness management platforms, this system is
 designed around the unique workflows, community focus, and performance tracking needs of
-HIIT environments**
+HIIT environments
 
 ---
 

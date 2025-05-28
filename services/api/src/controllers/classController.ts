@@ -167,9 +167,9 @@ export const bookClass = async (req : AuthenticatedRequest, res : Response) => {
     return res.status(400).json({ error: "Invalid class ID format" });
   }
 
-  // Check if member exists and is approved
-  const [member] = await db.select().from(members).where(eq(members.userId, memberId));
-  if (!member || member.status !== 'approved') return res.status(403).json({ error: "Membership not approved" });
+  // // Check if member exists and is approved
+  // const [member] = await db.select().from(members).where(eq(members.userId, memberId));
+  // if (!member || member.status !== 'approved') return res.status(403).json({ error: "Membership not approved" });
 
   // Check if class exists
   const [cls] = await db.select().from(classes).where(eq(classes.classId, classId));

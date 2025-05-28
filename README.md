@@ -1,5 +1,7 @@
 # Rome was built in a day – Gym‑Manager
 
+![Gym-Manager Banner](banner.png)
+
 > Gym manager is a specialized management software solution purpose-built for HIIT (HighIntensity Interval Training) gyms. Unlike other fitness management platforms, this system is
 designed around the unique workflows, community focus, and performance tracking needs of
 HIIT environments
@@ -27,8 +29,8 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 | **Vansh Sood**  | Tech Lead / API Dev | [linkedin.com/in/vansh-sood](https://www.linkedin.com/in/vansh-sood-783519352/)   |
 | **Jason Mayo**  | Tech Lead / API Dev | [linkedin.com/in/jason-mayo](http://linkedin.com/in/jason-mayo-7a8063210)   |
 | **Denis Woolley**  | Tech Lead / API Dev | [linkedin.com/in/denis‑woolley](https://www.linkedin.com/in/denis-woolley-981aa6202/)   |
-| **Amadeus Fidos**  | Tech Lead / API Dev | [linkedin.com/in/damadeus-fidos](https://www.linkedin.com/in/amadeus-fidos-b22512356/)   |
-| **Vansh Sood**  | Tech Lead / API Dev | [linkedin.com/in/vansh-sood](https://linkedin.com/in/denis-woolley)   |
+| **Amadeus Fidos**  | Tech Lead / API Dev | [linkedin.com/in/amadeus-fidos](https://www.linkedin.com/in/amadeus-fidos-b22512356/)   |
+| **Jared Hürlimann**  | Tech Lead / API Dev | [linkedin.com/in/jared-hurlimann]([https://linkedin.com/in/denis-woolley](https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/))   |
 
 
 ---

@@ -10,7 +10,7 @@ HIIT environments
 
 ## 📑 Functional Requirements (SRS)
 
-The full Software Requirements Specification can be found here → **[Gym‑Manager SRS (DOCX)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/FunctionalRequirements.docx)**
+The full Software Requirements Specification can be found here → **[Gym‑Manager SRS (DOCX)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/SRS.pdf)**
 
 ---
 
@@ -30,7 +30,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 | **Jason Mayo**  | Tech Lead / API Dev | [linkedin.com/in/jason-mayo](http://linkedin.com/in/jason-mayo-7a8063210)   |
 | **Denis Woolley**  | Tech Lead / API Dev | [linkedin.com/in/denis‑woolley](https://www.linkedin.com/in/denis-woolley-981aa6202/)   |
 | **Amadeus Fidos**  | Tech Lead / API Dev | [linkedin.com/in/amadeus-fidos](https://www.linkedin.com/in/amadeus-fidos-b22512356/)   |
-| **Jared Hürlimann**  | Tech Lead / API Dev | [linkedin.com/in/jared-hurlimann]([https://linkedin.com/in/denis-woolley](https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/))   |
+| **Jared Hürlimann**  | Tech Lead / API Dev | [linkedin.com/in/jared-hurlimann](https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/)  |
 
 
 ---

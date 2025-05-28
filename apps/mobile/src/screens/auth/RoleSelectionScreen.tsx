@@ -20,12 +20,13 @@ export default function RoleSelectionScreen() {
     // Handle member selection
     console.log('Member selected');
     // Navigate to member-specific flow
+    navigation.navigate('Home' as never);
   };
 
   const handleCoachPress = () => {
     // Handle coach selection
     console.log('Coach selected');
-    // Navigate to coach-specific flow
+    navigation.navigate('Coach' as never);
   };
 
   return (

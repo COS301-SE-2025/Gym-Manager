@@ -9,10 +9,14 @@ import {
   ScrollView,
   TextInput,
   Dimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import IconLogo from '../../components/common/IconLogo';
 import { CoachStackParamList } from '../../navigation/CoachNavigator';
+import axios from 'axios';
+import { getToken } from '../../utils/authStorage';
 
 const { width } = Dimensions.get('window');
 
@@ -33,16 +37,89 @@ type SetWorkoutScreenProps = StackScreenProps<CoachStackParamList, 'SetWorkout'>
 export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreenProps) {
   const { workout } = route.params;
   
-  const [workoutName, setWorkoutName] = useState(workout.name);
+  const [workoutName, setWorkoutName] = useState(workout.name === 'Setup Workout' ? '' : workout.name);
   const [workoutDescription, setWorkoutDescription] = useState(workout.description || '');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSaveWorkout = () => {
-    console.log('Saving workout:', {
-      ...workout,
-      name: workoutName,
-      description: workoutDescription,
-    });
-    navigation.goBack();
+  const handleSaveWorkout = async () => {
+    // Validate input
+    if (!workoutName.trim()) {
+      Alert.alert('Validation Error', 'Please enter a workout name.');
+      return;
+    }
+
+    if (!workoutDescription.trim()) {
+      Alert.alert('Validation Error', 'Please enter a workout description.');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        Alert.alert('Authentication Error', 'No session token found. Please log in again.');
+        return;
+      }
+
+      // Step 1: Create a new workout
+      const createWorkoutResponse = await axios.post(
+        'http://localhost:3000/coach/createWorkout',
+        {
+          workoutName: workoutName.trim(),
+          workoutContent: workoutDescription.trim(),
+        },
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      if (!createWorkoutResponse.data.success) {
+        throw new Error('Failed to create workout');
+      }
+
+      const workoutId = createWorkoutResponse.data.workoutId;
+
+      // Step 2: Assign the workout to the class
+      const assignWorkoutResponse = await axios.post(
+        'http://localhost:3000/coach/assignWorkout',
+        {
+          classId: parseInt(workout.id), // Convert string ID to number
+          workoutId: workoutId,
+        },
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      if (assignWorkoutResponse.data.success) {
+        Alert.alert(
+          'Success!', 
+          'Workout has been created and assigned to the class successfully.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.goBack(),
+            },
+          ]
+        );
+      } else {
+        throw new Error('Failed to assign workout to class');
+      }
+
+    } catch (error: any) {
+      console.error('Failed to save workout:', error);
+      let errorMessage = 'An unexpected error occurred while saving the workout.';
+      
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage = error.response.data.error || `Save failed: ${error.response.statusText}`;
+        if (error.response.status === 401) {
+          errorMessage = 'Session expired. Please log in again.';
+        } else if (error.response.status === 403) {
+          errorMessage = 'You are not authorized to assign workouts to this class.';
+        }
+      }
+      
+      Alert.alert('Save Error', errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -84,8 +161,9 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             style={styles.textInput}
             value={workoutName}
             onChangeText={setWorkoutName}
-            placeholder="Enter workout name"
+            placeholder="Enter workout name (e.g., HIIT Training, Strength Building)"
             placeholderTextColor="#888"
+            editable={!isSaving}
           />
         </View>
 
@@ -101,6 +179,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             multiline
             numberOfLines={6}
             textAlignVertical="top"
+            editable={!isSaving}
           />
         </View>
 
@@ -114,7 +193,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Max Capacity</Text>
-              <Text style={styles.infoValue}>12 members</Text>
+              <Text style={styles.infoValue}>{workout.capacity.split('/')[1] || '12'} members</Text>
             </View>
           </View>
         </View>
@@ -122,11 +201,23 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
       {/* Action Buttons */}
       <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+        <TouchableOpacity 
+          style={[styles.cancelButton, isSaving && styles.disabledButton]} 
+          onPress={handleCancel}
+          disabled={isSaving}
+        >
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSaveWorkout}>
-          <Text style={styles.saveButtonText}>Save Workout</Text>
+        <TouchableOpacity 
+          style={[styles.saveButton, isSaving && styles.disabledButton]} 
+          onPress={handleSaveWorkout}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#1a1a1a" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Workout</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -289,5 +380,8 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     fontSize: 16,
     fontWeight: '700',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 }); 

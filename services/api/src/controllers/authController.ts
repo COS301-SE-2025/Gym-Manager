@@ -1,19 +1,76 @@
-// === services/api/src/controllers/authController.ts ===
+import { db } from '../db/client';  // your Drizzle client
+import { users, userroles, members, coaches, managers, admins } from '../db/schema';
+import { hashPassword, verifyPassword, generateJwt } from '../middleware/auth'; // your auth utils
+import { eq } from 'drizzle-orm';
 import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
 
-export const register = async (req: Request, res: Response) => {
-  const { email, password, role } = req.body;
-  // TODO: hash password and insert into DB
-  const user = { id: 1, email, role };
-  const token = jwt.sign(user, process.env.JWT_SECRET!);
+export const register = async (req : Request, res : Response) => {
+  const { firstName, lastName, email, phone, password, roles = ['member'] } = req.body;
+  // check existing email
+  const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  if (existingUser.length > 0) {
+    return res.status(400).json({ error: 'Email already registered' });
+  }
+  // create user
+  const passwordHash = await hashPassword(password);
+  const [newUser] = await db.insert(users).values({
+    firstName, lastName, email, phone, passwordHash
+  }).returning();
+  
+  // assign roles
+  const roleEntries = roles.map((role: 'member' | 'coach' | 'admin' | 'manager') => ({
+  userId: newUser.userId,
+  userRole: role
+  }));
+
+  await db.insert(userroles).values(roleEntries);
+  if( roles.includes('member')) {
+    await db.insert(members).values({
+      userId: newUser.userId,
+      status: 'pending', // default status
+      creditsBalance: 0 // default balance
+  });
+}
+
+  if(roles.includes('coach')) {
+    await db.insert(coaches).values({
+      userId: newUser.userId,
+      bio: '' // default bio
+    });
+  }
+
+  if(roles.includes('manager')) {
+   await db.insert(managers).values({
+      userId: newUser.userId // default empty permissions
+    });
+  }
+
+  if(roles.includes('admin')) {
+    await db.insert(admins).values({
+      userId: newUser.userId,// default empty permissions
+    });
+  }
+
+  const token = generateJwt({ userId: newUser.userId, roles });
   res.json({ token });
-};
+}
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req : Request, res : Response) => {
   const { email, password } = req.body;
-  // TODO: validate credentials against DB
-  const user = { id: 1, email, role: 'member' };
-  const token = jwt.sign(user, process.env.JWT_SECRET!);
-  res.json({ token });
-};
+  const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+
+  const passwordValid = await verifyPassword(password, user.passwordHash);
+  if (!passwordValid) return res.status(401).json({ error: 'Invalid credentials' });
+
+  // get roles
+  const userRoles = await db.select().from(userroles).where(eq(userroles.userId, user.userId));
+  const roles = userRoles.map(r => r.userRole);
+
+  const token = generateJwt({ userId: user.userId, roles });
+  res.json({ "token":token,
+    "user": {
+      roles: roles
+    }
+   });
+}

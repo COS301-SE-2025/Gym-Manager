@@ -8,7 +8,7 @@
 
 /**
  * @swagger
- * /schedule/createClass:
+ * /schedule/create:
  *   post:
  *     summary: Create a new class
  *     tags: [Schedule]
@@ -40,25 +40,6 @@
  *     responses:
  *       201:
  *         description: Class created
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties: 
- *                 classId:
- *                 type: integer
- *                message:
- *                 type: string
- *                description: Class successfully created
- * *       400:
- *        description: Bad request, invalid input data
- * *       401:
- *        description: Unauthorized, user not authenticated
- * *       500:
- *       description: Internal server error, unexpected issue                       
- * 
- * 
- * 
  */
 
 /**
@@ -83,18 +64,6 @@
  *     responses:
  *       200:
  *         description: Coach assigned
- *        content:
- *          application/json:
- *           schema:
- *            type: object
- * *            properties:
- *             success:
- *            type: boolean
- * *            description: Coach successfully assigned to class
- *      400:
- *       description: Bad request, missing classId or coachId/ Coach not found
- *      401:
- *       description: Unauthorized, user not authenticated
  */
 
 /**
@@ -120,18 +89,6 @@
  *     responses:
  *       200:
  *         description: Role assigned
- * *         content:
- *          application/json:
- *          schema:
- *           type: object
- * *           properties:  
- * *            success:
- *           type: boolean
- * *            description: User successfully assigned to role
- *      400:
- *      description: Bad request, missing userId or userRole/ Invalid role/ Invalid userId
- *      401:
- *      description: Unauthorized, user not authenticated
  */
 
 /**
@@ -145,32 +102,6 @@
  *     responses:
  *       200:
  *         description: List of all members
- * *         content:
- *          application/json:
- *         schema:
- *          type: object
- * *         properties:
- *          members:
- *         type: array
- * *         items:
- *         type: object
- * *         properties:
- *          userId:
- *        type: integer
- * *          firstName:
- *       type: string
- * *          lastName:
- *      type: string
- * *          email:
- *     type: string
- * *          phone:
- *   type: string
- * *          status:
- *   type: string
- * *          credits:
- *  type: integer
- * *       401:
- *        description: Unauthorized, user not authenticated
  */
 
 /**
@@ -191,28 +122,6 @@
  *     responses:
  *       200:
  *         description: List of users by role
- * *         content:
- *         application/json:
- *        schema:
- *         type: object
- * *         properties:
- *         users:
- *        type: array
- * *         items:
- *       type: object
- * *         properties:
- *        userId:
- *       type: integer
- * *         firstName:
- *      type: string
- * *         lastName:
- *    type: string
- *  *         email:
- *    type: string
- *       400:
- *         description: Invalid role specified
- *       401:
- *         description: Unauthorized, user not authenticated
  */
 import express from 'express';
 import { createSchedule, assignCoach, createClass,assignUserToRole, getAllMembers, getUsersByRole } from '../controllers/scheduleController';
@@ -220,7 +129,7 @@ import { isAuthenticated } from '../middleware/auth';
 
 const router = express.Router();
 
-router.post('/schedule/createClass', isAuthenticated, createClass);
+router.post('/schedule/create', isAuthenticated, createClass);
 router.post('/schedule/assign-coach', isAuthenticated, assignCoach);
 router.post('/roles/assign', isAuthenticated, assignUserToRole);
 router.post('/members', isAuthenticated, getAllMembers);

@@ -17,32 +17,6 @@
  *     responses:
  *       200:
  *         description: A list of assigned classes
- *        content:
- *         application/json:
- *        schema:
- *        type: object
- * *         properties:
- *         classes:
- *        type: array
- * *         items:
- *        type: object
- *  *         properties:
- *          classId:
- *        type: integer
- * *         className:
- *       type: string
- * *         classTime:
- *     type: string
- * *         coachId:
- *  type: integer
- * *         coachName:
- *      type: string
- * *         status:
- *  type: string
- * *       401:
- *        description: Unauthorized, user not authenticated
- * *       404:
- *        description: No classes found for the coach
  */
 
 /**
@@ -56,36 +30,6 @@
  *     responses:
  *       200:
  *         description: List of classes with workout information
- * *        content:
- *         application/json:
- *        schema:
- *         type: object
- * *         properties:
- *         classes:
- *        type: array
- * *         items:
- *        type: object
- *  *         properties:
- *          classId:
- *        type: integer
- * *         className:
- *       type: string
- * *         classTime:
- *     type: string
- * *         coachId:
- *  type: integer
- * *         coachName:
- *      type: string
- * *         workoutId:
- *  type: integer
- * *         workoutName:
- *      type: string
- * *         status:
- *  type: string
- * *       401:
- *        description: Unauthorized, user not authenticated
- * *       404: 
- * *        description: No classes with workouts found for the coach
  */
 
 /**
@@ -110,20 +54,6 @@
  *     responses:
  *       200:
  *         description: Workout assigned
- * *        content:
- *        application/json:
- * *        schema:
- *        type: object
- * *         properties:
- *        success:
- *       type: boolean
- * *         description: Workout successfully assigned to class
- *      400:
- *       description: Bad request, missing classId or workoutId/ Class not found
- * *      401:
- *      description: Unauthorized, user not authenticated
- * *      404:
- *      description: Class or workout not found
  */
 
 /**
@@ -148,27 +78,6 @@
  *     responses:
  *       201:
  *         description: Workout created
- * *        content:
- *        application/json:
- * *        schema:
- *       type: object
- * *         properties:
- *       workoutId:
- *      type: integer
- * *         workoutName:
- *     type: string
- * *         workoutContent:
- *     type: string
- * *         createdBy:
- *    type: integer
- * *         description: Workout successfully created
- *     400:
- *      description: Bad request, invalid input data
- * *     401:
- *     description: Unauthorized, user not authenticated
- * *     500:
- *    description: Internal server error, unexpected issue
- * 
  */
 
 /**
@@ -182,33 +91,6 @@
  *     responses:
  *       200:
  *         description: List of booked classes
- * *        content:
- *        application/json:
- * *        schema:
- *       type: object
- * *         properties:
- *       classes:
- *      type: array
- * *         items:
- *      type: object
- * *         properties:
- *      classId:
- *     type: integer
- * *         className:
- *    type: string
- * *         classTime:
- *   type: string
- * *         coachId:
- *   type: integer
- * *         coachName:
- *   type: string
- * *         status:
- *  type: string
- * *       401:
- *       description: Unauthorized, user not authenticated
- * *       404:
- *      description: No booked classes found for the member
- * 
  */
 
 /**
@@ -231,14 +113,6 @@
  *     responses:
  *       200:
  *         description: Class booked
- * *     400:
- *         description: Bad request, missing classId or class not found
- * *     401:
- *         description: Unauthorized, user not authenticated
- * *     404:
- *         description: Class not found
- * *     500:
- *         description: Internal server error, unexpected issue
  */
 
 /**
@@ -252,32 +126,6 @@
  *     responses:
  *       200:
  *         description: List of all classes
- * *        content:
- *        application/json:
- * *        schema:
- *       type: object
- * *         properties:
- *       classes:
- *      type: array     
- * *         items:
- *      type: object
- * *         properties:
- *      classId:
- *     type: integer
- * *         className:
- *    type: string
- * *         classTime:
- *   type: string
- * *         coachId:
- *   type: integer
- * *         coachName:
- *   type: string
- * *         status:
- *  type: string
- * *       401:
- *       description: Unauthorized, user not authenticated
- * *       404:
- *      description: No classes found   
  */
 import express from 'express';
 import { getCoachAssignedClasses, getCoachClassesWithWorkouts, assignWorkoutToClass, createWorkout, getMemberClasses, bookClass, getAllClasses } from '../controllers/classController';

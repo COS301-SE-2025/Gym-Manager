@@ -30,12 +30,7 @@
  *     responses:
  *       201:
  *         description: Successfully registered
- * *     400:
- *         description: Bad request, missing required fields or invalid data
- * *     404:
- *        description: User already exists
- * *     500:
- *        description: Internal server error, unexpected issue
+ */
 
 /**
  * @swagger

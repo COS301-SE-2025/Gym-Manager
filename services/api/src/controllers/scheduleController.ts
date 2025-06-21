@@ -1,5 +1,5 @@
 import { db } from '../db/client';
-import { classes, coaches, workouts, userroles, members, admins, managers } from '../db/schema';
+import { classes, coaches, workouts, userroles, members, admins, managers, users } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { Request, Response } from 'express';
 
@@ -96,5 +96,24 @@ export const assignUserToRole = async (req: Request, res: Response) => {
 
   res.json({ success: true });
 };
+
+// GET /users/members
+export const getAllMembers = async (req: Request, res: Response) => {
+  const result = await db
+    .select({
+      userId: users.userId,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+      phone: users.phone,
+      status: members.status,
+      credits: members.creditsBalance,
+    })
+    .from(users)
+    .innerJoin(members, eq(users.userId, members.userId));
+
+  res.json(result);
+};
+
 
 

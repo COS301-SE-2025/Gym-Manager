@@ -115,5 +115,31 @@ export const getAllMembers = async (req: Request, res: Response) => {
   res.json(result);
 };
 
+// GET /users/by-role/:role
+export const getUsersByRole = async (req: Request, res: Response) => {
+  const role = req.params.role;
+
+  const allowedRoles = ['coach', 'member', 'admin', 'manager'] as const;
+  type RoleType = typeof allowedRoles[number];
+
+  if (!allowedRoles.includes(role as RoleType)) {
+    return res.status(400).json({ error: 'Invalid role' });
+  }
+
+  const result = await db
+    .select({
+      userId: users.userId,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+    })
+    .from(users)
+    .innerJoin(userroles, eq(users.userId, userroles.userId))
+    .where(eq(userroles.userRole, role as RoleType));
+
+  res.json(result);
+};
+
+
 
 

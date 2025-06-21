@@ -140,6 +140,100 @@ export const getUsersByRole = async (req: Request, res: Response) => {
   res.json(result);
 };
 
+// GET /users/allUsers
+export const getAllUsers = async (req: Request, res: Response) => {
+  const result = await db
+    .select({
+      userId: users.userId,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+      phone: users.phone,
+    })
+    .from(users);
+
+  res.json(result);
+}
+;
+
+// POST /users/removeCoachRole
+export const removeCoachRole = async (req: Request, res: Response) => {
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing userId' });
+  }
+
+  await db
+    .delete(coaches)
+    .where(eq(coaches.userId, userId));
+
+  await db
+    .delete(userroles)
+    .where(and(eq(userroles.userId, userId), eq(userroles.userRole, 'coach')));
+
+  res.json({ success: true });
+};
+
+
+// POST /users/removeMemberRole
+export const removeMemberRole = async (req: Request, res: Response) => {
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing userId' });
+  }
+
+  await db
+    .delete(members)
+    .where(eq(members.userId, userId));
+
+  await db
+    .delete(userroles)
+    .where(and(eq(userroles.userId, userId), eq(userroles.userRole, 'member')));
+
+  res.json({ success: true });
+};
+
+// POST /users/removeAdminRole
+export const removeAdminRole = async (req: Request, res: Response) => {
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing userId' });
+  }
+
+  await db
+    .delete(admins)
+    .where(eq(admins.userId, userId));
+
+  await db
+    .delete(userroles)
+    .where(and(eq(userroles.userId, userId), eq(userroles.userRole, 'admin')));
+
+  res.json({ success: true });
+};
+
+
+// POST /users/removeManagerRole
+export const removeManagerRole = async (req: Request, res: Response) => {
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing userId' });
+  }
+
+  await db
+    .delete(managers)
+    .where(eq(managers.userId, userId));
+
+  await db
+    .delete(userroles)
+    .where(and(eq(userroles.userId, userId), eq(userroles.userRole, 'manager')));
+
+  res.json({ success: true });
+};
+
 
 
 

@@ -5,7 +5,7 @@ import cors from 'cors';
 import { setupSwagger } from './swagger';
 import express from 'express';
 import bodyParser from 'body-parser';
-import scheduleRoutes from './routes/schedule';
+import adminRoutes from './routes/admin';
 import classRoutes from './routes/classes';
 import authRoutes from './routes/auth';
 
@@ -19,7 +19,7 @@ app.use(cors({
 }));
 app.use(bodyParser.json());
 app.use(authRoutes);
-app.use(scheduleRoutes);
+app.use(adminRoutes);
 app.use(classRoutes);
 setupSwagger(app);
 

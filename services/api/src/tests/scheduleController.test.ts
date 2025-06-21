@@ -1,4 +1,4 @@
-import * as ctrl from '../controllers/scheduleController';
+import * as ctrl from '../controllers/adminController';
 import { db } from '../db/client';
 import { Request, Response } from 'express';
 import { builder } from './builder';

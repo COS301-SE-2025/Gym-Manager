@@ -2,7 +2,7 @@
 /**
  * @swagger
  * tags:
- *   name: Schedule
+ *   name: Admin
  *   description: Schedule and user-role assignment endpoints
  */
 
@@ -124,7 +124,7 @@
  *         description: List of users by role
  */
 import express from 'express';
-import { createSchedule, assignCoach, createClass,assignUserToRole, getAllMembers, getUsersByRole } from '../controllers/scheduleController';
+import { createSchedule, assignCoach, createClass,assignUserToRole, getAllMembers, getUsersByRole, getAllUsers, removeAdminRole, removeCoachRole, removeManagerRole, removeMemberRole} from '../controllers/adminController';
 import { isAuthenticated } from '../middleware/auth';
 
 const router = express.Router();
@@ -134,6 +134,12 @@ router.post('/schedule/assign-coach', isAuthenticated, assignCoach);
 router.post('/roles/assign', isAuthenticated, assignUserToRole);
 router.post('/members', isAuthenticated, getAllMembers);
 router.get('/roles/getUsersByRole', isAuthenticated, getUsersByRole);
+router.get('/users/allUsers', isAuthenticated, getAllUsers);
+router.post('/roles/removeAdminRole', isAuthenticated, removeAdminRole);
+router.post('/roles/removeCoachRole', isAuthenticated, removeCoachRole);
+router.post('/roles/removeManagerRole', isAuthenticated, removeManagerRole);
+router.post('/roles/removeMemberRole', isAuthenticated, removeMemberRole);
+
 
 
 export default router;

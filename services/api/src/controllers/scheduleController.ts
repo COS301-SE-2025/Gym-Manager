@@ -115,7 +115,7 @@ export const getAllMembers = async (req: Request, res: Response) => {
   res.json(result);
 };
 
-// GET /users/by-role/:role
+// GET /roles/getUsersByRole/
 export const getUsersByRole = async (req: Request, res: Response) => {
   const role = req.params.role;
 

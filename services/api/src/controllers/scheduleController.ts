@@ -1,6 +1,6 @@
 import { db } from '../db/client';
-import { classes, coaches, workouts } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { classes, coaches, workouts, userroles, members, admins, managers } from '../db/schema';
+import { eq, and } from 'drizzle-orm';
 import { Request, Response } from 'express';
 
 import { AuthenticatedRequest } from '../middleware/auth';
@@ -57,4 +57,44 @@ export const assignCoach = async (req: AuthenticatedRequest, res: Response) => {
 
   res.json({ success: true });
 };
+
+//Assign users to roles
+// POST /roles/assign
+export const assignUserToRole = async (req: Request, res: Response) => {
+  const { userId, role } = req.body;
+
+  if (!userId || !role) {
+    return res.status(400).json({ error: 'Missing userId or role' });
+  }
+
+  const roleExists = await db
+    .select()
+    .from(userroles)
+    .where(and(eq(userroles.userId, userId), eq(userroles.userRole, role)));
+
+  if (roleExists.length > 0) {
+    return res.status(409).json({ error: 'User already has this role' });
+  }
+
+  await db.insert(userroles).values({ userId, userRole: role });
+
+  // Optionally insert into specialized table
+  switch (role) {
+    case 'coach':
+      await db.insert(coaches).values({ userId });
+      break;
+    case 'member':
+      await db.insert(members).values({ userId });
+      break;
+    case 'admin':
+      await db.insert(admins).values({ userId });
+      break;
+    case 'manager':
+      await db.insert(managers).values({ userId });
+      break;
+  }
+
+  res.json({ success: true });
+};
+
 

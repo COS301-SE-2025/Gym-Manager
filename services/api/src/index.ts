@@ -2,6 +2,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import cors from 'cors';
+import { setupSwagger } from './swagger';
 import express from 'express';
 import bodyParser from 'body-parser';
 import scheduleRoutes from './routes/schedule';
@@ -20,6 +21,7 @@ app.use(bodyParser.json());
 app.use(authRoutes);
 app.use(scheduleRoutes);
 app.use(classRoutes);
+setupSwagger(app);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

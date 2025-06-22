@@ -7,6 +7,7 @@ import bodyParser from 'body-parser';
 import scheduleRoutes from './routes/schedule';
 import classRoutes from './routes/classes';
 import authRoutes from './routes/auth';
+import ongoingClassRoutes from './routes/ongoingClass';
 
 
 const app = express();
@@ -20,6 +21,7 @@ app.use(bodyParser.json());
 app.use(authRoutes);
 app.use(scheduleRoutes);
 app.use(classRoutes);
+app.use(ongoingClassRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

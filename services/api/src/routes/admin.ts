@@ -129,7 +129,7 @@ import { isAuthenticated } from '../middleware/auth';
 
 const router = express.Router();
 
-router.post('/schedule/create', isAuthenticated, createClass);
+router.post('/schedule/createClass', isAuthenticated, createClass);
 router.post('/schedule/assign-coach', isAuthenticated, assignCoach);
 router.post('/roles/assign', isAuthenticated, assignUserToRole);
 router.post('/members', isAuthenticated, getAllMembers);
@@ -139,8 +139,6 @@ router.post('/roles/removeAdminRole', isAuthenticated, removeAdminRole);
 router.post('/roles/removeCoachRole', isAuthenticated, removeCoachRole);
 router.post('/roles/removeManagerRole', isAuthenticated, removeManagerRole);
 router.post('/roles/removeMemberRole', isAuthenticated, removeMemberRole);
-
-
 
 export default router;
 

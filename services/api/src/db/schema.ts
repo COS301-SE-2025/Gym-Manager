@@ -124,3 +124,17 @@ export const userroles = pgTable("userroles", {
 		}).onDelete("cascade"),
 	primaryKey({ columns: [table.userId, table.userRole], name: "userroles_pkey"}),
 ]);
+
+export const classAttendance = pgTable("classattendance", {
+  classId: integer("class_id").notNull(),
+  memberId: integer("member_id").notNull(),
+  markedAt: timestamp("marked_at", { mode: "string" }).defaultNow(),
+  score: integer("score").default(0),
+}, (table) => [
+  primaryKey({ columns: [table.classId, table.memberId], name: "classattendance_pkey" }),
+  foreignKey({
+    columns: [table.classId, table.memberId],
+    foreignColumns: [classbookings.classId, classbookings.memberId],
+    name: "classattendance_class_member_fkey",
+  }).onDelete("cascade"),
+]);

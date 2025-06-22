@@ -124,11 +124,13 @@
  *         description: List of users by role
  */
 import express from 'express';
-import { createSchedule, assignCoach, createClass,assignUserToRole, getAllMembers, getUsersByRole, getAllUsers, removeAdminRole, removeCoachRole, removeManagerRole, removeMemberRole} from '../controllers/adminController';
+import { createWeeklySchedule, getWeeklySchedule, assignCoach, createClass,assignUserToRole, getAllMembers, getUsersByRole, getAllUsers, removeAdminRole, removeCoachRole, removeManagerRole, removeMemberRole} from '../controllers/adminController';
 import { isAuthenticated } from '../middleware/auth';
 
 const router = express.Router();
 
+router.post('/schedule/createWeeklySchedule', isAuthenticated, createWeeklySchedule);
+router.get('/schedule/getWeeklySchedule', isAuthenticated, getWeeklySchedule);
 router.post('/schedule/createClass', isAuthenticated, createClass);
 router.post('/schedule/assign-coach', isAuthenticated, assignCoach);
 router.post('/roles/assign', isAuthenticated, assignUserToRole);

@@ -18,6 +18,7 @@
   "license": "MIT",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.43.1",
     "express": "^4.21.2",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/date-fns": "^2.6.3",
     "@types/dotenv": "^8.2.3",
     "@types/express": "^4.17.22",
     "@types/jest": "^29.5.14",

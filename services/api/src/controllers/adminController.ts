@@ -1,21 +1,93 @@
 import { db } from '../db/client';
 import { classes, coaches, workouts, userroles, members, admins, managers, users } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, asc, between } from 'drizzle-orm';
 import { Request, Response } from 'express';
-
 import { AuthenticatedRequest } from '../middleware/auth';
+import { format } from 'date-fns';
+import { parseISO as dateFnsParseISO } from 'date-fns';
 
-export const createSchedule = async (req: Request, res: Response) => {
-  // Could represent a schedule entity or just bulk create classes - adjust as needed.
-  // Assuming schedule means creating multiple classes at once
-  const { schedule } = req.body; // [{ capacity, scheduledDate, scheduledTime, durationMinutes, coachId, workoutId, createdBy }, ...]
-  // Validation omitted for brevity
-  const createdClasses = [];
-  for (const c of schedule) {
-    const [created] = await db.insert(classes).values(c).returning();
-    createdClasses.push(created);
+const dayToOffset: Record<string, number> = {
+  Monday: 0,
+  Tuesday: 1,
+  Wednesday: 2,
+  Thursday: 3,
+  Friday: 4,
+  Saturday: 5,
+  Sunday: 6,
+};
+
+export const createWeeklySchedule = async (req: Request, res: Response) => {
+  try {
+    const { startDate, createdBy, weeklySchedule } = req.body;
+    const baseDate = dateFnsParseISO(startDate);
+    const insertedClasses = [];
+
+    for (const dayBlock of weeklySchedule) {
+      const offset = dayToOffset[dayBlock.day];
+      if (offset === undefined) continue;
+
+      const scheduledDate = addDays(baseDate, offset);
+
+      for (const cls of dayBlock.classes) {
+        const newClass = {
+          scheduledDate: format(scheduledDate, 'yyyy-MM-dd'),
+          scheduledTime: cls.time,
+          durationMinutes: cls.durationMinutes,
+          capacity: cls.capacity,
+          coachId: cls.coachId,
+          workoutId: cls.workoutId,
+          createdBy
+        };
+        const [inserted] = await db.insert(classes).values(newClass).returning();
+        insertedClasses.push(inserted);
+      }
+    }
+
+    res.status(201).json({ success: true, insertedClasses });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to create weekly schedule' });
   }
-  res.json(createdClasses);
+};
+
+export const getWeeklySchedule = async (req: Request, res: Response) => {
+  try {
+    const today = new Date();
+
+    // Define Monday–Sunday range
+    const weekStart = format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    const weekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+
+    const results = await db
+      .select({
+        classId: classes.classId,
+        scheduledDate: classes.scheduledDate,
+        scheduledTime: classes.scheduledTime,
+        durationMinutes: classes.durationMinutes,
+        capacity: classes.capacity,
+        workoutName: workouts.workoutName,
+        coachName: users.firstName,
+      })
+      .from(classes)
+      .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
+      .leftJoin(coaches, eq(classes.coachId, coaches.userId))
+      .leftJoin(users, eq(coaches.userId, users.userId))
+      .where(between(classes.scheduledDate, weekStart, weekEnd))
+      .orderBy(asc(classes.scheduledDate), asc(classes.scheduledTime));
+
+    // Group by date
+    const grouped = results.reduce((acc, cls) => {
+      const day = cls.scheduledDate;
+      if (!acc[day]) acc[day] = [];
+      acc[day].push(cls);
+      return acc;
+    }, {} as Record<string, typeof results>);
+
+    res.json(grouped);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch weekly schedule' });
+  }
 };
 
 export const createClass = async (req : AuthenticatedRequest, res : Response) => {
@@ -234,6 +306,24 @@ export const removeManagerRole = async (req: Request, res: Response) => {
   res.json({ success: true });
 };
 
-
-
+function addDays(baseDate: Date, offset: number) {
+  const result = new Date(baseDate);
+  result.setDate(result.getDate() + offset);
+  return result;
+}
+function startOfWeek(date: Date, options: { weekStartsOn: number }): Date {
+  const day = date.getDay();
+  const diff = (day < options.weekStartsOn ? 7 : 0) + day - options.weekStartsOn;
+  const start = new Date(date);
+  start.setDate(date.getDate() - diff);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+function endOfWeek(date: Date, options: { weekStartsOn: number }): Date {
+  const start = startOfWeek(date, options);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return end;
+}
 

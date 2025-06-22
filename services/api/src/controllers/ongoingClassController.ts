@@ -25,19 +25,3 @@ export const getLeaderboard = async (req: Request, res: Response) => {
   res.json(leaderboard);
 };
 
-// PUT /api/leaderboard/visibility
-export const editSettings = async (req: AuthenticatedRequest, res: Response) => {
-  const { classId, visibility } = req.body;
-
-  if (!req.user) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  await db
-    .update(classParticipants)
-    .set({ showOnLeaderboard: visibility })
-    .where(eq(classParticipants.userId, req.user.userId))
-    .where(eq(classParticipants.classId, classId));
-
-  res.json({ success: true });
-};

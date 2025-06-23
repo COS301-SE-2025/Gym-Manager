@@ -1,4 +1,4 @@
-import { pgTable, unique, serial, text, foreignKey, integer, date, time, timestamp, varchar, primaryKey, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, unique, serial, text, foreignKey, integer, date, time, timestamp, boolean, varchar, primaryKey, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const membershipStatus = pgEnum("membership_status", ['pending', 'approved', 'suspended', 'cancelled'])
@@ -16,16 +16,32 @@ export const users = pgTable("users", {
 	unique("users_email_key").on(table.email),
 ]);
 
-export const members = pgTable("members", {
-	userId: integer("user_id").primaryKey().notNull(),
-	status: membershipStatus().default('pending').notNull(),
-	creditsBalance: integer("credits_balance").default(0).notNull(),
+export const classes = pgTable("classes", {
+	classId: serial("class_id").primaryKey().notNull(),
+	capacity: integer().notNull(),
+	scheduledDate: date("scheduled_date").notNull(),
+	scheduledTime: time("scheduled_time").notNull(),
+	durationMinutes: integer("duration_minutes").notNull(),
+	coachId: integer("coach_id"),
+	workoutId: integer("workout_id"),
+	createdBy: integer("created_by"),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 }, (table) => [
 	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [users.userId],
-			name: "members_user_id_fkey"
-		}).onDelete("cascade"),
+			columns: [table.coachId],
+			foreignColumns: [coaches.userId],
+			name: "classes_coach_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.workoutId],
+			foreignColumns: [workouts.workoutId],
+			name: "classes_workout_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.createdBy],
+			foreignColumns: [admins.userId],
+			name: "classes_created_by_fkey"
+		}),
 ]);
 
 export const coaches = pgTable("coaches", {
@@ -60,32 +76,17 @@ export const managers = pgTable("managers", {
 		}).onDelete("cascade"),
 ]);
 
-export const classes = pgTable("classes", {
-	classId: serial("class_id").primaryKey().notNull(),
-	capacity: integer().notNull(),
-	scheduledDate: date("scheduled_date").notNull(),
-	scheduledTime: time("scheduled_time").notNull(),
-	durationMinutes: integer("duration_minutes").notNull(),
-	coachId: integer("coach_id"),
-	workoutId: integer("workout_id"),
-	createdBy: integer("created_by"),
-	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+export const members = pgTable("members", {
+	userId: integer("user_id").primaryKey().notNull(),
+	status: membershipStatus().default('pending').notNull(),
+	creditsBalance: integer("credits_balance").default(0).notNull(),
+	publicVisibility: boolean("public_visibility").default(true).notNull(),
 }, (table) => [
 	foreignKey({
-			columns: [table.coachId],
-			foreignColumns: [coaches.userId],
-			name: "classes_coach_id_fkey"
-		}),
-	foreignKey({
-			columns: [table.workoutId],
-			foreignColumns: [workouts.workoutId],
-			name: "classes_workout_id_fkey"
-		}),
-	foreignKey({
-			columns: [table.createdBy],
-			foreignColumns: [admins.userId],
-			name: "classes_created_by_fkey"
-		}),
+			columns: [table.userId],
+			foreignColumns: [users.userId],
+			name: "members_user_id_fkey"
+		}).onDelete("cascade"),
 ]);
 
 export const workouts = pgTable("workouts", {
@@ -125,16 +126,16 @@ export const userroles = pgTable("userroles", {
 	primaryKey({ columns: [table.userId, table.userRole], name: "userroles_pkey"}),
 ]);
 
-export const classAttendance = pgTable("classattendance", {
-  classId: integer("class_id").notNull(),
-  memberId: integer("member_id").notNull(),
-  markedAt: timestamp("marked_at", { mode: "string" }).defaultNow(),
-  score: integer("score").default(0),
+export const classattendance = pgTable("classattendance", {
+	classId: integer("class_id").notNull(),
+	memberId: integer("member_id").notNull(),
+	markedAt: timestamp("marked_at", { mode: 'string' }).defaultNow(),
+	score: integer().default(0),
 }, (table) => [
-  primaryKey({ columns: [table.classId, table.memberId], name: "classattendance_pkey" }),
-  foreignKey({
-    columns: [table.classId, table.memberId],
-    foreignColumns: [classbookings.classId, classbookings.memberId],
-    name: "classattendance_class_member_fkey",
-  }).onDelete("cascade"),
+	foreignKey({
+			columns: [table.classId, table.memberId],
+			foreignColumns: [classbookings.classId, classbookings.memberId],
+			name: "classattendance_class_id_member_id_fkey"
+		}).onDelete("cascade"),
+	primaryKey({ columns: [table.classId, table.memberId], name: "classattendance_pkey"}),
 ]);

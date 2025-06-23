@@ -1,16 +1,10 @@
-import { Request, Response } from 'express';
-import { db } from '../db/client';
-import { classes, workouts, coaches, members, classbookings, userroles } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
-import { AuthenticatedRequest } from '../middleware/auth';
-
 import { Request, Response } from "express";
 import { db } from "../db/client";
 import { members } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { AuthenticatedRequest } from "../middleware/auth";
 
-// PATCH /user/settings/visibility
+// POST /user/settings/visibility
 export const editSettings = async (req: Request, res: Response) => {
   const { userId, publicVisibility } = req.body;
 
@@ -27,7 +21,7 @@ export const editSettings = async (req: Request, res: Response) => {
   try {
     const [updated] = await db
       .update(members)
-      .set({ [members.publicVisibility]: publicVisibility })
+      .set({ publicVisibility })
       .where(eq(members.userId, userId))
       .returning({ userId: members.userId });
 

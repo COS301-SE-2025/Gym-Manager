@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import TrainwiseLogo from '../../components/common/TrainwiseLogo';
 import axios from 'axios';
 import { storeToken, storeUser } from '../../utils/authStorage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -175,6 +176,25 @@ export default function LoginScreen() {
     navigation.navigate('Register' as never);
   };
 
+  const handleResetOnboarding = async () => {
+    try {
+      await AsyncStorage.removeItem('hasCompletedOnboarding');
+      Alert.alert(
+        'Onboarding Reset',
+        'The onboarding has been reset. You will now be taken to the onboarding screen.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Onboarding' as never),
+          },
+        ]
+      );
+    } catch (e) {
+      console.error('Failed to reset onboarding.', e);
+      Alert.alert('Error', 'Could not reset onboarding.');
+    }
+  };
+
   const isFormValid = !errors.email && !errors.password && email.trim() && password.trim();
 
   return (
@@ -250,15 +270,20 @@ export default function LoginScreen() {
         </TouchableOpacity>
 
         {/* Register Link */}
-        <TouchableOpacity 
-          style={styles.registerLink} 
-          onPress={navigateToRegister}
-          disabled={isLoading}
-        >
-          <Text style={[
-            styles.registerLinkText,
-            isLoading && styles.disabledText
-          ]}>REGISTER</Text>
+        <TouchableOpacity
+          style={styles.registerContainer}
+          onPress={navigateToRegister}>
+          <Text style={styles.registerText}>
+            Don't have an account?{' '}
+            <Text style={styles.registerLink}>Register</Text>
+          </Text>
+        </TouchableOpacity>
+        
+        {/* Reset Onboarding Button */}
+        <TouchableOpacity
+          style={styles.resetButton}
+          onPress={handleResetOnboarding}>
+          <Text style={styles.resetButtonText}>Reset Onboarding</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -327,16 +352,31 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  registerLink: {
+  registerContainer: {
     alignItems: 'center',
   },
-  registerLinkText: {
+  registerText: {
     color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 1,
+  },
+  registerLink: {
+    color: '#9ACD32',
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: 1,
   },
   disabledText: {
     opacity: 0.5,
+  },
+  resetButton: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  resetButtonText: {
+    color: '#aaa',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
 }); 

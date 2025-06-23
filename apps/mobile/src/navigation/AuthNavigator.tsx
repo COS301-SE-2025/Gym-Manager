@@ -7,6 +7,8 @@ import CoachNavigator from './CoachNavigator';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import LiveClassScreen from '../screens/classes/LiveClassScreen';
+import OnboardingScreen from '../screens/auth/OnboardingScreen';
+import ResolveAuthScreen from '../screens/auth/ResolveAuthScreen';
 
 export type AuthStackParamList = {
   Home: undefined;
@@ -16,6 +18,8 @@ export type AuthStackParamList = {
   Coach: undefined;
   Login: undefined;
   Register: undefined;
+  Onboarding: undefined;
+  ResolveAuth: undefined;
 };
 
 const Stack = createStackNavigator<AuthStackParamList>();
@@ -23,11 +27,13 @@ const Stack = createStackNavigator<AuthStackParamList>();
 export default function AuthNavigator() {
   return (
     <Stack.Navigator
-      initialRouteName="Login"
+      initialRouteName="ResolveAuth"
       screenOptions={{
         headerShown: false,
       }}
     >
+      <Stack.Screen name="ResolveAuth" component={ResolveAuthScreen} />
+      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="LiveClass" component={LiveClassScreen} />
       <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />

@@ -9,6 +9,8 @@ import {
   ScrollView,
   Dimensions,
   ActivityIndicator,
+  Alert,
+  RefreshControl,
 } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { useFocusEffect } from '@react-navigation/native';
@@ -16,10 +18,12 @@ import IconLogo from '../../components/common/IconLogo';
 import { CoachStackParamList } from '../../navigation/CoachNavigator';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
+import { StackNavigationProp } from '@react-navigation/stack';
 
 const { width } = Dimensions.get('window');
 
 type CoachHomeScreenProps = StackScreenProps<CoachStackParamList, 'CoachHome'>;
+type CoachHomeScreenNavigationProp = StackNavigationProp<CoachStackParamList, 'CoachHome'>;
 
 interface WorkoutItem {
   id: string;
@@ -40,13 +44,24 @@ interface ApiCoachClass {
   workoutName?: string;
 }
 
-export default function CoachHomeScreen({ navigation }: CoachHomeScreenProps) {
+interface Class {
+  classId: number;
+  workoutId: number | null;
+  scheduledDate: string;
+  scheduledTime: string;
+  workoutName: string | null;
+}
+
+const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
   const [setWorkoutsData, setSetWorkoutsData] = useState<WorkoutItem[]>([]);
   const [yourClassesData, setYourClassesData] = useState<WorkoutItem[]>([]);
   const [isLoadingSetWorkouts, setIsLoadingSetWorkouts] = useState<boolean>(true);
   const [isLoadingYourClasses, setIsLoadingYourClasses] = useState<boolean>(true);
   const [setWorkoutsError, setSetWorkoutsError] = useState<string | null>(null);
   const [yourClassesError, setYourClassesError] = useState<string | null>(null);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchCoachClasses = async () => {
     setIsLoadingSetWorkouts(true);
@@ -65,32 +80,35 @@ export default function CoachHomeScreen({ navigation }: CoachHomeScreenProps) {
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
 
-      // Transform API data to WorkoutItem format
-      const transformedClasses: WorkoutItem[] = response.data.map(apiClass => ({
-        id: apiClass.classId.toString(),
-        name: apiClass.workoutName || 'Setup Workout',
-        time: apiClass.scheduledTime ? 
-          new Date(`1970-01-01T${apiClass.scheduledTime}Z`).toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            hour12: false 
-          }) : 'N/A',
-        date: apiClass.scheduledDate ? 
-          new Date(apiClass.scheduledDate).toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric' 
-          }) : 'N/A',
-        capacity: `0/${apiClass.capacity}`, // Placeholder for current bookings
-        instructor: 'You', // Since these are coach's own classes
-      }));
+      // Sort classes by date and time
+      const sortedClasses = response.data.sort((a, b) => {
+        const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
+        const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
+        return dateTimeA.getTime() - dateTimeB.getTime();
+      });
 
       // Separate classes based on whether they have a workout assigned
-      const classesNeedingWorkout = transformedClasses.filter((_, index) => 
-        response.data[index].workoutId === null
-      );
-      const classesWithWorkout = transformedClasses.filter((_, index) => 
-        response.data[index].workoutId !== null
-      );
+      const classesNeedingWorkout: WorkoutItem[] = sortedClasses
+        .filter(c => c.workoutId === null)
+        .map(c => ({
+          id: c.classId.toString(),
+          name: 'Setup Workout',
+          time: c.scheduledTime.slice(0, 5),
+          date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          capacity: `0/${c.capacity}`,
+          instructor: 'You',
+        }));
+
+      const classesWithWorkout: WorkoutItem[] = sortedClasses
+        .filter(c => c.workoutId !== null)
+        .map(c => ({
+          id: c.classId.toString(),
+          name: c.workoutName || 'Workout Assigned',
+          time: c.scheduledTime.slice(0, 5),
+          date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          capacity: `0/${c.capacity}`,
+          instructor: 'You',
+        }));
 
       setSetWorkoutsData(classesNeedingWorkout);
       setYourClassesData(classesWithWorkout);
@@ -120,31 +138,31 @@ export default function CoachHomeScreen({ navigation }: CoachHomeScreenProps) {
     }, [])
   );
 
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await fetchCoachClasses();
+    setRefreshing(false);
+  }, []);
+
   const handleSetWorkout = (workoutId: string) => {
     const workout = setWorkoutsData.find(w => w.id === workoutId);
     if (workout) {
-      navigation.navigate('SetWorkout', {
-        workout: {
-          ...workout,
-          description: '',
-          duration: '60 minutes',
-        }
-      });
+      navigation.navigate('SetWorkout', { classId: parseInt(workout.id, 10) });
     }
   };
 
-  const handleEditWorkout = (workoutId: string) => {
-    const workout = yourClassesData.find(w => w.id === workoutId);
-    if (workout) {
-      navigation.navigate('EditWorkout', {
-        workout: {
-          ...workout,
-          description: 'High-intensity workout focusing on strength and endurance training.',
-          duration: '60 minutes',
-        }
-      });
-    }
-  };
+  // const handleEditWorkout = (workoutId: string) => {
+  //   const workout = yourClassesData.find(w => w.id === workoutId);
+  //   if (workout) {
+  //     navigation.navigate('EditWorkout', {
+  //       workout: {
+  //         ...workout,
+  //         description: 'High-intensity workout focusing on strength and endurance training.',
+  //         duration: '60 minutes',
+  //       }
+  //     });
+  //   }
+  // };
 
   const renderSetWorkoutCard = (workout: WorkoutItem) => (
     <View key={workout.id} style={styles.setWorkoutCard}>
@@ -196,6 +214,39 @@ export default function CoachHomeScreen({ navigation }: CoachHomeScreenProps) {
     </View>
   );
 
+    const renderClassItem = ({ item }: { item: Class }) => {
+    const canSetWorkout = item.workoutId === null;
+    const canEditWorkout = item.workoutId !== null;
+
+    return (
+      <View style={styles.classItem}>
+        <View style={styles.classInfo}>
+          <Text style={styles.classDate}>{new Date(`${item.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
+          <Text style={styles.classTime}>{item.scheduledTime.slice(0, 5)}</Text>
+          <Text style={styles.className}>{item.workoutName || 'No workout assigned'}</Text>
+        </View>
+        <View style={styles.buttonContainer}>
+          {canSetWorkout && (
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={() => navigation.navigate('SetWorkout', { classId: item.classId })}
+            >
+              <Text style={styles.buttonText}>Set Workout</Text>
+            </TouchableOpacity>
+          )}
+          {canEditWorkout && (
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.editButton]}
+              onPress={() => item.workoutId && navigation.navigate('EditWorkout', { workoutId: item.workoutId })}
+            >
+              <Text style={styles.buttonText}>Edit Workout</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
@@ -216,7 +267,13 @@ export default function CoachHomeScreen({ navigation }: CoachHomeScreenProps) {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D8FF3E" />
+        }
+      >
         {/* Set Workouts Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Set Workouts</Text>
@@ -516,4 +573,86 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 20,
   },
-}); 
+  liveClassBanner: {
+    backgroundColor: '#D8FF3E',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 10,
+  },
+  liveClassLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  liveIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#20C934',
+    marginRight: 12,
+  },
+  liveLabel: {
+    color: '#1a1a1a',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  liveClassName: {
+    color: '#1a1a1a',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  liveClassRight: {
+    alignItems: 'flex-end',
+  },
+  liveInstructor: {
+    color: '#1a1a1a',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  liveCapacity: {
+    color: '#1a1a1a',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  classItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+  },
+  classInfo: {
+    flex: 1,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    backgroundColor: '#D8FF3E',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  buttonText: {
+    color: '#1a1a1a',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  editButton: {
+    backgroundColor: '#D8FF3E',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+});
+
+export default CoachHomeScreen; 

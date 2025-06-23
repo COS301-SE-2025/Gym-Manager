@@ -1,0 +1,225 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  ScrollView,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+
+const LiveClassScreen = () => {
+  const [score, setScore] = useState('000');
+  const navigation = useNavigation();
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="white" />
+        </TouchableOpacity>
+      </View>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.scoreSection}>
+          <Text style={styles.scoreLabel}>Your Score</Text>
+          <TextInput
+            style={styles.scoreInput}
+            value={score}
+            onChangeText={setScore}
+            keyboardType="numeric"
+            maxLength={3}
+            textAlign="center"
+          />
+        </View>
+
+        <View style={styles.liveClassBanner}>
+            <View style={styles.liveClassLeft}>
+              <View style={styles.liveIndicator} />
+              <View>
+                <Text style={styles.liveLabel}>LIVE CLASS</Text>
+                <Text style={styles.liveClassName}>Workout 1</Text>
+              </View>
+            </View>
+            <View style={styles.liveClassRight}>
+              <Text style={styles.liveInstructor}>Vansh Sood</Text>
+              <Text style={styles.liveCapacity}>12/30</Text>
+            </View>
+        </View>
+
+        <View style={styles.detailsContainer}>
+          <Text style={styles.detailsTitle}>Class Details</Text>
+          <View style={styles.detailsContent}>
+            <Text style={styles.detailsText}>
+                This section will contain all the necessary information about the exercises, reps, and sets for the live workout.
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.scoreConfirmationContainer}>
+          <Text style={styles.scoreConfirmationLabel}>Score</Text>
+          <View style={styles.scoreConfirmationValueContainer}>
+            <Text style={styles.scoreConfirmationValue}>{score}</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity style={styles.submitButton}>
+          <Text style={styles.submitButtonText}>Submit Score</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    width: '100%',
+  },
+  backButton: {
+    backgroundColor: '#2a2a2a',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  scrollContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  scoreSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  scoreLabel: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+  },
+  scoreInput: {
+    color: '#a0a0a0',
+    fontSize: 120,
+    fontWeight: 'bold',
+    minWidth: '80%',
+  },
+  liveClassBanner: {
+    backgroundColor: '#D8FF3E',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  liveClassLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  liveIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#20C934',
+    marginRight: 12,
+  },
+  liveLabel: {
+    color: '#1a1a1a',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  liveClassName: {
+    color: '#1a1a1a',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  liveClassRight: {
+    alignItems: 'flex-end',
+  },
+  liveInstructor: {
+    color: '#1a1a1a',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  liveCapacity: {
+    color: '#1a1a1a',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  detailsContainer: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 30,
+    height: 200, 
+  },
+  detailsTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  detailsContent: {
+    flex: 1,
+  },
+  detailsText: {
+    color: '#a0a0a0',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  scoreConfirmationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  scoreConfirmationLabel: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  scoreConfirmationValueContainer: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+  },
+  scoreConfirmationValue: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  submitButton: {
+    backgroundColor: '#D8FF3E',
+    paddingVertical: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    color: '#1a1a1a',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+});
+
+export default LiveClassScreen;

@@ -17,6 +17,8 @@ import BookingSheet from '../components/BookingSheet';
 import CancelSheet from '../components/CancelSheet';
 import axios from 'axios';
 import { getToken, getUser, User } from '../utils/authStorage';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { AuthStackParamList } from '../navigation/AuthNavigator';
 
 const { width } = Dimensions.get('window');
 
@@ -56,6 +58,12 @@ interface ApiLiveClass {
   coachLastName: string | null;
 }
 
+type HomeScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Home'>;
+
+interface HomeScreenProps {
+  navigation: HomeScreenNavigationProp;
+}
+
 // Helper function to get day with suffix (e.g., 1st, 2nd, 3rd, 4th)
 const getDayWithSuffix = (day: number) => {
   if (day > 3 && day < 21) return `${day}th`;
@@ -86,7 +94,7 @@ const formatDateForCard = (dateString: string): string => {
   return classDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
   const [selectedCancelClass, setSelectedCancelClass] = useState<ClassItem | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -290,11 +298,26 @@ export default function HomeScreen() {
 
       if (response.data.success) {
         Alert.alert("Success!", "Class booked successfully.");
-        // Refresh data
-        const currentToken = await getToken(); // Re-fetch token in case it was involved in an expiry
+        
+        // Remove the booked class from the upcoming list
+        const numericClassId = parseInt(classId, 10);
+        setUpcomingClasses(prev => {
+          const newUpcoming = { ...prev };
+          for (const date in newUpcoming) {
+            newUpcoming[date] = newUpcoming[date].filter(
+              c => parseInt(c.id, 10) !== numericClassId
+            );
+            if (newUpcoming[date].length === 0) {
+              delete newUpcoming[date];
+            }
+          }
+          return newUpcoming;
+        });
+
+        // Refresh booked classes to show the new one
+        const currentToken = await getToken();
         if (currentToken) {
             await fetchBookedClasses(currentToken);
-            await fetchUpcomingClasses(currentToken); // To reflect any capacity changes or if it should be removed
         }
         return true;
       } else {
@@ -310,6 +333,8 @@ export default function HomeScreen() {
         if (error.response.status === 401) {
           errorMessage = "Session expired. Please log in again.";
           // Here you might want to navigate to a login screen or trigger a re-login flow
+        } else if (error.response.status === 400 && error.response.data.error === "Already booked") {
+          errorMessage = "You have already booked this class.";
         }
       }
       Alert.alert("Booking Error", errorMessage);
@@ -415,7 +440,10 @@ export default function HomeScreen() {
       >
         {/* Live Class Banner */}
         {!isLoadingLiveClass && !liveClassError && liveClass && (
-          <TouchableOpacity style={styles.liveClassBanner}>
+          <TouchableOpacity
+            style={styles.liveClassBanner}
+            onPress={() => liveClass && navigation.navigate('LiveClass', { classId: liveClass.classId })}
+          >
             <View style={styles.liveClassLeft}>
               <View style={styles.liveIndicator} />
               <View>

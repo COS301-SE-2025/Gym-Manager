@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../db/client';
-import { classes, workouts, coaches, members, classbookings, userroles } from '../db/schema';
+import { classes, workouts, coaches, members, classbookings, userroles, users } from '../db/schema';
 import { eq, and, lte, gte, sql } from 'drizzle-orm';
 import { AuthenticatedRequest } from '../middleware/auth';
 
@@ -27,7 +27,7 @@ import { AuthenticatedRequest } from '../middleware/auth';
 
 
 // GET /getCurrentClass
-export const getCurrentClass = async (req: Request, res: Response) => {
+export const getCurrentClass = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
   const memberId = req.user.userId;
@@ -45,19 +45,25 @@ export const getCurrentClass = async (req: Request, res: Response) => {
       durationMinutes: classes.durationMinutes,
       coachId: classes.coachId,
       workoutId: classes.workoutId,
+      workoutName: workouts.workoutName,
+      coachFirstName: users.firstName,
+      coachLastName: users.lastName,
     })
     .from(classes)
     .innerJoin(
       classbookings,
       eq(classes.classId, classbookings.classId)
     )
+    .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
+    .leftJoin(coaches, eq(classes.coachId, coaches.userId))
+    .leftJoin(users, eq(coaches.userId, users.userId))
     .where(
       and(
         eq(classbookings.memberId, memberId),
         eq(classes.scheduledDate, today),
         lte(classes.scheduledTime, time),
         gte(
-          sql`(classes.scheduled_time + (classes.duration_minutes || ' minutes')::interval)`,
+          sql`(${classes.scheduledTime} + (${classes.durationMinutes} || ' minutes')::interval)`,
           time
         )
       )

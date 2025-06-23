@@ -49,6 +49,13 @@ interface ApiUpcomingClass {
   // Potentially other fields from the 'classes' table
 }
 
+interface ApiLiveClass {
+  classId: number;
+  workoutName: string | null;
+  coachFirstName: string | null;
+  coachLastName: string | null;
+}
+
 export default function HomeScreen() {
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
   const [selectedCancelClass, setSelectedCancelClass] = useState<ClassItem | null>(null);
@@ -62,6 +69,10 @@ export default function HomeScreen() {
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState<boolean>(true);
   const [upcomingError, setUpcomingError] = useState<string | null>(null);
 
+  const [liveClass, setLiveClass] = useState<ApiLiveClass | null>(null);
+  const [isLoadingLiveClass, setIsLoadingLiveClass] = useState<boolean>(true);
+  const [liveClassError, setLiveClassError] = useState<string | null>(null);
+
   // Extracted fetch logic to be reusable
   const fetchBookedClasses = async (token: string) => {
     setIsLoadingBooked(true);
@@ -73,7 +84,7 @@ export default function HomeScreen() {
       const formattedBookedClasses: ClassItem[] = bookedResponse.data.map(apiClass => ({
         id: apiClass.bookingId, // This is bookingId, for cancellation
         name: apiClass.workoutName || ' ',
-        time: apiClass.scheduledTime ? new Date(`1970-01-01T${apiClass.scheduledTime}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A',
+        time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
         date: apiClass.scheduledDate ? new Date(apiClass.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
         capacity: ' ', 
         instructor: ' ', 
@@ -102,7 +113,7 @@ export default function HomeScreen() {
       const formattedUpcomingClasses: ClassItem[] = upcomingResponse.data.map(apiClass => ({
           id: apiClass.classId.toString(), // This is classId, for booking
           name: apiClass.workoutName || 'Fitness Class', 
-          time: apiClass.scheduledTime ? new Date(`1970-01-01T${apiClass.scheduledTime}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A',
+          time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
           date: apiClass.scheduledDate ? new Date(apiClass.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
           capacity: `0/${apiClass.capacity}`, 
           instructor: ' ', 
@@ -121,6 +132,26 @@ export default function HomeScreen() {
     }
   };
 
+  const fetchLiveClass = async (token:string) => {
+    setIsLoadingLiveClass(true);
+    setLiveClassError(null);
+    try {
+      const response = await axios.get<{ ongoing: boolean, class?: ApiLiveClass }>('http://localhost:4000/getCurrentClass', {
+          headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.data.ongoing && response.data.class) {
+          setLiveClass(response.data.class);
+      } else {
+          setLiveClass(null);
+      }
+    } catch (error) {
+      console.error('Failed to fetch live class:', error);
+      setLiveClassError('Failed to load live class information.');
+    } finally {
+      setIsLoadingLiveClass(false);
+    }
+  };
+
   useEffect(() => {
     const fetchInitialData = async () => {
       const user = await getUser();
@@ -134,6 +165,7 @@ export default function HomeScreen() {
         setIsLoadingUpcoming(false);
         return;
       }
+      await fetchLiveClass(token);
       await fetchBookedClasses(token);
       await fetchUpcomingClasses(token);
     };
@@ -301,19 +333,23 @@ export default function HomeScreen() {
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Live Class Banner */}
-        <TouchableOpacity style={styles.liveClassBanner}>
-          <View style={styles.liveClassLeft}>
-            <View style={styles.liveIndicator} />
-            <View>
-              <Text style={styles.liveLabel}>LIVE CLASS</Text>
-              <Text style={styles.liveClassName}>Workout 1</Text>
+        {!isLoadingLiveClass && !liveClassError && liveClass && (
+          <TouchableOpacity style={styles.liveClassBanner}>
+            <View style={styles.liveClassLeft}>
+              <View style={styles.liveIndicator} />
+              <View>
+                <Text style={styles.liveLabel}>LIVE CLASS</Text>
+                <Text style={styles.liveClassName}>{liveClass.workoutName || 'Workout'}</Text>
+              </View>
             </View>
-          </View>
-          <View style={styles.liveClassRight}>
-            <Text style={styles.liveInstructor}>Vansh Sood</Text>
-            <Text style={styles.liveJoinText}>TAP TO JOIN</Text>
-          </View>
-        </TouchableOpacity>
+            <View style={styles.liveClassRight}>
+              <Text style={styles.liveInstructor}>
+                {liveClass.coachFirstName && liveClass.coachLastName ? `${liveClass.coachFirstName} ${liveClass.coachLastName}` : 'Coach'}
+              </Text>
+              <Text style={styles.liveJoinText}>TAP TO JOIN</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* Booked Classes Section */}
         <View style={styles.section}>

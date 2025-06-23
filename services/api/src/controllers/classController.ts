@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../db/client';
-import { classes, workouts, coaches, members, classbookings, userroles } from '../db/schema';
+import { classes, workouts, coaches, members, classbookings, userroles, classAttendance } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { AuthenticatedRequest } from '../middleware/auth';
 
@@ -187,4 +187,32 @@ export const bookClass = async (req : AuthenticatedRequest, res : Response) => {
   await db.insert(classbookings).values({ classId, memberId });
   await db.update(classes).set({ capacity: cls.capacity - 1 }).where(eq(classes.classId, classId));
   res.json({ success: true });
+};
+
+export const checkInToClass = async (req: Request, res: Response) => {
+  const { classId, memberId } = req.body;
+
+  if (!classId || !memberId) {
+    return res.status(400).json({ error: 'classId and memberId are required' });
+  }
+
+  try {
+    // Insert attendance
+    const [attendance] = await db
+      .insert(classAttendance)
+      .values({
+        classId,
+        memberId,
+        markedAt: new Date().toISOString(), // Optional; defaults automatically
+      })
+      .returning();
+
+    return res.status(201).json({ success: true, attendance });
+  } catch (err: any) {
+    if (err.code === '23505') { // Unique violation
+      return res.status(409).json({ error: 'Already checked in' });
+    }
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to check in' });
+  }
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Dimensions,
   ActivityIndicator,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import IconLogo from '../components/common/IconLogo';
 import BookingSheet from '../components/BookingSheet';
@@ -37,7 +38,6 @@ interface ApiBookedClass {
   workoutName: string;
 }
 
-// Define a type for the API response item for All Classes
 interface ApiUpcomingClass {
   classId: number; // Assuming classId is number from schema
   capacity: number; // Total capacity
@@ -56,6 +56,36 @@ interface ApiLiveClass {
   coachLastName: string | null;
 }
 
+// Helper function to get day with suffix (e.g., 1st, 2nd, 3rd, 4th)
+const getDayWithSuffix = (day: number) => {
+  if (day > 3 && day < 21) return `${day}th`;
+  switch (day % 10) {
+    case 1: return `${day}st`;
+    case 2: return `${day}nd`;
+    case 3: return `${day}rd`;
+    default: return `${day}th`;
+  }
+};
+
+// Helper function to format date for the card (Today, Tomorrow, or Month Day)
+const formatDateForCard = (dateString: string): string => {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const classDate = new Date(`${dateString}T00:00:00`);
+
+  today.setHours(0, 0, 0, 0);
+  tomorrow.setHours(0, 0, 0, 0);
+
+  if (classDate.getTime() === today.getTime()) {
+      return 'Today';
+  }
+  if (classDate.getTime() === tomorrow.getTime()) {
+      return 'Tomorrow';
+  }
+  return classDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
 export default function HomeScreen() {
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
   const [selectedCancelClass, setSelectedCancelClass] = useState<ClassItem | null>(null);
@@ -65,13 +95,14 @@ export default function HomeScreen() {
   const [isLoadingBooked, setIsLoadingBooked] = useState<boolean>(true);
   const [bookedError, setBookedError] = useState<string | null>(null);
 
-  const [upcomingClasses, setUpcomingClasses] = useState<ClassItem[]>([]);
+  const [upcomingClasses, setUpcomingClasses] = useState<{ [key: string]: ClassItem[] }>({});
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState<boolean>(true);
   const [upcomingError, setUpcomingError] = useState<string | null>(null);
 
   const [liveClass, setLiveClass] = useState<ApiLiveClass | null>(null);
   const [isLoadingLiveClass, setIsLoadingLiveClass] = useState<boolean>(true);
   const [liveClassError, setLiveClassError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Extracted fetch logic to be reusable
   const fetchBookedClasses = async (token: string) => {
@@ -81,11 +112,24 @@ export default function HomeScreen() {
       const bookedResponse = await axios.get<ApiBookedClass[]>('http://localhost:4000/member/getBookedClass', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const formattedBookedClasses: ClassItem[] = bookedResponse.data.map(apiClass => ({
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const formattedBookedClasses: ClassItem[] = bookedResponse.data
+        .filter(apiClass => {
+          const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
+          return classDate >= today;
+        })
+        .sort((a, b) => {
+            const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
+            const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
+            return dateTimeA.getTime() - dateTimeB.getTime();
+        })
+        .map(apiClass => ({
         id: apiClass.bookingId, // This is bookingId, for cancellation
         name: apiClass.workoutName || ' ',
         time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
-        date: apiClass.scheduledDate ? new Date(apiClass.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
+        date: apiClass.scheduledDate ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
         capacity: ' ', 
         instructor: ' ', 
         isBooked: true,
@@ -110,16 +154,37 @@ export default function HomeScreen() {
       const upcomingResponse = await axios.get<ApiUpcomingClass[]>('http://localhost:4000/member/getAllClasses', {
           headers: { 'Authorization': `Bearer ${token}` }
       });
-      const formattedUpcomingClasses: ClassItem[] = upcomingResponse.data.map(apiClass => ({
-          id: apiClass.classId.toString(), // This is classId, for booking
-          name: apiClass.workoutName || 'Fitness Class', 
-          time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
-          date: apiClass.scheduledDate ? new Date(apiClass.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
-          capacity: `0/${apiClass.capacity}`, 
-          instructor: ' ', 
-          isBooked: false, 
-      }));
-      setUpcomingClasses(formattedUpcomingClasses);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const groupedClasses = upcomingResponse.data
+        .filter(apiClass => {
+            const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
+            return classDate >= today;
+        })
+        .sort((a, b) => {
+            const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
+            const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
+            return dateTimeA.getTime() - dateTimeB.getTime();
+        })
+        .reduce((acc: { [key: string]: ClassItem[] }, apiClass) => {
+          const dateKey = apiClass.scheduledDate;
+          if (!acc[dateKey]) {
+            acc[dateKey] = [];
+          }
+          acc[dateKey].push({
+            id: apiClass.classId.toString(),
+            name: apiClass.workoutName || 'Fitness Class',
+            time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
+            date: formatDateForCard(apiClass.scheduledDate),
+            capacity: `0/${apiClass.capacity}`,
+            instructor: ' ',
+            isBooked: false,
+          });
+          return acc;
+        }, {});
+
+      setUpcomingClasses(groupedClasses);
     } catch (error: any) {
       console.error('Failed to fetch upcoming classes:', error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
@@ -152,6 +217,18 @@ export default function HomeScreen() {
     }
   };
 
+      // ... after fetchLiveClass function
+      const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        const token = await getToken();
+        if (token) {
+          await fetchLiveClass(token);
+          await fetchBookedClasses(token);
+          await fetchUpcomingClasses(token);
+        }
+        setRefreshing(false);
+      }, []);
+
   useEffect(() => {
     const fetchInitialData = async () => {
       const user = await getUser();
@@ -181,7 +258,7 @@ export default function HomeScreen() {
   };
 
   const handleBookClass = (classId: string) => {
-    const classToBook = upcomingClasses.find(c => c.id === classId);
+    const classToBook = Object.values(upcomingClasses).flat().find(c => c.id === classId);
     if (classToBook) {
       setSelectedClass(classToBook);
     }
@@ -317,7 +394,7 @@ export default function HomeScreen() {
             Welcome
             {/*, {currentUser?.firstName || 'User'} */} 👋
           </Text>
-          {/*}
+          
           <View style={styles.passContainer}>
             <Text style={styles.passText}>Your Pass</Text>
             <View style={styles.progressContainer}>
@@ -327,11 +404,15 @@ export default function HomeScreen() {
               <Text style={styles.progressText}>2/3</Text>
             </View>
           </View>
-          */}
+        
         </View>
       </View>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D8FF3E" />
+      }
+      >
         {/* Live Class Banner */}
         {!isLoadingLiveClass && !liveClassError && liveClass && (
           <TouchableOpacity style={styles.liveClassBanner}>
@@ -391,12 +472,38 @@ export default function HomeScreen() {
           {isLoadingUpcoming ? (
             <ActivityIndicator size="large" color="#D8FF3E" style={{ marginTop: 20 }} />
           ) : upcomingError ? (
-            <View style={styles.emptyStateContainer}> 
-                <Text style={styles.errorText}>{upcomingError}</Text>
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.errorText}>{upcomingError}</Text>
             </View>
-          ) : upcomingClasses.length > 0 ? (
+          ) : Object.keys(upcomingClasses).length > 0 ? (
             <View style={styles.upcomingClassesContainer}>
-                {upcomingClasses.map(renderUpcomingClass)}
+              {Object.keys(upcomingClasses).map(date => {
+                const classDate = new Date(`${date}T00:00:00`);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isToday = classDate.getTime() === today.getTime();
+
+                return (
+                  <View key={date} style={styles.dayGroupContainer}>
+                    <View style={styles.dateTimeline}>
+                      <View style={styles.dateContainer}>
+                        {isToday ? (
+                          <Text style={styles.dayText}>Today</Text>
+                        ) : (
+                          <>
+                            <Text style={styles.dayText}>{getDayWithSuffix(classDate.getDate())}</Text>
+                            <Text style={styles.monthText}>{classDate.toLocaleDateString('en-US', { month: 'short' })}</Text>
+                          </>
+                        )}
+                      </View>
+                      <View style={styles.timelineBar} />
+                    </View>
+                    <View style={styles.classesForDay}>
+                      {upcomingClasses[date].map(renderUpcomingClass)}
+                    </View>
+                  </View>
+                );
+              })}
             </View>
           ) : (
             <View style={styles.emptyStateContainer}>
@@ -526,7 +633,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   upcomingClassesContainer: {
-    gap: 12,
+    gap: 20,
   },
   upcomingClassCard: {
     backgroundColor: '#2a2a2a',
@@ -706,5 +813,37 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     marginTop: 2,
+  },
+  dayGroupContainer: {
+    flexDirection: 'row',
+    gap: 15,
+  },
+  dateTimeline: {
+    alignItems: 'center',
+  },
+  dateContainer: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  dayText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  monthText: {
+    color: '#888',
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  timelineBar: {
+    flex: 1,
+    width: 2,
+    backgroundColor: '#3a3a3a',
+  },
+  classesForDay: {
+    flex: 1,
+    gap: 12,
   },
 }); 

@@ -300,6 +300,21 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {/* Live Class Banner */}
+        <TouchableOpacity style={styles.liveClassBanner}>
+          <View style={styles.liveClassLeft}>
+            <View style={styles.liveIndicator} />
+            <View>
+              <Text style={styles.liveLabel}>LIVE CLASS</Text>
+              <Text style={styles.liveClassName}>Workout 1</Text>
+            </View>
+          </View>
+          <View style={styles.liveClassRight}>
+            <Text style={styles.liveInstructor}>Vansh Sood</Text>
+            <Text style={styles.liveJoinText}>TAP TO JOIN</Text>
+          </View>
+        </TouchableOpacity>
+
         {/* Booked Classes Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Booked Classes</Text>
@@ -608,5 +623,52 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
     paddingVertical: 10,
+  },
+  liveClassBanner: {
+    backgroundColor: '#D8FF3E',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  liveClassLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  liveIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#20C934',
+    marginRight: 12,
+  },
+  liveLabel: {
+    color: '#1a1a1a',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  liveClassName: {
+    color: '#1a1a1a',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  liveClassRight: {
+    alignItems: 'flex-end',
+  },
+  liveInstructor: {
+    color: '#1a1a1a',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  liveJoinText: {
+    color: '#1a1a1a',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
   },
 }); 

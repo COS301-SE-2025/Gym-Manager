@@ -203,7 +203,6 @@ export const checkInToClass = async (req: Request, res: Response) => {
       .values({
         classId,
         memberId,
-        markedAt: new Date().toISOString(), // Optional; defaults automatically
       })
       .returning();
 

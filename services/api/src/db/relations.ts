@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { users, members, coaches, admins, managers, classes, workouts, classbookings, userroles } from "./schema";
+import { users, members, coaches, classes, workouts, admins, managers, classbookings, userroles, classattendance } from "./schema";
 
 export const membersRelations = relations(members, ({one, many}) => ({
 	user: one(users, {
@@ -15,29 +15,6 @@ export const usersRelations = relations(users, ({many}) => ({
 	admins: many(admins),
 	managers: many(managers),
 	userroles: many(userroles),
-}));
-
-export const coachesRelations = relations(coaches, ({one, many}) => ({
-	user: one(users, {
-		fields: [coaches.userId],
-		references: [users.userId]
-	}),
-	classes: many(classes),
-}));
-
-export const adminsRelations = relations(admins, ({one, many}) => ({
-	user: one(users, {
-		fields: [admins.userId],
-		references: [users.userId]
-	}),
-	classes: many(classes),
-}));
-
-export const managersRelations = relations(managers, ({one}) => ({
-	user: one(users, {
-		fields: [managers.userId],
-		references: [users.userId]
-	}),
 }));
 
 export const classesRelations = relations(classes, ({one, many}) => ({
@@ -56,11 +33,34 @@ export const classesRelations = relations(classes, ({one, many}) => ({
 	classbookings: many(classbookings),
 }));
 
+export const coachesRelations = relations(coaches, ({one, many}) => ({
+	classes: many(classes),
+	user: one(users, {
+		fields: [coaches.userId],
+		references: [users.userId]
+	}),
+}));
+
 export const workoutsRelations = relations(workouts, ({many}) => ({
 	classes: many(classes),
 }));
 
-export const classbookingsRelations = relations(classbookings, ({one}) => ({
+export const adminsRelations = relations(admins, ({one, many}) => ({
+	classes: many(classes),
+	user: one(users, {
+		fields: [admins.userId],
+		references: [users.userId]
+	}),
+}));
+
+export const managersRelations = relations(managers, ({one}) => ({
+	user: one(users, {
+		fields: [managers.userId],
+		references: [users.userId]
+	}),
+}));
+
+export const classbookingsRelations = relations(classbookings, ({one, many}) => ({
 	class: one(classes, {
 		fields: [classbookings.classId],
 		references: [classes.classId]
@@ -69,11 +69,19 @@ export const classbookingsRelations = relations(classbookings, ({one}) => ({
 		fields: [classbookings.memberId],
 		references: [members.userId]
 	}),
+	classattendances: many(classattendance),
 }));
 
 export const userrolesRelations = relations(userroles, ({one}) => ({
 	user: one(users, {
 		fields: [userroles.userId],
 		references: [users.userId]
+	}),
+}));
+
+export const classattendanceRelations = relations(classattendance, ({one}) => ({
+	classbooking: one(classbookings, {
+		fields: [classattendance.classId],
+		references: [classbookings.classId]
 	}),
 }));

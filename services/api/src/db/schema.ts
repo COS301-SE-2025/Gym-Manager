@@ -28,6 +28,34 @@ export const members = pgTable("members", {
 		}).onDelete("cascade"),
 ]);
 
+export const classes = pgTable("classes", {
+	classId: serial("class_id").primaryKey().notNull(),
+	capacity: integer().notNull(),
+	scheduledDate: date("scheduled_date").notNull(),
+	scheduledTime: time("scheduled_time").notNull(),
+	durationMinutes: integer("duration_minutes").notNull(),
+	coachId: integer("coach_id"),
+	workoutId: integer("workout_id"),
+	createdBy: integer("created_by"),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	foreignKey({
+			columns: [table.coachId],
+			foreignColumns: [coaches.userId],
+			name: "classes_coach_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.workoutId],
+			foreignColumns: [workouts.workoutId],
+			name: "classes_workout_id_fkey"
+		}),
+	foreignKey({
+			columns: [table.createdBy],
+			foreignColumns: [admins.userId],
+			name: "classes_created_by_fkey"
+		}),
+]);
+
 export const coaches = pgTable("coaches", {
 	userId: integer("user_id").primaryKey().notNull(),
 	bio: text(),
@@ -58,34 +86,6 @@ export const managers = pgTable("managers", {
 			foreignColumns: [users.userId],
 			name: "managers_user_id_fkey"
 		}).onDelete("cascade"),
-]);
-
-export const classes = pgTable("classes", {
-	classId: serial("class_id").primaryKey().notNull(),
-	capacity: integer().notNull(),
-	scheduledDate: date("scheduled_date").notNull(),
-	scheduledTime: time("scheduled_time").notNull(),
-	durationMinutes: integer("duration_minutes").notNull(),
-	coachId: integer("coach_id"),
-	workoutId: integer("workout_id"),
-	createdBy: integer("created_by"),
-	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
-}, (table) => [
-	foreignKey({
-			columns: [table.coachId],
-			foreignColumns: [coaches.userId],
-			name: "classes_coach_id_fkey"
-		}),
-	foreignKey({
-			columns: [table.workoutId],
-			foreignColumns: [workouts.workoutId],
-			name: "classes_workout_id_fkey"
-		}),
-	foreignKey({
-			columns: [table.createdBy],
-			foreignColumns: [admins.userId],
-			name: "classes_created_by_fkey"
-		}),
 ]);
 
 export const workouts = pgTable("workouts", {
@@ -125,16 +125,16 @@ export const userroles = pgTable("userroles", {
 	primaryKey({ columns: [table.userId, table.userRole], name: "userroles_pkey"}),
 ]);
 
-export const classAttendance = pgTable("classattendance", {
-  classId: integer("class_id").notNull(),
-  memberId: integer("member_id").notNull(),
-  markedAt: timestamp("marked_at", { mode: "string" }).defaultNow(),
-  score: integer("score").default(0),
+export const classattendance = pgTable("classattendance", {
+	classId: integer("class_id").notNull(),
+	memberId: integer("member_id").notNull(),
+	markedAt: timestamp("marked_at", { mode: 'string' }).defaultNow(),
+	score: integer().default(0),
 }, (table) => [
-  primaryKey({ columns: [table.classId, table.memberId], name: "classattendance_pkey" }),
-  foreignKey({
-    columns: [table.classId, table.memberId],
-    foreignColumns: [classbookings.classId, classbookings.memberId],
-    name: "classattendance_class_member_fkey",
-  }).onDelete("cascade"),
+	foreignKey({
+			columns: [table.classId, table.memberId],
+			foreignColumns: [classbookings.classId, classbookings.memberId],
+			name: "classattendance_class_id_member_id_fkey"
+		}).onDelete("cascade"),
+	primaryKey({ columns: [table.classId, table.memberId], name: "classattendance_pkey"}),
 ]);

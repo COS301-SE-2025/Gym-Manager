@@ -3,28 +3,40 @@ import { db } from '../db/client';
 import { classes, workouts, coaches, members, classbookings, userroles } from '../db/schema';
 import { eq, and, lte, gte, sql } from 'drizzle-orm';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { users, classAttendance } from '../db/schema';
+import { desc } from 'drizzle-orm';
 
 
-// GET /api/leaderboard/:classId
+
+// GET /leaderboard/:classId
 export const getLeaderboard = async (req: Request, res: Response) => {
   const { classId } = req.params;
 
-  const leaderboard = await db
-    .select({
-      userId: users.userId,
-      name: users.name,
-      score: scores.score,
-    })
-    .from(scores)
-    .innerJoin(users, eq(scores.userId, users.userId))
-    .innerJoin(classParticipants, eq(scores.classId, classParticipants.classId))
-    .where(eq(scores.classId, classId))
-    .where(eq(classParticipants.showOnLeaderboard, true))
-    .orderBy(scores.score, "desc");
+  if (!classId) {
+    return res.status(400).json({ error: "classId is required" });
+  }
 
-  res.json(leaderboard);
+  try {
+    const leaderboard = await db
+      .select({
+        classId: classAttendance.classId,
+        memberId: classAttendance.memberId,
+        score: classAttendance.score,
+        markedAt: classAttendance.markedAt,
+        firstName: users.firstName,
+        lastName: users.lastName,
+      })
+      .from(classAttendance)
+      .innerJoin(users, eq(classAttendance.memberId, users.userId))
+      .where(eq(classAttendance.classId, parseInt(classId)))
+      .orderBy(desc(classAttendance.score));
+
+    res.json(leaderboard);
+  } catch (err) {
+    console.error("Leaderboard fetch error:", err);
+    res.status(500).json({ error: "Failed to get leaderboard" });
+  }
 };
-
 
 // GET /live/class
 export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => {

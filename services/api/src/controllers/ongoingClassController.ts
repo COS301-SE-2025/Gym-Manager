@@ -38,48 +38,110 @@ export const getLeaderboard = async (req: Request, res: Response) => {
   }
 };
 
-// GET /getCurrentClass
-export const getCurrentClass = async (req: Request, res: Response) => {
-  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+// GET /live/class
+export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ success: false, error: 'UNAUTHORIZED' });
 
-  const memberId = req.user.userId;
+  const userId = req.user.userId;
+  let roles = req.user.roles as string[] | undefined;
 
-  // current date & time
+  if (!roles) {
+    const rows = await db
+      .select({ role: userroles.userRole })
+      .from(userroles)
+      .where(eq(userroles.userId, userId));
+    roles = rows.map(r => r.role as string);
+  }
+
   const now   = new Date();
-  const today = now.toISOString().slice(0, 10); // YYYY-MM-DD
-  const time  = now.toTimeString().slice(0, 8); // HH:MM:SS
+  const today = now.toISOString().slice(0, 10);
+  const time  = now.toTimeString().slice(0, 8);
 
-  const current = await db
-    .select({
-      classId: classes.classId,
-      scheduledDate: classes.scheduledDate,
-      scheduledTime: classes.scheduledTime,
-      durationMinutes: classes.durationMinutes,
-      coachId: classes.coachId,
-      workoutId: classes.workoutId,
-    })
-    .from(classes)
-    .innerJoin(
-      classbookings,
-      eq(classes.classId, classbookings.classId)
-    )
-    .where(
-      and(
-        eq(classbookings.memberId, memberId),
-        eq(classes.scheduledDate, today),
-        lte(classes.scheduledTime, time),
-        gte(
-          sql`(classes.scheduled_time + (classes.duration_minutes || ' minutes')::interval)`,
-          time
+  let current: any[] = [];
+
+  // ── coach branch ───────────────────────────────────────────────
+  if (roles.includes('coach')) {
+    current = await db
+      .select({
+        classId:         classes.classId,
+        scheduledDate:   classes.scheduledDate,
+        scheduledTime:   classes.scheduledTime,
+        durationMinutes: classes.durationMinutes,
+        coachId:         classes.coachId,
+        workoutId:       classes.workoutId,
+        workoutName:     workouts.workoutName,
+        workoutContent:  workouts.workoutContent
+      })
+      .from(classes)
+      .innerJoin(workouts, eq(classes.workoutId, workouts.workoutId))
+      .where(
+        and(
+          eq(classes.coachId, userId),
+          eq(classes.scheduledDate, today),
+          lte(classes.scheduledTime, time),
+          gte(
+            sql`(classes.scheduled_time + (classes.duration_minutes || ' minutes')::interval)`,
+            time
+          )
         )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  if (current.length === 0) return res.json({ ongoing: false });
+    if (current.length) {
+      const participants = await db
+        .select({
+          userId: classbookings.memberId
+        })
+        .from(classbookings)
+        .where(eq(classbookings.classId, current[0].classId));
 
-  res.json({ ongoing: true, class: current[0] });
+      return res.json({
+        ongoing: true,
+        roles,
+        class: current[0],
+        participants
+      });
+    }
+  }
+
+  // ── member branch ──────────────────────────────────────────────
+  if (roles.includes('member')) {
+    current = await db
+      .select({
+        classId:         classes.classId,
+        scheduledDate:   classes.scheduledDate,
+        scheduledTime:   classes.scheduledTime,
+        durationMinutes: classes.durationMinutes,
+        coachId:         classes.coachId,
+        workoutId:       classes.workoutId,
+        workoutName:     workouts.workoutName,
+        workoutContent:  workouts.workoutContent
+      })
+      .from(classes)
+      .innerJoin(classbookings, eq(classes.classId, classbookings.classId))
+      .innerJoin(workouts, eq(classes.workoutId, workouts.workoutId))
+      .where(
+        and(
+          eq(classbookings.memberId, userId),
+          eq(classes.scheduledDate, today),
+          lte(classes.scheduledTime, time),
+          gte(
+            sql`(classes.scheduled_time + (classes.duration_minutes || ' minutes')::interval)`,
+            time
+          )
+        )
+      )
+      .limit(1);
+
+    if (current.length) {
+      return res.json({
+        ongoing: true,
+        roles,
+        class: current[0]
+      });
+    }
+  }
+
+  // ── nothing live ───────────────────────────────────────────────
+  res.json({ ongoing: false });
 };
-
-
-

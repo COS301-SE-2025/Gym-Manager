@@ -6,8 +6,7 @@ import { isAuthenticated } from '../middleware/auth';
 
 const router = express.Router();
 
+router.get('/live/class', isAuthenticated, getLiveClass);
 router.get('/leaderboard/:classId', isAuthenticated, getLeaderboard);
-router.get('/getCurrentClass', isAuthenticated, getCurrentClass);
-
 
 export default router;

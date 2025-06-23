@@ -19,7 +19,7 @@ const pool = new Pool({
 });
 
 pool.on('connect', () => {
-  console.log('Drizzle client pool successfully connected to PostgreSQL!');
+  //console.log('Drizzle client pool successfully connected to PostgreSQL!');
 });
 
 pool.on('error', (err) => {

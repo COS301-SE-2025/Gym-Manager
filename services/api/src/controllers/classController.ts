@@ -212,7 +212,7 @@ export const checkInToClass = async (req: Request, res: Response) => {
       return res.status(409).json({ error: 'Already checked in' });
     }
     console.error(err);
-    return res.status(500).json({ error: 'Failed to check in' });
+    return res.status(500).json({ error: 'Failed to check in, class not booked' });
   }
 };
 

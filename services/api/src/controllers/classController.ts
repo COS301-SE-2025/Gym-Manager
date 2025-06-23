@@ -216,3 +216,32 @@ export const checkInToClass = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Failed to check in' });
   }
 };
+
+
+export const cancelBooking = async (req: Request, res: Response) => {
+  const { classId, memberId } = req.body;
+
+  if (!classId || !memberId) {
+    return res.status(400).json({ error: 'classId and memberId are required' });
+  }
+
+  try {
+    const result = await db
+      .delete(classbookings)
+      .where(
+        and(
+          eq(classbookings.classId, classId),
+          eq(classbookings.memberId, memberId)
+        )
+      );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to cancel booking' });
+  }
+};

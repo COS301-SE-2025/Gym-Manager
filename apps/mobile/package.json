@@ -8,10 +8,11 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "eslint . --ext .ts,.tsx --quiet",
-  "lint:fix": "eslint . --ext .ts,.tsx --quiet --fix",
-  "format": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json,css,md}'",
-  "format:fix": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,md}'"
+    "lint": "eslint 'src/**/*.{ts,tsx}'",
+    "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
+    "format": "prettier --check 'src/**/*.{ts,tsx,json,css,md}'",
+    "format:fix": "prettier --write 'src/**/*.{ts,tsx,json,css,md}'",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.1.5",
@@ -51,7 +52,14 @@
     "eslint-plugin-prettier": "^5.4.0",
     "prettier": "^3.5.3",
     "typescript": "~5.8.3",
-    "typescript-eslint": "^8.33.0"
+    "typescript-eslint": "^8.33.0",
+    "undefined": "^0.1.0"
+  },
+  "lint-staged": {
+    "*.{ts,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   },
   "private": true
 }

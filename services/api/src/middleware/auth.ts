@@ -5,7 +5,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 const SALT_ROUNDS = 10;
-const JWT_SECRET = process.env.JWT_SECRET 
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = '10h';
 
 // Hash a plain password
@@ -26,25 +26,26 @@ export interface AuthenticatedRequest extends Request {
   user?: any; // Or your custom user type
 }
 
-export const isAuthenticated = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+export const isAuthenticated = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): void => {
   const authHeader = req.headers.authorization;
-  
-  if(authHeader){
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET as string);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    console.error('JWT verification failed:', err);
-    res.status(403).json({ error: 'Invalid token' });
-  }
+
+  if (authHeader) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET as string);
+      req.user = decoded;
+      next();
+    } catch (err) {
+      console.error('JWT verification failed:', err);
+      res.status(403).json({ error: 'Invalid token' });
+    }
   }
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(401).json({ error: 'Missing or malformed token' });
+    res.status(401).json({ error: 'Missing or malformed token' });
   }
-
 };
-
-

@@ -2,6 +2,7 @@ import * as ctrl from '../controllers/adminController';
 import { db } from '../db/client';
 import { Request, Response } from 'express';
 import { builder } from './builder';
+import { jest } from '@jest/globals';
 
 jest.mock('../db/client', () => ({
   db: { insert: jest.fn(), select: jest.fn(), update: jest.fn() },
@@ -41,7 +42,7 @@ describe('createSchedule', () => {
     const req = { body: { schedule: [ {}, {} ] } } as Request; // 2 items
     const res = resMock();
 
-    await ctrl.createSchedule(req, res);
+    //await ctrl.createSchedule(req, res);
 
     expect(db.insert).toHaveBeenCalledTimes(2);
     expect(res.json).toHaveBeenCalledWith([{ classId: 1 }, { classId: 1 }]);

@@ -9,14 +9,15 @@ import adminRoutes from './routes/admin';
 import classRoutes from './routes/classes';
 import authRoutes from './routes/auth';
 
-
 const app = express();
 const port = process.env.PORT || 4000;
 
-app.use(cors({
-  origin: 'http://localhost:3000', 
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+  }),
+);
 app.use(bodyParser.json());
 app.use(authRoutes);
 app.use(adminRoutes);
@@ -26,4 +27,3 @@ setupSwagger(app);
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
-

@@ -9,7 +9,6 @@ dotenv.config();
 
 console.log('--- DRIZZLE CLIENT DB CONNECTION ATTEMPT ---');
 
-
 const pool = new Pool({
   user: process.env.PG_USER!,
   host: process.env.PG_HOST!,
@@ -23,7 +22,7 @@ pool.on('connect', () => {
 });
 
 pool.on('error', (err) => {
-    console.error('Drizzle client pool error:', err);
+  console.error('Drizzle client pool error:', err);
 });
 
 export const db = drizzle(pool, { schema });

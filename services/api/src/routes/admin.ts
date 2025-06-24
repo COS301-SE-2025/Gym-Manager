@@ -124,7 +124,20 @@
  *         description: List of users by role
  */
 import express from 'express';
-import { createWeeklySchedule, getWeeklySchedule, assignCoach, createClass,assignUserToRole, getAllMembers, getUsersByRole, getAllUsers, removeAdminRole, removeCoachRole, removeManagerRole, removeMemberRole} from '../controllers/adminController';
+import {
+  createWeeklySchedule,
+  getWeeklySchedule,
+  assignCoach,
+  createClass,
+  assignUserToRole,
+  getAllMembers,
+  getUsersByRole,
+  getAllUsers,
+  removeAdminRole,
+  removeCoachRole,
+  removeManagerRole,
+  removeMemberRole,
+} from '../controllers/adminController';
 import { isAuthenticated } from '../middleware/auth';
 
 const router = express.Router();
@@ -143,4 +156,3 @@ router.post('/roles/removeManagerRole', isAuthenticated, removeManagerRole);
 router.post('/roles/removeMemberRole', isAuthenticated, removeMemberRole);
 
 export default router;
-

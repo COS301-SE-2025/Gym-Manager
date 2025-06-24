@@ -62,4 +62,4 @@ export const removeUser = async (): Promise<void> => {
   } catch (e) {
     console.error('Failed to remove user', e);
   }
-}; 
+};

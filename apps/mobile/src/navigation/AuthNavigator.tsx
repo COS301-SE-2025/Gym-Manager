@@ -9,10 +9,11 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import LiveClassScreen from '../screens/classes/LiveClassScreen';
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import ResolveAuthScreen from '../screens/auth/ResolveAuthScreen';
+import type { ApiLiveClassResponse } from '../screens/HomeScreen';
 
 export type AuthStackParamList = {
   Home: undefined;
-  LiveClass: { classId: number };
+  LiveClass: { classId: number; liveClassData: ApiLiveClassResponse };
   RoleSelection: undefined;
   Pending: undefined;
   Coach: undefined;

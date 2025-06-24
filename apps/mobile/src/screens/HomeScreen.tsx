@@ -51,11 +51,23 @@ interface ApiUpcomingClass {
   // Potentially other fields from the 'classes' table
 }
 
-interface ApiLiveClass {
-  classId: number;
-  workoutName: string | null;
-  coachFirstName: string | null;
-  coachLastName: string | null;
+export interface ApiLiveClassResponse {
+  ongoing: boolean;
+  roles: string[];
+  class: {
+    classId: number;
+    scheduledDate: string;
+    scheduledTime: string;
+    durationMinutes: number;
+    coachId: number;
+    workoutId: number;
+    workoutName: string;
+    workoutContent: string;
+  };
+  participants: {
+    userId: number;
+    score: number | null;
+  }[];
 }
 
 type HomeScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Home'>;
@@ -107,7 +119,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState<boolean>(true);
   const [upcomingError, setUpcomingError] = useState<string | null>(null);
 
-  const [liveClass, setLiveClass] = useState<ApiLiveClass | null>(null);
+  const [liveClass, setLiveClass] = useState<ApiLiveClassResponse | null>(null);
   const [isLoadingLiveClass, setIsLoadingLiveClass] = useState<boolean>(true);
   const [liveClassError, setLiveClassError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -205,17 +217,17 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     }
   };
 
-  const fetchLiveClass = async (token:string) => {
+  const fetchLiveClass = async (token: string) => {
     setIsLoadingLiveClass(true);
     setLiveClassError(null);
     try {
-      const response = await axios.get<{ ongoing: boolean, class?: ApiLiveClass }>('http://localhost:4000/getCurrentClass', {
-          headers: { 'Authorization': `Bearer ${token}` }
+      const response = await axios.get<ApiLiveClassResponse>('http://localhost:4000/live/class', {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.data.ongoing && response.data.class) {
-          setLiveClass(response.data.class);
+        setLiveClass(response.data);
       } else {
-          setLiveClass(null);
+        setLiveClass(null);
       }
     } catch (error) {
       console.error('Failed to fetch live class:', error);
@@ -225,17 +237,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     }
   };
 
-      // ... after fetchLiveClass function
-      const onRefresh = useCallback(async () => {
-        setRefreshing(true);
-        const token = await getToken();
-        if (token) {
-          await fetchLiveClass(token);
-          await fetchBookedClasses(token);
-          await fetchUpcomingClasses(token);
-        }
-        setRefreshing(false);
-      }, []);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    const token = await getToken();
+    if (token) {
+      await fetchLiveClass(token);
+      await fetchBookedClasses(token);
+      await fetchUpcomingClasses(token);
+    }
+    setRefreshing(false);
+  }, []);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -442,18 +453,19 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         {!isLoadingLiveClass && !liveClassError && liveClass && (
           <TouchableOpacity
             style={styles.liveClassBanner}
-            onPress={() => liveClass && navigation.navigate('LiveClass', { classId: liveClass.classId })}
+            onPress={() => liveClass && navigation.navigate('LiveClass', { classId: liveClass.class.classId, liveClassData: liveClass })}
           >
             <View style={styles.liveClassLeft}>
               <View style={styles.liveIndicator} />
               <View>
                 <Text style={styles.liveLabel}>LIVE CLASS</Text>
-                <Text style={styles.liveClassName}>{liveClass.workoutName || 'Workout'}</Text>
+                <Text style={styles.liveClassName}>{liveClass.class.workoutName || 'Workout'}</Text>
               </View>
             </View>
             <View style={styles.liveClassRight}>
               <Text style={styles.liveInstructor}>
-                {liveClass.coachFirstName && liveClass.coachLastName ? `${liveClass.coachFirstName} ${liveClass.coachLastName}` : 'Coach'}
+                {/* You may want to fetch coach name elsewhere if needed */}
+                Coach
               </Text>
               <Text style={styles.liveJoinText}>TAP TO JOIN</Text>
             </View>

@@ -9,12 +9,16 @@ import {
   StatusBar,
   ScrollView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import type { AuthStackParamList } from '../../navigation/AuthNavigator';
+import type { ApiLiveClassResponse } from '../HomeScreen';
 
 const LiveClassScreen = () => {
   const [score, setScore] = useState('000');
   const navigation = useNavigation();
+  const route = useRoute<RouteProp<AuthStackParamList, 'LiveClass'>>();
+  const { liveClassData } = route.params;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -42,12 +46,14 @@ const LiveClassScreen = () => {
               <View style={styles.liveIndicator} />
               <View>
                 <Text style={styles.liveLabel}>LIVE CLASS</Text>
-                <Text style={styles.liveClassName}>Workout 1</Text>
+                <Text style={styles.liveClassName}>{liveClassData.class.workoutName}</Text>
               </View>
             </View>
             <View style={styles.liveClassRight}>
-              <Text style={styles.liveInstructor}>Vansh Sood</Text>
-              <Text style={styles.liveCapacity}>12/30</Text>
+              <Text style={styles.liveInstructor}>Coach ID: {liveClassData.class.coachId}</Text>
+              <Text style={styles.liveCapacity}>
+  Participants: {Array.isArray(liveClassData.participants) ? liveClassData.participants.length : 0}
+</Text>
             </View>
         </View>
 
@@ -55,7 +61,7 @@ const LiveClassScreen = () => {
           <Text style={styles.detailsTitle}>Class Details</Text>
           <View style={styles.detailsContent}>
             <Text style={styles.detailsText}>
-                This section will contain all the necessary information about the exercises, reps, and sets for the live workout.
+                {liveClassData.class.workoutContent}
             </Text>
           </View>
         </View>

@@ -335,9 +335,3 @@ function endOfWeek(date: Date, options: { weekStartsOn: number }): Date {
   end.setHours(23, 59, 59, 999);
   return end;
 }
-
- var dan_the_man = {
-  addDays,
-  startOfWeek,
-  endOfWeek,
-};

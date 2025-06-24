@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../db/client';
-import { classes, workouts, coaches, members, classbookings, userroles } from '../db/schema';
+import { classes, workouts, coaches, members, classbookings, userroles, classattendance } from '../db/schema';
 import { eq, and, lte, gte, sql } from 'drizzle-orm';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { users, classAttendance } from '../db/schema';
@@ -149,7 +149,110 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
 
 // POST /submitScore
 export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
-  if (!req.user) return res.status(401).json({ success: false, error: 'UNAUTHORIZED' });
+  if (!req.user)
+    return res.status(401).json({ success: false, error: "UNAUTHORIZED" });
 
-  // TO BE IMPLEMENTED
+  const userId = req.user.userId;
+  let roles = req.user.roles as string[] | undefined;
+
+  // Fetch roles if they weren’t in the JWT
+  if (!roles) {
+    const rows = await db
+      .select({ role: userroles.userRole })
+      .from(userroles)
+      .where(eq(userroles.userId, userId));
+    roles = rows.map((r) => r.role as string);
+  }
+
+  // 1. CHECK PAYLOAD
+  const { classId } = req.body;
+  if (!classId || typeof classId !== "number")
+    return res
+      .status(400)
+      .json({ success: false, error: "CLASS_ID_REQUIRED" });
+
+  // 2. COACH FLOW
+  if (roles.includes("coach") && Array.isArray(req.body.scores)) {
+    // Make sure this coach is assigned to that class
+    const [cls] = await db
+      .select({ coachId: classes.coachId })
+      .from(classes)
+      .where(eq(classes.classId, classId))
+      .limit(1);
+
+    if (!cls || cls.coachId !== userId)
+      return res
+        .status(403)
+        .json({ success: false, error: "NOT_CLASS_COACH" });
+
+    const rows = req.body.scores as { userId: number; score: number }[];
+
+    // Upsert every (classId, memberId) with its score
+    for (const row of rows) {
+      if (
+        typeof row.userId !== "number" ||
+        typeof row.score !== "number" ||
+        row.score < 0
+      )
+        continue;
+
+      await db
+        .insert(classattendance)
+        .values({
+          classId,
+          memberId: row.userId,
+          score: row.score,
+        })
+        .onConflictDoUpdate({
+          target: [classattendance.classId, classattendance.memberId],
+          set: { score: row.score },
+        });
+    }
+
+    return res.json({ success: true, updated: rows.length });
+  }
+
+  // 3. MEMBER FLOW
+  if (!roles.includes("member"))
+    return res
+      .status(403)
+      .json({ success: false, error: "ROLE_NOT_ALLOWED" });
+
+  const { score } = req.body;
+  if (typeof score !== "number" || score < 0)
+    return res
+      .status(400)
+      .json({ success: false, error: "SCORE_REQUIRED" });
+
+  // Check the member is actually booked
+  const bookingExists = await db
+    .select()
+    .from(classbookings)
+    .where(
+      and(
+        eq(classbookings.classId, classId),
+        eq(classbookings.memberId, userId)
+      )
+    )
+    .limit(1);
+
+  if (bookingExists.length === 0)
+    return res
+      .status(403)
+      .json({ success: false, error: "NOT_BOOKED" });
+
+  // Upsert member’s own score
+  await db
+    .insert(classattendance)
+    .values({
+      classId,
+      memberId: userId,
+      score,
+    })
+    .onConflictDoUpdate({
+      target: [classattendance.classId, classattendance.memberId],
+      set: { score },
+    });
+
+  return res.json({ success: true });
 };

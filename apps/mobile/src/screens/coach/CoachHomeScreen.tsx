@@ -19,6 +19,7 @@ import { CoachStackParamList } from '../../navigation/CoachNavigator';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import { StackNavigationProp } from '@react-navigation/stack';
+import type { ApiLiveClassResponse } from '../HomeScreen';
 
 const { width } = Dimensions.get('window');
 
@@ -62,6 +63,9 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [liveClass, setLiveClass] = useState<ApiLiveClassResponse | null>(null);
+  const [isLoadingLiveClass, setIsLoadingLiveClass] = useState(true);
+  const [liveClassError, setLiveClassError] = useState<string | null>(null);
 
   const fetchCoachClasses = async () => {
     setIsLoadingSetWorkouts(true);
@@ -127,8 +131,34 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
     }
   };
 
+  const fetchLiveClass = async (token: string) => {
+    setIsLoadingLiveClass(true);
+    setLiveClassError(null);
+    try {
+      const response = await axios.get<ApiLiveClassResponse>('http://localhost:4000/live/class', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.data.ongoing && response.data.class) {
+        setLiveClass(response.data);
+      } else {
+        setLiveClass(null);
+      }
+    } catch (error) {
+      setLiveClassError('Failed to load live class information.');
+    } finally {
+      setIsLoadingLiveClass(false);
+    }
+  };
+
   useEffect(() => {
-    fetchCoachClasses();
+    const fetchData = async () => {
+      const token = await getToken();
+      if (token) {
+        await fetchLiveClass(token);
+      }
+      await fetchCoachClasses();
+    };
+    fetchData();
   }, []);
 
   // Refresh data when screen comes into focus (e.g., returning from SetWorkoutScreen)
@@ -266,6 +296,26 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Live Class Banner */}
+      {!isLoadingLiveClass && !liveClassError && liveClass && (
+        <TouchableOpacity
+          style={styles.liveClassBanner}
+          onPress={() => navigation.navigate('CoachLiveClass', { classId: liveClass.class.classId, liveClassData: liveClass })}
+        >
+          <View style={styles.liveClassLeft}>
+            <View style={styles.liveIndicator} />
+            <View>
+              <Text style={styles.liveLabel}>LIVE CLASS</Text>
+              <Text style={styles.liveClassName}>{liveClass.class.workoutName || 'Workout'}</Text>
+            </View>
+          </View>
+          <View style={styles.liveClassRight}>
+            <Text style={styles.liveInstructor}>Coach</Text>
+            <Text style={styles.liveCapacity}>{liveClass.participants?.length ?? 0}/30</Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
       <ScrollView
         style={styles.scrollContainer}

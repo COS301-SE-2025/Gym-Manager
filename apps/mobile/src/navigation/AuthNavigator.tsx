@@ -9,11 +9,13 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import LiveClassScreen from '../screens/classes/LiveClassScreen';
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import ResolveAuthScreen from '../screens/auth/ResolveAuthScreen';
+import CoachLiveClassScreen from '../screens/coach/CoachLiveClassScreen';
 import type { ApiLiveClassResponse } from '../screens/HomeScreen';
 
 export type AuthStackParamList = {
   Home: undefined;
   LiveClass: { classId: number; liveClassData: ApiLiveClassResponse };
+  CoachLiveClass: { classId: number; liveClassData: ApiLiveClassResponse };
   RoleSelection: undefined;
   Pending: undefined;
   Coach: undefined;
@@ -37,6 +39,7 @@ export default function AuthNavigator() {
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="LiveClass" component={LiveClassScreen} />
+      <Stack.Screen name="CoachLiveClass" component={CoachLiveClassScreen} />
       <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
       <Stack.Screen name="Pending" component={PendingScreen} />
       <Stack.Screen name="Coach" component={CoachNavigator} />

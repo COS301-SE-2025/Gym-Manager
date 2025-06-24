@@ -453,7 +453,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         {!isLoadingLiveClass && !liveClassError && liveClass && (
           <TouchableOpacity
             style={styles.liveClassBanner}
-            onPress={() => liveClass && navigation.navigate('LiveClass', { classId: liveClass.class.classId, liveClassData: liveClass })}
+            onPress={() => {
+              if (currentUser?.role === 'coach') {
+                navigation.navigate('CoachLiveClass', { classId: liveClass.class.classId, liveClassData: liveClass });
+              } else {
+                navigation.navigate('LiveClass', { classId: liveClass.class.classId, liveClassData: liveClass });
+              }
+            }}
           >
             <View style={styles.liveClassLeft}>
               <View style={styles.liveIndicator} />

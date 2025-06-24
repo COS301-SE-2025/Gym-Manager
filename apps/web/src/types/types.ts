@@ -1,5 +1,5 @@
 export interface BaseUser {
-  id: string;
+  user_id: string;
   name: string;
   email: string;
   phone: string;
@@ -12,12 +12,10 @@ export interface Member extends BaseUser {
 
 export interface Admin extends BaseUser {
   authorisation: string;
-  last_login: string;
 }
 
 export interface Coach extends BaseUser {
   bio: string;
-  specialization: string;
 }
 
 export type User = Member | Admin | Coach;

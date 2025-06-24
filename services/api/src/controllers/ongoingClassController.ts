@@ -145,3 +145,11 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
   // ── nothing live ───────────────────────────────────────────────
   res.json({ ongoing: false });
 };
+
+
+// POST /submitScore
+export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ success: false, error: 'UNAUTHORIZED' });
+
+  // TO BE IMPLEMENTED
+};

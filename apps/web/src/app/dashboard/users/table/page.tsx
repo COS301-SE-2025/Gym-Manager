@@ -5,6 +5,7 @@ import './styles.css';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { User, UserRole, Admin, Member, Coach } from '@/types/types';
+import { UserRoleService } from '@/app/services/roles';
 
 interface UserTableProps {
   role: UserRole;
@@ -15,12 +16,12 @@ const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await axios.get<User[]>(`roles/getUsersByRole?role=${role}`);
-        setUsers(response.data);
+        const data = await UserRoleService.getUsersByRole(role);
+        setUsers(data);
       } catch (err) {
         setError(axios.isAxiosError(err) 
           ? err.message 

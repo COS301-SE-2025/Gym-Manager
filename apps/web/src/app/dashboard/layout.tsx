@@ -21,7 +21,7 @@ export default function DashboardLayout({
                 <ul className="sidebar-nav">
                     <li><Link href="/dashboard">Home</Link></li>
                     <li><Link href="/dashboard/classes">Classes</Link></li>
-                    <li><Link href="/dashboard/members">Members</Link></li>
+                    <li><Link href="/dashboard/users">User management</Link></li>
                     <li><Link href="/dashboard/reports">Packages</Link></li>
                     <li><Link href="/dashboard/reports">Reports</Link></li>
                 </ul>

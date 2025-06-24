@@ -19,7 +19,7 @@ const [users, setUsers] = useState<User[]>([]);
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const response = await axios.get<User[]>(`api/roles/getUsersByRole?role=${role}`);
+        const response = await axios.get<User[]>(`roles/getUsersByRole?role=${role}`);
         setUsers(response.data);
       } catch (err) {
         setError(axios.isAxiosError(err) 

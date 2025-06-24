@@ -1,4 +1,4 @@
-'use server'
+'use client'
 import { UserTable } from './table/page';
 export default function MembersList() {
     return(

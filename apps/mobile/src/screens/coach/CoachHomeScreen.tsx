@@ -297,7 +297,15 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
         </View>
       </View>
 
-      {/* Live Class Banner */}
+      
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D8FF3E" />
+        }
+      >
+        {/* Live Class Banner */}
       {!isLoadingLiveClass && !liveClassError && liveClass && (
         <TouchableOpacity
           style={styles.liveClassBanner}
@@ -317,13 +325,6 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
         </TouchableOpacity>
       )}
 
-      <ScrollView
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D8FF3E" />
-        }
-      >
         {/* Set Workouts Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Set Workouts</Text>

@@ -90,9 +90,12 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
     if (current.length) {
       const participants = await db
         .select({
-          userId: classbookings.memberId
+          userId: classbookings.memberId,
+          firstName: users.firstName,
+          lastName: users.lastName
         })
         .from(classbookings)
+        .innerJoin(users, eq(classbookings.memberId, users.userId))
         .where(eq(classbookings.classId, current[0].classId));
 
       return res.json({

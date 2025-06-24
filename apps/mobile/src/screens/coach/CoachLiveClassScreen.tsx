@@ -50,7 +50,7 @@ const CoachLiveClassScreen = () => {
         </View>
         {liveClassData.participants?.map((p, idx) => (
           <View key={p.userId} style={styles.participantRow}>
-            <Text style={styles.participantName}>{`John Pork ${idx + 1}:`}</Text>
+            <Text style={styles.participantName}>{p.firstName} {p.lastName}:</Text>
             <TextInput
               style={styles.scoreInput}
               value={scores[p.userId]}

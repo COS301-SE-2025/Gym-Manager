@@ -66,6 +66,8 @@ export interface ApiLiveClassResponse {
   };
   participants: {
     userId: number;
+    firstName: string;
+    lastName: string;
     score: number | null;
   }[];
 }

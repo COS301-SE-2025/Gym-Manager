@@ -4,17 +4,10 @@ import Link from 'next/link';
 import './styles.css';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-
-}
+import { User, UserRole } from '@/types/types';
 
 interface UserTableProps {
-  role: 'member' | 'coach' | 'admin';
+  role: UserRole;
 }
 
 export function UserTable({ role }: UserTableProps) {

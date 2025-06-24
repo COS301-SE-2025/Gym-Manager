@@ -1,16 +1,24 @@
-export interface User {
-    id: string;
-    email: string;
-    name: string;
-    role: 'member' | 'admin' | 'coach';
+export interface BaseUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
 }
 
-export interface GymClass {
-    id: string;
-    name: string;
-    instructor: string;
-    startTime: Date;
-    duration: number;
-    capacity: number;
-    enrolled: number;
+export interface Member extends BaseUser {
+  status: string;
+  credits_balance: number;
 }
+
+export interface Admin extends BaseUser {
+  authorisation: string;
+  last_login: string;
+}
+
+export interface Coach extends BaseUser {
+  bio: string;
+  specialization: string;
+}
+
+export type User = Member | Admin | Coach;
+export type UserRole = 'member' | 'coach' | 'admin';

@@ -1,5 +1,5 @@
 'use server'
-import UserTable from './table/page';
+import { UserTable } from './table/page';
 export default function MembersList() {
     return(
         <main className="users-page">

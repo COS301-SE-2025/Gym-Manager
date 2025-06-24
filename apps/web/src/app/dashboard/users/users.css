@@ -1,0 +1,83 @@
+/* styles/users.css */
+.users-page {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.user-section {
+  margin-bottom: 40px;
+}
+
+.user-section h2 {
+  font-size: 24px;
+  margin-bottom: 15px;
+  color: #333;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 8px;
+}
+
+.user-table-container {
+  overflow-x: auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-table th,
+.user-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.user-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #555;
+}
+
+.user-table tr:hover {
+  background-color: #f5f5f5;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-badge.active {
+  background-color: #e6f7ee;
+  color: #00a854;
+}
+
+.status-badge.inactive {
+  background-color: #fff1f0;
+  color: #f5222d;
+}
+
+.edit-link {
+  color: #1890ff;
+  text-decoration: none;
+}
+
+.edit-link:hover {
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .user-table th,
+  .user-table td {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+}

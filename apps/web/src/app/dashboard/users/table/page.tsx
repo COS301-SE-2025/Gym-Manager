@@ -9,7 +9,8 @@ interface User {
   id: string;
   name: string;
   email: string;
-  joinDate: string;
+  phone: string;
+
 }
 
 interface UserTableProps {
@@ -45,7 +46,7 @@ const [users, setUsers] = useState<User[]>([]);
           <tr>
             <th>Name</th>
             <th>Email</th>
-            <th>Join Date</th>
+            <th>Phone</th>
           </tr>
         </thead>
         <tbody>
@@ -53,7 +54,7 @@ const [users, setUsers] = useState<User[]>([]);
             <tr key={user.id}>
               <td>{user.name}</td>
               <td>{user.email}</td>
-              <td>{user.joinDate}</td>
+              <td>{user.phone}</td>
               <td>
                 <Link href={`/users/edit/${user.id}`} className="edit-link">
                   Edit
@@ -65,4 +66,4 @@ const [users, setUsers] = useState<User[]>([]);
       </table>
     </div>
   );
-})};
+};

@@ -203,7 +203,7 @@ export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
 
       if (!cls) throw { code: 404, msg: 'Class not found' };
 
-      // ── 2. Reject past classes
+      // 2. Reject past classes
       const now   = new Date();
       const today = now.toISOString().slice(0, 10);
       const time  = now.toTimeString().slice(0, 8);
@@ -216,7 +216,7 @@ export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
       if (now >= classEnd)
         throw { code: 400, msg: 'Class has already ended' };
 
-      // ── 3. Already booked?
+      // 3. Already booked?
       const dup = await tx
         .select()
         .from(classbookings)
@@ -228,7 +228,7 @@ export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
 
       if (dup.length) throw { code: 400, msg: 'Already booked' };
 
-      // ── 4. Seats left?
+      // 4. Seats left?
       const [{ count }] = await tx
         .select({ count: sql<number>`count(*)` })
         .from(classbookings)
@@ -237,7 +237,7 @@ export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
       if (count >= cls.capacity)
         throw { code: 400, msg: 'Class full' };
 
-      // ── 5. Insert booking
+      // 5. Insert booking
       await tx.insert(classbookings).values({ classId, memberId });
     });
 

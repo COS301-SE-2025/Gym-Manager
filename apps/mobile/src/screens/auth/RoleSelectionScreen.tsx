@@ -20,7 +20,7 @@ export default function RoleSelectionScreen() {
     // Handle member selection
     console.log('Member selected');
     // Navigate to member-specific flow
-    navigation.navigate('Home' as never);
+    navigation.navigate('MemberTabs' as never);
   };
 
   const handleCoachPress = () => {

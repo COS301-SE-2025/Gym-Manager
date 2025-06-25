@@ -42,14 +42,14 @@ interface ApiBookedClass {
 }
 
 interface ApiUpcomingClass {
-  classId: number; // Assuming classId is number from schema
-  capacity: number; // Total capacity
+  classId: number;
+  capacity: number;
   scheduledDate: string;
   scheduledTime: string;
-  workoutName?: string; // Added workoutName, make it optional for now
-  // workoutId: number; // Available, but we need workoutName
-  // coachId: number; // Available, but we need coachName
-  // Potentially other fields from the 'classes' table
+  workoutName?: string;
+  bookedCount?: number;
+  coachFirstName?: string;
+  coachLastName?: string;
 }
 
 export interface ApiLiveClassResponse {
@@ -73,7 +73,7 @@ export interface ApiLiveClassResponse {
   }[];
 }
 
-type HomeScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Home'>;
+type HomeScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'MemberTabs'>;
 
 interface HomeScreenProps {
   navigation: HomeScreenNavigationProp;
@@ -200,8 +200,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             name: apiClass.workoutName || 'Fitness Class',
             time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
             date: formatDateForCard(apiClass.scheduledDate),
-            capacity: `0/${apiClass.capacity}`,
-            instructor: ' ',
+            capacity: `${apiClass.bookedCount ?? 0}/${apiClass.capacity}`,
+            instructor: `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
             isBooked: false,
           });
           return acc;
@@ -464,7 +464,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <TouchableOpacity
             style={styles.liveClassBanner}
             onPress={() => {
-              if (currentUser?.role === 'coach') {
+              // Only navigate to CoachLiveClass if the user is a coach and NOT a member
+              if (
+                Array.isArray(currentUser?.roles) &&
+                currentUser.roles.includes('coach') &&
+                !currentUser.roles.includes('member')
+              ) {
                 navigation.navigate('CoachLiveClass', { classId: liveClass.class.classId, liveClassData: liveClass });
               } else {
                 navigation.navigate('LiveClass', { classId: liveClass.class.classId, liveClassData: liveClass });

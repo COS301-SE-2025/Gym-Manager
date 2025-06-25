@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import FAQScreen from '../screens/home/FAQScreen';
 
 export type AuthStackParamList = {
-  Home: undefined;
+  MemberTabs: undefined;
   LiveClass: { classId: number; liveClassData: ApiLiveClassResponse };
   CoachLiveClass: { classId: number; liveClassData: ApiLiveClassResponse };
   RoleSelection: undefined;
@@ -75,7 +75,7 @@ export default function AuthNavigator() {
     >
       <Stack.Screen name="ResolveAuth" component={ResolveAuthScreen} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-      <Stack.Screen name="Home" component={MemberTabNavigator} />
+      <Stack.Screen name="MemberTabs" component={MemberTabNavigator} />
       <Stack.Screen name="LiveClass" component={LiveClassScreen} />
       <Stack.Screen name="CoachLiveClass" component={CoachLiveClassScreen} />
       <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />

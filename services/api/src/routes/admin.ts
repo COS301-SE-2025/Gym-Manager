@@ -148,7 +148,7 @@ router.post('/schedule/createClass', isAuthenticated, createClass);
 router.post('/schedule/assign-coach', isAuthenticated, assignCoach);
 router.post('/roles/assign', isAuthenticated, assignUserToRole);
 router.post('/members', isAuthenticated, getAllMembers);
-router.get('/roles/getUsersByRole', isAuthenticated, getUsersByRole);
+router.get('/roles/getUsersByRole/:role', isAuthenticated, getUsersByRole);
 router.get('/users/allUsers', isAuthenticated, getAllUsers);
 router.post('/roles/removeAdminRole', isAuthenticated, removeAdminRole);
 router.post('/roles/removeCoachRole', isAuthenticated, removeCoachRole);

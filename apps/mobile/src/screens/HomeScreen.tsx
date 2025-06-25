@@ -19,6 +19,7 @@ import axios from 'axios';
 import { getToken, getUser, User } from '../utils/authStorage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -444,6 +445,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
         
         </View>
+        {/* Help Icon */}
+        <TouchableOpacity
+          style={styles.helpIcon}
+          onPress={() => navigation.navigate('FAQ')}
+        >
+          <Ionicons name="help-circle-outline" size={32} color="#D8FF3E" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}
@@ -893,5 +901,9 @@ const styles = StyleSheet.create({
   classesForDay: {
     flex: 1,
     gap: 12,
+  },
+  helpIcon: {
+    marginLeft: 'auto',
+    padding: 4,
   },
 }); 

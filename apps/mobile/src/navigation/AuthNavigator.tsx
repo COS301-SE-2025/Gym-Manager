@@ -14,6 +14,7 @@ import type { ApiLiveClassResponse } from '../screens/HomeScreen';
 import LeaderboardScreen from '../screens/home/LeaderboardScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import FAQScreen from '../screens/home/FAQScreen';
 
 export type AuthStackParamList = {
   Home: undefined;
@@ -26,6 +27,7 @@ export type AuthStackParamList = {
   Register: undefined;
   Onboarding: undefined;
   ResolveAuth: undefined;
+  FAQ: undefined;
 };
 
 const Stack = createStackNavigator<AuthStackParamList>();
@@ -81,6 +83,7 @@ export default function AuthNavigator() {
       <Stack.Screen name="Coach" component={CoachNavigator} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="FAQ" component={FAQScreen} />
     </Stack.Navigator>
   );
 } 

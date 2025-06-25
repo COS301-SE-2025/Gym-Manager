@@ -8,11 +8,15 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import type { ApiLiveClassResponse } from '../HomeScreen';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import { getToken } from '../../utils/authStorage';
 
 const CoachLiveClassScreen = () => {
   const navigation = useNavigation();
@@ -21,9 +25,36 @@ const CoachLiveClassScreen = () => {
   const [scores, setScores] = useState<{ [userId: number]: string }>(
     () => Object.fromEntries(liveClassData.participants?.map(p => [p.userId, p.score?.toString() || '']) || [])
   );
+  const [loading, setLoading] = useState(false);
 
   const handleScoreChange = (userId: number, value: string) => {
     setScores(prev => ({ ...prev, [userId]: value }));
+  };
+
+  const handleSubmitScores = async () => {
+    setLoading(true);
+    try {
+      const token = await getToken();
+      const payload = {
+        classId: liveClassData.class.classId,
+        scores: Object.entries(scores)
+          .filter(([_, val]) => val !== '' && !isNaN(Number(val)))
+          .map(([userId, val]) => ({
+            userId: Number(userId),
+            score: Number(val)
+          }))
+      };
+      await axios.post(
+        'http://localhost:4000/submitScore',
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      Alert.alert('Success', 'Scores submitted!');
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.error || 'Failed to submit scores.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,8 +90,12 @@ const CoachLiveClassScreen = () => {
             />
           </View>
         ))}
-        <TouchableOpacity style={styles.submitButton}>
-          <Text style={styles.submitButtonText}>Submit Scores</Text>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmitScores} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#1a1a1a" />
+          ) : (
+            <Text style={styles.submitButtonText}>Submit Scores</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

@@ -8,17 +8,45 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import type { ApiLiveClassResponse } from '../HomeScreen';
+import axios from 'axios';
+import { getToken } from '../../utils/authStorage';
 
 const LiveClassScreen = () => {
-  const [score, setScore] = useState('000');
+  const [score, setScore] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
   const route = useRoute<RouteProp<AuthStackParamList, 'LiveClass'>>();
   const { liveClassData } = route.params;
+
+  const handleSubmitScore = async () => {
+    console.log({ classId: liveClassData.class.classId, score: Number(score) });
+    if (!score || isNaN(Number(score)) || Number(score) < 0) {
+      Alert.alert('Invalid Score', 'Please enter a valid score.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const token = await getToken();
+      await axios.post(
+        'http://localhost:4000/submitScore',
+        { classId: liveClassData.class.classId, score: Number(score) },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      Alert.alert('Success', 'Score submitted!');
+    } catch (err: any) {
+      console.log('Score submission error:', err.response?.data || err.message);
+      Alert.alert('Error', err.response?.data?.error || 'Failed to submit score.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -36,8 +64,10 @@ const LiveClassScreen = () => {
             value={score}
             onChangeText={setScore}
             keyboardType="numeric"
-            maxLength={3}
+            maxLength={6}
             textAlign="center"
+            editable={!loading}
+            placeholder="000"
           />
         </View>
 
@@ -73,8 +103,12 @@ const LiveClassScreen = () => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.submitButton}>
-          <Text style={styles.submitButtonText}>Submit Score</Text>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmitScore} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#1a1a1a" />
+          ) : (
+            <Text style={styles.submitButtonText}>Submit Score</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

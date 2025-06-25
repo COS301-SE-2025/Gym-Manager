@@ -11,6 +11,9 @@ import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import ResolveAuthScreen from '../screens/auth/ResolveAuthScreen';
 import CoachLiveClassScreen from '../screens/coach/CoachLiveClassScreen';
 import type { ApiLiveClassResponse } from '../screens/HomeScreen';
+import LeaderboardScreen from '../screens/home/LeaderboardScreen';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 
 export type AuthStackParamList = {
   Home: undefined;
@@ -26,6 +29,39 @@ export type AuthStackParamList = {
 };
 
 const Stack = createStackNavigator<AuthStackParamList>();
+const Tab = createBottomTabNavigator();
+
+function MemberTabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { backgroundColor: '#1a1a1a', borderTopColor: '#232323' },
+        tabBarActiveTintColor: '#D8FF3E',
+        tabBarInactiveTintColor: '#888',
+      }}
+    >
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Leaderboard"
+        component={LeaderboardScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="trophy-outline" color={color} size={size} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
 
 export default function AuthNavigator() {
   return (
@@ -37,7 +73,7 @@ export default function AuthNavigator() {
     >
       <Stack.Screen name="ResolveAuth" component={ResolveAuthScreen} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Home" component={MemberTabNavigator} />
       <Stack.Screen name="LiveClass" component={LiveClassScreen} />
       <Stack.Screen name="CoachLiveClass" component={CoachLiveClassScreen} />
       <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />

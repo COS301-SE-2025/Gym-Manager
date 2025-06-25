@@ -3,7 +3,7 @@ import { db } from '../db/client';
 import { classes, workouts, coaches, members, classbookings, userroles, classattendance } from '../db/schema';
 import { eq, and, lte, gte, sql } from 'drizzle-orm';
 import { AuthenticatedRequest } from '../middleware/auth';
-import { users, classAttendance } from '../db/schema';
+import { users } from '../db/schema';
 import { desc } from 'drizzle-orm';
 
 
@@ -19,17 +19,17 @@ export const getLeaderboard = async (req: Request, res: Response) => {
   try {
     const leaderboard = await db
       .select({
-        classId: classAttendance.classId,
-        memberId: classAttendance.memberId,
-        score: classAttendance.score,
-        markedAt: classAttendance.markedAt,
+        classId: classattendance.classId,
+        memberId: classattendance.memberId,
+        score: classattendance.score,
+        markedAt: classattendance.markedAt,
         firstName: users.firstName,
         lastName: users.lastName,
       })
-      .from(classAttendance)
-      .innerJoin(users, eq(classAttendance.memberId, users.userId))
-      .where(eq(classAttendance.classId, parseInt(classId)))
-      .orderBy(desc(classAttendance.score));
+      .from(classattendance)
+      .innerJoin(users, eq(classattendance.memberId, users.userId))
+      .where(eq(classattendance.classId, parseInt(classId)))
+      .orderBy(desc(classattendance.score));
 
     res.json(leaderboard);
   } catch (err) {

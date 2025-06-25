@@ -23,6 +23,7 @@ const [users, setUsers] = useState<User[]>([]);
         const data = await UserRoleService.getUsersByRole(role);
         setUsers(data);
       } catch (err) {
+        console.error('Using fallback mock data', err);
         setError(axios.isAxiosError(err) 
           ? err.message 
           : 'An unknown error occurred');

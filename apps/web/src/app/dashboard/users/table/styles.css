@@ -99,3 +99,14 @@
     padding: 20px;
   }
 }
+
+/* Add to your styles.css */
+.mock-data-warning {
+  background-color: #D8FF3E;
+  color: white;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-weight: bold;
+}

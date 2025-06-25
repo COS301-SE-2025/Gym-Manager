@@ -81,3 +81,13 @@
     font-size: 14px;
   }
 }
+
+.mock-data-warning {
+  background-color: #D8FF3E;
+  color: #1E1E1E;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-weight: bold;
+}

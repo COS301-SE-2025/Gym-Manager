@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '../db/client';
 import { classes, workouts, coaches, members, classbookings, userroles } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gt, gte, lte, or, sql } from 'drizzle-orm';
 import { AuthenticatedRequest } from '../middleware/auth';
 
 export const getCoachAssignedClasses = async (req : AuthenticatedRequest, res: Response) => {
@@ -94,97 +94,158 @@ export const getAllClasses = async (req: AuthenticatedRequest, res: Response) =>
 
   const userId = req.user.userId;
 
-  const rows = await db
+  const rolesRows = await db
     .select({ role: userroles.userRole })
     .from(userroles)
     .where(eq(userroles.userId, userId));
-  if (rows.length === 0) return res.status(403).json({ error: 'Unauthorized' });
 
-  const roles = rows.map(r => r.role as string);   // ['member', 'coach', …]
-  let classesList;
+  if (rolesRows.length === 0) return res.status(403).json({ error: 'Unauthorized' });
 
-  // COACHES WILL BE IGNORED FOR NOW BECAUSE THEY CAN'T HAVE CLASSES WITHOUT MEMBERSHIP ROLE.
-  // IF THIS NEEDS TO CHANGE, LET ME KNOW
+  const roles = rolesRows.map(r => r.role as string);
 
-  // if (roles.includes('coach')) {
-  //   classesList = await db
-  //     .select()
-  //     .from(classes)
-  //     .where(eq(classes.coachId, userId));
-  // } else 
-  if (roles.includes('member')) {
-    classesList = await db
-      .select({
-        classId: classes.classId,
-        scheduledDate: classes.scheduledDate,
-        scheduledTime: classes.scheduledTime,
-        capacity: classes.capacity,
-        coachId: classes.coachId,
-        workoutId: classes.workoutId,
-        workoutName: workouts.workoutName,
-      })
-      .from(classes)
-      .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId));
-  } else {
+  const now   = new Date();
+  const today = now.toISOString().slice(0, 10); // YYYY-MM-DD
+  const time  = now.toTimeString().slice(0, 8); // HH:MM:SS
+
+  const notPast = or(
+    gt(classes.scheduledDate, today),
+    and(
+      eq(classes.scheduledDate, today),
+      gte(classes.scheduledTime, time)
+    )
+  );
+
+  // -- members can see everything upcoming; coaches ignored for now -------------
+  if (!roles.includes('member')) {
     return res.status(403).json({ error: 'Unauthorized' });
   }
+
+  const classesList = await db
+    .select({
+      classId:         classes.classId,
+      scheduledDate:   classes.scheduledDate,
+      scheduledTime:   classes.scheduledTime,
+      capacity:        classes.capacity,
+      coachId:         classes.coachId,
+      workoutId:       classes.workoutId,
+      workoutName:     workouts.workoutName,
+    })
+    .from(classes)
+    .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
+    .where(notPast);          // ← filter out old ones
 
   res.json(classesList);
 };
 
-export const getMemberClasses = async (req : AuthenticatedRequest, res : Response) => {
-  if (!req.user) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+
+export const getMemberClasses = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
   const memberId = req.user.userId;
 
-  // Get classes booked by member
-  const bookedClasses = await db.select({
-      bookingId: classbookings.bookingId,
-      classId: classes.classId,
-      scheduledDate: classes.scheduledDate,
-      scheduledTime: classes.scheduledTime,
-      workoutName: workouts.workoutName,
+  // same not-in-the-past helper
+  const now   = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const time  = now.toTimeString().slice(0, 8);
+
+  const notPast = or(
+    gt(classes.scheduledDate, today),
+    and(
+      eq(classes.scheduledDate, today),
+      gte(sql`${classes.scheduledTime}::time + (classes.duration_minutes || ' minutes')::interval`, time)
+    )
+  );
+
+  const bookedClasses = await db
+    .select({
+      bookingId:      classbookings.bookingId,
+      classId:        classes.classId,
+      scheduledDate:  classes.scheduledDate,
+      scheduledTime:  classes.scheduledTime,
+      workoutName:    workouts.workoutName,
     })
     .from(classbookings)
-    .innerJoin(classes, eq(classbookings.classId, classes.classId))
-    .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
-    .where(eq(classbookings.memberId, memberId));
+    .innerJoin(classes,  eq(classbookings.classId,  classes.classId))
+    .leftJoin(workouts, eq(classes.workoutId,     workouts.workoutId))
+    .where(
+      and(
+        eq(classbookings.memberId, memberId),
+        notPast
+      )
+    );
 
   res.json(bookedClasses);
 };
 
-export const bookClass = async (req : AuthenticatedRequest, res : Response) => {
-  if (!req.user) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+
+export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
   const memberId = req.user.userId;
-  const { classId: classIdStr } = req.body;
+  const classId  = Number(req.body.classId);
 
-  // Parse classId to integer
-  const classId = parseInt(classIdStr, 10);
-  if (isNaN(classId)) {
-    return res.status(400).json({ error: "Invalid class ID format" });
+  if (!Number.isInteger(classId) || classId <= 0)
+    return res.status(400).json({ error: 'Invalid class ID' });
+
+  try {
+    await db.transaction(async (tx) => {
+      const [cls] = await tx
+        .select({
+          capacity:       classes.capacity,
+          scheduledDate:  classes.scheduledDate,
+          scheduledTime:  classes.scheduledTime,
+          duration:       classes.durationMinutes
+        })
+        .from(classes)
+        .where(eq(classes.classId, classId))
+        .for('update') // row lock
+        .limit(1);
+
+      if (!cls) throw { code: 404, msg: 'Class not found' };
+
+      // 2. Reject past classes
+      const now   = new Date();
+      const today = now.toISOString().slice(0, 10);
+      const time  = now.toTimeString().slice(0, 8);
+
+      const classEnd = new Date(
+        `${cls.scheduledDate}T${cls.scheduledTime}`
+      );
+      classEnd.setMinutes(classEnd.getMinutes() + cls.duration);
+
+      if (now >= classEnd)
+        throw { code: 400, msg: 'Class has already ended' };
+
+      // 3. Already booked?
+      const dup = await tx
+        .select()
+        .from(classbookings)
+        .where(and(
+          eq(classbookings.classId, classId),
+          eq(classbookings.memberId, memberId)
+        ))
+        .limit(1);
+
+      if (dup.length) throw { code: 400, msg: 'Already booked' };
+
+      // 4. Seats left?
+      const [{ count }] = await tx
+        .select({ count: sql<number>`count(*)` })
+        .from(classbookings)
+        .where(eq(classbookings.classId, classId));
+
+      if (count >= cls.capacity)
+        throw { code: 400, msg: 'Class full' };
+
+      // 5. Insert booking
+      await tx.insert(classbookings).values({ classId, memberId });
+    });
+
+    res.json({ success: true });
+  } catch (err: any) {
+    if (err?.code) return res.status(err.code).json({ error: err.msg });
+    console.error(err);
+    res.status(500).json({ error: 'Internal error' });
   }
-
-  // // Check if member exists and is approved
-  // const [member] = await db.select().from(members).where(eq(members.userId, memberId));
-  // if (!member || member.status !== 'approved') return res.status(403).json({ error: "Membership not approved" });
-
-  // Check if class exists
-  const [cls] = await db.select().from(classes).where(eq(classes.classId, classId));
-  if (!cls) return res.status(404).json({ error: "Class not found" });
-
-  // Check if already booked
-  const existingBooking = await db.select().from(classbookings).where(and(eq(classbookings.classId, classId), eq(classbookings.memberId, memberId)));
-  if (existingBooking.length > 0) return res.status(400).json({ error: "Already booked" });
-
-  // Check class capacity
-  const bookingCount = await db.select().from(classbookings).where(eq(classbookings.classId, classId));
-  if (bookingCount.length >= cls.capacity) return res.status(400).json({ error: "Class full" });
-
-  // Book class
-  await db.insert(classbookings).values({ classId, memberId });
-  await db.update(classes).set({ capacity: cls.capacity - 1 }).where(eq(classes.classId, classId));
-  res.json({ success: true });
 };
+

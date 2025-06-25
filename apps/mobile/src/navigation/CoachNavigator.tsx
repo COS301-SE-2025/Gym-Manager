@@ -9,7 +9,7 @@ export type CoachStackParamList = {
   CoachHome: undefined;
   SetWorkout: { classId: number };
   EditWorkout: { workoutId: number };
-  CoachLiveClass: undefined;
+  CoachLiveClass: { classId: number; liveClassData: any };
 };
 
 const Stack = createStackNavigator<CoachStackParamList>();

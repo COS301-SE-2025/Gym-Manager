@@ -12,18 +12,25 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
-import type { AuthStackParamList } from '../../navigation/AuthNavigator';
+import type { CoachStackParamList } from '../../navigation/CoachNavigator';
 import type { ApiLiveClassResponse } from '../HomeScreen';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 
+interface Participant {
+  userId: number;
+  firstName: string;
+  lastName: string;
+  score?: number;
+}
+
 const CoachLiveClassScreen = () => {
   const navigation = useNavigation();
-  const route = useRoute<RouteProp<AuthStackParamList, 'CoachLiveClass'>>();
+  const route = useRoute<RouteProp<CoachStackParamList, 'CoachLiveClass'>>();
   const { liveClassData } = route.params;
   const [scores, setScores] = useState<{ [userId: number]: string }>(
-    () => Object.fromEntries(liveClassData.participants?.map(p => [p.userId, p.score?.toString() || '']) || [])
+    () => Object.fromEntries((liveClassData.participants as Participant[])?.map((p: Participant) => [p.userId, p.score?.toString() || '']) || [])
   );
   const [loading, setLoading] = useState(false);
 
@@ -76,10 +83,10 @@ const CoachLiveClassScreen = () => {
           </View>
           <View style={styles.liveClassRight}>
             <Text style={styles.liveInstructor}>Coach</Text>
-            <Text style={styles.liveCapacity}>{liveClassData.participants?.length ?? 0}/30</Text>
+            <Text style={styles.liveCapacity}>{(liveClassData.participants as Participant[])?.length ?? 0}/30</Text>
           </View>
         </View>
-        {liveClassData.participants?.map((p, idx) => (
+        {(liveClassData.participants as Participant[])?.map((p: Participant, idx: number) => (
           <View key={p.userId} style={styles.participantRow}>
             <Text style={styles.participantName}>{p.firstName} {p.lastName}:</Text>
             <TextInput

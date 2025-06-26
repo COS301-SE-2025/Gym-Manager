@@ -38,5 +38,15 @@ describe('editSettings', () => {
     expect(res.json).toHaveBeenCalledWith({ error: "'userId' must be a number" });
   });
 
- 
+  it("400 when 'publicVisibility' is not a boolean", async () => {
+    const req = mockReq({ userId: 123, publicVisibility: 'yes' });
+    const res = mockRes();
+
+    await editSettings(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: "'publicVisibility' must be a boolean" });
+  });
+
+
 });

@@ -344,3 +344,24 @@ export const getRolesByUserId = async (req: Request, res: Response) => {
 
   res.json(roles.map((r) => r.role));
 };
+
+
+//Get user by userId
+export const getUserById = async (req: Request, res: Response) => {
+  const userId = parseInt(req.params.userId, 10);
+  if (isNaN(userId)) {
+    return res.status(400).json({ error: 'Invalid userId' });
+  }
+
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.userId, userId))
+    .limit(1);
+
+  if (user.length === 0) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  res.json(user[0]);
+}

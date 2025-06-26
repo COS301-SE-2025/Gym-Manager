@@ -10,6 +10,7 @@ import classRoutes from './routes/classes';
 import authRoutes from './routes/auth';
 
 const app = express();
+const app2 = express(); // This seems unused, but keeping it for consistency with the original code
 const port = process.env.PORT || 4000;
 
 app.use(
@@ -24,8 +25,24 @@ app.use(adminRoutes);
 app.use(classRoutes);
 setupSwagger(app);
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+app2.use(
+  cors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+  }),
+);
+app2.use(bodyParser.json());
+// app2 is not used in the original code, so it can be removed or repurposed as needed
+app2.use(authRoutes);
+app2.use(adminRoutes);
+app2.use(classRoutes);  
 
-export { app }; // Export the app for testing purposes
+
+// Export the app for testing
+export { app };
+
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}

@@ -1,0 +1,82 @@
+.modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  padding: 24px;
+  border-radius: 12px;
+  width: 420px;
+  max-width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  border: 2px solid #404040;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.modal h2 {
+  margin-top: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #D8FF3E;
+}
+
+.modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #b0b0b0;
+}
+
+.modal select {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.modal-actions button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s ease;
+  font-family: inherit;
+}
+
+.modal-actions button[type="submit"] {
+  background-color: #D8FF3E;
+  color: #1e1e1e;
+}
+
+.modal-actions button[type="submit"]:hover {
+  background-color: #c0da35;
+}
+
+.modal-actions button[type="button"] {
+  background-color: #444;
+  color: white;
+}
+
+.modal-actions button[type="button"]:hover {
+  background-color: #666;
+}

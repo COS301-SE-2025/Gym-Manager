@@ -11,7 +11,10 @@ console.log('PG_HOST:', process.env.PG_HOST);
 console.log('PG_DATABASE:', process.env.PG_DATABASE);
 console.log('PG_PASSWORD (exists?):', !!process.env.PG_PASSWORD); // Don't log the actual password
 console.log('PG_PORT:', process.env.PG_PORT);
-console.log('DATABASE_URL (first 30 chars, if exists):', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 30) + '...' : 'Not set');
+console.log(
+  'DATABASE_URL (first 30 chars, if exists):',
+  process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 30) + '...' : 'Not set',
+);
 console.log('----------------------------------');
 
 const pool = new Pool({
@@ -26,7 +29,7 @@ pool.on('connect', () => {
   console.log('Successfully connected to PostgreSQL pool!');
 });
 
-pool.on('error', (err, client) => {
+pool.on('error', (err) => {
   console.error('Unexpected error on idle client in pool', err);
   process.exit(-1); // Consider more graceful handling
 });

@@ -28,8 +28,8 @@ def conn():
         host= "localhost",
         port= 5432,
         dbname= "HIIT_GYM_MANAGER",
-        user= "postgres",
-        password= "denispi"
+        user= "jaredhurlimann",
+        password= "root"
     )
 
 

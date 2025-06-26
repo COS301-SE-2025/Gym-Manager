@@ -1,3 +1,154 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import WeeklyCalendar from '../../components/WeeklyCalendar/WeeklyCalendar';
+import { CalendarEvent, ClassScheduleItem, User } from '../../types/types';
+import { getDummyCalendarEvents, transformApiDataToEvents } from '../../utils/calendarHelpers';
+import { UserRoleService } from '../services/roles';
+
 export default function DashboardPage() {
-    return(<p>Welcome user</p>);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch both schedule and user data in parallel
+        const [apiData, userData] = await Promise.all([
+          UserRoleService.getWeeklySchedule(),
+          UserRoleService.getCurrentUser()
+        ]);
+        
+        const calendarEvents = transformApiDataToEvents(apiData);
+        setEvents(calendarEvents);
+        setCurrentUser(userData);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        // Fallback to dummy data
+        const calendarEvents = getDummyCalendarEvents();
+        setEvents(calendarEvents);
+        
+        // Try to get user data separately if schedule failed
+        try {
+          const userData = await UserRoleService.getCurrentUser();
+          setCurrentUser(userData);
+        } catch (userError) {
+          console.error('Failed to load user data:', userError);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
+
+  const handleEventClick = (event: CalendarEvent) => {
+    const classInfo = event.resource;
+    if (classInfo) {
+      // Create a custom modal instead of alert for better UX
+      const modalContent = `
+        🏋️ ${classInfo.workoutName}
+        👨‍💼 Coach: ${classInfo.coachName}
+        👥 Capacity: ${classInfo.capacity} people
+        ⏱️ Duration: ${classInfo.durationMinutes} minutes
+        📅 ${new Date(classInfo.scheduledDate).toLocaleDateString()}
+        🕒 ${classInfo.scheduledTime}
+      `;
+      alert(modalContent);
+    }
+  };
+
+  const getUserDisplayName = () => {
+    if (currentUser) {
+      return `${currentUser.firstName} ${currentUser.lastName}`;
+    }
+    return 'User';
+  };
+
+  return (
+    <div style={{ 
+      backgroundColor: '#1E1E1E', 
+      minHeight: '100vh',
+      width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
+    }}>
+      {/* Header Section */}
+      <div style={{ 
+        padding: '20px', 
+        paddingBottom: '10px',
+        backgroundColor: '#1E1E1E',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-center'
+      }}>
+        <div>
+          <h1 style={{ 
+            fontSize: '24px', 
+            fontWeight: '700', 
+            color: 'white',
+            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+            margin: 0,
+            padding: 0
+          }}>
+            Welcome, {getUserDisplayName()} 👋
+          </h1>
+          <p style={{ 
+            color: '#ffffff', 
+            fontSize: '12px',
+            fontWeight: '400',
+            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+            margin: 0,
+            padding: 0
+          }}>
+            View and manage the upcoming week
+          </p>
+        </div>
+        
+        <button 
+          style={{
+            backgroundColor: '#D8FF3E',
+            color: 'black',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '12px 24px',
+            fontSize: '16px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = '#c0c0c0';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = '#d0d0d0';
+          }}
+          onClick={() => {
+            window.location.href = '/dashboard/schedule';
+          }}
+        >
+          Add Class
+        </button>
+      </div>
+      
+      {/* Calendar Section */}
+      <div style={{ 
+        flex: 1, 
+        width: '100%',
+        backgroundColor: '#1e1e1e',
+        padding: '0',
+        minHeight: '700px'
+      }}>
+        <WeeklyCalendar 
+          events={events} 
+          onSelectEvent={handleEventClick}
+          loading={loading}
+        />
+      </div>
+    </div>
+  );
 }

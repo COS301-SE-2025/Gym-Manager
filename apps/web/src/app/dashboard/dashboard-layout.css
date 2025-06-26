@@ -1,6 +1,7 @@
 body {
   background-color: #1E1E1E;
   color: whitesmoke;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 .dashboard-layout {
   display: flex;
@@ -59,6 +60,11 @@ a:active {
 .dashboard-content {
   flex: 1;
   background-color: #0f0f0f;
+}
+
+main {
+  width: 100%;
+  flex: 1;
 }
 
 .logout-container {

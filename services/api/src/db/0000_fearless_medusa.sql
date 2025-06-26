@@ -19,6 +19,18 @@ CREATE TABLE "members" (
 	"credits_balance" integer DEFAULT 0 NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "classes" (
+	"class_id" serial PRIMARY KEY NOT NULL,
+	"capacity" integer NOT NULL,
+	"scheduled_date" date NOT NULL,
+	"scheduled_time" time NOT NULL,
+	"duration_minutes" integer NOT NULL,
+	"coach_id" integer,
+	"workout_id" integer,
+	"created_by" integer,
+	"created_at" timestamp DEFAULT now()
+);
+--> statement-breakpoint
 CREATE TABLE "coaches" (
 	"user_id" integer PRIMARY KEY NOT NULL,
 	"bio" text
@@ -31,18 +43,6 @@ CREATE TABLE "admins" (
 --> statement-breakpoint
 CREATE TABLE "managers" (
 	"user_id" integer PRIMARY KEY NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "classes" (
-	"class_id" serial PRIMARY KEY NOT NULL,
-	"capacity" integer NOT NULL,
-	"scheduled_date" date NOT NULL,
-	"scheduled_time" time NOT NULL,
-	"duration_minutes" integer NOT NULL,
-	"coach_id" integer,
-	"workout_id" integer,
-	"created_by" integer,
-	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE "workouts" (
@@ -65,14 +65,23 @@ CREATE TABLE "userroles" (
 	CONSTRAINT "userroles_pkey" PRIMARY KEY("user_id","user_role")
 );
 --> statement-breakpoint
+CREATE TABLE "classattendance" (
+	"class_id" integer NOT NULL,
+	"member_id" integer NOT NULL,
+	"marked_at" timestamp DEFAULT now(),
+	"score" integer DEFAULT 0,
+	CONSTRAINT "classattendance_pkey" PRIMARY KEY("class_id","member_id")
+);
+--> statement-breakpoint
 ALTER TABLE "members" ADD CONSTRAINT "members_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "coaches" ADD CONSTRAINT "coaches_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "admins" ADD CONSTRAINT "admins_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "managers" ADD CONSTRAINT "managers_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "classes" ADD CONSTRAINT "classes_coach_id_fkey" FOREIGN KEY ("coach_id") REFERENCES "public"."coaches"("user_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "classes" ADD CONSTRAINT "classes_workout_id_fkey" FOREIGN KEY ("workout_id") REFERENCES "public"."workouts"("workout_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "classes" ADD CONSTRAINT "classes_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."admins"("user_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "coaches" ADD CONSTRAINT "coaches_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "admins" ADD CONSTRAINT "admins_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "managers" ADD CONSTRAINT "managers_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "classbookings" ADD CONSTRAINT "classbookings_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("class_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "classbookings" ADD CONSTRAINT "classbookings_member_id_fkey" FOREIGN KEY ("member_id") REFERENCES "public"."members"("user_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "userroles" ADD CONSTRAINT "userroles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "userroles" ADD CONSTRAINT "userroles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("user_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "classattendance" ADD CONSTRAINT "classattendance_class_id_member_id_fkey" FOREIGN KEY ("class_id","member_id") REFERENCES "public"."classbookings"("class_id","member_id") ON DELETE cascade ON UPDATE no action;
 */

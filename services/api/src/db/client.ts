@@ -9,7 +9,6 @@ dotenv.config();
 
 console.log('--- DRIZZLE CLIENT DB CONNECTION ATTEMPT ---');
 
-
 const pool = new Pool({
   user: process.env.PG_USER!,
   host: process.env.PG_HOST!,
@@ -19,11 +18,11 @@ const pool = new Pool({
 });
 
 pool.on('connect', () => {
-  console.log('Drizzle client pool successfully connected to PostgreSQL!');
+  //console.log('Drizzle client pool successfully connected to PostgreSQL!');
 });
 
 pool.on('error', (err) => {
-    console.error('Drizzle client pool error:', err);
+  console.error('Drizzle client pool error:', err);
 });
 
 export const db = drizzle(pool, { schema });

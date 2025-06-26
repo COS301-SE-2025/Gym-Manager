@@ -20,4 +20,4 @@ export interface Coach extends BaseUser {
 }
 
 export type User = Member | Admin | Coach;
-export type UserRole = 'member' | 'coach' | 'admin';
+export type UserRole = 'member' | 'coach' | 'admin' | 'manager';

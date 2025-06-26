@@ -17,6 +17,11 @@ export default function MembersList() {
         <h2>Administrators</h2>
         <UserTable role="admin" />
       </section>
+
+      <section className="user-section">
+        <h2>Managers</h2>
+        <UserTable role="manager" />
+      </section>
     </main>
     );
 }

@@ -90,9 +90,12 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
     if (current.length) {
       const participants = await db
         .select({
-          userId: classbookings.memberId
+          userId: classbookings.memberId,
+          firstName: users.firstName,
+          lastName: users.lastName
         })
         .from(classbookings)
+        .innerJoin(users, eq(classbookings.memberId, users.userId))
         .where(eq(classbookings.classId, current[0].classId));
 
       return res.json({
@@ -155,7 +158,7 @@ export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user.userId;
   let roles = req.user.roles as string[] | undefined;
 
-  // Fetch roles if they weren’t in the JWT
+  // Fetch roles if they weren't in the JWT
   if (!roles) {
     const rows = await db
       .select({ role: userroles.userRole })
@@ -241,7 +244,7 @@ export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
       .status(403)
       .json({ success: false, error: "NOT_BOOKED" });
 
-  // Upsert member’s own score
+  // Upsert member's own score
   await db
     .insert(classattendance)
     .values({

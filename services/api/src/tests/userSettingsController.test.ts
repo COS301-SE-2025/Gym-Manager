@@ -48,5 +48,19 @@ describe('editSettings', () => {
     expect(res.json).toHaveBeenCalledWith({ error: "'publicVisibility' must be a boolean" });
   });
 
+  it('404 when no member found to update', async () => {
+    // returning empty array → [updated] === undefined
+    (db.update as jest.Mock).mockReturnValue(builder([]));
 
+    const req = mockReq({ userId: 42, publicVisibility: false });
+    const res = mockRes();
+
+    await editSettings(req, res);
+
+    expect(db.update).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Member not found' });
+  });
+
+  
 });

@@ -17,14 +17,14 @@ export default function RoleSelectionScreen() {
   const navigation = useNavigation();
 
   const handleMemberPress = () => {
-    // Handle member selection
+
     console.log('Member selected');
-    // Navigate to member-specific flow
-    navigation.navigate('Home' as never);
+   
+    navigation.navigate('MemberTabs' as never);
   };
 
   const handleCoachPress = () => {
-    // Handle coach selection
+   
     console.log('Coach selected');
     navigation.navigate('Coach' as never);
   };

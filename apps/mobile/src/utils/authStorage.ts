@@ -1,15 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TOKEN_KEY = 'authToken';
-const USER_KEY = 'authUser'; // Key for storing user object
+const USER_KEY = 'authUser'; 
 
 export interface User {
   firstName?: string;
   lastName?: string;
   email?: string;
   roles?: string[];
-  id?: number; // Or string, depending on your user ID type
-  // Add any other user properties you want to store
+  id?: number; 
 }
 
 export const storeToken = async (token: string): Promise<void> => {
@@ -37,7 +36,6 @@ export const removeToken = async (): Promise<void> => {
   }
 };
 
-// New functions to store and get user information
 export const storeUser = async (user: User): Promise<void> => {
   try {
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));

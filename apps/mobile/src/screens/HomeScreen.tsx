@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,16 @@ import {
   Dimensions,
   ActivityIndicator,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import IconLogo from '../components/common/IconLogo';
 import BookingSheet from '../components/BookingSheet';
 import CancelSheet from '../components/CancelSheet';
 import axios from 'axios';
 import { getToken, getUser, User } from '../utils/authStorage';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { AuthStackParamList } from '../navigation/AuthNavigator';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -37,19 +41,75 @@ interface ApiBookedClass {
   workoutName: string;
 }
 
-// Define a type for the API response item for All Classes
 interface ApiUpcomingClass {
-  classId: number; // Assuming classId is number from schema
-  capacity: number; // Total capacity
+  classId: number;
+  capacity: number;
   scheduledDate: string;
   scheduledTime: string;
-  workoutName?: string; // Added workoutName, make it optional for now
-  // workoutId: number; // Available, but we need workoutName
-  // coachId: number; // Available, but we need coachName
-  // Potentially other fields from the 'classes' table
+  workoutName?: string;
+  bookedCount?: number;
+  coachFirstName?: string;
+  coachLastName?: string;
 }
 
-export default function HomeScreen() {
+export interface ApiLiveClassResponse {
+  ongoing: boolean;
+  roles: string[];
+  class: {
+    classId: number;
+    scheduledDate: string;
+    scheduledTime: string;
+    durationMinutes: number;
+    coachId: number;
+    workoutId: number;
+    workoutName: string;
+    workoutContent: string;
+  };
+  participants: {
+    userId: number;
+    firstName: string;
+    lastName: string;
+    score: number | null;
+  }[];
+}
+
+type HomeScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'MemberTabs'>;
+
+interface HomeScreenProps {
+  navigation: HomeScreenNavigationProp;
+}
+
+// Helper function to get day with suffix (e.g., 1st, 2nd, 3rd, 4th)
+const getDayWithSuffix = (day: number) => {
+  if (day > 3 && day < 21) return `${day}th`;
+  switch (day % 10) {
+    case 1: return `${day}st`;
+    case 2: return `${day}nd`;
+    case 3: return `${day}rd`;
+    default: return `${day}th`;
+  }
+};
+
+// Helper function to format date for the card (Today, Tomorrow, or Month Day)
+const formatDateForCard = (dateString: string): string => {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const classDate = new Date(`${dateString}T00:00:00`);
+
+  today.setHours(0, 0, 0, 0);
+  tomorrow.setHours(0, 0, 0, 0);
+
+  if (classDate.getTime() === today.getTime()) {
+      return 'Today';
+  }
+  if (classDate.getTime() === tomorrow.getTime()) {
+      return 'Tomorrow';
+  }
+  return classDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
   const [selectedCancelClass, setSelectedCancelClass] = useState<ClassItem | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -58,9 +118,14 @@ export default function HomeScreen() {
   const [isLoadingBooked, setIsLoadingBooked] = useState<boolean>(true);
   const [bookedError, setBookedError] = useState<string | null>(null);
 
-  const [upcomingClasses, setUpcomingClasses] = useState<ClassItem[]>([]);
+  const [upcomingClasses, setUpcomingClasses] = useState<{ [key: string]: ClassItem[] }>({});
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState<boolean>(true);
   const [upcomingError, setUpcomingError] = useState<string | null>(null);
+
+  const [liveClass, setLiveClass] = useState<ApiLiveClassResponse | null>(null);
+  const [isLoadingLiveClass, setIsLoadingLiveClass] = useState<boolean>(true);
+  const [liveClassError, setLiveClassError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Extracted fetch logic to be reusable
   const fetchBookedClasses = async (token: string) => {
@@ -70,11 +135,24 @@ export default function HomeScreen() {
       const bookedResponse = await axios.get<ApiBookedClass[]>('http://localhost:4000/member/getBookedClass', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const formattedBookedClasses: ClassItem[] = bookedResponse.data.map(apiClass => ({
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const formattedBookedClasses: ClassItem[] = bookedResponse.data
+        .filter(apiClass => {
+          const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
+          return classDate >= today;
+        })
+        .sort((a, b) => {
+            const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
+            const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
+            return dateTimeA.getTime() - dateTimeB.getTime();
+        })
+        .map(apiClass => ({
         id: apiClass.bookingId, // This is bookingId, for cancellation
         name: apiClass.workoutName || ' ',
-        time: apiClass.scheduledTime ? new Date(`1970-01-01T${apiClass.scheduledTime}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A',
-        date: apiClass.scheduledDate ? new Date(apiClass.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
+        time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
+        date: apiClass.scheduledDate ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
         capacity: ' ', 
         instructor: ' ', 
         isBooked: true,
@@ -99,16 +177,37 @@ export default function HomeScreen() {
       const upcomingResponse = await axios.get<ApiUpcomingClass[]>('http://localhost:4000/member/getAllClasses', {
           headers: { 'Authorization': `Bearer ${token}` }
       });
-      const formattedUpcomingClasses: ClassItem[] = upcomingResponse.data.map(apiClass => ({
-          id: apiClass.classId.toString(), // This is classId, for booking
-          name: apiClass.workoutName || 'Fitness Class', 
-          time: apiClass.scheduledTime ? new Date(`1970-01-01T${apiClass.scheduledTime}Z`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A',
-          date: apiClass.scheduledDate ? new Date(apiClass.scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
-          capacity: `0/${apiClass.capacity}`, 
-          instructor: ' ', 
-          isBooked: false, 
-      }));
-      setUpcomingClasses(formattedUpcomingClasses);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const groupedClasses = upcomingResponse.data
+        .filter(apiClass => {
+            const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
+            return classDate >= today;
+        })
+        .sort((a, b) => {
+            const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
+            const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
+            return dateTimeA.getTime() - dateTimeB.getTime();
+        })
+        .reduce((acc: { [key: string]: ClassItem[] }, apiClass) => {
+          const dateKey = apiClass.scheduledDate;
+          if (!acc[dateKey]) {
+            acc[dateKey] = [];
+          }
+          acc[dateKey].push({
+            id: apiClass.classId.toString(),
+            name: apiClass.workoutName || 'Fitness Class',
+            time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
+            date: formatDateForCard(apiClass.scheduledDate),
+            capacity: `${apiClass.bookedCount ?? 0}/${apiClass.capacity}`,
+            instructor: `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
+            isBooked: false,
+          });
+          return acc;
+        }, {});
+
+      setUpcomingClasses(groupedClasses);
     } catch (error: any) {
       console.error('Failed to fetch upcoming classes:', error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
@@ -120,6 +219,37 @@ export default function HomeScreen() {
       setIsLoadingUpcoming(false);
     }
   };
+
+  const fetchLiveClass = async (token: string) => {
+    setIsLoadingLiveClass(true);
+    setLiveClassError(null);
+    try {
+      const response = await axios.get<ApiLiveClassResponse>('http://localhost:4000/live/class', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.data.ongoing && response.data.class) {
+        setLiveClass(response.data);
+      } else {
+        setLiveClass(null);
+      }
+    } catch (error) {
+      console.error('Failed to fetch live class:', error);
+      setLiveClassError('Failed to load live class information.');
+    } finally {
+      setIsLoadingLiveClass(false);
+    }
+  };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    const token = await getToken();
+    if (token) {
+      await fetchLiveClass(token);
+      await fetchBookedClasses(token);
+      await fetchUpcomingClasses(token);
+    }
+    setRefreshing(false);
+  }, []);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -134,6 +264,7 @@ export default function HomeScreen() {
         setIsLoadingUpcoming(false);
         return;
       }
+      await fetchLiveClass(token);
       await fetchBookedClasses(token);
       await fetchUpcomingClasses(token);
     };
@@ -149,7 +280,7 @@ export default function HomeScreen() {
   };
 
   const handleBookClass = (classId: string) => {
-    const classToBook = upcomingClasses.find(c => c.id === classId);
+    const classToBook = Object.values(upcomingClasses).flat().find(c => c.id === classId);
     if (classToBook) {
       setSelectedClass(classToBook);
     }
@@ -157,12 +288,6 @@ export default function HomeScreen() {
 
   const handleConfirmBooking = async (classId: string): Promise<boolean> => {
     console.log('Attempting to book class:', classId);
-    // Note: classId here is a string, from ClassItem.id which comes from apiClass.classId.toString()
-    // The backend API /member/bookClass expects { classId: classId_value }
-    // The actual classId in the database is a number. 
-    // For Drizzle, string numbers in 'eq' comparisons might work due to type coercion in some DBs, but it's safer to ensure type consistency.
-    // However, req.body.classId will be a string from JSON. The controller uses it directly.
-    // Let's assume the API handles string `classId` correctly or change it if issues arise.
 
     try {
       const token = await getToken();
@@ -171,8 +296,7 @@ export default function HomeScreen() {
         return false;
       }
 
-      // The classId parameter for the API should be the numeric class ID.
-      // The `classId` argument to this function is already the correct ID (as a string).
+      
       const response = await axios.post(
         'http://localhost:4000/member/bookClass',
         { classId: classId }, 
@@ -181,15 +305,29 @@ export default function HomeScreen() {
 
       if (response.data.success) {
         Alert.alert("Success!", "Class booked successfully.");
-        // Refresh data
-        const currentToken = await getToken(); // Re-fetch token in case it was involved in an expiry
+        
+        // Remove the booked class from the upcoming list
+        const numericClassId = parseInt(classId, 10);
+        setUpcomingClasses(prev => {
+          const newUpcoming = { ...prev };
+          for (const date in newUpcoming) {
+            newUpcoming[date] = newUpcoming[date].filter(
+              c => parseInt(c.id, 10) !== numericClassId
+            );
+            if (newUpcoming[date].length === 0) {
+              delete newUpcoming[date];
+            }
+          }
+          return newUpcoming;
+        });
+
+        // Refresh booked classes to show the new one
+        const currentToken = await getToken();
         if (currentToken) {
             await fetchBookedClasses(currentToken);
-            await fetchUpcomingClasses(currentToken); // To reflect any capacity changes or if it should be removed
         }
         return true;
       } else {
-        // This path might not be hit if API throws HTTP errors for business logic failures
         Alert.alert("Booking Failed", response.data.error || "Could not book the class. Please try again.");
         return false;
       }
@@ -200,7 +338,8 @@ export default function HomeScreen() {
         errorMessage = error.response.data.error || `Booking failed: ${error.response.statusText} (Status: ${error.response.status})`;
         if (error.response.status === 401) {
           errorMessage = "Session expired. Please log in again.";
-          // Here you might want to navigate to a login screen or trigger a re-login flow
+        } else if (error.response.status === 400 && error.response.data.error === "Already booked") {
+          errorMessage = "You have already booked this class.";
         }
       }
       Alert.alert("Booking Error", errorMessage);
@@ -210,7 +349,6 @@ export default function HomeScreen() {
 
   const handleConfirmCancellation = (classId: string) => {
     console.log('Cancellation confirmed for class:', classId);
-    // Here you would typically make an API call to cancel the class
   };
 
   const handleCloseSheet = () => {
@@ -283,9 +421,9 @@ export default function HomeScreen() {
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeText}>
             Welcome
-            {/*, {currentUser?.firstName || 'User'} */} 👋
+            , {currentUser?.firstName || 'User'}  👋
           </Text>
-          {/*}
+          
           <View style={styles.passContainer}>
             <Text style={styles.passText}>Your Pass</Text>
             <View style={styles.progressContainer}>
@@ -295,11 +433,56 @@ export default function HomeScreen() {
               <Text style={styles.progressText}>2/3</Text>
             </View>
           </View>
-          */}
+        
         </View>
+        {/* Help Icon */}
+        <TouchableOpacity
+          style={styles.helpIcon}
+          onPress={() => navigation.navigate('FAQ')}
+        >
+          <Ionicons name="help-circle-outline" size={32} color="#D8FF3E" />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D8FF3E" />
+      }
+      >
+        {/* Live Class Banner */}
+        {!isLoadingLiveClass && !liveClassError && liveClass && (
+          <TouchableOpacity
+            style={styles.liveClassBanner}
+            onPress={() => {
+              // Only navigate to CoachLiveClass if the user is a coach and NOT a member
+              if (
+                Array.isArray(currentUser?.roles) &&
+                currentUser.roles.includes('coach') &&
+                !currentUser.roles.includes('member')
+              ) {
+                navigation.navigate('CoachLiveClass', { classId: liveClass.class.classId, liveClassData: liveClass });
+              } else {
+                navigation.navigate('LiveClass', { classId: liveClass.class.classId, liveClassData: liveClass });
+              }
+            }}
+          >
+            <View style={styles.liveClassLeft}>
+              <View style={styles.liveIndicator} />
+              <View>
+                <Text style={styles.liveLabel}>LIVE CLASS</Text>
+                <Text style={styles.liveClassName}>{liveClass.class.workoutName || 'Workout'}</Text>
+              </View>
+            </View>
+            <View style={styles.liveClassRight}>
+              <Text style={styles.liveInstructor}>
+                {/* You may want to fetch coach name elsewhere if needed */}
+                Coach
+              </Text>
+              <Text style={styles.liveJoinText}>TAP TO JOIN</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* Booked Classes Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Booked Classes</Text>
@@ -340,12 +523,38 @@ export default function HomeScreen() {
           {isLoadingUpcoming ? (
             <ActivityIndicator size="large" color="#D8FF3E" style={{ marginTop: 20 }} />
           ) : upcomingError ? (
-            <View style={styles.emptyStateContainer}> 
-                <Text style={styles.errorText}>{upcomingError}</Text>
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.errorText}>{upcomingError}</Text>
             </View>
-          ) : upcomingClasses.length > 0 ? (
+          ) : Object.keys(upcomingClasses).length > 0 ? (
             <View style={styles.upcomingClassesContainer}>
-                {upcomingClasses.map(renderUpcomingClass)}
+              {Object.keys(upcomingClasses).map(date => {
+                const classDate = new Date(`${date}T00:00:00`);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isToday = classDate.getTime() === today.getTime();
+
+                return (
+                  <View key={date} style={styles.dayGroupContainer}>
+                    <View style={styles.dateTimeline}>
+                      <View style={styles.dateContainer}>
+                        {isToday ? (
+                          <Text style={styles.dayText}>Today</Text>
+                        ) : (
+                          <>
+                            <Text style={styles.dayText}>{getDayWithSuffix(classDate.getDate())}</Text>
+                            <Text style={styles.monthText}>{classDate.toLocaleDateString('en-US', { month: 'short' })}</Text>
+                          </>
+                        )}
+                      </View>
+                      <View style={styles.timelineBar} />
+                    </View>
+                    <View style={styles.classesForDay}>
+                      {upcomingClasses[date].map(renderUpcomingClass)}
+                    </View>
+                  </View>
+                );
+              })}
             </View>
           ) : (
             <View style={styles.emptyStateContainer}>
@@ -475,7 +684,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   upcomingClassesContainer: {
-    gap: 12,
+    gap: 20,
   },
   upcomingClassCard: {
     backgroundColor: '#2a2a2a',
@@ -542,7 +751,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     borderRadius: 10,
     height: 8,
-    width: width - 150,
+    width: width - 180,
     marginRight: 12,
   },
   progressFill: {
@@ -608,5 +817,88 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
     paddingVertical: 10,
+  },
+  liveClassBanner: {
+    backgroundColor: '#D8FF3E',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  liveClassLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  liveIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#20C934',
+    marginRight: 12,
+  },
+  liveLabel: {
+    color: '#1a1a1a',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  liveClassName: {
+    color: '#1a1a1a',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  liveClassRight: {
+    alignItems: 'flex-end',
+  },
+  liveInstructor: {
+    color: '#1a1a1a',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  liveJoinText: {
+    color: '#1a1a1a',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  dayGroupContainer: {
+    flexDirection: 'row',
+    gap: 15,
+  },
+  dateTimeline: {
+    alignItems: 'center',
+  },
+  dateContainer: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  dayText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  monthText: {
+    color: '#888',
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  timelineBar: {
+    flex: 1,
+    width: 2,
+    backgroundColor: '#3a3a3a',
+  },
+  classesForDay: {
+    flex: 1,
+    gap: 12,
+  },
+  helpIcon: {
+    marginLeft: 'auto',
+    padding: 4,
   },
 }); 

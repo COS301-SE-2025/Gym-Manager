@@ -1,4 +1,6 @@
 import axios from "axios"
 
 export default function SchedulePage(){
-    return({})};
+    return(
+        <p>schedule</p>
+    )};

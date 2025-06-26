@@ -5,11 +5,13 @@ import WeeklyCalendar from '../../components/WeeklyCalendar/WeeklyCalendar';
 import { CalendarEvent, ClassScheduleItem, User } from '../../types/types';
 import { getDummyCalendarEvents, transformApiDataToEvents } from '../../utils/calendarHelpers';
 import { UserRoleService } from '../services/roles';
-
+import ClassCreationModal from '@/components/modals/CreateClass/CreateClass';
 export default function DashboardPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isClassModalOpen, setIsClassModalOpen] = useState(false);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -127,9 +129,7 @@ export default function DashboardPage() {
           onMouseOut={(e) => {
             e.currentTarget.style.backgroundColor = '#d0d0d0';
           }}
-          onClick={() => {
-            window.location.href = '/dashboard/schedule';
-          }}
+          onClick={() => setIsClassModalOpen(true)}
         >
           Add Class
         </button>
@@ -149,6 +149,11 @@ export default function DashboardPage() {
           loading={loading}
         />
       </div>
+      <ClassCreationModal 
+        isOpen={isClassModalOpen} 
+        onClose={() => setIsClassModalOpen(false)} 
+        onCreated={() => {
+        }}/>
     </div>
   );
 }

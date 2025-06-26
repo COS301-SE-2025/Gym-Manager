@@ -14,3 +14,12 @@ export interface GymClass {
   capacity: number;
   enrolled: number;
 }
+
+export interface ClassWithWorkout {
+  classId: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  capacity: number;
+  coachId: string;
+  workoutId: string;
+}

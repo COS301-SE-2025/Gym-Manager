@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { ClassWithWorkout } from '@/types';
+import { ClassWithWorkout } from '@/types/types';
 
 const ClassesTable = () => {
   const { data: session } = useSession();
@@ -29,7 +29,7 @@ const ClassesTable = () => {
       setLoading(true);
       const response = await fetch('/api/classes', {
         headers: {
-          'Authorization': `Bearer ${session?.accessToken}`
+          'Authorization': `Bearer ${(session as any)?.accessToken || ''}`
         }
       });
 
@@ -53,7 +53,7 @@ const ClassesTable = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.accessToken}`
+          'Authorization': `Bearer ${(session as any)?.accessToken || ''}`
         },
         body: JSON.stringify(newClass)
       });
@@ -227,4 +227,25 @@ const ClassesTable = () => {
                     {cls.capacity}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {cls.co
+                    {cls.coachId}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {cls.workoutId}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                  No classes scheduled
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default ClassesTable;

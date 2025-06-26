@@ -15,6 +15,7 @@ export function builder<T = unknown>(returnVal?: T): any {
     having   : () => chain,
     set      : () => chain,
     values   : () => chain,
+    for      : () => chain,
     returning: () => promised,
     limit    : () => promised,
 

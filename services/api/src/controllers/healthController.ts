@@ -26,12 +26,13 @@ export const healthCheck = async (_req: Request, res: Response) => {
       db     : 'UP',
     });
   } catch (err) {
-    console.error('Health-check DB ping failed:', err.message);
+    const errorMessage = (err instanceof Error) ? err.message : String(err);
+    console.error('Health-check DB ping failed:', errorMessage);
     return res.status(503).json({
       ok     : false,
       uptime : uptimeSec,
       db     : 'DOWN',
-      error  : err.message,
+      error  : errorMessage,
     });
   }
 };

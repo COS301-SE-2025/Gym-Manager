@@ -1,6 +1,7 @@
 export interface BaseUser {
-  user_id: number;
-  name: string;
+  userId: number;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
 }

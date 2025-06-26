@@ -4,7 +4,12 @@ import { User, UserRole, Member, Admin, Coach } from '@/types/types';
 export const UserRoleService = {
   async getUsersByRole(role: UserRole): Promise<User[]> {
     try {
-      const response = await axios.get(`http://localhost:4000/roles/getUsersByRole/${role}`);
+      const token = localStorage.getItem('authToken');
+      const response = await axios.get(`http://localhost:4000/roles/getUsersByRole`, {
+        params: { role },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log(response.data);
       return response.data;
     } catch (error) {
       console.error('API call failed, returning mock data:', error);

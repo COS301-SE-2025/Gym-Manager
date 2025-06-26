@@ -4,6 +4,7 @@ import Link from 'next/link';
 import './styles.css';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { User, UserRole, Admin, Member, Coach } from '@/types/types';
 import { UserRoleService } from '@/app/services/roles';
 
@@ -34,32 +35,32 @@ const [users, setUsers] = useState<User[]>([]);
     fetchUsers();
   }, [role]);
 
-  const renderUserRow = (user: User) => {
-    switch (role) {
-      case 'member':
-        const member = user as Member;
-        return (
-          <>
-            <td>{member.status}</td>
-            <td>{member.credits_balance}</td>
-          </>
-        );
-      case 'coach':
-        const coach = user as Coach;
-        return (
-          <>
-            <td>{coach.bio}</td>
-          </>
-        );
-      case 'admin':
-        const admin = user as Admin;
-        return (
-          <>
-            <td>{admin.authorisation}</td>
-          </>
-        );
-    }
-  };
+  // const renderUserRow = (user: User) => {
+  //   switch (role) {
+  //     case 'member':
+  //       const member = user as Member;
+  //       return (
+  //         <>
+  //           <td>{member.status}</td>
+  //           <td>{member.credits_balance}</td>
+  //         </>
+  //       );
+  //     case 'coach':
+  //       const coach = user as Coach;
+  //       return (
+  //         <>
+  //           <td>{coach.bio}</td>
+  //         </>
+  //       );
+  //     case 'admin':
+  //       const admin = user as Admin;
+  //       return (
+  //         <>
+  //           <td>{admin.authorisation}</td>
+  //         </>
+  //       );
+  //   }
+  // };
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
@@ -69,25 +70,26 @@ const [users, setUsers] = useState<User[]>([]);
       <table className="user-table">
         <thead>
           <tr>
-            <th>Name</th>
+            <th>First Name</th>
+            <th>Last Name</th>
             <th>Email</th>
-            <th>Phone</th>
-            {role === 'member' && <th>Status</th>}
+            <th>Actions</th>
+            {/* {role === 'member' && <th>Status</th>}
             {role === 'member' && <th>Credits</th>}
             {role === 'coach' && <th>Bio</th>}
-            {role === 'admin' && <th>Auth Level</th>}
+            {role === 'admin' && <th>Auth Level</th>} */}
           </tr>
         </thead>
         <tbody>
           {users.map((user) => (
-            <tr key={user.user_id}>
-              <td>{user.name}</td>
+            <tr key={user.userId}>
+              <td>{user.firstName}</td>
+              <td>{user.lastName}</td>
               <td>{user.email}</td>
-              <td>{user.phone}</td>
-              {renderUserRow(user)}
+              {/* {renderUserRow(user)} */}
               <td>
-                <Link href={`/users/edit/${user.user_id}`} className="edit-link">
-                  Edit
+                <Link href={`/users/edit/${user.userId}`} className="edit-link">
+                  Manage
                 </Link>
               </td>
             </tr>

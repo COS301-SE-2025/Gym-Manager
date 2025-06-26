@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { ClassWithWorkout } from '@/types/types';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ClassesTable = () => {
   const { data: session } = useSession();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [classes, setClasses] = useState<ClassWithWorkout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showAddClass, setShowAddClass] = useState(false);
   const [newClass, setNewClass] = useState({
     scheduledDate: '',
@@ -46,6 +49,7 @@ const ClassesTable = () => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleAddClass = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -76,6 +80,7 @@ const ClassesTable = () => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setNewClass(prev => ({

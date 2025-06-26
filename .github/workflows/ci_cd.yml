@@ -59,6 +59,22 @@ jobs:
         run: npm run lint
         working-directory: ./apps/web
 
+      - name: Install Mobile UI dependencies
+        run: npm install
+        working-directory: ./apps/mobile
+
+      - name: Lint Mobile UI
+        run: npm run lint
+        working-directory: ./apps/mobile
+
+      - name: Install API dependencies
+        run: npm install
+        working-directory: ./services/api
+
+      - name: Lint API
+        run: npm run lint
+        working-directory: ./services/api
+
   test:
     name: Run Unit
     runs-on: ubuntu-latest

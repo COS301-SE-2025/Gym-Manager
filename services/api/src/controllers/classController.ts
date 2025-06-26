@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../db/client';
-import { classes, workouts, coaches, members, classbookings, userroles, users } from '../db/schema';
+import { classes, workouts, coaches, members, classbookings, userroles, users, classattendance } from '../db/schema';
 import { eq, and, gt, gte, lte, or, sql } from 'drizzle-orm';
 import { AuthenticatedRequest } from '../middleware/auth';
 
@@ -251,3 +251,54 @@ export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
   }
 };
 
+
+export const checkInToClass = async (req: Request, res: Response) => {
+  const { classId, memberId } = req.body;
+
+  if (!classId || !memberId) {
+    return res.status(400).json({ error: 'classId and memberId are required' });
+  }
+
+  try {
+    // Insert attendance
+    const [attendance] = await db
+      .insert(classattendance)
+      .values({
+        classId,
+        memberId,
+      })
+      .returning();
+
+    return res.status(201).json({ success: true, attendance });
+  } catch (err: any) {
+    if (err.code === '23505') {
+      // Unique violation
+      return res.status(409).json({ error: 'Already checked in' });
+    }
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to check in, class not booked' });
+  }
+};
+
+export const cancelBooking = async (req: Request, res: Response) => {
+  const { classId, memberId } = req.body;
+
+  if (!classId || !memberId) {
+    return res.status(400).json({ error: 'classId and memberId are required' });
+  }
+
+  try {
+    const result = await db
+      .delete(classbookings)
+      .where(and(eq(classbookings.classId, classId), eq(classbookings.memberId, memberId)));
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to cancel booking' });
+  }
+};

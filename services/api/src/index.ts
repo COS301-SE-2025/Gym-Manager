@@ -4,7 +4,7 @@ dotenv.config();
 import cors from 'cors';
 import express from 'express';
 import bodyParser from 'body-parser';
-import scheduleRoutes from './routes/schedule';
+import adminRoutes from './routes/admin';
 import classRoutes from './routes/classes';
 import authRoutes from './routes/auth';
 import ongoingClassRoutes from './routes/ongoingClass';
@@ -12,7 +12,7 @@ import userSettingsRoutes from "./routes/userSettings";
 import healthRoutes   from './routes/health';
 import { requestTimeout } from './middleware/requestTimeout';
 import { errorHandler   } from './middleware/errorHandler';
-
+import { setupSwagger } from './swagger';
 
 
 
@@ -29,11 +29,15 @@ app.use(bodyParser.json());
 app.use(requestTimeout(10_000));
 app.use(healthRoutes);
 app.use(authRoutes);
-app.use(scheduleRoutes);
+app.use(adminRoutes);
 app.use(classRoutes);
 app.use(ongoingClassRoutes);
 app.use(userSettingsRoutes);
 app.use(errorHandler);
+setupSwagger(app);
+
+// Export the app for testing
+export { app };
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

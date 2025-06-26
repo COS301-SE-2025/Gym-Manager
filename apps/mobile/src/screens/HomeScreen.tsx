@@ -431,7 +431,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeText}>
             Welcome
-            {/*, {currentUser?.firstName || 'User'} */} 👋
+            , {currentUser?.firstName || 'User'}  👋
           </Text>
           
           <View style={styles.passContainer}>
@@ -761,7 +761,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     borderRadius: 10,
     height: 8,
-    width: width - 150,
+    width: width - 180,
     marginRight: 12,
   },
   progressFill: {

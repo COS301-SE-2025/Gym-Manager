@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   Switch,
   ActivityIndicator,
+  Linking,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import IconLogo from '../../components/common/IconLogo';
@@ -59,6 +61,34 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     }
   };
 
+  const handleContactSupport = async () => {
+    const email = 'support@trainwise.co.za';
+    const subject = 'Support Request - TrainWise App';
+    const body = 'Hi TrainWise Support Team,\n\nI need assistance with:\n\n[Please describe your issue here]\n\nThank you for your help!';
+    
+    const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    try {
+      const canOpen = await Linking.canOpenURL(mailtoUrl);
+      if (canOpen) {
+        await Linking.openURL(mailtoUrl);
+      } else {
+        Alert.alert(
+          'Email Not Available',
+          'No email app is configured on your device. Please email us at support@trainwise.co.za',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Failed to open email:', error);
+      Alert.alert(
+        'Error',
+        'Unable to open email app. Please contact us at support@trainwise.co.za',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
   const getInitials = () => {
     if (!currentUser?.firstName || !currentUser?.lastName) {
       return 'U';
@@ -74,10 +104,24 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   };
 
   const getMembershipType = () => {
-    if (currentUser?.roles?.includes('coach')) {
-      return 'Coach';
+    if (!currentUser?.roles || currentUser.roles.length === 0) {
+      return 'Member';
     }
-    return 'Member';
+    
+    const roles = currentUser.roles;
+    const isCoach = roles.includes('coach');
+    const isMember = roles.includes('member');
+    
+    if (isCoach && isMember) {
+      return 'Coach • Member';
+    } else if (isCoach) {
+      return 'Coach';
+    } else if (isMember) {
+      return 'Member';
+    }
+    
+    // Fallback for other roles
+    return roles[0].charAt(0).toUpperCase() + roles[0].slice(1);
   };
 
   if (isLoading) {
@@ -184,7 +228,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <Ionicons name="chevron-forward" size={24} color="#888" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity style={styles.settingItem} onPress={handleContactSupport}>
             <View style={styles.settingLeft}>
               <Ionicons name="mail-outline" size={24} color="#D8FF3E" />
               <View style={styles.settingText}>

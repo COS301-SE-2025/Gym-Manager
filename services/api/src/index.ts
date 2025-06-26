@@ -9,6 +9,7 @@ import classRoutes from './routes/classes';
 import authRoutes from './routes/auth';
 import ongoingClassRoutes from './routes/ongoingClass';
 import userSettingsRoutes from "./routes/userSettings";
+import healthRoutes   from './routes/health';
 
 
 
@@ -22,6 +23,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(bodyParser.json());
+app.use(healthRoutes);
 app.use(authRoutes);
 app.use(scheduleRoutes);
 app.use(classRoutes);

@@ -17,6 +17,7 @@ import IconLogo from '../../components/common/IconLogo';
 import { getUser, User, removeToken, removeUser } from '../../utils/authStorage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
+import { getUserSettings, updateUserVisibility } from '../../services/userSettings';
 
 type ProfileScreenNavigationProp = StackNavigationProp<AuthStackParamList>;
 
@@ -25,7 +26,8 @@ interface ProfileScreenProps {
 }
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
-  const [isLeaderboardPublic, setIsLeaderboardPublic] = useState(true);
+  const [isLeaderboardPublic, setIsLeaderboardPublic] = useState<boolean | null>(null);
+  const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -41,11 +43,47 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       }
     };
 
+    const loadUserSettings = async () => {
+      try {
+        const settings = await getUserSettings();
+        setIsLeaderboardPublic(settings.publicVisibility);
+      } catch (error) {
+        console.error('Failed to load user settings:', error);
+        // Default to true if we can't fetch settings
+        setIsLeaderboardPublic(true);
+      }
+    };
+
     loadUserData();
+    loadUserSettings();
   }, []);
 
-  const toggleLeaderboardVisibility = () => {
-    setIsLeaderboardPublic(!isLeaderboardPublic);
+  const toggleLeaderboardVisibility = async () => {
+    if (isLeaderboardPublic === null || isUpdatingVisibility) return;
+
+    const newValue = !isLeaderboardPublic;
+    setIsUpdatingVisibility(true);
+
+    try {
+      await updateUserVisibility(newValue);
+      setIsLeaderboardPublic(newValue);
+      
+      // Show success feedback
+      Alert.alert(
+        'Settings Updated',
+        `Your leaderboard visibility has been ${newValue ? 'enabled' : 'disabled'}.`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Failed to update visibility:', error);
+      Alert.alert(
+        'Update Failed',
+        'Failed to update your leaderboard visibility. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsUpdatingVisibility(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -183,12 +221,22 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                 </Text>
               </View>
             </View>
-            <Switch
-              value={isLeaderboardPublic}
-              onValueChange={toggleLeaderboardVisibility}
-              trackColor={{ false: '#333', true: '#D8FF3E' }}
-              thumbColor={isLeaderboardPublic ? '#1a1a1a' : '#888'}
-            />
+            <View style={styles.switchContainer}>
+              {isUpdatingVisibility && (
+                <ActivityIndicator 
+                  size="small" 
+                  color="#D8FF3E" 
+                  style={styles.switchLoader}
+                />
+              )}
+              <Switch
+                value={isLeaderboardPublic ?? true}
+                onValueChange={toggleLeaderboardVisibility}
+                trackColor={{ false: '#333', true: '#D8FF3E' }}
+                thumbColor={isLeaderboardPublic ? '#1a1a1a' : '#888'}
+                disabled={isLeaderboardPublic === null || isUpdatingVisibility}
+              />
+            </View>
           </View>
 
           {/* Role Swap - Only show if user has multiple roles */}
@@ -411,5 +459,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  switchLoader: {
+    marginRight: 8,
   },
 }); 

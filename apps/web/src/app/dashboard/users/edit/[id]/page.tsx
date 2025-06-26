@@ -69,18 +69,21 @@ export default function EditUser() {
   if (error) return <div className="form-error">{error}</div>;
 
   return (
-    <div className="edit-user-container">
+    <div className="page-container">
       <header className="page-header">
-        <h1>User Management for ID: {userId} </h1>
+        <div className="header-content">
+          <h1>User Management for ID: {userId}</h1>
+        </div>
       </header>
 
-      <div className="management-card-container">
+      <main className="content-wrapper">
         <div className="management-card">
           <div className="card-title">
             <h2>Manage Roles</h2>
           </div>
           
           <div className="card-content">
+            <h3>Current Roles:</h3>
             <div className="form-group">
               {userRoles.length > 0 ? (
                 <div className="current-roles-grid">
@@ -114,7 +117,7 @@ export default function EditUser() {
               </div>
             ) : (
               <div className="form-group">
-                <h3>Available Roles</h3>
+                <h3>Available Roles:</h3>
                 {availableRoles.length > 0 ? (
                   <div className="available-roles-grid">
                     {availableRoles.map(role => (
@@ -143,7 +146,7 @@ export default function EditUser() {
             )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

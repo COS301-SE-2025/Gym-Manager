@@ -1,32 +1,35 @@
 /* Base Layout */
-.edit-user-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 1.5rem 2rem;
+.page-container {
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  background-color: #1E1E1E;
 }
 
-/* Page Header */
+/* Header Styles */
 .page-header {
   width: 100%;
-  margin-bottom: 2rem;
+  background-color: #1E1E1E;
   padding: 1.5rem 0;
   border-bottom: 1px solid #434343;
 }
 
+.header-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
 .page-header h1 {
   color: white;
-  margin: 0;
+  margin: 0 0 0.5rem 0;
   font-size: 1.8rem;
   font-weight: 600;
-  letter-spacing: 0.5px;
 }
 
 .user-id-display {
   color: #D8FF3E;
   font-size: 1rem;
-  margin-top: 0.5rem;
   font-family: monospace;
   background-color: rgba(216, 255, 62, 0.1);
   padding: 0.5rem 0.75rem;
@@ -34,22 +37,25 @@
   display: inline-block;
 }
 
-/* Card Container - Fixed Width */
-.management-card-container {
+/* Main Content Area */
+.content-wrapper {
+  flex: 1;
   width: 100%;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: center;
 }
 
+/* Management Card */
 .management-card {
-  background-color: #434343;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  margin-bottom: 2rem;
   width: 100%;
   max-width: 800px;
+  background-color: #434343;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 
-/* Card Title */
 .card-title {
   background-color: #2E2E2E;
   padding: 1rem 1.5rem;
@@ -63,24 +69,11 @@
   font-weight: 500;
 }
 
-/* Card Content */
 .card-content {
   padding: 1.5rem;
 }
 
-/* Form Elements */
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-group h3 {
-  color: white;
-  margin: 0 0 1rem 0;
-  font-size: 1.1rem;
-  font-weight: 500;
-}
-
-/* Current Roles Grid */
+/* Current Roles */
 .current-roles-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -97,11 +90,6 @@
   border-radius: 6px;
   color: white;
   border-left: 3px solid #D8FF3E;
-  transition: transform 0.2s;
-}
-
-.current-role-item:hover {
-  transform: translateY(-2px);
 }
 
 .role-name {
@@ -123,16 +111,14 @@
 
 .remove-button:hover {
   background-color: #e03535;
-  box-shadow: 0 1px 3px rgba(255, 62, 62, 0.3);
 }
 
 .remove-button:disabled {
   background-color: #7a2a2a;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
-/* Available Roles Grid */
+/* Available Roles */
 .available-roles-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -154,18 +140,14 @@
 
 .add-button:hover {
   background-color: #3E3E3E;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .add-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
-/* Messages and Status */
+/* Messages */
 .no-roles-message {
   color: #aaa;
   font-style: italic;
@@ -189,12 +171,10 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: all 0.2s;
 }
 
 .cancel-button:hover {
   background-color: #3E3E3E;
-  border-color: #888;
 }
 
 .submit-button {
@@ -206,21 +186,18 @@
   font-weight: 600;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: all 0.2s;
 }
 
 .submit-button:hover {
   background-color: #c4e639;
-  box-shadow: 0 2px 6px rgba(216, 255, 62, 0.3);
 }
 
 .submit-button:disabled {
   background-color: #748c24;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
-/* Loading and Error States */
+/* Status Messages */
 .loading {
   color: white;
   text-align: center;
@@ -235,25 +212,21 @@
   margin-bottom: 1.5rem;
   border-radius: 4px;
   border: 1px solid #FF3E3E;
-  font-size: 0.95rem;
 }
 
-/* Responsive Adjustments */
 @media (max-width: 768px) {
-  .edit-user-container {
-    padding: 0 1rem 1.5rem;
+  .header-content,
+  .content-wrapper {
+    padding: 0 1rem;
+  }
+  
+  .management-card {
+    border-radius: 0;
+    max-width: 390;
   }
   
   .current-roles-grid,
   .available-roles-grid {
     grid-template-columns: 1fr;
-  }
-  
-  .page-header h1 {
-    font-size: 1.5rem;
-  }
-  
-  .card-content {
-    padding: 1rem;
   }
 }

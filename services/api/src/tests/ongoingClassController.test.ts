@@ -8,7 +8,6 @@ import { Request, Response } from 'express';
 import { builder } from './builder';
 
 // ──────────────────── Drizzle Mock ──────────────────────────
-// ──────────────────── Drizzle Mock ──────────────────────────
 var insertMock: jest.Mock;
 
 jest.mock('../db/client', () => {
@@ -25,7 +24,6 @@ jest.mock('../db/client', () => {
     },
   };
 });
-
 
 
 // ──────────────────── Helpers ───────────────────────────────
@@ -54,9 +52,8 @@ jest.useFakeTimers().setSystemTime(NOW);
 // clear stubs between tests
 afterEach(jest.clearAllMocks);
 
-//
+
 // ──────────────── getLeaderboard ────────────────────────────
-//
 describe('getLeaderboard', () => {
   it('400 if classId missing', async () => {
     const res = mockRes();
@@ -74,9 +71,8 @@ describe('getLeaderboard', () => {
   });
 });
 
-//
+
 // ──────────────── getLiveClass ──────────────────────────────
-//
 describe('getLiveClass', () => {
   const today = NOW.toISOString().slice(0, 10);
   const eleven = '11:59:00';

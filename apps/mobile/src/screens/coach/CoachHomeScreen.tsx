@@ -286,7 +286,10 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
         <IconLogo width={50} height={46} />
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeText}>Hey, Coach 👋</Text>
-          <TouchableOpacity style={styles.switchButton}>
+          <TouchableOpacity 
+            style={styles.switchButton}
+            onPress={() => navigation.getParent()?.navigate('RoleSelection')}
+          >
             <View style={styles.switchIcon}>
               <View style={styles.switchTrack}>
                 <View style={styles.switchThumb} />

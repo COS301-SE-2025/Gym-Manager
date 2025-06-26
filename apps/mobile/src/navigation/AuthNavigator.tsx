@@ -15,6 +15,7 @@ import LeaderboardScreen from '../screens/home/LeaderboardScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import FAQScreen from '../screens/home/FAQScreen';
+import ProfileScreen from '../screens/profile/ProfileScreen';
 
 export type AuthStackParamList = {
   MemberTabs: undefined;
@@ -58,6 +59,15 @@ function MemberTabNavigator() {
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="trophy-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" color={color} size={size} />
           ),
         }}
       />

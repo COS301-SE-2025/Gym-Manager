@@ -10,6 +10,8 @@ import authRoutes from './routes/auth';
 import ongoingClassRoutes from './routes/ongoingClass';
 import userSettingsRoutes from "./routes/userSettings";
 import healthRoutes   from './routes/health';
+import { requestTimeout } from './middleware/requestTimeout';
+import { errorHandler   } from './middleware/errorHandler';
 
 
 
@@ -19,22 +21,24 @@ const app = express();
 const port = process.env.PORT || 4000;
 
 app.use(cors({
-  origin: 'http://localhost:3000', 
+  origin: 'http://localhost:3000',
   credentials: true,
 }));
+
 app.use(bodyParser.json());
+app.use(requestTimeout(10_000));
 app.use(healthRoutes);
 app.use(authRoutes);
 app.use(scheduleRoutes);
 app.use(classRoutes);
 app.use(ongoingClassRoutes);
 app.use(userSettingsRoutes);
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
-  console.log("Ongoing class routes loaded");
-
 });
+
 
 // 404 Handler
 app.use((req, res, next) => {

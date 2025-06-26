@@ -1,9 +1,8 @@
-// === services/api/src/routes/schedule.ts ===
 /**
  * @swagger
  * tags:
- *   name: Admin
- *   description: Schedule and user-role assignment endpoints
+ *   - name: Admin
+ *     description: Schedule and user-role assignment endpoints
  */
 
 /**
@@ -11,7 +10,7 @@
  * /schedule/create:
  *   post:
  *     summary: Create a new class
- *     tags: [Schedule]
+ *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -20,6 +19,12 @@
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - capacity
+ *               - scheduledDate
+ *               - scheduledTime
+ *               - durationMinutes
+ *               - createdBy
  *             properties:
  *               capacity:
  *                 type: integer
@@ -39,7 +44,7 @@
  *                 type: integer
  *     responses:
  *       201:
- *         description: Class created
+ *         description: Class created successfully
  */
 
 /**
@@ -47,7 +52,7 @@
  * /schedule/assign-coach:
  *   post:
  *     summary: Assign a coach to a class
- *     tags: [Schedule]
+ *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -56,6 +61,7 @@
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [coachId, classId]
  *             properties:
  *               coachId:
  *                 type: integer
@@ -63,7 +69,7 @@
  *                 type: integer
  *     responses:
  *       200:
- *         description: Coach assigned
+ *         description: Coach assigned successfully
  */
 
 /**
@@ -71,7 +77,7 @@
  * /roles/assign:
  *   post:
  *     summary: Assign a role to a user
- *     tags: [Schedule]
+ *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -80,6 +86,7 @@
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [userId, userRole]
  *             properties:
  *               userId:
  *                 type: integer
@@ -88,7 +95,7 @@
  *                 enum: [member, coach, admin, manager]
  *     responses:
  *       200:
- *         description: Role assigned
+ *         description: Role assigned successfully
  */
 
 /**
@@ -96,7 +103,7 @@
  * /members:
  *   post:
  *     summary: Get all gym members
- *     tags: [Schedule]
+ *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -106,23 +113,179 @@
 
 /**
  * @swagger
- * /roles/getUsersByRole:
+ * /roles/getUsersByRole/{role}:
  *   get:
  *     summary: Get users by their role
- *     tags: [Schedule]
+ *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: query
+ *       - in: path
  *         name: role
  *         schema:
  *           type: string
+ *           enum: [member, coach, admin, manager]
  *         required: true
- *         description: Role to filter by (e.g. member, coach, admin)
+ *         description: Role to filter by
  *     responses:
  *       200:
  *         description: List of users by role
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   userId:
+ *                     type: integer
+ *                   firstName:
+ *                     type: string
+ *                   lastName:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                   phone:
+ *                     type: string
  */
+
+
+/**
+ * @swagger
+ * /users/allUsers:
+ *   get:
+ *     summary: Get all users
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all users
+ */
+
+/**
+ * @swagger
+ * /roles/removeAdminRole:
+ *   post:
+ *     summary: Remove admin role from a user
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId]
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Admin role removed successfully
+ */
+
+/**
+ * @swagger
+ * /roles/removeCoachRole:
+ *   post:
+ *     summary: Remove coach role from a user
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId]
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Coach role removed successfully
+ */
+
+/**
+ * @swagger
+ * /roles/removeManagerRole:
+ *   post:
+ *     summary: Remove manager role from a user
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId]
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Manager role removed successfully
+ */
+
+/**
+ * @swagger
+ * /roles/removeMemberRole:
+ *   post:
+ *     summary: Remove member role from a user
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId]
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Member role removed successfully
+ */
+
+/**
+ * @swagger
+ * /roles/getRolesByUserId/{userId}:
+ *   get:
+ *     summary: Get all roles assigned to a user
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the user to get roles for
+ *     responses:
+ *       200:
+ *         description: List of roles assigned to the user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 enum: [member, coach, admin, manager]
+ *       404:
+ *         description: No roles found for this user
+ *       500:
+ *         description: Internal server error
+ */
+
 import express from 'express';
 import {
   createWeeklySchedule,
@@ -137,6 +300,7 @@ import {
   removeCoachRole,
   removeManagerRole,
   removeMemberRole,
+  getRolesByUserId,
 } from '../controllers/adminController';
 import { isAuthenticated } from '../middleware/auth';
 
@@ -154,5 +318,6 @@ router.post('/roles/removeAdminRole', isAuthenticated, removeAdminRole);
 router.post('/roles/removeCoachRole', isAuthenticated, removeCoachRole);
 router.post('/roles/removeManagerRole', isAuthenticated, removeManagerRole);
 router.post('/roles/removeMemberRole', isAuthenticated, removeMemberRole);
+router.get('/roles/getRolesByUserId/:userId', isAuthenticated, getRolesByUserId);
 
 export default router;

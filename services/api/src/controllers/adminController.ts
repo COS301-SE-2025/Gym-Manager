@@ -327,3 +327,23 @@ function endOfWeek(date: Date, options: { weekStartsOn: number }): Date {
   return end;
 }
 
+
+//Get roles by userId
+export const getRolesByUserId = async (req: Request, res: Response) => {
+  const userId = parseInt(req.params.userId, 10);
+  if (isNaN(userId)) {
+    return res.status(400).json({ error: 'Invalid userId' });
+  }
+
+  const roles = await db
+    .select({ role: userroles.userRole })
+    .from(userroles)
+    .where(eq(userroles.userId, userId));
+
+  if (roles.length === 0) {
+    return res.status(404).json({ error: 'No roles found for this user' });
+  }
+
+  res.json(roles.map((r) => r.role));
+}
+

@@ -102,20 +102,15 @@ export const UserRoleService = {
   },
 
   async getUserById(userId: number): Promise<User> {
-  try {
-    const token = localStorage.getItem('authToken');
-    const res = await axios.get('http://localhost:4000/users/allUsers', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const users: User[] = res.data;
-    console.log(res.data);
-    const user = users.find((u) => u.userId === userId);
-    if (!user) throw new Error('User not found');
-    return user;
-  } catch (err) {
-    console.error('Failed to get user by ID:', err);
-    throw err;
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await axios.get(`http://localhost:4000/users/getUserById/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (err) {
+      console.error('Failed to get user by ID:', err);
+      throw err;
+    }
   }
-}
 };

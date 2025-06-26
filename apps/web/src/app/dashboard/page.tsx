@@ -5,11 +5,18 @@ import WeeklyCalendar from '../../components/WeeklyCalendar/WeeklyCalendar';
 import { CalendarEvent, ClassScheduleItem, User } from '../../types/types';
 import { getDummyCalendarEvents, transformApiDataToEvents } from '../../utils/calendarHelpers';
 import { UserRoleService } from '../services/roles';
+import ClassCreationModal from '@/components/modals/CreateClass/CreateClass';
+import AssignCoachModal from '@/components/modals/AssignCoach/AssignCoach';
+import { ClassResource } from '@/components/modals/AssignCoach/AssignCoach';
 
 export default function DashboardPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isClassModalOpen, setIsClassModalOpen] = useState(false);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [selectedClassInfo, setSelectedClassInfo] = useState<ClassResource | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -44,21 +51,35 @@ export default function DashboardPage() {
     fetchData();
   }, []);
 
+  // const handleEventClick = (event: CalendarEvent) => {
+  //   const classInfo = event.resource;
+  //   if (classInfo) {
+  //     // Create a custom modal instead of alert for better UX
+  //     const modalContent = `
+  //       🏋️ ${classInfo.workoutName}
+  //       👨‍💼 Coach: ${classInfo.coachName}
+  //       👥 Capacity: ${classInfo.capacity} people
+  //       ⏱️ Duration: ${classInfo.durationMinutes} minutes
+  //       📅 ${new Date(classInfo.scheduledDate).toLocaleDateString()}
+  //       🕒 ${classInfo.scheduledTime}
+  //     `;
+  //     alert(modalContent);
+  //   }
+  //   if (classInfo && classInfo.classId) {
+  //     setSelectedClassId(classInfo.classId);
+  //     setAssignModalOpen(true);
+  //   }
+  // };
+
   const handleEventClick = (event: CalendarEvent) => {
-    const classInfo = event.resource;
-    if (classInfo) {
-      // Create a custom modal instead of alert for better UX
-      const modalContent = `
-        🏋️ ${classInfo.workoutName}
-        👨‍💼 Coach: ${classInfo.coachName}
-        👥 Capacity: ${classInfo.capacity} people
-        ⏱️ Duration: ${classInfo.durationMinutes} minutes
-        📅 ${new Date(classInfo.scheduledDate).toLocaleDateString()}
-        🕒 ${classInfo.scheduledTime}
-      `;
-      alert(modalContent);
-    }
-  };
+  const classInfo = event.resource;
+  if (classInfo && classInfo.classId) {
+    setSelectedClassId(classInfo.classId);
+    setSelectedClassInfo(classInfo);
+    setAssignModalOpen(true);
+  }
+};
+
 
   const getUserDisplayName = () => {
     if (currentUser) {
@@ -127,9 +148,7 @@ export default function DashboardPage() {
           onMouseOut={(e) => {
             e.currentTarget.style.backgroundColor = '#d0d0d0';
           }}
-          onClick={() => {
-            window.location.href = '/dashboard/schedule';
-          }}
+          onClick={() => setIsClassModalOpen(true)}
         >
           Add Class
         </button>
@@ -149,6 +168,17 @@ export default function DashboardPage() {
           loading={loading}
         />
       </div>
+      <ClassCreationModal 
+        isOpen={isClassModalOpen} 
+        onClose={() => setIsClassModalOpen(false)} 
+        onCreated={() => {}}
+      />
+        <AssignCoachModal
+          isOpen={assignModalOpen}
+          onClose={() => setAssignModalOpen(false)}
+          classInfo={selectedClassInfo}
+          onAssigned={() => {}}
+        />
     </div>
   );
 }

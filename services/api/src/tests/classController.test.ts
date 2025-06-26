@@ -6,14 +6,15 @@ import { db } from '../db/client';
 import { Request, Response } from 'express';
 import { builder } from './builder';
 
-// ────────────────── Drizzle mocks ───────────────────────────
+// ---------- Drizzle mocks ----------
 const txMock = {
-  select : jest.fn(),
-  insert : jest.fn(),
+  select : jest.fn().mockReturnValue(builder([])),
+  insert : jest.fn().mockReturnValue(builder()),
   where  : jest.fn().mockReturnThis(),
   for    : jest.fn().mockReturnThis(),
   limit  : jest.fn().mockReturnThis(),
 };
+
 jest.mock('../db/client', () => ({
   db: {
     select      : jest.fn(),
@@ -23,7 +24,7 @@ jest.mock('../db/client', () => ({
   },
 }));
 
-// ────────────────── helpers ────────────────────────────────
+// ---------- helpers ----------
 const mockReq = (uid?: number, extras: Record<string, unknown> = {}): Request =>
   ({ user: uid ? { userId: uid } : undefined, ...extras } as unknown as Request);
 
@@ -78,8 +79,8 @@ describe('assignWorkoutToClass', () => {
 describe('getAllClasses', () => {
   it('member sees full list', async () => {
     (db.select as jest.Mock)
-      .mockReturnValueOnce(builder([{ role: 'member' }]))   // roles lookup
-      .mockReturnValueOnce(builder([{ classId: 1 }, { classId: 2 }])); // classes
+      .mockReturnValueOnce(builder([{ role: 'member' }]))
+      .mockReturnValueOnce(builder([{ classId: 1 }, { classId: 2 }]));
     const res = mockRes();
     await ctrl.getAllClasses(mockReq(2), res);
     expect(res.json).toHaveBeenCalledWith([{ classId: 1 }, { classId: 2 }]);
@@ -105,25 +106,27 @@ describe('getMemberClasses', () => {
 
 describe('bookClass (original happy/dup tests)', () => {
   it('books successfully', async () => {
-    (db.select as jest.Mock)
-      .mockReturnValueOnce(builder([{ status: 'approved' }]))
-      .mockReturnValueOnce(builder([{ classId: 1, capacity: 10, scheduledDate: '2100-01-01', scheduledTime: '12:00:00', duration: 60 }]))
+    (txMock.select as jest.Mock)
+      .mockReturnValueOnce(builder([{
+        classId: 1, capacity: 10, scheduledDate: '2100-01-01',
+        scheduledTime: '12:00:00', duration: 60 }]))
       .mockReturnValueOnce(builder([]))
       .mockReturnValueOnce(builder([{ count: 0 }]));
-    (db.insert as jest.Mock).mockReturnValue(builder());
 
     const req = mockReq(4, { body: { classId: 1 } });
     const res = mockRes();
     await ctrl.bookClass(req, res);
-    expect(db.insert).toHaveBeenCalled();
+    expect(txMock.insert).toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith({ success: true });
   });
 
   it('400 duplicate booking', async () => {
-    (db.select as jest.Mock)
-      .mockReturnValueOnce(builder([{ status: 'approved' }]))
-      .mockReturnValueOnce(builder([{ classId: 1, capacity: 10, scheduledDate: '2100-01-01', scheduledTime: '12:00:00', duration: 60 }]))
+    (txMock.select as jest.Mock)
+      .mockReturnValueOnce(builder([{
+        classId: 1, capacity: 10, scheduledDate: '2100-01-01',
+        scheduledTime: '12:00:00', duration: 60 }]))
       .mockReturnValueOnce(builder([{ bookingId: 99 }]));
+
     const req = mockReq(4, { body: { classId: 1 } });
     const res = mockRes();
     await ctrl.bookClass(req, res);
@@ -192,14 +195,12 @@ describe('bookClass – extra error branches', () => {
   });
 
   it('400 class full', async () => {
-    // 1) class exists
-    (txMock.select as jest.Mock).mockReturnValueOnce(builder([{
-      capacity: 1, scheduledDate: '2100-01-01', scheduledTime: '12:00:00', duration: 30,
-    }]));
-    // 2) dup-check
-    (txMock.select as jest.Mock).mockReturnValueOnce(builder([]));
-    // 3) count == capacity
-    (txMock.select as jest.Mock).mockReturnValueOnce(builder([{ count: 1 }]));
+    (txMock.select as jest.Mock)
+      .mockReturnValueOnce(builder([{
+        capacity: 1, scheduledDate: '2100-01-01', scheduledTime: '12:00:00', duration: 30,
+      }]))
+      .mockReturnValueOnce(builder([]))
+      .mockReturnValueOnce(builder([{ count: 1 }]));
 
     const res = mockRes();
     await ctrl.bookClass(baseReq({ classId: 1 }), res);
@@ -208,7 +209,7 @@ describe('bookClass – extra error branches', () => {
   });
 
   it('400 class already ended', async () => {
-    const past = new Date(Date.now() - 60_000).toISOString().split('T'); // 1 min ago
+    const past = new Date(Date.now() - 60_000).toISOString().split('T');
     (txMock.select as jest.Mock).mockReturnValueOnce(builder([{
       capacity: 10,
       scheduledDate: past[0],

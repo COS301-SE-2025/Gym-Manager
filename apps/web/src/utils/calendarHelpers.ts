@@ -1,5 +1,31 @@
 import { WeeklyScheduleResponse, CalendarEvent, ClassScheduleItem } from '../types/types';
 
+// Transform API data to calendar events
+export const transformApiDataToEvents = (apiData: Record<string, any[]>): CalendarEvent[] => {
+  const events: CalendarEvent[] = [];
+  
+  Object.entries(apiData).forEach(([date, classes]) => {
+    classes.forEach((cls) => {
+      const [hours, minutes] = cls.scheduledTime.split(':').map(Number);
+      const startTime = new Date(date);
+      startTime.setHours(hours, minutes, 0, 0);
+      
+      const endTime = new Date(startTime);
+      endTime.setMinutes(endTime.getMinutes() + cls.durationMinutes);
+      
+      events.push({
+        id: cls.classId,
+        title: cls.workoutName,
+        start: startTime,
+        end: endTime,
+        resource: cls
+      });
+    });
+  });
+  
+  return events;
+};
+
 // Generate simple events directly for calendar (following the example pattern)
 export const getDummyCalendarEvents = (): CalendarEvent[] => {
   const now = new Date();

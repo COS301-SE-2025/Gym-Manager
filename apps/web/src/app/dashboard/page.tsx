@@ -2,22 +2,46 @@
 
 import React, { useState, useEffect } from 'react';
 import WeeklyCalendar from '../../components/WeeklyCalendar/WeeklyCalendar';
-import { CalendarEvent, ClassScheduleItem } from '../../types/types';
-import { getDummyCalendarEvents } from '../../utils/calendarHelpers';
+import { CalendarEvent, ClassScheduleItem, User } from '../../types/types';
+import { getDummyCalendarEvents, transformApiDataToEvents } from '../../utils/calendarHelpers';
+import { UserRoleService } from '../services/roles';
 
 export default function DashboardPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Simulate loading time
-    const timer = setTimeout(() => {
-      const calendarEvents = getDummyCalendarEvents();
-      setEvents(calendarEvents);
-      setLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
+    const fetchData = async () => {
+      try {
+        // Fetch both schedule and user data in parallel
+        const [apiData, userData] = await Promise.all([
+          UserRoleService.getWeeklySchedule(),
+          UserRoleService.getCurrentUser()
+        ]);
+        
+        const calendarEvents = transformApiDataToEvents(apiData);
+        setEvents(calendarEvents);
+        setCurrentUser(userData);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        // Fallback to dummy data
+        const calendarEvents = getDummyCalendarEvents();
+        setEvents(calendarEvents);
+        
+        // Try to get user data separately if schedule failed
+        try {
+          const userData = await UserRoleService.getCurrentUser();
+          setCurrentUser(userData);
+        } catch (userError) {
+          console.error('Failed to load user data:', userError);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
   }, []);
 
   const handleEventClick = (event: CalendarEvent) => {
@@ -34,6 +58,13 @@ export default function DashboardPage() {
       `;
       alert(modalContent);
     }
+  };
+
+  const getUserDisplayName = () => {
+    if (currentUser) {
+      return `${currentUser.firstName} ${currentUser.lastName}`;
+    }
+    return 'User';
   };
 
   return (
@@ -63,7 +94,7 @@ export default function DashboardPage() {
             margin: 0,
             padding: 0
           }}>
-            Welcome, username 👋
+            Welcome, {getUserDisplayName()} 👋
           </h1>
           <p style={{ 
             color: '#ffffff', 
@@ -97,8 +128,7 @@ export default function DashboardPage() {
             e.currentTarget.style.backgroundColor = '#d0d0d0';
           }}
           onClick={() => {
-            // Add class functionality here
-            alert('Add Class functionality to be implemented');
+            window.location.href = '/dashboard/schedule';
           }}
         >
           Add Class

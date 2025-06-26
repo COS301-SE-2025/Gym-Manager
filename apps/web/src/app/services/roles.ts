@@ -66,6 +66,41 @@ export const UserRoleService = {
       throw error;
     }
   },
+
+  async getWeeklySchedule() {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await axios.get('http://localhost:4000/schedule/getWeeklySchedule', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch weekly schedule:', error);
+      throw error;
+    }
+  },
+
+  async getCurrentUser(): Promise<User> {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No auth token found');
+      }
+
+      // Decode JWT to get user ID (simple base64 decode of payload)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userId = payload.userId;
+
+      const response = await axios.get(`http://localhost:4000/users/getUserById/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get current user:', error);
+      throw error;
+    }
+  },
+
   async getUserById(userId: number): Promise<User> {
   try {
     const token = localStorage.getItem('authToken');

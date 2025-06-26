@@ -75,7 +75,7 @@ jobs:
         working-directory: ./services/api
 
       - name: Run tests with coverage
-        run: npm run test:coverage
+        run: npm run test:unit
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

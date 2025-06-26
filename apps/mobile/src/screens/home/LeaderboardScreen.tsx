@@ -16,7 +16,7 @@ const LeaderboardScreen = () => {
     setError('');
     try {
       const token = await getToken();
-      // Get the current live class
+     
       const liveClass = await getLiveClass(token);
       if (!liveClass || !liveClass.class || !liveClass.class.classId) {
         setError('No live class found');

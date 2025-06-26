@@ -288,12 +288,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const handleConfirmBooking = async (classId: string): Promise<boolean> => {
     console.log('Attempting to book class:', classId);
-    // Note: classId here is a string, from ClassItem.id which comes from apiClass.classId.toString()
-    // The backend API /member/bookClass expects { classId: classId_value }
-    // The actual classId in the database is a number. 
-    // For Drizzle, string numbers in 'eq' comparisons might work due to type coercion in some DBs, but it's safer to ensure type consistency.
-    // However, req.body.classId will be a string from JSON. The controller uses it directly.
-    // Let's assume the API handles string `classId` correctly or change it if issues arise.
 
     try {
       const token = await getToken();
@@ -302,8 +296,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         return false;
       }
 
-      // The classId parameter for the API should be the numeric class ID.
-      // The `classId` argument to this function is already the correct ID (as a string).
+      
       const response = await axios.post(
         'http://localhost:4000/member/bookClass',
         { classId: classId }, 
@@ -335,7 +328,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         }
         return true;
       } else {
-        // This path might not be hit if API throws HTTP errors for business logic failures
         Alert.alert("Booking Failed", response.data.error || "Could not book the class. Please try again.");
         return false;
       }
@@ -346,7 +338,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         errorMessage = error.response.data.error || `Booking failed: ${error.response.statusText} (Status: ${error.response.status})`;
         if (error.response.status === 401) {
           errorMessage = "Session expired. Please log in again.";
-          // Here you might want to navigate to a login screen or trigger a re-login flow
         } else if (error.response.status === 400 && error.response.data.error === "Already booked") {
           errorMessage = "You have already booked this class.";
         }
@@ -358,7 +349,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const handleConfirmCancellation = (classId: string) => {
     console.log('Cancellation confirmed for class:', classId);
-    // Here you would typically make an API call to cancel the class
   };
 
   const handleCloseSheet = () => {

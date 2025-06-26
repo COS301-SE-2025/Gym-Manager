@@ -31,13 +31,13 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
 
-  // Email validation function
+
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  // Real-time validation
+
   const validateField = (field: 'email' | 'password', value: string) => {
     const newErrors = { ...errors };
 
@@ -129,7 +129,7 @@ export default function LoginScreen() {
         console.warn('Login response does not contain user information.');
       }
 
-      // Add role-based navigation
+   
       if (response.data && response.data.user && response.data.user.roles) {
         const roles = response.data.user.roles;
         if (roles.includes('member') && roles.includes('coach')) {

@@ -84,14 +84,12 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
 
-      // Sort classes by date and time
       const sortedClasses = response.data.sort((a, b) => {
         const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
         const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
         return dateTimeA.getTime() - dateTimeB.getTime();
       });
 
-      // Separate classes based on whether they have a workout assigned
       const classesNeedingWorkout: WorkoutItem[] = sortedClasses
         .filter(c => c.workoutId === null)
         .map(c => ({
@@ -161,7 +159,6 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
     fetchData();
   }, []);
 
-  // Refresh data when screen comes into focus (e.g., returning from SetWorkoutScreen)
   useFocusEffect(
     React.useCallback(() => {
       fetchCoachClasses();

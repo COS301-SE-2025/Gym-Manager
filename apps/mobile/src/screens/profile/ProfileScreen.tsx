@@ -68,7 +68,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       await updateUserVisibility(newValue);
       setIsLeaderboardPublic(newValue);
       
-      // Show success feedback
+    
       Alert.alert(
         'Settings Updated',
         `Your leaderboard visibility has been ${newValue ? 'enabled' : 'disabled'}.`,
@@ -88,11 +88,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
   const handleLogout = async () => {
     try {
-      // Clear stored authentication data
+
       await removeToken();
       await removeUser();
       
-      // Navigate back to login screen
+
       navigation.navigate('Login');
     } catch (error) {
       console.error('Failed to logout:', error);
@@ -158,7 +158,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       return 'Member';
     }
     
-    // Fallback for other roles
+
     return roles[0].charAt(0).toUpperCase() + roles[0].slice(1);
   };
 

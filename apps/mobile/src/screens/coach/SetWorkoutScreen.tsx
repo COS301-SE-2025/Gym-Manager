@@ -105,7 +105,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         return;
       }
 
-      // Step 1: Create a new workout
+ 
       const createWorkoutResponse = await axios.post(
         'http://localhost:4000/coach/createWorkout',
         {
@@ -121,7 +121,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
       const workoutId = createWorkoutResponse.data.workoutId;
 
-      // Step 2: Assign the workout to the class
+
       const assignWorkoutResponse = await axios.post(
         'http://localhost:4000/coach/assignWorkout',
         {

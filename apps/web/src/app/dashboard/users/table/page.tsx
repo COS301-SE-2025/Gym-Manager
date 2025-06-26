@@ -70,6 +70,7 @@ const [users, setUsers] = useState<User[]>([]);
       <table className="user-table">
         <thead>
           <tr>
+            <th>User ID</th>
             <th>First Name</th>
             <th>Last Name</th>
             <th>Email</th>
@@ -83,6 +84,7 @@ const [users, setUsers] = useState<User[]>([]);
         <tbody>
           {users.map((user) => (
             <tr key={user.userId}>
+              <td>{user.userId}</td>
               <td>{user.firstName}</td>
               <td>{user.lastName}</td>
               <td>{user.email}</td>

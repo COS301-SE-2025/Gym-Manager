@@ -189,7 +189,7 @@ export const getAllMembers = async (req: Request, res: Response) => {
 
 // GET /roles/getUsersByRole/
 export const getUsersByRole = async (req: Request, res: Response) => {
-  const role = req.query.role;
+  const role = req.params.role;
 
   const allowedRoles = ['coach', 'member', 'admin', 'manager'] as const;
   type RoleType = typeof allowedRoles[number];

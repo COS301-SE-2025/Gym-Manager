@@ -13,7 +13,8 @@
     "format:fix": "prettier --write 'src/**/*.{ts,tsx,json,css,md}'",
     "prepare": "husky install",
     "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --coverage --testPathPattern=tests/unit"
   },
   "keywords": [],
   "author": "",

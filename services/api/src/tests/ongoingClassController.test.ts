@@ -8,17 +8,25 @@ import { Request, Response } from 'express';
 import { builder } from './builder';
 
 // ──────────────────── Drizzle Mock ──────────────────────────
-const insertMock = jest.fn(() => ({
-  values: () => ({
-    onConflictDoUpdate: () => Promise.resolve(),   // upsert chain end
-  }),
-}));
-jest.mock('../db/client', () => ({
-  db: {
-    select : jest.fn(),
-    insert : insertMock,
-  },
-}));
+// ──────────────────── Drizzle Mock ──────────────────────────
+var insertMock: jest.Mock;
+
+jest.mock('../db/client', () => {
+  insertMock = jest.fn(() => ({
+    values: () => ({
+      onConflictDoUpdate: () => Promise.resolve(),
+    }),
+  }));
+
+  return {
+    db: {
+      select : jest.fn(),
+      insert : (...args: any[]) => insertMock(...args),
+    },
+  };
+});
+
+
 
 // ──────────────────── Helpers ───────────────────────────────
 const mockReq = (
@@ -80,9 +88,8 @@ describe('getLiveClass', () => {
   });
 
   it('coach branch returns participants', async () => {
-    // 1st select → class row
     (db.select as jest.Mock)
-      .mockReturnValueOnce(builder([{         // classes query
+      .mockReturnValueOnce(builder([{
         classId: 7,
         scheduledDate: today,
         scheduledTime: eleven,
@@ -92,9 +99,9 @@ describe('getLiveClass', () => {
         workoutName: 'Blast',
         workoutContent: '...'
       }]))
-      .mockReturnValueOnce(builder([{ userId: 40 }, { userId: 41 }])); // participants
+      .mockReturnValueOnce(builder([{ userId: 40 }, { userId: 41 }]));
 
-    const req = mockReq(30, ['coach']); // coachId matches
+    const req = mockReq(30, ['coach']);
     const res = mockRes();
     await ctrl.getLiveClass(req, res);
 
@@ -107,7 +114,6 @@ describe('getLiveClass', () => {
   });
 
   it('member branch returns own class', async () => {
-    // classbookings join returns class
     (db.select as jest.Mock).mockReturnValue(builder([{
       classId: 9,
       scheduledDate: today,
@@ -131,13 +137,72 @@ describe('getLiveClass', () => {
   });
 
   it('returns ongoing=false when nothing live', async () => {
-    (db.select as jest.Mock).mockReturnValue(builder([])); // empty
+    (db.select as jest.Mock).mockReturnValue(builder([]));
     const res = mockRes();
     await ctrl.getLiveClass(mockReq(99, ['member']), res);
     expect(res.json).toHaveBeenCalledWith({ ongoing: false });
   });
 });
 
-//
+
 // ──────────────── submitScore ───────────────────────────────
-//
+describe('submitScore', () => {
+  const baseReq = (userId: number, roles: string[], body: any) =>
+    mockReq(userId, roles, { body });
+
+  it('401 when unauthenticated', async () => {
+    const res = mockRes();
+    await ctrl.submitScore(mockReq(undefined), res);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  describe('coach flow', () => {
+    it('403 if coach not assigned to class', async () => {
+      (db.select as jest.Mock).mockReturnValue(builder([{ coachId: 999 }])); // wrong coach
+      const req = baseReq(30, ['coach'], {
+        classId: 8,
+        scores: [{ userId: 2, score: 90 }],
+      });
+      const res = mockRes();
+      await ctrl.submitScore(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
+    it('successfully upserts scores', async () => {
+      (db.select as jest.Mock).mockReturnValue(builder([{ coachId: 30 }]));
+      const req = baseReq(30, ['coach'], {
+        classId: 8,
+        scores: [
+          { userId: 2, score: 90 },
+          { userId: 3, score: 70 },
+        ],
+      });
+      const res = mockRes();
+      await ctrl.submitScore(req, res);
+      // insert called twice
+      expect(insertMock).toHaveBeenCalledTimes(2);
+      expect(res.json).toHaveBeenCalledWith({ success: true, updated: 2 });
+    });
+  });
+
+  describe('member flow', () => {
+    it('403 if not booked', async () => {
+      // bookingExists query returns empty
+      (db.select as jest.Mock).mockReturnValue(builder([]));
+      const req = baseReq(40, ['member'], { classId: 5, score: 55 });
+      const res = mockRes();
+      await ctrl.submitScore(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
+    it('inserts own score', async () => {
+      // bookingExists query returns one row
+      (db.select as jest.Mock).mockReturnValue(builder([{}]));
+      const req = baseReq(40, ['member'], { classId: 5, score: 60 });
+      const res = mockRes();
+      await ctrl.submitScore(req, res);
+      expect(insertMock).toHaveBeenCalledTimes(1);
+      expect(res.json).toHaveBeenCalledWith({ success: true });
+    });
+  });
+});

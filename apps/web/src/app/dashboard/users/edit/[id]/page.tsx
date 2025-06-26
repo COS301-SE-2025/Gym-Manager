@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { UserRole } from '@/types/types';
+import { UserRole, User } from '@/types/types';
 import { UserRoleService } from '@/app/services/roles';
 import './styles.css';
 
@@ -14,26 +14,31 @@ export default function EditUser() {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>([]);
   const [showAvailableRoles, setShowAvailableRoles] = useState(false);
 
   useEffect(() => {
-    const fetchRoles = async () => {
+    const fetchUserData = async () => {
       try {
         setLoading(true);
-        const roles = await UserRoleService.RolesByUser(userId);
+        const [userData, roles] = await Promise.all([
+          UserRoleService.getUserById(userId),
+          UserRoleService.RolesByUser(userId)
+        ]);
+        setUser(userData);
         setUserRoles(roles);
         setAvailableRoles(ALL_ROLES.filter(role => !roles.includes(role)));
       } catch (err) {
-        setError('Failed to load roles');
+        setError('Failed to load user data');
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRoles();
+    fetchUserData();
   }, [userId]);
 
   const handleAssign = async (role: UserRole) => {
@@ -68,11 +73,13 @@ export default function EditUser() {
   if (loading) return <div className="loading">Loading roles...</div>;
   if (error) return <div className="form-error">{error}</div>;
 
+  const displayName = user ? `${user.firstName} ${user.lastName} (ID: ${userId})` : `ID: ${userId}`;
+
   return (
     <div className="page-container">
       <header className="page-header">
         <div className="header-content">
-          <h1>User Management for ID: {userId}</h1>
+          <h1>User Management for {displayName}</h1>
         </div>
       </header>
 

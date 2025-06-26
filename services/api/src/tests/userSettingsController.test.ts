@@ -62,5 +62,33 @@ describe('editSettings', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Member not found' });
   });
 
-  
+  it('500 when DB throws an error', async () => {
+    (db.update as jest.Mock).mockImplementation(() => {
+      throw new Error('boom');
+    });
+
+    const req = mockReq({ userId: 7, publicVisibility: true });
+    const res = mockRes();
+
+    await editSettings(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Failed to update visibility setting' });
+  });
+
+  it('success path – returns updated visibility', async () => {
+    (db.update as jest.Mock).mockReturnValue(builder([{ userId: 99 }]));
+
+    const req = mockReq({ userId: 99, publicVisibility: true });
+    const res = mockRes();
+
+    await editSettings(req, res);
+
+    expect(db.update).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      userId: 99,
+      publicVisibility: true,
+    });
+  });
 });

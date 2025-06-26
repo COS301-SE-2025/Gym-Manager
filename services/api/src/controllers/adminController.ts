@@ -1,5 +1,14 @@
 import { db } from '../db/client';
-import { classes, coaches, workouts, userroles, members, admins, managers, users } from '../db/schema';
+import {
+  classes,
+  coaches,
+  workouts,
+  userroles,
+  members,
+  admins,
+  managers,
+  users,
+} from '../db/schema';
 import { eq, and, asc, between } from 'drizzle-orm';
 import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
@@ -36,7 +45,7 @@ export const createWeeklySchedule = async (req: Request, res: Response) => {
           capacity: cls.capacity,
           coachId: cls.coachId,
           workoutId: cls.workoutId,
-          createdBy
+          createdBy,
         };
         const [inserted] = await db.insert(classes).values(newClass).returning();
         insertedClasses.push(inserted);
@@ -76,12 +85,15 @@ export const getWeeklySchedule = async (req: Request, res: Response) => {
       .orderBy(asc(classes.scheduledDate), asc(classes.scheduledTime));
 
     // Group by date
-    const grouped = results.reduce((acc, cls) => {
-      const day = cls.scheduledDate;
-      if (!acc[day]) acc[day] = [];
-      acc[day].push(cls);
-      return acc;
-    }, {} as Record<string, typeof results>);
+    const grouped = results.reduce(
+      (acc, cls) => {
+        const day = cls.scheduledDate;
+        if (!acc[day]) acc[day] = [];
+        acc[day].push(cls);
+        return acc;
+      },
+      {} as Record<string, typeof results>,
+    );
 
     res.json(grouped);
   } catch (err) {
@@ -90,17 +102,21 @@ export const getWeeklySchedule = async (req: Request, res: Response) => {
   }
 };
 
-export const createClass = async (req : AuthenticatedRequest, res : Response) => {
-  const { capacity, scheduledDate, scheduledTime, durationMinutes, coachId, workoutId, createdBy } = req.body;
-  const [created] = await db.insert(classes).values({
-    capacity,
-    scheduledDate,
-    scheduledTime,
-    durationMinutes,
-    coachId,
-    workoutId,
-    createdBy,
-  }).returning();
+export const createClass = async (req: AuthenticatedRequest, res: Response) => {
+  const { capacity, scheduledDate, scheduledTime, durationMinutes, coachId, workoutId, createdBy } =
+    req.body;
+  const [created] = await db
+    .insert(classes)
+    .values({
+      capacity,
+      scheduledDate,
+      scheduledTime,
+      durationMinutes,
+      coachId,
+      workoutId,
+      createdBy,
+    })
+    .returning();
   res.json(created);
 };
 
@@ -112,20 +128,14 @@ export const assignCoach = async (req: AuthenticatedRequest, res: Response) => {
 
   console.log('Assigning coach:', coachId, 'to class:', classId);
 
-  const [coach] = await db
-    .select()
-    .from(coaches)
-    .where(eq(coaches.userId, coachId));
+  const [coach] = await db.select().from(coaches).where(eq(coaches.userId, coachId));
 
   if (!coach) {
     console.error('Coach not found for ID:', coachId);
     return res.status(400).json({ error: 'Invalid coach' });
   }
 
-  await db
-    .update(classes)
-    .set({ coachId })
-    .where(eq(classes.classId, classId));
+  await db.update(classes).set({ coachId }).where(eq(classes.classId, classId));
 
   res.json({ success: true });
 };
@@ -192,7 +202,7 @@ export const getUsersByRole = async (req: Request, res: Response) => {
   const role = req.params.role;
 
   const allowedRoles = ['coach', 'member', 'admin', 'manager'] as const;
-  type RoleType = typeof allowedRoles[number];
+  type RoleType = (typeof allowedRoles)[number];
 
   if (!allowedRoles.includes(role as RoleType)) {
     return res.status(400).json({ error: 'Invalid role' });
@@ -225,8 +235,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
     .from(users);
 
   res.json(result);
-}
-;
+};
 
 // POST /users/removeCoachRole
 export const removeCoachRole = async (req: Request, res: Response) => {
@@ -236,9 +245,7 @@ export const removeCoachRole = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Missing userId' });
   }
 
-  await db
-    .delete(coaches)
-    .where(eq(coaches.userId, userId));
+  await db.delete(coaches).where(eq(coaches.userId, userId));
 
   await db
     .delete(userroles)
@@ -246,7 +253,6 @@ export const removeCoachRole = async (req: Request, res: Response) => {
 
   res.json({ success: true });
 };
-
 
 // POST /users/removeMemberRole
 export const removeMemberRole = async (req: Request, res: Response) => {
@@ -256,9 +262,7 @@ export const removeMemberRole = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Missing userId' });
   }
 
-  await db
-    .delete(members)
-    .where(eq(members.userId, userId));
+  await db.delete(members).where(eq(members.userId, userId));
 
   await db
     .delete(userroles)
@@ -275,9 +279,7 @@ export const removeAdminRole = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Missing userId' });
   }
 
-  await db
-    .delete(admins)
-    .where(eq(admins.userId, userId));
+  await db.delete(admins).where(eq(admins.userId, userId));
 
   await db
     .delete(userroles)
@@ -285,7 +287,6 @@ export const removeAdminRole = async (req: Request, res: Response) => {
 
   res.json({ success: true });
 };
-
 
 // POST /users/removeManagerRole
 export const removeManagerRole = async (req: Request, res: Response) => {
@@ -295,9 +296,7 @@ export const removeManagerRole = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Missing userId' });
   }
 
-  await db
-    .delete(managers)
-    .where(eq(managers.userId, userId));
+  await db.delete(managers).where(eq(managers.userId, userId));
 
   await db
     .delete(userroles)
@@ -327,7 +326,6 @@ function endOfWeek(date: Date, options: { weekStartsOn: number }): Date {
   return end;
 }
 
-
 //Get roles by userId
 export const getRolesByUserId = async (req: Request, res: Response) => {
   const userId = parseInt(req.params.userId, 10);
@@ -345,5 +343,4 @@ export const getRolesByUserId = async (req: Request, res: Response) => {
   }
 
   res.json(roles.map((r) => r.role));
-}
-
+};

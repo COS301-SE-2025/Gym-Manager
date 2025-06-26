@@ -7,12 +7,13 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "jest --runInBand --detectOpenHandles",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "format": "prettier --check 'src/**/*.{ts,tsx,json,css,md}'",
     "format:fix": "prettier --write 'src/**/*.{ts,tsx,json,css,md}'",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [],
   "author": "",
@@ -44,6 +45,8 @@
     "@types/swagger-ui-express": "^4.1.8",
     "@typescript-eslint/eslint-plugin": "^8.35.0",
     "@typescript-eslint/parser": "^8.35.0",
+    "c8": "^10.1.3",
+    "cross-env": "^7.0.3",
     "drizzle-kit": "^0.31.1",
     "eslint": "^9.29.0",
     "eslint-config-prettier": "^10.1.5",
@@ -53,10 +56,11 @@
     "lint-staged": "^16.1.2",
     "prettier": "^3.6.0",
     "supertest": "^7.1.1",
-    "ts-jest": "^29.3.4",
+    "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   },
   "lint-staged": {
     "*.{ts,js}": [

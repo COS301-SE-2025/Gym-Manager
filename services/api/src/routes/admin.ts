@@ -149,7 +149,6 @@
  *                     type: string
  */
 
-
 /**
  * @swagger
  * /users/allUsers:

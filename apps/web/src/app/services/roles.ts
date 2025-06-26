@@ -2,80 +2,85 @@ import axios from 'axios';
 import { User, UserRole, Member, Admin, Coach } from '@/types/types';
 
 export const UserRoleService = {
-  async getUsersByRole(role: UserRole): Promise<User[]> {
+  async getUsersByRole(role: UserRole) {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:4000/roles/getUsersByRole`, {
-        params: { role },
+      const response = await axios.get(`http://localhost:4000/roles/getUsersByRole/${role}`, {
+        // params: { role },
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log(response.data);
       return response.data;
     } catch (error) {
       console.error('API call failed, returning mock data:', error);
-      return this.getMockUsers(role);
+    }
+  },
+  async RolesByUser(userId: number): Promise<UserRole[]> {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await axios.get(
+        `http://localhost:4000/roles/getRolesByUserId/${userId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Could not get roles by user:', error);
+      throw error;
     }
   },
 
-  getMockUsers(role: UserRole): User[] {
-    const mockBase = {
-      email: 'test@example.com',
-      phone: '123-456-7890'
-    };
-
-    switch (role) {
-      case 'member':
-        return [
-          {
-            user_id: 1,
-            name: 'Test Member',
-            ...mockBase,
-            status: 'active',
-            credits_balance: 100
-          },
-          {
-            user_id: 2,
-            name: 'Inactive Member',
-            ...mockBase,
-            status: 'inactive',
-            credits_balance: 0
-          }
-        ] as Member[];
-
-      case 'coach':
-        return [
-          {
-            user_id: 3,
-            name: 'Test Coach',
-            ...mockBase,
-            bio: 'Certified fitness trainer with 5 years experience'
-          },
-          {
-            user_id: 4,
-            name: 'New Coach',
-            ...mockBase,
-            bio: 'Specializing in yoga and mindfulness'
-          }
-        ] as Coach[];
-
-      case 'admin':
-        return [
-          {
-            user_id: 5,
-            name: 'Admin User',
-            ...mockBase,
-            authorisation: 'super'
-          },
-          {
-            user_id: 6,
-            name: 'Support Admin',
-            ...mockBase,
-            authorisation: 'basic'
-          }
-        ] as Admin[];
-
-      default:
-        return [];
+  async assignRole(userId: number, role: UserRole) {
+    try {
+      const token = localStorage.getItem('authToken');
+      await axios.post(
+        'http://localhost:4000/roles/assign',
+        { userId, role },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (error) {
+      console.error('Could not assign role:', error);
+      throw error;
     }
+  },
+
+  async removeRole(userId: number, role: UserRole) {
+    try {
+      const token = localStorage.getItem('authToken');
+      let endpoint = '';
+      
+      switch (role) {
+        case 'admin': endpoint = '/roles/removeAdminRole'; break;
+        case 'coach': endpoint = '/roles/removeCoachRole'; break;
+        case 'member': endpoint = '/roles/removeMemberRole'; break;
+        case 'manager': endpoint = '/roles/removeManagerRole'; break;
+        default: throw new Error('Invalid role');
+      }
+
+      await axios.post(
+        `http://localhost:4000${endpoint}`,
+        { userId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (error) {
+      console.error('Could not remove role:', error);
+      throw error;
+    }
+  },
+  async getUserById(userId: number): Promise<User> {
+  try {
+    const token = localStorage.getItem('authToken');
+    const res = await axios.get('http://localhost:4000/users/allUsers', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const users: User[] = res.data;
+    console.log(res.data);
+    const user = users.find((u) => u.userId === userId);
+    if (!user) throw new Error('User not found');
+    return user;
+  } catch (err) {
+    console.error('Failed to get user by ID:', err);
+    throw err;
   }
+}
 };

@@ -88,7 +88,7 @@ const [users, setUsers] = useState<User[]>([]);
               <td>{user.email}</td>
               {/* {renderUserRow(user)} */}
               <td>
-                <Link href={`/users/edit/${user.userId}`} className="edit-link">
+                <Link href={`users/edit/${user.userId}`} className="edit-link">
                   Manage
                 </Link>
               </td>

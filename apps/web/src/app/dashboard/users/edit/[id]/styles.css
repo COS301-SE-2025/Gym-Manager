@@ -1,93 +1,231 @@
-.edit-page-container {
-  background-color: #1E1E1E;
-  padding: 2rem;
-  border-radius: 8px;
+/* Base Layout */
+.edit-user-container {
   max-width: 800px;
   margin: 0 auto;
+  padding: 0 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
 }
 
-.edit-page-container h1 {
-  color: white;
+/* Page Header */
+.page-header {
+  width: 100%;
   margin-bottom: 2rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #434343;
 }
 
-.user-edit-form {
+.page-header h1 {
+  color: white;
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.user-id-display {
+  color: #D8FF3E;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+  font-family: monospace;
+  background-color: rgba(216, 255, 62, 0.1);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Card Container - Fixed Width */
+.management-card-container {
+  width: 100%;
+}
+
+.management-card {
   background-color: #434343;
-  padding: 2rem;
   border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 800px;
 }
 
+/* Card Title */
+.card-title {
+  background-color: #2E2E2E;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #1E1E1E;
+}
+
+.card-title h2 {
+  color: white;
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+
+/* Card Content */
+.card-content {
+  padding: 1.5rem;
+}
+
+/* Form Elements */
 .form-group {
   margin-bottom: 1.5rem;
 }
 
-.form-group label {
-  display: block;
+.form-group h3 {
   color: white;
-  margin-bottom: 0.5rem;
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 500;
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 0.75rem;
-  background-color: #2E2E2E;
-  border: 1px solid #1E1E1E;
-  border-radius: 4px;
-  color: white;
+/* Current Roles Grid */
+.current-roles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-.form-group textarea {
-  min-height: 100px;
-}
-
-.checkbox-group {
-  display: flex;
-  gap: 1.5rem;
-  margin-top: 0.5rem;
-}
-
-.checkbox-group label {
+.current-role-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  background-color: #2E2E2E;
+  border-radius: 6px;
+  color: white;
+  border-left: 3px solid #D8FF3E;
+  transition: transform 0.2s;
 }
 
+.current-role-item:hover {
+  transform: translateY(-2px);
+}
+
+.role-name {
+  text-transform: capitalize;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.remove-button {
+  background-color: #FF3E3E;
+  color: white;
+  border: none;
+  padding: 0.45rem 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.remove-button:hover {
+  background-color: #e03535;
+  box-shadow: 0 1px 3px rgba(255, 62, 62, 0.3);
+}
+
+.remove-button:disabled {
+  background-color: #7a2a2a;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Available Roles Grid */
+.available-roles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.add-button {
+  background-color: #2E2E2E;
+  color: white;
+  border: 1px solid #D8FF3E;
+  padding: 0.85rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.add-button:hover {
+  background-color: #3E3E3E;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.add-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Messages and Status */
+.no-roles-message {
+  color: #aaa;
+  font-style: italic;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+/* Form Actions */
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
 }
 
 .cancel-button {
   background-color: #2E2E2E;
   color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
+  border: 1px solid #666;
+  padding: 0.6rem 1.2rem;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.cancel-button:hover {
+  background-color: #3E3E3E;
+  border-color: #888;
 }
 
 .submit-button {
   background-color: #D8FF3E;
   color: #1E1E1E;
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.2rem;
   border-radius: 4px;
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
 }
 
 .submit-button:hover {
   background-color: #c4e639;
+  box-shadow: 0 2px 6px rgba(216, 255, 62, 0.3);
 }
 
 .submit-button:disabled {
   background-color: #748c24;
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Loading and Error States */
+.loading {
+  color: white;
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.1rem;
 }
 
 .form-error {
@@ -96,4 +234,26 @@
   padding: 1rem;
   margin-bottom: 1.5rem;
   border-radius: 4px;
+  border: 1px solid #FF3E3E;
+  font-size: 0.95rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .edit-user-container {
+    padding: 0 1rem 1.5rem;
+  }
+  
+  .current-roles-grid,
+  .available-roles-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .card-content {
+    padding: 1rem;
+  }
 }

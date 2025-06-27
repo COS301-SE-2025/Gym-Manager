@@ -300,7 +300,7 @@ import {
   removeManagerRole,
   removeMemberRole,
   getRolesByUserId,
-  getUserById
+  getUserById,
 } from '../controllers/adminController';
 import { isAuthenticated } from '../middleware/auth';
 

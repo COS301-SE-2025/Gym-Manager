@@ -5,44 +5,48 @@ import { Ionicons } from '@expo/vector-icons';
 
 const faqs = [
   {
-    question: "How do I book a class?",
-    answer: "Go to the Home screen, browse upcoming classes, and tap \"Book\" on the class you want to join."
+    question: 'How do I book a class?',
+    answer:
+      'Go to the Home screen, browse upcoming classes, and tap "Book" on the class you want to join.',
   },
   {
-    question: "How do I cancel a class booking?",
-    answer: "In the Home screen, find your booked classes and tap \"Cancel\" on the class you wish to cancel."
+    question: 'How do I cancel a class booking?',
+    answer:
+      'In the Home screen, find your booked classes and tap "Cancel" on the class you wish to cancel.',
   },
   {
-    question: "What is a live class?",
-    answer: "A live class is a real-time session with a coach and other members. You can join and participate when it's in progress."
+    question: 'What is a live class?',
+    answer:
+      "A live class is a real-time session with a coach and other members. You can join and participate when it's in progress.",
   },
   {
-    question: "How do I submit my workout score?",
-    answer: "During a live class, enter your score in the input field and tap \"Submit Score.\""
+    question: 'How do I submit my workout score?',
+    answer: 'During a live class, enter your score in the input field and tap "Submit Score."',
   },
   {
-    question: "Can the coach update my score?",
-    answer: "Yes, coaches can update or override scores for any participant in a live class."
+    question: 'Can the coach update my score?',
+    answer: 'Yes, coaches can update or override scores for any participant in a live class.',
   },
   {
-    question: "How do I view the leaderboard?",
-    answer: "Tap the \"Leaderboard\" tab to see the top scores for your current live class."
+    question: 'How do I view the leaderboard?',
+    answer: 'Tap the "Leaderboard" tab to see the top scores for your current live class.',
   },
   {
-    question: "What if I miss a class?",
-    answer: "You can book another class from the upcoming classes list."
+    question: 'What if I miss a class?',
+    answer: 'You can book another class from the upcoming classes list.',
   },
   {
-    question: "How do I update my profile information?",
-    answer: "Go to the Profile tab and tap \"Edit\" to update your details."
+    question: 'How do I update my profile information?',
+    answer: 'Go to the Profile tab and tap "Edit" to update your details.',
   },
   {
-    question: "Who can see my scores?",
-    answer: "Your scores are visible to you, your coach, and other members in the class leaderboard."
+    question: 'Who can see my scores?',
+    answer:
+      'Your scores are visible to you, your coach, and other members in the class leaderboard.',
   },
   {
-    question: "How do I contact support?",
-    answer: "Tap the help icon and select \"Contact Support\" or email us at support@gymmanager.com."
+    question: 'How do I contact support?',
+    answer: 'Tap the help icon and select "Contact Support" or email us at support@gymmanager.com.',
   },
 ];
 
@@ -120,4 +124,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FAQScreen; 
+export default FAQScreen;

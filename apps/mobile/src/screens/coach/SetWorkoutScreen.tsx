@@ -34,7 +34,7 @@ type SetWorkoutScreenProps = StackScreenProps<CoachStackParamList, 'SetWorkout'>
 
 export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreenProps) {
   const { classId } = route.params;
-  
+
   const [classDetails, setClassDetails] = useState<ClassDetails | null>(null);
   const [workoutName, setWorkoutName] = useState('');
   const [workoutDescription, setWorkoutDescription] = useState('');
@@ -49,7 +49,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
   const fetchClassDetails = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const token = await getToken();
       if (!token) {
@@ -58,26 +58,26 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
       const response = await axios.get<ClassDetails[]>(
         'http://localhost:4000/coach/assignedClasses',
-        { headers: { 'Authorization': `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      const classData = response.data.find(c => c.classId === classId);
+      const classData = response.data.find((c) => c.classId === classId);
       if (!classData) {
         throw new Error('Class not found');
       }
 
       setClassDetails(classData);
-      
+
       // Pre-fill workout name if it exists
       if (classData.workoutName) {
         setWorkoutName(classData.workoutName);
       }
-      
     } catch (error: any) {
       console.error('Failed to fetch class details:', error);
-      const errorMessage = axios.isAxiosError(error) && error.response?.status === 401
-        ? 'Session expired. Please login again.'
-        : 'Failed to load class details.';
+      const errorMessage =
+        axios.isAxiosError(error) && error.response?.status === 401
+          ? 'Session expired. Please login again.'
+          : 'Failed to load class details.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -105,14 +105,13 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         return;
       }
 
- 
       const createWorkoutResponse = await axios.post(
         'http://localhost:4000/coach/createWorkout',
         {
           workoutName: workoutName.trim(),
           workoutContent: workoutDescription.trim(),
         },
-        { headers: { 'Authorization': `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       if (!createWorkoutResponse.data.success) {
@@ -121,35 +120,33 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
       const workoutId = createWorkoutResponse.data.workoutId;
 
-
       const assignWorkoutResponse = await axios.post(
         'http://localhost:4000/coach/assignWorkout',
         {
           classId: classId,
           workoutId: workoutId,
         },
-        { headers: { 'Authorization': `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       if (assignWorkoutResponse.data.success) {
         Alert.alert(
-          'Success!', 
+          'Success!',
           'Workout has been created and assigned to the class successfully.',
           [
             {
               text: 'OK',
               onPress: () => navigation.goBack(),
             },
-          ]
+          ],
         );
       } else {
         throw new Error('Failed to assign workout to class');
       }
-
     } catch (error: any) {
       console.error('Failed to save workout:', error);
       let errorMessage = 'An unexpected error occurred while saving the workout.';
-      
+
       if (axios.isAxiosError(error) && error.response) {
         errorMessage = error.response.data.error || `Save failed: ${error.response.statusText}`;
         if (error.response.status === 401) {
@@ -158,7 +155,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           errorMessage = 'You are not authorized to assign workouts to this class.';
         }
       }
-      
+
       Alert.alert('Save Error', errorMessage);
     } finally {
       setIsSaving(false);
@@ -203,7 +200,10 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(`${dateString}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return new Date(`${dateString}T00:00:00`).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   const formatTime = (timeString: string) => {
@@ -213,7 +213,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
@@ -285,15 +285,15 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
       {/* Action Buttons */}
       <View style={styles.actionContainer}>
-        <TouchableOpacity 
-          style={[styles.cancelButton, isSaving && styles.disabledButton]} 
+        <TouchableOpacity
+          style={[styles.cancelButton, isSaving && styles.disabledButton]}
           onPress={handleCancel}
           disabled={isSaving}
         >
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.saveButton, isSaving && styles.disabledButton]} 
+        <TouchableOpacity
+          style={[styles.saveButton, isSaving && styles.disabledButton]}
           onPress={handleSaveWorkout}
           disabled={isSaving}
         >
@@ -501,4 +501,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-}); 
+});

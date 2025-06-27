@@ -1,11 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 
-export function errorHandler(
-  err: any,
-  _req: Request,
-  res: Response,
-  _next: NextFunction
-) {
+export function errorHandler(err: any, _req: Request, res: Response) {
   const status = err.statusCode ?? 500;
 
   const payload =

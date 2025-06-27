@@ -83,10 +83,14 @@ interface HomeScreenProps {
 const getDayWithSuffix = (day: number) => {
   if (day > 3 && day < 21) return `${day}th`;
   switch (day % 10) {
-    case 1: return `${day}st`;
-    case 2: return `${day}nd`;
-    case 3: return `${day}rd`;
-    default: return `${day}th`;
+    case 1:
+      return `${day}st`;
+    case 2:
+      return `${day}nd`;
+    case 3:
+      return `${day}rd`;
+    default:
+      return `${day}th`;
   }
 };
 
@@ -101,10 +105,10 @@ const formatDateForCard = (dateString: string): string => {
   tomorrow.setHours(0, 0, 0, 0);
 
   if (classDate.getTime() === today.getTime()) {
-      return 'Today';
+    return 'Today';
   }
   if (classDate.getTime() === tomorrow.getTime()) {
-      return 'Tomorrow';
+    return 'Tomorrow';
   }
   return classDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
@@ -132,38 +136,46 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setIsLoadingBooked(true);
     setBookedError(null);
     try {
-      const bookedResponse = await axios.get<ApiBookedClass[]>('http://localhost:4000/member/getBookedClass', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const bookedResponse = await axios.get<ApiBookedClass[]>(
+        'http://localhost:4000/member/getBookedClass',
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
       const formattedBookedClasses: ClassItem[] = bookedResponse.data
-        .filter(apiClass => {
+        .filter((apiClass) => {
           const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
           return classDate >= today;
         })
         .sort((a, b) => {
-            const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
-            const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
-            return dateTimeA.getTime() - dateTimeB.getTime();
+          const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
+          const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
+          return dateTimeA.getTime() - dateTimeB.getTime();
         })
-        .map(apiClass => ({
-        id: apiClass.bookingId, // This is bookingId, for cancellation
-        name: apiClass.workoutName || ' ',
-        time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
-        date: apiClass.scheduledDate ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A',
-        capacity: ' ', 
-        instructor: ' ', 
-        isBooked: true,
-      }));
+        .map((apiClass) => ({
+          id: apiClass.bookingId, // This is bookingId, for cancellation
+          name: apiClass.workoutName || ' ',
+          time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
+          date: apiClass.scheduledDate
+            ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })
+            : 'N/A',
+          capacity: ' ',
+          instructor: ' ',
+          isBooked: true,
+        }));
       setBookedClasses(formattedBookedClasses);
     } catch (error: any) {
       console.error('Failed to fetch booked classes:', error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-          setBookedError('Session expired. Please login again.');
+        setBookedError('Session expired. Please login again.');
       } else {
-          setBookedError('Failed to load your booked classes.');
+        setBookedError('Failed to load your booked classes.');
       }
     } finally {
       setIsLoadingBooked(false);
@@ -174,21 +186,24 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setIsLoadingUpcoming(true);
     setUpcomingError(null);
     try {
-      const upcomingResponse = await axios.get<ApiUpcomingClass[]>('http://localhost:4000/member/getAllClasses', {
-          headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const upcomingResponse = await axios.get<ApiUpcomingClass[]>(
+        'http://localhost:4000/member/getAllClasses',
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
       const groupedClasses = upcomingResponse.data
-        .filter(apiClass => {
-            const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
-            return classDate >= today;
+        .filter((apiClass) => {
+          const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
+          return classDate >= today;
         })
         .sort((a, b) => {
-            const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
-            const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
-            return dateTimeA.getTime() - dateTimeB.getTime();
+          const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
+          const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
+          return dateTimeA.getTime() - dateTimeB.getTime();
         })
         .reduce((acc: { [key: string]: ClassItem[] }, apiClass) => {
           const dateKey = apiClass.scheduledDate;
@@ -201,7 +216,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
             date: formatDateForCard(apiClass.scheduledDate),
             capacity: `${apiClass.bookedCount ?? 0}/${apiClass.capacity}`,
-            instructor: `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
+            instructor:
+              `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
             isBooked: false,
           });
           return acc;
@@ -211,9 +227,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     } catch (error: any) {
       console.error('Failed to fetch upcoming classes:', error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-          setUpcomingError('Session expired. Please login again.');
+        setUpcomingError('Session expired. Please login again.');
       } else {
-          setUpcomingError('Failed to load upcoming classes.');
+        setUpcomingError('Failed to load upcoming classes.');
       }
     } finally {
       setIsLoadingUpcoming(false);
@@ -225,7 +241,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setLiveClassError(null);
     try {
       const response = await axios.get<ApiLiveClassResponse>('http://localhost:4000/live/class', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (response.data.ongoing && response.data.class) {
         setLiveClass(response.data);
@@ -258,9 +274,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       const token = await getToken();
 
       if (!token) {
-        setBookedError("Authentication token not found. Please login again.");
+        setBookedError('Authentication token not found. Please login again.');
         setIsLoadingBooked(false);
-        setUpcomingError("Authentication token not found. Please login again.");
+        setUpcomingError('Authentication token not found. Please login again.');
         setIsLoadingUpcoming(false);
         return;
       }
@@ -273,14 +289,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   }, []);
 
   const handleCancelClass = (classId: string) => {
-    const classToCancel = bookedClasses.find(c => c.id === classId);
+    const classToCancel = bookedClasses.find((c) => c.id === classId);
     if (classToCancel) {
       setSelectedCancelClass(classToCancel);
     }
   };
 
   const handleBookClass = (classId: string) => {
-    const classToBook = Object.values(upcomingClasses).flat().find(c => c.id === classId);
+    const classToBook = Object.values(upcomingClasses)
+      .flat()
+      .find((c) => c.id === classId);
     if (classToBook) {
       setSelectedClass(classToBook);
     }
@@ -292,27 +310,26 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     try {
       const token = await getToken();
       if (!token) {
-        Alert.alert("Authentication Error", "No session token found. Please log in again.");
+        Alert.alert('Authentication Error', 'No session token found. Please log in again.');
         return false;
       }
 
-      
       const response = await axios.post(
         'http://localhost:4000/member/bookClass',
-        { classId: classId }, 
-        { headers: { 'Authorization': `Bearer ${token}` } }
+        { classId: classId },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       if (response.data.success) {
-        Alert.alert("Success!", "Class booked successfully.");
-        
+        Alert.alert('Success!', 'Class booked successfully.');
+
         // Remove the booked class from the upcoming list
         const numericClassId = parseInt(classId, 10);
-        setUpcomingClasses(prev => {
+        setUpcomingClasses((prev) => {
           const newUpcoming = { ...prev };
           for (const date in newUpcoming) {
             newUpcoming[date] = newUpcoming[date].filter(
-              c => parseInt(c.id, 10) !== numericClassId
+              (c) => parseInt(c.id, 10) !== numericClassId,
             );
             if (newUpcoming[date].length === 0) {
               delete newUpcoming[date];
@@ -324,25 +341,33 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         // Refresh booked classes to show the new one
         const currentToken = await getToken();
         if (currentToken) {
-            await fetchBookedClasses(currentToken);
+          await fetchBookedClasses(currentToken);
         }
         return true;
       } else {
-        Alert.alert("Booking Failed", response.data.error || "Could not book the class. Please try again.");
+        Alert.alert(
+          'Booking Failed',
+          response.data.error || 'Could not book the class. Please try again.',
+        );
         return false;
       }
     } catch (error: any) {
       console.error('Booking request failed:', error);
-      let errorMessage = "An unexpected error occurred during booking.";
+      let errorMessage = 'An unexpected error occurred during booking.';
       if (axios.isAxiosError(error) && error.response) {
-        errorMessage = error.response.data.error || `Booking failed: ${error.response.statusText} (Status: ${error.response.status})`;
+        errorMessage =
+          error.response.data.error ||
+          `Booking failed: ${error.response.statusText} (Status: ${error.response.status})`;
         if (error.response.status === 401) {
-          errorMessage = "Session expired. Please log in again.";
-        } else if (error.response.status === 400 && error.response.data.error === "Already booked") {
-          errorMessage = "You have already booked this class.";
+          errorMessage = 'Session expired. Please log in again.';
+        } else if (
+          error.response.status === 400 &&
+          error.response.data.error === 'Already booked'
+        ) {
+          errorMessage = 'You have already booked this class.';
         }
       }
-      Alert.alert("Booking Error", errorMessage);
+      Alert.alert('Booking Error', errorMessage);
       return false;
     }
   };
@@ -362,19 +387,19 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const renderBookedClass = (classItem: ClassItem) => (
     <View key={classItem.id} style={styles.bookedClassCard}>
       <View style={styles.classHeader}>
-      <View style={styles.classInfo}>
-      <Text style={styles.classDate}>{classItem.date}</Text>
-      <Text style={styles.classTime}>{classItem.time}</Text>
-      </View>
-        
-       {/* <Text style={styles.classCapacity}>{classItem.capacity}</Text> */}
+        <View style={styles.classInfo}>
+          <Text style={styles.classDate}>{classItem.date}</Text>
+          <Text style={styles.classTime}>{classItem.time}</Text>
+        </View>
+
+        {/* <Text style={styles.classCapacity}>{classItem.capacity}</Text> */}
       </View>
       <View style={styles.classContent}>
         <View style={styles.classInfo}>
-        <Text style={styles.classTime}>{classItem.instructor}</Text>
+          <Text style={styles.classTime}>{classItem.instructor}</Text>
           <Text style={styles.className}>{classItem.name}</Text>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.cancelButton}
           onPress={() => handleCancelClass(classItem.id)}
         >
@@ -388,11 +413,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     <View key={classItem.id} style={styles.upcomingClassCard}>
       <View style={styles.upcomingClassHeader}>
         <View style={styles.upcomingClassInfo}>
-        <View style={styles.upcomingClassDetails}>
-        <Text style={styles.upcomingClassDate}>{classItem.date}</Text>
-        <Text style={styles.upcomingClassTime}>{classItem.time}</Text>
-          </View> 
-          
+          <View style={styles.upcomingClassDetails}>
+            <Text style={styles.upcomingClassDate}>{classItem.date}</Text>
+            <Text style={styles.upcomingClassTime}>{classItem.time}</Text>
+          </View>
+
           <Text style={styles.upcomingClassCapacity}>{classItem.capacity}</Text>
         </View>
       </View>
@@ -401,10 +426,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <Text style={styles.upcomingClassTime}>{classItem.instructor}</Text>
           <Text style={styles.upcomingClassName}>{classItem.name}</Text>
         </View>
-        <TouchableOpacity 
-          style={styles.bookButton}
-          onPress={() => handleBookClass(classItem.id)}
-        >
+        <TouchableOpacity style={styles.bookButton} onPress={() => handleBookClass(classItem.id)}>
           <Text style={styles.bookButtonText}>Book</Text>
         </TouchableOpacity>
       </View>
@@ -414,16 +436,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <IconLogo width={50} height={46} />
         <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>
-            Welcome
-            , {currentUser?.firstName || 'User'}  👋
-          </Text>
-          
+          <Text style={styles.welcomeText}>Welcome , {currentUser?.firstName || 'User'} 👋</Text>
+
           <View style={styles.passContainer}>
             <Text style={styles.passText}>Your Pass</Text>
             <View style={styles.progressContainer}>
@@ -433,21 +452,19 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               <Text style={styles.progressText}>2/3</Text>
             </View>
           </View>
-        
         </View>
         {/* Help Icon */}
-        <TouchableOpacity
-          style={styles.helpIcon}
-          onPress={() => navigation.navigate('FAQ')}
-        >
+        <TouchableOpacity style={styles.helpIcon} onPress={() => navigation.navigate('FAQ')}>
           <Ionicons name="help-circle-outline" size={32} color="#D8FF3E" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D8FF3E" />
-      }
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D8FF3E" />
+        }
       >
         {/* Live Class Banner */}
         {!isLoadingLiveClass && !liveClassError && liveClass && (
@@ -460,9 +477,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 currentUser.roles.includes('coach') &&
                 !currentUser.roles.includes('member')
               ) {
-                navigation.navigate('CoachLiveClass', { classId: liveClass.class.classId, liveClassData: liveClass });
+                navigation.navigate('CoachLiveClass', {
+                  classId: liveClass.class.classId,
+                  liveClassData: liveClass,
+                });
               } else {
-                navigation.navigate('LiveClass', { classId: liveClass.class.classId, liveClassData: liveClass });
+                navigation.navigate('LiveClass', {
+                  classId: liveClass.class.classId,
+                  liveClassData: liveClass,
+                });
               }
             }}
           >
@@ -489,12 +512,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           {isLoadingBooked ? (
             <ActivityIndicator size="large" color="#D8FF3E" style={{ marginTop: 20 }} />
           ) : bookedError ? (
-            <View style={styles.emptyStateContainer}> 
+            <View style={styles.emptyStateContainer}>
               <Text style={styles.errorText}>{bookedError}</Text>
             </View>
           ) : bookedClasses.length > 0 ? (
-            <ScrollView 
-              horizontal 
+            <ScrollView
+              horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.bookedClassesContainer}
               style={styles.bookedClassesScrollView}
@@ -508,7 +531,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               </View>
               <Text style={styles.emptyStateTitle}>No Booked Classes</Text>
               <Text style={styles.emptyStateDescription}>
-                You haven't booked any classes yet. Browse upcoming classes below to get started with your fitness journey.
+                You haven't booked any classes yet. Browse upcoming classes below to get started
+                with your fitness journey.
               </Text>
               <TouchableOpacity style={styles.emptyStateButton}>
                 <Text style={styles.emptyStateButtonText}>Explore Classes</Text>
@@ -528,7 +552,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             </View>
           ) : Object.keys(upcomingClasses).length > 0 ? (
             <View style={styles.upcomingClassesContainer}>
-              {Object.keys(upcomingClasses).map(date => {
+              {Object.keys(upcomingClasses).map((date) => {
                 const classDate = new Date(`${date}T00:00:00`);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -542,8 +566,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                           <Text style={styles.dayText}>Today</Text>
                         ) : (
                           <>
-                            <Text style={styles.dayText}>{getDayWithSuffix(classDate.getDate())}</Text>
-                            <Text style={styles.monthText}>{classDate.toLocaleDateString('en-US', { month: 'short' })}</Text>
+                            <Text style={styles.dayText}>
+                              {getDayWithSuffix(classDate.getDate())}
+                            </Text>
+                            <Text style={styles.monthText}>
+                              {classDate.toLocaleDateString('en-US', { month: 'short' })}
+                            </Text>
                           </>
                         )}
                       </View>
@@ -901,4 +929,4 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
     padding: 4,
   },
-}); 
+});

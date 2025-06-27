@@ -76,12 +76,12 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
     try {
       const token = await getToken();
       if (!token) {
-        throw new Error("No authentication token found");
+        throw new Error('No authentication token found');
       }
 
       const response = await axios.get<ApiCoachClass[]>(
         'http://localhost:4000/coach/assignedClasses',
-        { headers: { 'Authorization': `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       const sortedClasses = response.data.sort((a, b) => {
@@ -91,36 +91,42 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
       });
 
       const classesNeedingWorkout: WorkoutItem[] = sortedClasses
-        .filter(c => c.workoutId === null)
-        .map(c => ({
+        .filter((c) => c.workoutId === null)
+        .map((c) => ({
           id: c.classId.toString(),
           name: 'Setup Workout',
           time: c.scheduledTime.slice(0, 5),
-          date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+          }),
           capacity: `0/${c.capacity}`,
           instructor: 'You',
         }));
 
       const classesWithWorkout: WorkoutItem[] = sortedClasses
-        .filter(c => c.workoutId !== null)
-        .map(c => ({
+        .filter((c) => c.workoutId !== null)
+        .map((c) => ({
           id: c.classId.toString(),
           name: c.workoutName || 'Workout Assigned',
           time: c.scheduledTime.slice(0, 5),
-          date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+          }),
           capacity: `0/${c.capacity}`,
           instructor: 'You',
         }));
 
       setSetWorkoutsData(classesNeedingWorkout);
       setYourClassesData(classesWithWorkout);
-
     } catch (error: any) {
       console.error('Failed to fetch coach classes:', error);
-      const errorMessage = axios.isAxiosError(error) && error.response?.status === 401
-        ? 'Session expired. Please login again.'
-        : 'Failed to load your classes.';
-      
+      const errorMessage =
+        axios.isAxiosError(error) && error.response?.status === 401
+          ? 'Session expired. Please login again.'
+          : 'Failed to load your classes.';
+
       setSetWorkoutsError(errorMessage);
       setYourClassesError(errorMessage);
     } finally {
@@ -134,7 +140,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
     setLiveClassError(null);
     try {
       const response = await axios.get<ApiLiveClassResponse>('http://localhost:4000/live/class', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (response.data.ongoing && response.data.class) {
         setLiveClass(response.data);
@@ -162,7 +168,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
   useFocusEffect(
     React.useCallback(() => {
       fetchCoachClasses();
-    }, [])
+    }, []),
   );
 
   const onRefresh = React.useCallback(async () => {
@@ -172,7 +178,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
   }, []);
 
   const handleSetWorkout = (workoutId: string) => {
-    const workout = setWorkoutsData.find(w => w.id === workoutId);
+    const workout = setWorkoutsData.find((w) => w.id === workoutId);
     if (workout) {
       navigation.navigate('SetWorkout', { classId: parseInt(workout.id, 10) });
     }
@@ -200,13 +206,13 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
         </View>
         {/*<Text style={styles.workoutCapacity}>{workout.capacity}</Text> */}
       </View>
-      
+
       <View style={styles.workoutContent}>
         <View style={styles.workoutDetails}>
           <Text style={styles.instructorName}>{workout.instructor}</Text>
           <Text style={styles.workoutName}>{workout.name}</Text>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.setWorkoutButton}
           onPress={() => handleSetWorkout(workout.id)}
         >
@@ -223,9 +229,9 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
           <Text style={styles.classDate}>{workout.date}</Text>
           <Text style={styles.classTime}>{workout.time}</Text>
         </View>
-       {/*<Text style={styles.workoutCapacity}>{workout.capacity}</Text> */}
+        {/*<Text style={styles.workoutCapacity}>{workout.capacity}</Text> */}
       </View>
-      
+
       <View style={styles.classContent}>
         <View style={styles.classDetails}>
           {/*<Text style={styles.classInstructorName}>{workout.instructor}</Text> */}
@@ -241,30 +247,37 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
     </View>
   );
 
-    const renderClassItem = ({ item }: { item: Class }) => {
+  const renderClassItem = ({ item }: { item: Class }) => {
     const canSetWorkout = item.workoutId === null;
     const canEditWorkout = item.workoutId !== null;
 
     return (
       <View style={styles.classItem}>
         <View style={styles.classInfo}>
-          <Text style={styles.classDate}>{new Date(`${item.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
+          <Text style={styles.classDate}>
+            {new Date(`${item.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+            })}
+          </Text>
           <Text style={styles.classTime}>{item.scheduledTime.slice(0, 5)}</Text>
           <Text style={styles.className}>{item.workoutName || 'No workout assigned'}</Text>
         </View>
         <View style={styles.buttonContainer}>
           {canSetWorkout && (
-            <TouchableOpacity 
-              style={styles.actionButton} 
+            <TouchableOpacity
+              style={styles.actionButton}
               onPress={() => navigation.navigate('SetWorkout', { classId: item.classId })}
             >
               <Text style={styles.buttonText}>Set Workout</Text>
             </TouchableOpacity>
           )}
           {canEditWorkout && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.actionButton, styles.editButton]}
-              onPress={() => item.workoutId && navigation.navigate('EditWorkout', { workoutId: item.workoutId })}
+              onPress={() =>
+                item.workoutId && navigation.navigate('EditWorkout', { workoutId: item.workoutId })
+              }
             >
               <Text style={styles.buttonText}>Edit Workout</Text>
             </TouchableOpacity>
@@ -277,13 +290,13 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <IconLogo width={50} height={46} />
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeText}>Hey, Coach 👋</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.switchButton}
             onPress={() => navigation.getParent()?.navigate('RoleSelection')}
           >
@@ -297,7 +310,6 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
         </View>
       </View>
 
-      
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -306,24 +318,29 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
         }
       >
         {/* Live Class Banner */}
-      {!isLoadingLiveClass && !liveClassError && liveClass && (
-        <TouchableOpacity
-          style={styles.liveClassBanner}
-          onPress={() => navigation.navigate('CoachLiveClass', { classId: liveClass.class.classId, liveClassData: liveClass })}
-        >
-          <View style={styles.liveClassLeft}>
-            <View style={styles.liveIndicator} />
-            <View>
-              <Text style={styles.liveLabel}>LIVE CLASS</Text>
-              <Text style={styles.liveClassName}>{liveClass.class.workoutName || 'Workout'}</Text>
+        {!isLoadingLiveClass && !liveClassError && liveClass && (
+          <TouchableOpacity
+            style={styles.liveClassBanner}
+            onPress={() =>
+              navigation.navigate('CoachLiveClass', {
+                classId: liveClass.class.classId,
+                liveClassData: liveClass,
+              })
+            }
+          >
+            <View style={styles.liveClassLeft}>
+              <View style={styles.liveIndicator} />
+              <View>
+                <Text style={styles.liveLabel}>LIVE CLASS</Text>
+                <Text style={styles.liveClassName}>{liveClass.class.workoutName || 'Workout'}</Text>
+              </View>
             </View>
-          </View>
-          <View style={styles.liveClassRight}>
-            <Text style={styles.liveInstructor}>Coach</Text>
-            <Text style={styles.liveCapacity}>{liveClass.participants?.length ?? 0}/30</Text>
-          </View>
-        </TouchableOpacity>
-      )}
+            <View style={styles.liveClassRight}>
+              <Text style={styles.liveInstructor}>Coach</Text>
+              <Text style={styles.liveCapacity}>{liveClass.participants?.length ?? 0}/30</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* Set Workouts Section */}
         <View style={styles.section}>
@@ -333,8 +350,8 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
           ) : setWorkoutsError ? (
             <Text style={styles.errorText}>{setWorkoutsError}</Text>
           ) : setWorkoutsData.length > 0 ? (
-            <ScrollView 
-              horizontal 
+            <ScrollView
+              horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.setWorkoutsContainer}
               style={styles.setWorkoutsScrollView}
@@ -364,7 +381,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
       </ScrollView>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -706,4 +723,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CoachHomeScreen; 
+export default CoachHomeScreen;

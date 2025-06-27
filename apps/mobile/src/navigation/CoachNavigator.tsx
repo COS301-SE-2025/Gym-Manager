@@ -30,4 +30,4 @@ const CoachNavigator = () => {
   );
 };
 
-export default CoachNavigator; 
+export default CoachNavigator;

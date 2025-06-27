@@ -1,59 +1,60 @@
-const js = require('@eslint/js');
-const tseslint = require('@typescript-eslint/eslint-plugin'); // ✅ Fixed line
-const parser = require('@typescript-eslint/parser');
-const prettier = require('eslint-plugin-prettier');
+import js from '@eslint/js';
+import tseslint from '@typescript-eslint/eslint-plugin';
+import parser from '@typescript-eslint/parser';
+import prettierPlugin from 'eslint-plugin-prettier';
 
-module.exports = [
+export default [
   js.configs.recommended,
   {
     ignores: [
+      'node_modules/**',
+      'dist/**',
+      'build/**',
       '**/*.test.ts',
       '**/*.test.tsx',
       '**/*.spec.ts',
       '**/*.spec.tsx',
-      'tests/**',
-      '__tests__/**',
-      'node_modules/**',
-      'src/tests/**',
     ],
   },
   {
-    files: ['**/*.ts'],
+    files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
-      parser: parser,
+      parser,
       parserOptions: {
-        ecmaVersion: 2020,
+        ecmaVersion: 'latest',
         sourceType: 'module',
+        ecmaFeatures: {
+          jsx: true, // ✅ enable JSX parsing
+        },
         project: './tsconfig.json',
       },
       globals: {
-        Atomics: 'readonly',
-        SharedArrayBuffer: 'readonly',
+        // ✅ Node + React Native globals
         console: true,
-        process: true,
+        require: true,
         module: true,
-        node: true,
+        __dirname: true,
         setTimeout: true,
         clearTimeout: true,
         setInterval: true,
         clearInterval: true,
-        require: true,
-      }
+        global: true,
+        JSX: true,
+      },
     },
     plugins: {
       '@typescript-eslint': tseslint,
-      prettier,
+      prettier: prettierPlugin,
     },
     rules: {
       'prettier/prettier': 'error',
-      '@typescript-eslint/no-unused-vars': ['warn'],
+      '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/naming-convention': [
         'error',
         {
           selector: 'variableLike',
           format: ['camelCase', 'UPPER_CASE'],
           leadingUnderscore: 'allow',
-          trailingUnderscore: 'forbid',
         },
         {
           selector: 'typeLike',

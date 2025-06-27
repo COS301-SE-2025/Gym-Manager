@@ -18,10 +18,9 @@ export const UserRoleService = {
   async RolesByUser(userId: number): Promise<UserRole[]> {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(
-        `http://localhost:4000/roles/getRolesByUserId/${userId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await axios.get(`http://localhost:4000/roles/getRolesByUserId/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return response.data;
     } catch (error) {
       console.error('Could not get roles by user:', error);
@@ -35,7 +34,7 @@ export const UserRoleService = {
       await axios.post(
         'http://localhost:4000/roles/assign',
         { userId, role },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
     } catch (error) {
       console.error('Could not assign role:', error);
@@ -47,19 +46,28 @@ export const UserRoleService = {
     try {
       const token = localStorage.getItem('authToken');
       let endpoint = '';
-      
+
       switch (role) {
-        case 'admin': endpoint = '/roles/removeAdminRole'; break;
-        case 'coach': endpoint = '/roles/removeCoachRole'; break;
-        case 'member': endpoint = '/roles/removeMemberRole'; break;
-        case 'manager': endpoint = '/roles/removeManagerRole'; break;
-        default: throw new Error('Invalid role');
+        case 'admin':
+          endpoint = '/roles/removeAdminRole';
+          break;
+        case 'coach':
+          endpoint = '/roles/removeCoachRole';
+          break;
+        case 'member':
+          endpoint = '/roles/removeMemberRole';
+          break;
+        case 'manager':
+          endpoint = '/roles/removeManagerRole';
+          break;
+        default:
+          throw new Error('Invalid role');
       }
 
       await axios.post(
         `http://localhost:4000${endpoint}`,
         { userId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
     } catch (error) {
       console.error('Could not remove role:', error);
@@ -71,7 +79,7 @@ export const UserRoleService = {
     try {
       const token = localStorage.getItem('authToken');
       const response = await axios.get('http://localhost:4000/schedule/getWeeklySchedule', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;
     } catch (error) {
@@ -92,7 +100,7 @@ export const UserRoleService = {
       const userId = payload.userId;
 
       const response = await axios.get(`http://localhost:4000/users/getUserById/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;
     } catch (error) {
@@ -112,5 +120,5 @@ export const UserRoleService = {
       console.error('Failed to get user by ID:', err);
       throw err;
     }
-  }
+  },
 };

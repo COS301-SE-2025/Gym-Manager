@@ -20,9 +20,11 @@ type EditWorkoutScreenProps = StackScreenProps<CoachStackParamList, 'EditWorkout
 
 export default function EditWorkoutScreen({ route, navigation }: EditWorkoutScreenProps) {
   const { workout } = route.params;
-  
+
   const [workoutName, setWorkoutName] = useState(workout.name);
-  const [workoutDescription, setWorkoutDescription] = useState(workout.description || 'High-intensity workout focusing on strength and endurance training.');
+  const [workoutDescription, setWorkoutDescription] = useState(
+    workout.description || 'High-intensity workout focusing on strength and endurance training.',
+  );
 
   const handleSaveWorkout = () => {
     console.log('Updating workout:', {
@@ -40,7 +42,7 @@ export default function EditWorkoutScreen({ route, navigation }: EditWorkoutScre
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
@@ -280,4 +282,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-}); 
+});

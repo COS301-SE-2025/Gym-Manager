@@ -8,7 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "eslint . --ext .ts,.tsx --quiet",
+    "lint": "eslint . --ext .ts,.tsx --quiet --fix",
   "lint:fix": "eslint . --ext .ts,.tsx --quiet --fix",
   "format": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json,css,md}'",
   "format:fix": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,md}'"

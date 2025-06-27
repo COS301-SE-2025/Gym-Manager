@@ -21,7 +21,8 @@ const onboardingSlides = [
     key: '1',
     title: 'No Excuses',
     subtitle: 'Just Do The\nWorkout',
-    quote: "“Fitness is not about being better than someone else. It's about being better than you used to be.”",
+    quote:
+      "“Fitness is not about being better than someone else. It's about being better than you used to be.”",
     image: require('../../../assets/gym1.jpg'),
   },
   {
@@ -35,7 +36,8 @@ const onboardingSlides = [
     key: '3',
     title: 'Track Performance',
     subtitle: 'And See Results',
-    quote: 'Log your scores, monitor your improvements, and stay motivated on your fitness journey.',
+    quote:
+      'Log your scores, monitor your improvements, and stay motivated on your fitness journey.',
     image: require('../../../assets/gym3.jpg'),
   },
 ];
@@ -62,7 +64,7 @@ const OnboardingScreen = ({ navigation }: OnboardingScreenProps) => {
     }
   };
 
-  const renderSlide = ({ item }: { item: typeof onboardingSlides[0] }) => (
+  const renderSlide = ({ item }: { item: (typeof onboardingSlides)[0] }) => (
     <ImageBackground source={item.image} style={styles.slide} resizeMode="cover">
       <View style={styles.overlay} />
       <View style={styles.textContainer}>
@@ -94,10 +96,7 @@ const OnboardingScreen = ({ navigation }: OnboardingScreenProps) => {
           {onboardingSlides.map((_, index) => (
             <View
               key={index}
-              style={[
-                styles.paginationDot,
-                currentIndex === index && styles.paginationDotActive,
-              ]}
+              style={[styles.paginationDot, currentIndex === index && styles.paginationDotActive]}
             />
           ))}
         </View>
@@ -180,4 +179,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OnboardingScreen; 
+export default OnboardingScreen;

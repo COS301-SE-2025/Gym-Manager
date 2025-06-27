@@ -10,4 +10,4 @@ export const getLiveClass = async (token: string | null) => {
   } catch (err) {
     return null;
   }
-}; 
+};

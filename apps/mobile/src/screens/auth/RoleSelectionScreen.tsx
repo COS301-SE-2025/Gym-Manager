@@ -17,14 +17,12 @@ export default function RoleSelectionScreen() {
   const navigation = useNavigation();
 
   const handleMemberPress = () => {
-
     console.log('Member selected');
-   
+
     navigation.navigate('MemberTabs' as never);
   };
 
   const handleCoachPress = () => {
-   
     console.log('Coach selected');
     navigation.navigate('Coach' as never);
   };
@@ -32,7 +30,7 @@ export default function RoleSelectionScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      
+
       {/* Header Logo */}
       <View style={styles.headerContainer}>
         <IconLogo width={60} height={58} />
@@ -100,4 +98,4 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-}); 
+});

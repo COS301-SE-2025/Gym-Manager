@@ -1,5 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  RefreshControl,
+  ActivityIndicator,
+} from 'react-native';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import { getLiveClass } from '../../utils/liveClass';
@@ -16,7 +24,7 @@ const LeaderboardScreen = () => {
     setError('');
     try {
       const token = await getToken();
-     
+
       const liveClass = await getLiveClass(token);
       if (!liveClass || !liveClass.class || !liveClass.class.classId) {
         setError('No live class found');
@@ -25,10 +33,9 @@ const LeaderboardScreen = () => {
         return;
       }
       setClassId(liveClass.class.classId);
-      const res = await axios.get(
-        `http://localhost:4000/leaderboard/${liveClass.class.classId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axios.get(`http://localhost:4000/leaderboard/${liveClass.class.classId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setLeaderboard(res.data);
     } catch (err: any) {
       setError('Failed to load leaderboard');
@@ -58,7 +65,8 @@ const LeaderboardScreen = () => {
           <Text style={styles.emptyStateIcon}>📊</Text>
           <Text style={styles.emptyStateTitle}>No Live Class</Text>
           <Text style={styles.emptyStateDescription}>
-            There is currently no live class. Check back later to see the leaderboard for your next class!
+            There is currently no live class. Check back later to see the leaderboard for your next
+            class!
           </Text>
         </View>
       ) : error ? (
@@ -82,7 +90,9 @@ const LeaderboardScreen = () => {
             >
               <Text style={styles.rank}>{idx + 1}</Text>
               <View style={styles.info}>
-                <Text style={styles.name}>{user.firstName} {user.lastName}</Text>
+                <Text style={styles.name}>
+                  {user.firstName} {user.lastName}
+                </Text>
                 <Text style={styles.score}>{user.score} pts</Text>
               </View>
               {idx === 0 && <Text style={styles.crown}>👑</Text>}
@@ -193,4 +203,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LeaderboardScreen; 
+export default LeaderboardScreen;

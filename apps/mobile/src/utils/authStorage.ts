@@ -1,14 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TOKEN_KEY = 'authToken';
-const USER_KEY = 'authUser'; 
+const USER_KEY = 'authUser';
 
 export interface User {
   firstName?: string;
   lastName?: string;
   email?: string;
   roles?: string[];
-  id?: number; 
+  id?: number;
 }
 
 export const storeToken = async (token: string): Promise<void> => {
@@ -60,4 +60,4 @@ export const removeUser = async (): Promise<void> => {
   } catch (e) {
     console.error('Failed to remove user', e);
   }
-}; 
+};

@@ -36,12 +36,7 @@ app.use(userSettingsRoutes);
 app.use(errorHandler);
 setupSwagger(app);
 
-// Export the app for testing
-export { app };
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
 
 
 // 404 Handler
@@ -54,3 +49,12 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong on the server' });
 });
+
+// Export the app for testing
+export { app };
+
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}

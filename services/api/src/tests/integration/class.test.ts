@@ -8,6 +8,8 @@ import {
   users,
   classbookings,
   classattendance,
+  coaches,
+  members
 } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
@@ -69,10 +71,19 @@ describe('Class Booking Integration Tests', () => {
       userRole: 'coach',
     });
 
+    await db.insert(coaches).values({
+      userId: testCoachUserId
+    });
+    
+
     // Create member role
     await db.insert(userroles).values({
       userId: testMemberUserId,
       userRole: 'member',
+    });
+
+    await db.insert(members).values({
+      userId: testMemberUserId
     });
 
     // Create coach auth token
@@ -118,7 +129,7 @@ describe('Class Booking Integration Tests', () => {
         scheduledTime: '10:00:00',
         capacity: 20,
         durationMinutes: 60,
-        coachId: 156,
+        coachId: testCoachUserId,
         workoutId: testWorkoutId,
       }).returning();
 
@@ -247,7 +258,7 @@ describe('Class Booking Integration Tests', () => {
           scheduledTime: '14:00:00',
           capacity: 15,
           durationMinutes: 60,
-          coachId: 156,
+          coachId: testCoachUserId,
         }).returning();
         newClassId = newClass.classId;
       });
@@ -269,7 +280,7 @@ describe('Class Booking Integration Tests', () => {
             classId: newClassId,
             workoutId: newWorkoutId,
           })
-          .expect(403);
+          .expect(200);
 
         //expect(response.body.success).toBe(true);
 
@@ -291,12 +302,21 @@ describe('Class Booking Integration Tests', () => {
           passwordHash: 'hashedpassword',
         }).returning();
 
+        await db.insert(userroles).values({
+          userId: anotherCoach.userId,
+          userRole: 'coach',
+        });
+
+        await db.insert(coaches).values({
+          userId: anotherCoach.userId
+        });
+
         const [otherClass] = await db.insert(classes).values({
           scheduledDate: '2024-12-03',
           scheduledTime: '16:00:00',
           capacity: 10,
           durationMinutes: 60,
-          coachId: 156,
+          coachId: anotherCoach.userId,
         }).returning();
 
         await request(testApp)
@@ -311,6 +331,8 @@ describe('Class Booking Integration Tests', () => {
         // Cleanup
         await db.delete(classes).where(eq(classes.classId, otherClass.classId));
         await db.delete(users).where(eq(users.userId, anotherCoach.userId));
+        await db.delete(userroles).where(eq(userroles.userId, anotherCoach.userId));
+        await db.delete(coaches).where(eq(coaches.userId, anotherCoach.userId));
       });
 
       it('should return 401 for unauthenticated request', async () => {

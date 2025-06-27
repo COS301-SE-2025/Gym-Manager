@@ -11,6 +11,7 @@ export default function DashboardLayout({
     const router = useRouter();
     const handleLogout = async () => {
         router.push("/")
+        localStorage.removeItem('authToken')
     };
     return(
         <div className="dashboard-layout">
@@ -26,7 +27,7 @@ export default function DashboardLayout({
                     <li><Link href="/dashboard/reports">Reports</Link></li>
                 </ul>
                 <div className="logout-container">
-                    <Link href={'#'} onClick={handleLogout} className="logout">Logout</Link>
+                    <Link href={'/'} onClick={handleLogout} className="logout">Logout</Link>
                 </div>
             </nav>
             <main>{children}</main>

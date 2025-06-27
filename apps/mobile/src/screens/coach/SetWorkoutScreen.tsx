@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,26 +20,69 @@ import { getToken } from '../../utils/authStorage';
 
 const { width } = Dimensions.get('window');
 
-interface WorkoutDetails {
-  id: string;
-  name: string;
-  time: string;
-  date: string;
-  capacity: string;
-  instructor: string;
-  description: string;
-  difficulty: string;
-  duration: string;
+interface ClassDetails {
+  classId: number;
+  scheduledDate: string;
+  scheduledTime: string;
+  capacity: number;
+  workoutId: number | null;
+  coachId: number;
+  workoutName?: string;
 }
 
 type SetWorkoutScreenProps = StackScreenProps<CoachStackParamList, 'SetWorkout'>;
 
 export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreenProps) {
-  const { workout } = route.params;
+  const { classId } = route.params;
   
-  const [workoutName, setWorkoutName] = useState(workout.name === 'Setup Workout' ? '' : workout.name);
-  const [workoutDescription, setWorkoutDescription] = useState(workout.description || '');
+  const [classDetails, setClassDetails] = useState<ClassDetails | null>(null);
+  const [workoutName, setWorkoutName] = useState('');
+  const [workoutDescription, setWorkoutDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchClassDetails();
+  }, [classId]);
+
+  const fetchClassDetails = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await axios.get<ClassDetails[]>(
+        'http://localhost:4000/coach/assignedClasses',
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      const classData = response.data.find(c => c.classId === classId);
+      if (!classData) {
+        throw new Error('Class not found');
+      }
+
+      setClassDetails(classData);
+      
+      // Pre-fill workout name if it exists
+      if (classData.workoutName) {
+        setWorkoutName(classData.workoutName);
+      }
+      
+    } catch (error: any) {
+      console.error('Failed to fetch class details:', error);
+      const errorMessage = axios.isAxiosError(error) && error.response?.status === 401
+        ? 'Session expired. Please login again.'
+        : 'Failed to load class details.';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSaveWorkout = async () => {
     // Validate input
@@ -62,7 +105,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         return;
       }
 
-      // Step 1: Create a new workout
+ 
       const createWorkoutResponse = await axios.post(
         'http://localhost:4000/coach/createWorkout',
         {
@@ -78,11 +121,11 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
       const workoutId = createWorkoutResponse.data.workoutId;
 
-      // Step 2: Assign the workout to the class
+
       const assignWorkoutResponse = await axios.post(
         'http://localhost:4000/coach/assignWorkout',
         {
-          classId: parseInt(workout.id), // Convert string ID to number
+          classId: classId,
           workoutId: workoutId,
         },
         { headers: { 'Authorization': `Bearer ${token}` } }
@@ -126,6 +169,47 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
     navigation.goBack();
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#D8FF3E" />
+          <Text style={styles.loadingText}>Loading class details...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !classDetails) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Set Workout</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error || 'Failed to load class details'}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchClassDetails}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(`${dateString}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const formatTime = (timeString: string) => {
+    return timeString.slice(0, 5);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
@@ -144,12 +228,12 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         <View style={styles.infoCard}>
           <View style={styles.infoHeader}>
             <View style={styles.infoDateSection}>
-              <Text style={styles.infoDate}>{workout.date}</Text>
-              <Text style={styles.infoTime}>{workout.time}</Text>
+              <Text style={styles.infoDate}>{formatDate(classDetails.scheduledDate)}</Text>
+              <Text style={styles.infoTime}>{formatTime(classDetails.scheduledTime)}</Text>
             </View>
             <View style={styles.infoCapacitySection}>
-              <Text style={styles.infoCapacity}>{workout.capacity}</Text>
-              <Text style={styles.infoInstructor}>{workout.instructor}</Text>
+              <Text style={styles.infoCapacity}>0/{classDetails.capacity}</Text>
+              <Text style={styles.infoInstructor}>You</Text>
             </View>
           </View>
         </View>
@@ -193,7 +277,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Max Capacity</Text>
-              <Text style={styles.infoValue}>{workout.capacity.split('/')[1] || '12'} members</Text>
+              <Text style={styles.infoValue}>{classDetails.capacity} members</Text>
             </View>
           </View>
         </View>
@@ -383,5 +467,38 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: 16,
+    marginTop: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#D8FF3E',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+  },
+  retryButtonText: {
+    color: '#1a1a1a',
+    fontSize: 16,
+    fontWeight: '700',
   },
 }); 

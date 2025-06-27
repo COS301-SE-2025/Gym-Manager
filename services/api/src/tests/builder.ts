@@ -13,8 +13,10 @@ export function builder<T = unknown>(returnVal?: T): any {
     innerJoin: () => chain,
     groupBy  : () => chain,
     having   : () => chain,
+    orderBy  : () => chain,
     set      : () => chain,
     values   : () => chain,
+    for      : () => chain,
     returning: () => promised,
     limit    : () => promised,
 

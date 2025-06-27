@@ -1,0 +1,85 @@
+.modalBackdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: #2a2a2a;
+  border: 2px solid #404040;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  padding: 24px;
+  width: 420px;
+  max-width: 95vw;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modalContent h2 {
+  font-size: 20px;
+  margin-bottom: 12px;
+  color: #D8FF3E;
+}
+
+.modalContent label {
+  font-size: 14px;
+  color: #b0b0b0;
+}
+
+.modalContent input,
+.modalContent select {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #555;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+.modalContent input:focus,
+.modalContent select:focus {
+  outline: none;
+  border-color: #D8FF3E;
+}
+
+.buttonRow {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.modalButton {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalButton.primary {
+  background-color: #D8FF3E;
+  color: #1e1e1e;
+}
+
+.modalButton.primary:hover {
+  background-color: #b4dd29;
+}
+
+.modalButton.cancel {
+  background-color: #404040;
+  color: #e0e0e0;
+}
+
+.modalButton.cancel:hover {
+  background-color: #555;
+}

@@ -28,7 +28,13 @@ export const getLeaderboard = async (req: Request, res: Response) => {
       })
       .from(classattendance)
       .innerJoin(users, eq(classattendance.memberId, users.userId))
-      .where(eq(classattendance.classId, parseInt(classId)))
+      .innerJoin(members, eq(users.userId, members.userId))
+      .where(
+        and(
+          eq(classattendance.classId, parseInt(classId)),
+          eq(members.publicVisibility, true)
+        )
+      )
       .orderBy(desc(classattendance.score));
 
     res.json(leaderboard);
@@ -155,7 +161,7 @@ export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user.userId;
   let roles = req.user.roles as string[] | undefined;
 
-  // Fetch roles if they weren’t in the JWT
+  // Fetch roles if they weren't in the JWT
   if (!roles) {
     const rows = await db
       .select({ role: userroles.userRole })
@@ -241,7 +247,7 @@ export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
       .status(403)
       .json({ success: false, error: "NOT_BOOKED" });
 
-  // Upsert member’s own score
+  // Upsert member's own score
   await db
     .insert(classattendance)
     .values({

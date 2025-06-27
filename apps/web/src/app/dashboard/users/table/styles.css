@@ -1,0 +1,112 @@
+.user-table-container {
+  overflow-x: auto;
+  background-color: #1E1E1E;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+}
+
+.user-table th {
+  background-color: #434343;
+  padding: 12px 15px;
+  text-align: left;
+  font-size: 14px;
+  border-bottom: 2px solid #2E2E2E;
+}
+
+.user-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #2E2E2E;
+  background-color: #383838;
+}
+
+.user-table tr:hover td {
+  background-color: #434343;
+}
+
+/* Status badges */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.active {
+  background-color: #D8FF3E;
+  color: #1E1E1E;
+}
+
+.status-badge.inactive {
+  background-color: #FF3E3E;
+  color: white;
+}
+
+/* Edit link */
+.edit-link {
+  color: #D8FF3E;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.edit-link:hover {
+  text-decoration: underline;
+}
+
+/* Loading and error states */
+.loading, .error {
+  padding: 20px;
+  background-color: #434343;
+  border-radius: 8px;
+  color: white;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.error {
+  color: #FF3E3E;
+}
+
+/* Section styling to match login card */
+.user-section {
+  background-color: #434343;
+  border-radius: 8px;
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+.user-section h2 {
+  color: white;
+  font-size: 24px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #2E2E2E;
+}
+
+@media (max-width: 768px) {
+  .user-table th, 
+  .user-table td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  
+  .user-section {
+    padding: 20px;
+  }
+}
+
+/* Add to your styles.css */
+.mock-data-warning {
+  background-color: #D8FF3E;
+  color: white;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-weight: bold;
+}

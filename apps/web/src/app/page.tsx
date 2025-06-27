@@ -9,7 +9,7 @@ export default function Home() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
-
+// const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
 const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 

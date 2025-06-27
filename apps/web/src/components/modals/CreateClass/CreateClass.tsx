@@ -79,10 +79,10 @@ return (
       <input type="time" name="scheduledTime" value={form.scheduledTime} onChange={handleChange} />
 
       <label>Duration (minutes):</label>
-      <input type="number" name="durationMinutes" value={form.durationMinutes} onChange={handleChange} />
+      <input type="number" name="durationMinutes" value={form.durationMinutes} onChange={handleChange} min={0}/>
 
       <label>Capacity:</label>
-      <input type="number" name="capacity" value={form.capacity} onChange={handleChange} />
+      <input type="number" name="capacity" value={form.capacity} onChange={handleChange} min={1} />
 
       <label>Coach (optional):</label>
       <select name="coachId" value={form.coachId} onChange={handleChange}>

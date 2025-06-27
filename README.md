@@ -10,7 +10,7 @@ HIIT environments
 
 ## 📑 Functional Requirements (SRS)
 
-The full Software Requirements Specification can be found here → **[Gym‑Manager SRS (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/SRS.pdf)**
+The full Software Requirements Specification can be found here → **[Gym‑Manager SRS (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v2/SRSv2.pdf)**
 
 ---
 

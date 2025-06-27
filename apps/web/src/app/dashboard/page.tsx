@@ -18,8 +18,7 @@ export default function DashboardPage() {
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [selectedClassInfo, setSelectedClassInfo] = useState<ClassResource | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = async () => {
       try {
         // Fetch both schedule and user data in parallel
         const [apiData, userData] = await Promise.all([
@@ -47,7 +46,8 @@ export default function DashboardPage() {
         setLoading(false);
       }
     };
-    
+
+  useEffect(() => {    
     fetchData();
   }, []);
 
@@ -171,13 +171,19 @@ export default function DashboardPage() {
       <ClassCreationModal 
         isOpen={isClassModalOpen} 
         onClose={() => setIsClassModalOpen(false)} 
-        onCreated={() => {}}
+        onCreated={() => {
+          fetchData();
+          setIsClassModalOpen(false);
+        }}
       />
         <AssignCoachModal
           isOpen={assignModalOpen}
           onClose={() => setAssignModalOpen(false)}
           classInfo={selectedClassInfo}
-          onAssigned={() => {}}
+          onAssigned={() => {
+            fetchData();
+            setAssignModalOpen(false);
+          }}
         />
     </div>
   );

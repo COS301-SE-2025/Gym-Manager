@@ -29,7 +29,9 @@ export default function EditUser() {
         ]);
         setUser(userData);
         setUserRoles(roles);
-        setAvailableRoles(ALL_ROLES.filter(role => !roles.includes(role)));
+        setAvailableRoles(
+          ALL_ROLES.filter(role => role !== 'manager' && !roles.includes(role))
+        );
       } catch (err) {
         setError('Failed to load user data');
         console.error(err);
@@ -97,13 +99,15 @@ export default function EditUser() {
                   {userRoles.map(role => (
                     <div key={role} className="current-role-item">
                       <span className="role-name">{role}</span>
-                      <button 
-                        onClick={() => handleRemove(role)}
-                        disabled={loading}
-                        className="remove-button"
-                      >
-                        Remove
-                      </button>
+                      {role !== 'manager' && (
+                        <button 
+                          onClick={() => handleRemove(role)}
+                          disabled={loading}
+                          className="remove-button"
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

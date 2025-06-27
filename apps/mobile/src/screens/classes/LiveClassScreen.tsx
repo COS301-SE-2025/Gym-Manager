@@ -37,7 +37,7 @@ const LiveClassScreen = () => {
       await axios.post(
         'http://localhost:4000/submitScore',
         { classId: liveClassData.class.classId, score: Number(score) },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       Alert.alert('Success', 'Score submitted!');
     } catch (err: any) {
@@ -72,27 +72,26 @@ const LiveClassScreen = () => {
         </View>
 
         <View style={styles.liveClassBanner}>
-            <View style={styles.liveClassLeft}>
-              <View style={styles.liveIndicator} />
-              <View>
-                <Text style={styles.liveLabel}>LIVE CLASS</Text>
-                <Text style={styles.liveClassName}>{liveClassData.class.workoutName}</Text>
-              </View>
+          <View style={styles.liveClassLeft}>
+            <View style={styles.liveIndicator} />
+            <View>
+              <Text style={styles.liveLabel}>LIVE CLASS</Text>
+              <Text style={styles.liveClassName}>{liveClassData.class.workoutName}</Text>
             </View>
-            <View style={styles.liveClassRight}>
-              <Text style={styles.liveInstructor}>Coach ID: {liveClassData.class.coachId}</Text>
-              <Text style={styles.liveCapacity}>
-  Participants: {Array.isArray(liveClassData.participants) ? liveClassData.participants.length : 0}
-</Text>
-            </View>
+          </View>
+          <View style={styles.liveClassRight}>
+            <Text style={styles.liveInstructor}>Coach ID: {liveClassData.class.coachId}</Text>
+            <Text style={styles.liveCapacity}>
+              Participants:{' '}
+              {Array.isArray(liveClassData.participants) ? liveClassData.participants.length : 0}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.detailsContainer}>
           <Text style={styles.detailsTitle}>Class Details</Text>
           <View style={styles.detailsContent}>
-            <Text style={styles.detailsText}>
-                {liveClassData.class.workoutContent}
-            </Text>
+            <Text style={styles.detailsText}>{liveClassData.class.workoutContent}</Text>
           </View>
         </View>
 
@@ -103,7 +102,11 @@ const LiveClassScreen = () => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmitScore} disabled={loading}>
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={handleSubmitScore}
+          disabled={loading}
+        >
           {loading ? (
             <ActivityIndicator color="#1a1a1a" />
           ) : (
@@ -211,7 +214,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     marginBottom: 30,
-    height: 200, 
+    height: 200,
   },
   detailsTitle: {
     color: 'white',

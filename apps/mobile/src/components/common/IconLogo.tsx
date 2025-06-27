@@ -14,4 +14,4 @@ interface IconLogoProps {
 
 export default function IconLogo({ width = 60, height = 53 }: IconLogoProps) {
   return <SvgXml xml={logoSvg} width={width} height={height} />;
-} 
+}

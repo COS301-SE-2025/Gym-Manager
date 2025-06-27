@@ -96,4 +96,4 @@ export default function AuthNavigator() {
       <Stack.Screen name="FAQ" component={FAQScreen} />
     </Stack.Navigator>
   );
-} 
+}

@@ -31,12 +31,10 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
 
-
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
-
 
   const validateField = (field: 'email' | 'password', value: string) => {
     const newErrors = { ...errors };
@@ -108,9 +106,9 @@ export default function LoginScreen() {
 
     try {
       console.log('Login pressed', { email, password });
-      const response = await axios.post('http://localhost:4000/login', { 
-        email: email.trim().toLowerCase(), 
-        password 
+      const response = await axios.post('http://localhost:4000/login', {
+        email: email.trim().toLowerCase(),
+        password,
       });
 
       console.log('Login response:', response.data);
@@ -129,7 +127,6 @@ export default function LoginScreen() {
         console.warn('Login response does not contain user information.');
       }
 
-   
       if (response.data && response.data.user && response.data.user.roles) {
         const roles = response.data.user.roles;
         if (roles.includes('member') && roles.includes('coach')) {
@@ -147,7 +144,7 @@ export default function LoginScreen() {
     } catch (error: any) {
       console.error('Login error:', error);
       let errorMessage = 'An unexpected error occurred. Please try again.';
-      
+
       if (axios.isAxiosError(error) && error.response) {
         switch (error.response.status) {
           case 401:
@@ -165,7 +162,7 @@ export default function LoginScreen() {
       } else if (error.code === 'NETWORK_ERROR') {
         errorMessage = 'Network error. Please check your internet connection.';
       }
-      
+
       Alert.alert('Login Failed', errorMessage);
     } finally {
       setIsLoading(false);
@@ -187,7 +184,7 @@ export default function LoginScreen() {
             text: 'OK',
             onPress: () => navigation.navigate('Onboarding' as never),
           },
-        ]
+        ],
       );
     } catch (e) {
       console.error('Failed to reset onboarding.', e);
@@ -200,7 +197,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      
+
       {/* Logo */}
       <View style={styles.logoContainer}>
         <TrainwiseLogo width={280} height={64} />
@@ -212,10 +209,7 @@ export default function LoginScreen() {
         <View style={styles.inputContainer}>
           <Text style={styles.label}>EMAIL</Text>
           <TextInput
-            style={[
-              styles.input,
-              errors.email && styles.inputError
-            ]}
+            style={[styles.input, errors.email && styles.inputError]}
             value={email}
             onChangeText={handleEmailChange}
             onBlur={() => validateField('email', email)}
@@ -226,19 +220,14 @@ export default function LoginScreen() {
             autoCorrect={false}
             editable={!isLoading}
           />
-          {errors.email && (
-            <Text style={styles.errorText}>{errors.email}</Text>
-          )}
+          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
         </View>
 
         {/* Password Input */}
         <View style={styles.inputContainer}>
           <Text style={styles.label}>PASSWORD</Text>
           <TextInput
-            style={[
-              styles.input,
-              errors.password && styles.inputError
-            ]}
+            style={[styles.input, errors.password && styles.inputError]}
             value={password}
             onChangeText={handlePasswordChange}
             onBlur={() => validateField('password', password)}
@@ -248,17 +237,12 @@ export default function LoginScreen() {
             autoCapitalize="none"
             editable={!isLoading}
           />
-          {errors.password && (
-            <Text style={styles.errorText}>{errors.password}</Text>
-          )}
+          {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
         </View>
 
         {/* Login Button */}
-        <TouchableOpacity 
-          style={[
-            styles.loginButton,
-            (!isFormValid || isLoading) && styles.disabledButton
-          ]} 
+        <TouchableOpacity
+          style={[styles.loginButton, (!isFormValid || isLoading) && styles.disabledButton]}
           onPress={handleLogin}
           disabled={!isFormValid || isLoading}
         >
@@ -270,19 +254,14 @@ export default function LoginScreen() {
         </TouchableOpacity>
 
         {/* Register Link */}
-        <TouchableOpacity
-          style={styles.registerContainer}
-          onPress={navigateToRegister}>
+        <TouchableOpacity style={styles.registerContainer} onPress={navigateToRegister}>
           <Text style={styles.registerText}>
-            Don't have an account?{' '}
-            <Text style={styles.registerLink}>Register</Text>
+            Don't have an account? <Text style={styles.registerLink}>Register</Text>
           </Text>
         </TouchableOpacity>
-        
+
         {/* Reset Onboarding Button */}
-        <TouchableOpacity
-          style={styles.resetButton}
-          onPress={handleResetOnboarding}>
+        <TouchableOpacity style={styles.resetButton} onPress={handleResetOnboarding}>
           <Text style={styles.resetButtonText}>Reset Onboarding</Text>
         </TouchableOpacity>
       </View>
@@ -379,4 +358,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textDecorationLine: 'underline',
   },
-}); 
+});

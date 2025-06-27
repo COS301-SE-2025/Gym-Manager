@@ -15,4 +15,4 @@ interface TrainwiseLogoProps {
 
 export default function TrainwiseLogo({ width = 280, height = 64 }: TrainwiseLogoProps) {
   return <SvgXml xml={logoSvg} width={width} height={height} />;
-} 
+}

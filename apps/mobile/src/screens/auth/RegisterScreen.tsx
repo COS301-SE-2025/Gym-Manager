@@ -101,7 +101,8 @@ export default function RegisterScreen() {
         } else if (value.length < 8) {
           newErrors.password = 'Password must be at least 8 characters';
         } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value)) {
-          newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+          newErrors.password =
+            'Password must contain at least one uppercase letter, one lowercase letter, and one number';
         } else {
           delete newErrors.password;
         }
@@ -144,7 +145,8 @@ export default function RegisterScreen() {
     } else if (password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+      newErrors.password =
+        'Password must contain at least one uppercase letter, one lowercase letter, and one number';
     }
 
     setErrors(newErrors);
@@ -196,16 +198,16 @@ export default function RegisterScreen() {
 
     try {
       console.log('Register pressed', { firstName, lastName, email, password });
-      const response = await axios.post('http://localhost:4000/register', { 
-        firstName: firstName.trim(), 
-        lastName: lastName.trim(), 
-        email: email.trim().toLowerCase(), 
-        phone: phone.trim(), 
-        password 
+      const response = await axios.post('http://localhost:4000/register', {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        password,
       });
 
       console.log('Register response:', response.data);
-      
+
       Alert.alert(
         'Registration Successful!',
         'Your account has been created successfully. Please proceed to select your role.',
@@ -214,19 +216,22 @@ export default function RegisterScreen() {
             text: 'Continue',
             onPress: () => navigation.navigate('RoleSelection' as never),
           },
-        ]
+        ],
       );
     } catch (error: any) {
       console.error('Register error:', error);
       let errorMessage = 'An unexpected error occurred. Please try again.';
-      
+
       if (axios.isAxiosError(error) && error.response) {
         switch (error.response.status) {
           case 400:
-            errorMessage = error.response.data?.message || 'Invalid registration data. Please check your information.';
+            errorMessage =
+              error.response.data?.message ||
+              'Invalid registration data. Please check your information.';
             break;
           case 409:
-            errorMessage = 'An account with this email already exists. Please use a different email or try logging in.';
+            errorMessage =
+              'An account with this email already exists. Please use a different email or try logging in.';
             break;
           case 500:
             errorMessage = 'Server error. Please try again later.';
@@ -237,7 +242,7 @@ export default function RegisterScreen() {
       } else if (error.code === 'NETWORK_ERROR') {
         errorMessage = 'Network error. Please check your internet connection.';
       }
-      
+
       Alert.alert('Registration Failed', errorMessage);
     } finally {
       setIsLoading(false);
@@ -248,22 +253,23 @@ export default function RegisterScreen() {
     navigation.navigate('Login' as never);
   };
 
-  const isFormValid = !Object.keys(errors).length && 
-    firstName.trim() && 
-    lastName.trim() && 
-    email.trim() && 
-    phone.trim() && 
+  const isFormValid =
+    !Object.keys(errors).length &&
+    firstName.trim() &&
+    lastName.trim() &&
+    email.trim() &&
+    phone.trim() &&
     password.trim();
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      
-      <KeyboardAvoidingView 
+
+      <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -280,10 +286,7 @@ export default function RegisterScreen() {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>FIRST NAME</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  errors.firstName && styles.inputError
-                ]}
+                style={[styles.input, errors.firstName && styles.inputError]}
                 value={firstName}
                 onChangeText={handleFirstNameChange}
                 onBlur={() => validateField('firstName', firstName)}
@@ -293,19 +296,14 @@ export default function RegisterScreen() {
                 autoCorrect={false}
                 editable={!isLoading}
               />
-              {errors.firstName && (
-                <Text style={styles.errorText}>{errors.firstName}</Text>
-              )}
+              {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
             </View>
 
             {/* Last Name Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>LAST NAME</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  errors.lastName && styles.inputError
-                ]}
+                style={[styles.input, errors.lastName && styles.inputError]}
                 value={lastName}
                 onChangeText={handleLastNameChange}
                 onBlur={() => validateField('lastName', lastName)}
@@ -315,19 +313,14 @@ export default function RegisterScreen() {
                 autoCorrect={false}
                 editable={!isLoading}
               />
-              {errors.lastName && (
-                <Text style={styles.errorText}>{errors.lastName}</Text>
-              )}
+              {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
             </View>
 
             {/* Phone Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>PHONE</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  errors.phone && styles.inputError
-                ]}
+                style={[styles.input, errors.phone && styles.inputError]}
                 value={phone}
                 onChangeText={handlePhoneChange}
                 onBlur={() => validateField('phone', phone)}
@@ -339,19 +332,14 @@ export default function RegisterScreen() {
                 editable={!isLoading}
                 maxLength={10}
               />
-              {errors.phone && (
-                <Text style={styles.errorText}>{errors.phone}</Text>
-              )}
+              {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
             </View>
 
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>EMAIL</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  errors.email && styles.inputError
-                ]}
+                style={[styles.input, errors.email && styles.inputError]}
                 value={email}
                 onChangeText={handleEmailChange}
                 onBlur={() => validateField('email', email)}
@@ -362,19 +350,14 @@ export default function RegisterScreen() {
                 autoCorrect={false}
                 editable={!isLoading}
               />
-              {errors.email && (
-                <Text style={styles.errorText}>{errors.email}</Text>
-              )}
+              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
             </View>
 
             {/* Password Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>PASSWORD</Text>
               <TextInput
-                style={[
-                  styles.input,
-                  errors.password && styles.inputError
-                ]}
+                style={[styles.input, errors.password && styles.inputError]}
                 value={password}
                 onChangeText={handlePasswordChange}
                 onBlur={() => validateField('password', password)}
@@ -384,20 +367,15 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 editable={!isLoading}
               />
-              {errors.password && (
-                <Text style={styles.errorText}>{errors.password}</Text>
-              )}
+              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
               <Text style={styles.passwordHint}>
                 Password must be at least 8 characters with uppercase, lowercase, and number
               </Text>
             </View>
 
             {/* Register Button */}
-            <TouchableOpacity 
-              style={[
-                styles.registerButton,
-                (!isFormValid || isLoading) && styles.disabledButton
-              ]} 
+            <TouchableOpacity
+              style={[styles.registerButton, (!isFormValid || isLoading) && styles.disabledButton]}
               onPress={handleRegister}
               disabled={!isFormValid || isLoading}
             >
@@ -409,15 +387,12 @@ export default function RegisterScreen() {
             </TouchableOpacity>
 
             {/* Login Link */}
-            <TouchableOpacity 
-              style={styles.loginLink} 
+            <TouchableOpacity
+              style={styles.loginLink}
               onPress={navigateToLogin}
               disabled={isLoading}
             >
-              <Text style={[
-                styles.loginLinkText,
-                isLoading && styles.disabledText
-              ]}>LOGIN</Text>
+              <Text style={[styles.loginLinkText, isLoading && styles.disabledText]}>LOGIN</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -518,4 +493,4 @@ const styles = StyleSheet.create({
   disabledText: {
     opacity: 0.5,
   },
-}); 
+});

@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import { db } from '../db/client';
-import { classes, workouts, coaches, members, classbookings, userroles, users, classattendance } from '../db/schema';
-import { eq, and, gt, gte, lte, or, sql } from 'drizzle-orm';
+import { classes, workouts, classbookings, userroles, classattendance } from '../db/schema';
+import { eq, and, gt, gte, or, sql } from 'drizzle-orm';
 import { AuthenticatedRequest } from '../middleware/auth';
 
-export const getCoachAssignedClasses = async (req : AuthenticatedRequest, res: Response) => {
+export const getCoachAssignedClasses = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) {
-    return res.status(401).json({ error: "Unauthorized" });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
   const coachId = req.user.userId;
   const assignedClasses = await db
@@ -25,13 +25,14 @@ export const getCoachAssignedClasses = async (req : AuthenticatedRequest, res: R
   res.json(assignedClasses);
 };
 
-export const getCoachClassesWithWorkouts = async (req : AuthenticatedRequest, res: Response) => {
+export const getCoachClassesWithWorkouts = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) {
     console.log('Unauthorized access attempt');
-    return res.status(401).json({ error: "Unauthorized" });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
   const coachId = req.user.userId;
-  const classWithWorkouts = await db.select({
+  const classWithWorkouts = await db
+    .select({
       classId: classes.classId,
       scheduledDate: classes.scheduledDate,
       scheduledTime: classes.scheduledTime,
@@ -44,16 +45,19 @@ export const getCoachClassesWithWorkouts = async (req : AuthenticatedRequest, re
   res.json(classWithWorkouts);
 };
 
-export const assignWorkoutToClass = async (req : AuthenticatedRequest, res : Response) => {
+export const assignWorkoutToClass = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) {
-    return res.status(401).json({ error: "Unauthorized" });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
   const coachId = req.user.userId;
   const { classId, workoutId } = req.body;
 
   // check class belongs to coach
-  const [cls] = await db.select().from(classes).where(and(eq(classes.classId, classId), eq(classes.coachId, coachId)));
-  if (!cls) return res.status(403).json({ error: "Unauthorized or class not found" });
+  const [cls] = await db
+    .select()
+    .from(classes)
+    .where(and(eq(classes.classId, classId), eq(classes.coachId, coachId)));
+  if (!cls) return res.status(403).json({ error: 'Unauthorized or class not found' });
 
   await db.update(classes).set({ workoutId }).where(eq(classes.classId, classId));
   res.json({ success: true });
@@ -61,31 +65,34 @@ export const assignWorkoutToClass = async (req : AuthenticatedRequest, res : Res
 
 export const createWorkout = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) {
-    return res.status(401).json({ error: "Unauthorized" });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
-  
+
   const { workoutName, workoutContent } = req.body;
-  
+
   // Validate input
   if (!workoutName || !workoutContent) {
-    return res.status(400).json({ error: "Workout name and content are required" });
+    return res.status(400).json({ error: 'Workout name and content are required' });
   }
-  
+
   try {
     // Insert new workout
-    const [newWorkout] = await db.insert(workouts).values({
-      workoutName: workoutName.trim(),
-      workoutContent: workoutContent.trim(),
-    }).returning({ workoutId: workouts.workoutId });
-    
-    res.json({ 
-      success: true, 
+    const [newWorkout] = await db
+      .insert(workouts)
+      .values({
+        workoutName: workoutName.trim(),
+        workoutContent: workoutContent.trim(),
+      })
+      .returning({ workoutId: workouts.workoutId });
+
+    res.json({
+      success: true,
       workoutId: newWorkout.workoutId,
-      message: "Workout created successfully" 
+      message: 'Workout created successfully',
     });
   } catch (error) {
     console.error('Error creating workout:', error);
-    res.status(500).json({ error: "Failed to create workout" });
+    res.status(500).json({ error: 'Failed to create workout' });
   }
 };
 
@@ -101,18 +108,15 @@ export const getAllClasses = async (req: AuthenticatedRequest, res: Response) =>
 
   if (rolesRows.length === 0) return res.status(403).json({ error: 'Unauthorized' });
 
-  const roles = rolesRows.map(r => r.role as string);
+  const roles = rolesRows.map((r) => r.role as string);
 
-  const now   = new Date();
+  const now = new Date();
   const today = now.toISOString().slice(0, 10); // YYYY-MM-DD
-  const time  = now.toTimeString().slice(0, 8); // HH:MM:SS
+  const time = now.toTimeString().slice(0, 8); // HH:MM:SS
 
   const notPast = or(
     gt(classes.scheduledDate, today),
-    and(
-      eq(classes.scheduledDate, today),
-      gte(classes.scheduledTime, time)
-    )
+    and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time)),
   );
 
   // -- members can see everything upcoming; coaches ignored for now -------------
@@ -122,21 +126,20 @@ export const getAllClasses = async (req: AuthenticatedRequest, res: Response) =>
 
   const classesList = await db
     .select({
-      classId:         classes.classId,
-      scheduledDate:   classes.scheduledDate,
-      scheduledTime:   classes.scheduledTime,
-      capacity:        classes.capacity,
-      coachId:         classes.coachId,
-      workoutId:       classes.workoutId,
-      workoutName:     workouts.workoutName,
+      classId: classes.classId,
+      scheduledDate: classes.scheduledDate,
+      scheduledTime: classes.scheduledTime,
+      capacity: classes.capacity,
+      coachId: classes.coachId,
+      workoutId: classes.workoutId,
+      workoutName: workouts.workoutName,
     })
     .from(classes)
     .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
-    .where(notPast);          // ← filter out old ones
+    .where(notPast); // ← filter out old ones
 
   res.json(classesList);
 };
-
 
 export const getMemberClasses = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -144,45 +147,42 @@ export const getMemberClasses = async (req: AuthenticatedRequest, res: Response)
   const memberId = req.user.userId;
 
   // same not-in-the-past helper
-  const now   = new Date();
+  const now = new Date();
   const today = now.toISOString().slice(0, 10);
-  const time  = now.toTimeString().slice(0, 8);
+  const time = now.toTimeString().slice(0, 8);
 
   const notPast = or(
     gt(classes.scheduledDate, today),
     and(
       eq(classes.scheduledDate, today),
-      gte(sql`${classes.scheduledTime}::time + (classes.duration_minutes || ' minutes')::interval`, time)
-    )
+      gte(
+        sql`${classes.scheduledTime}::time + (classes.duration_minutes || ' minutes')::interval`,
+        time,
+      ),
+    ),
   );
 
   const bookedClasses = await db
     .select({
-      bookingId:      classbookings.bookingId,
-      classId:        classes.classId,
-      scheduledDate:  classes.scheduledDate,
-      scheduledTime:  classes.scheduledTime,
-      workoutName:    workouts.workoutName,
+      bookingId: classbookings.bookingId,
+      classId: classes.classId,
+      scheduledDate: classes.scheduledDate,
+      scheduledTime: classes.scheduledTime,
+      workoutName: workouts.workoutName,
     })
     .from(classbookings)
-    .innerJoin(classes,  eq(classbookings.classId,  classes.classId))
-    .leftJoin(workouts, eq(classes.workoutId,     workouts.workoutId))
-    .where(
-      and(
-        eq(classbookings.memberId, memberId),
-        notPast
-      )
-    );
+    .innerJoin(classes, eq(classbookings.classId, classes.classId))
+    .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
+    .where(and(eq(classbookings.memberId, memberId), notPast));
 
   res.json(bookedClasses);
 };
-
 
 export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
   const memberId = req.user.userId;
-  const classId  = Number(req.body.classId);
+  const classId = Number(req.body.classId);
 
   if (!Number.isInteger(classId) || classId <= 0)
     return res.status(400).json({ error: 'Invalid class ID' });
@@ -191,10 +191,10 @@ export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
     await db.transaction(async (tx) => {
       const [cls] = await tx
         .select({
-          capacity:       classes.capacity,
-          scheduledDate:  classes.scheduledDate,
-          scheduledTime:  classes.scheduledTime,
-          duration:       classes.durationMinutes
+          capacity: classes.capacity,
+          scheduledDate: classes.scheduledDate,
+          scheduledTime: classes.scheduledTime,
+          duration: classes.durationMinutes,
         })
         .from(classes)
         .where(eq(classes.classId, classId))
@@ -204,26 +204,18 @@ export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
       if (!cls) throw { code: 404, msg: 'Class not found' };
 
       // 2. Reject past classes
-      const now   = new Date();
-      const today = now.toISOString().slice(0, 10);
-      const time  = now.toTimeString().slice(0, 8);
+      const now = new Date();
 
-      const classEnd = new Date(
-        `${cls.scheduledDate}T${cls.scheduledTime}`
-      );
+      const classEnd = new Date(`${cls.scheduledDate}T${cls.scheduledTime}`);
       classEnd.setMinutes(classEnd.getMinutes() + cls.duration);
 
-      if (now >= classEnd)
-        throw { code: 400, msg: 'Class has already ended' };
+      if (now >= classEnd) throw { code: 400, msg: 'Class has already ended' };
 
       // 3. Already booked?
       const dup = await tx
         .select()
         .from(classbookings)
-        .where(and(
-          eq(classbookings.classId, classId),
-          eq(classbookings.memberId, memberId)
-        ))
+        .where(and(eq(classbookings.classId, classId), eq(classbookings.memberId, memberId)))
         .limit(1);
 
       if (dup.length) throw { code: 400, msg: 'Already booked' };
@@ -234,8 +226,7 @@ export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
         .from(classbookings)
         .where(eq(classbookings.classId, classId));
 
-      if (count >= cls.capacity)
-        throw { code: 400, msg: 'Class full' };
+      if (count >= cls.capacity) throw { code: 400, msg: 'Class full' };
 
       // 5. Insert booking
       await tx.insert(classbookings).values({ classId, memberId });
@@ -248,7 +239,6 @@ export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
     res.status(500).json({ error: 'Internal error' });
   }
 };
-
 
 export const checkInToClass = async (req: Request, res: Response) => {
   const { classId, memberId } = req.body;

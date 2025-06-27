@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  Dimensions,
-} from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import IconLogo from '../../components/common/IconLogo';
 
@@ -16,7 +9,7 @@ export default function PendingScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      
+
       {/* Header Logo */}
       <View style={styles.headerContainer}>
         <IconLogo width={60} height={58} />
@@ -27,16 +20,10 @@ export default function PendingScreen() {
         {/* Warning Icon with Gradient Circles */}
         <View style={styles.warningContainer}>
           {/* Outer gradient ring */}
-          <LinearGradient
-            colors={['#6B8E23', '#8FBC8F', '#9ACD32']}
-            style={styles.outerRing}
-          >
+          <LinearGradient colors={['#6B8E23', '#8FBC8F', '#9ACD32']} style={styles.outerRing}>
             <View style={styles.outerRingInner}>
               {/* Middle gradient ring */}
-              <LinearGradient
-                colors={['#8FBC8F', '#9ACD32', '#ADFF2F']}
-                style={styles.middleRing}
-              >
+              <LinearGradient colors={['#8FBC8F', '#9ACD32', '#ADFF2F']} style={styles.middleRing}>
                 <View style={styles.middleRingInner}>
                   {/* Inner gradient ring */}
                   <LinearGradient
@@ -62,9 +49,8 @@ export default function PendingScreen() {
 
         {/* Description */}
         <Text style={styles.description}>
-          Your account status is pending and is waiting for review
-          from the gym manager. We will notify you when you're
-          account has been approved
+          Your account status is pending and is waiting for review from the gym manager. We will
+          notify you when you're account has been approved
         </Text>
       </View>
 
@@ -187,4 +173,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-}); 
+});

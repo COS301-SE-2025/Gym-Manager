@@ -72,26 +72,15 @@ export default function CancelSheet({ visible, classItem, onCancel, onClose }: C
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <Animated.View 
-          style={[styles.backdrop, { opacity: backdropOpacity }]} 
-        />
-        <TouchableOpacity 
-          style={styles.backdropTouchable} 
-          activeOpacity={1} 
-          onPress={onClose}
-        />
-        
+        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
+        <TouchableOpacity style={styles.backdropTouchable} activeOpacity={1} onPress={onClose} />
+
         <Animated.View style={[styles.sheetContainer, { transform: [{ translateY: slideAnim }] }]}>
           {/* Handle */}
           <View style={styles.handle} />
-          
+
           {/* Content */}
           <View style={styles.contentContainer}>
             {/* Header */}
@@ -114,7 +103,7 @@ export default function CancelSheet({ visible, classItem, onCancel, onClose }: C
                   <Text style={styles.detailValue}>{classItem.time}</Text>
                 </View>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Instructor</Text>
@@ -131,7 +120,8 @@ export default function CancelSheet({ visible, classItem, onCancel, onClose }: C
             <View style={styles.warningContainer}>
               <Text style={styles.warningTitle}>Cancel Booking</Text>
               <Text style={styles.warningText}>
-                Are you sure you want to cancel your booking for this class? This action cannot be undone and your spot will be made available to other members.
+                Are you sure you want to cancel your booking for this class? This action cannot be
+                undone and your spot will be made available to other members.
               </Text>
             </View>
 
@@ -140,7 +130,7 @@ export default function CancelSheet({ visible, classItem, onCancel, onClose }: C
               <TouchableOpacity style={styles.keepButton} onPress={onClose}>
                 <Text style={styles.keepButtonText}>Keep Booking</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity style={styles.cancelButtonContainer} onPress={handleCancel}>
                 <LinearGradient
                   colors={['#FF4444', '#CC3333']}
@@ -298,4 +288,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-}); 
+});

@@ -8,7 +8,7 @@ const router = express.Router();
 // 503 -> DB (or Node) problem
 
 router.get('/healthz', healthCheck);
-router.get('/health', healthCheck); 
+router.get('/health', healthCheck);
 router.get('/ready', healthCheck);
 
 export default router;

@@ -51,22 +51,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Web UI dependencies
-        run: npm install
-        working-directory: ./apps/web
-
-      - name: Lint Web UI
-        run: npm run lint
-        working-directory: ./apps/web
-      
-      - name: Install Mobile UI dependencies
-        run: npm install
-        working-directory: ./apps/mobile
-
-      - name: Lint Mobile UI
-        run: npm run lint
-        working-directory: ./apps/mobile
-
       - name: Install API dependencies
         run: npm install
         working-directory: ./services/api

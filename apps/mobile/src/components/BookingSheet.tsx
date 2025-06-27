@@ -84,7 +84,7 @@ export default function BookingSheet({ visible, classItem, onBook, onClose }: Bo
         setBookingError('Booking failed. Please try again or check your connection.');
       }
     } catch (error) {
-      console.error("Booking sheet caught error:", error);
+      console.error('Booking sheet caught error:', error);
       setBookingError('An unexpected error occurred during booking.');
     } finally {
       setIsBooking(false);
@@ -92,26 +92,15 @@ export default function BookingSheet({ visible, classItem, onBook, onClose }: Bo
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <Animated.View 
-          style={[styles.backdrop, { opacity: backdropOpacity }]} 
-        />
-        <TouchableOpacity 
-          style={styles.backdropTouchable} 
-          activeOpacity={1} 
-          onPress={onClose}
-        />
-        
+        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
+        <TouchableOpacity style={styles.backdropTouchable} activeOpacity={1} onPress={onClose} />
+
         <Animated.View style={[styles.sheetContainer, { transform: [{ translateY: slideAnim }] }]}>
           {/* Handle */}
           <View style={styles.handle} />
-          
+
           {/* Content */}
           <View style={styles.contentContainer}>
             {/* Header */}
@@ -134,7 +123,7 @@ export default function BookingSheet({ visible, classItem, onBook, onClose }: Bo
                   <Text style={styles.detailValue}>{classItem.time}</Text>
                 </View>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Instructor</Text>
@@ -151,8 +140,9 @@ export default function BookingSheet({ visible, classItem, onBook, onClose }: Bo
             <View style={styles.descriptionContainer}>
               <Text style={styles.descriptionTitle}>About this class</Text>
               <Text style={styles.descriptionText}>
-                Join us for an intensive workout session designed to challenge your limits and improve your fitness. 
-                This class combines strength training with cardio exercises for a complete workout experience.
+                Join us for an intensive workout session designed to challenge your limits and
+                improve your fitness. This class combines strength training with cardio exercises
+                for a complete workout experience.
               </Text>
             </View>
 
@@ -164,8 +154,8 @@ export default function BookingSheet({ visible, classItem, onBook, onClose }: Bo
             )}
 
             {/* Book Button */}
-            <TouchableOpacity 
-              style={[styles.bookButtonContainer, isBooking && styles.disabledButton]} 
+            <TouchableOpacity
+              style={[styles.bookButtonContainer, isBooking && styles.disabledButton]}
               onPress={handleBook}
               disabled={isBooking}
             >
@@ -328,4 +318,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
-}); 
+});

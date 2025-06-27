@@ -67,19 +67,18 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     try {
       await updateUserVisibility(newValue);
       setIsLeaderboardPublic(newValue);
-      
-    
+
       Alert.alert(
         'Settings Updated',
         `Your leaderboard visibility has been ${newValue ? 'enabled' : 'disabled'}.`,
-        [{ text: 'OK' }]
+        [{ text: 'OK' }],
       );
     } catch (error) {
       console.error('Failed to update visibility:', error);
       Alert.alert(
         'Update Failed',
         'Failed to update your leaderboard visibility. Please try again.',
-        [{ text: 'OK' }]
+        [{ text: 'OK' }],
       );
     } finally {
       setIsUpdatingVisibility(false);
@@ -88,10 +87,8 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
   const handleLogout = async () => {
     try {
-
       await removeToken();
       await removeUser();
-      
 
       navigation.navigate('Login');
     } catch (error) {
@@ -102,10 +99,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const handleContactSupport = async () => {
     const email = 'support@trainwise.co.za';
     const subject = 'Support Request - TrainWise App';
-    const body = 'Hi TrainWise Support Team,\n\nI need assistance with:\n\n[Please describe your issue here]\n\nThank you for your help!';
-    
+    const body =
+      'Hi TrainWise Support Team,\n\nI need assistance with:\n\n[Please describe your issue here]\n\nThank you for your help!';
+
     const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    
+
     try {
       const canOpen = await Linking.canOpenURL(mailtoUrl);
       if (canOpen) {
@@ -114,7 +112,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         Alert.alert(
           'Email Not Available',
           'No email app is configured on your device. Please email us at support@trainwise.co.za',
-          [{ text: 'OK' }]
+          [{ text: 'OK' }],
         );
       }
     } catch (error) {
@@ -122,7 +120,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       Alert.alert(
         'Error',
         'Unable to open email app. Please contact us at support@trainwise.co.za',
-        [{ text: 'OK' }]
+        [{ text: 'OK' }],
       );
     }
   };
@@ -145,11 +143,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     if (!currentUser?.roles || currentUser.roles.length === 0) {
       return 'Member';
     }
-    
+
     const roles = currentUser.roles;
     const isCoach = roles.includes('coach');
     const isMember = roles.includes('member');
-    
+
     if (isCoach && isMember) {
       return 'Coach • Member';
     } else if (isCoach) {
@@ -157,7 +155,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     } else if (isMember) {
       return 'Member';
     }
-    
 
     return roles[0].charAt(0).toUpperCase() + roles[0].slice(1);
   };
@@ -177,7 +174,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <IconLogo width={50} height={46} />
@@ -190,14 +187,10 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
-              <Text style={styles.avatarText}>
-                {getInitials()}
-              </Text>
+              <Text style={styles.avatarText}>{getInitials()}</Text>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>
-                {getFullName()}
-              </Text>
+              <Text style={styles.profileName}>{getFullName()}</Text>
               <Text style={styles.profileEmail}>{currentUser?.email || 'No email available'}</Text>
               <View style={styles.membershipBadge}>
                 <Text style={styles.membershipText}>{getMembershipType()}</Text>
@@ -209,7 +202,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         {/* Settings Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
-          
+
           {/* Leaderboard Privacy */}
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
@@ -223,11 +216,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             </View>
             <View style={styles.switchContainer}>
               {isUpdatingVisibility && (
-                <ActivityIndicator 
-                  size="small" 
-                  color="#D8FF3E" 
-                  style={styles.switchLoader}
-                />
+                <ActivityIndicator size="small" color="#D8FF3E" style={styles.switchLoader} />
               )}
               <Switch
                 value={isLeaderboardPublic ?? true}
@@ -241,7 +230,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
           {/* Role Swap - Only show if user has multiple roles */}
           {currentUser?.roles && currentUser.roles.length > 1 && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.settingItem}
               onPress={() => navigation.navigate('RoleSelection')}
             >
@@ -249,9 +238,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                 <Ionicons name="swap-horizontal-outline" size={24} color="#D8FF3E" />
                 <View style={styles.settingText}>
                   <Text style={styles.settingTitle}>Switch Role</Text>
-                  <Text style={styles.settingDescription}>
-                    Change between your available roles
-                  </Text>
+                  <Text style={styles.settingDescription}>Change between your available roles</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={24} color="#888" />
@@ -262,15 +249,13 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         {/* Support Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Support</Text>
-          
-          <TouchableOpacity style={styles.settingItem}  onPress={() => navigation.navigate('FAQ')}>
+
+          <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('FAQ')}>
             <View style={styles.settingLeft}>
               <Ionicons name="help-circle-outline" size={24} color="#D8FF3E" />
               <View style={styles.settingText}>
                 <Text style={styles.settingTitle}>Help & FAQ</Text>
-                <Text style={styles.settingDescription}>
-                  Get help and find answers
-                </Text>
+                <Text style={styles.settingDescription}>Get help and find answers</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={24} color="#888" />
@@ -281,9 +266,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               <Ionicons name="mail-outline" size={24} color="#D8FF3E" />
               <View style={styles.settingText}>
                 <Text style={styles.settingTitle}>Contact Support</Text>
-                <Text style={styles.settingDescription}>
-                  Get in touch with our team
-                </Text>
+                <Text style={styles.settingDescription}>Get in touch with our team</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={24} color="#888" />
@@ -467,4 +450,4 @@ const styles = StyleSheet.create({
   switchLoader: {
     marginRight: 8,
   },
-}); 
+});

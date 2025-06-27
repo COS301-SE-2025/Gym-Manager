@@ -107,36 +107,34 @@ export const getAllClasses = async (req: AuthenticatedRequest, res: Response) =>
   const today = now.toISOString().slice(0, 10); // YYYY-MM-DD
   const time  = now.toTimeString().slice(0, 8); // HH:MM:SS
 
-  // Only allow members
+  const notPast = or(
+    gt(classes.scheduledDate, today),
+    and(
+      eq(classes.scheduledDate, today),
+      gte(classes.scheduledTime, time)
+    )
+  );
+
+  // -- members can see everything upcoming; coaches ignored for now -------------
   if (!roles.includes('member')) {
     return res.status(403).json({ error: 'Unauthorized' });
   }
 
-  // Use raw SQL for aggregation and joins
-  const result = await db.execute(sql`
-    SELECT
-      c.class_id AS "classId",
-      c.scheduled_date AS "scheduledDate",
-      c.scheduled_time AS "scheduledTime",
-      c.capacity AS "capacity",
-      c.coach_id AS "coachId",
-      w.workout_name AS "workoutName",
-      u.first_name AS "coachFirstName",
-      u.last_name AS "coachLastName",
-      COUNT(cb.booking_id) AS "bookedCount"
-    FROM classes c
-    LEFT JOIN workouts w ON c.workout_id = w.workout_id
-    LEFT JOIN coaches co ON c.coach_id = co.user_id
-    LEFT JOIN users u ON co.user_id = u.user_id
-    LEFT JOIN classbookings cb ON c.class_id = cb.class_id
-    WHERE
-      (c.scheduled_date > ${today}
-        OR (c.scheduled_date = ${today} AND c.scheduled_time >= ${time}))
-    GROUP BY c.class_id, w.workout_name, u.first_name, u.last_name
-    ORDER BY c.scheduled_date, c.scheduled_time
-  `);
+  const classesList = await db
+    .select({
+      classId:         classes.classId,
+      scheduledDate:   classes.scheduledDate,
+      scheduledTime:   classes.scheduledTime,
+      capacity:        classes.capacity,
+      coachId:         classes.coachId,
+      workoutId:       classes.workoutId,
+      workoutName:     workouts.workoutName,
+    })
+    .from(classes)
+    .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
+    .where(notPast);          // ← filter out old ones
 
-  res.json(result.rows);
+  res.json(classesList);
 };
 
 

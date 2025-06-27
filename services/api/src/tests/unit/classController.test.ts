@@ -1,10 +1,10 @@
 /**
  * classController.test.ts – unit tests for every branch in classController
  */
-import * as ctrl from '../controllers/classController';
-import { db } from '../db/client';
+import * as ctrl from '../../controllers/classController';
+import { db } from '../../db/client';
 import { Request, Response } from 'express';
-import { builder } from './builder';
+import { builder } from '../builder';
 
 // ---------- Drizzle mocks ----------
 const txMock = {
@@ -15,7 +15,7 @@ const txMock = {
   limit  : jest.fn().mockReturnThis(),
 };
 
-jest.mock('../db/client', () => ({
+jest.mock('../../db/client', () => ({
   db: {
     select      : jest.fn(),
     update      : jest.fn(),
@@ -23,6 +23,12 @@ jest.mock('../db/client', () => ({
     transaction : jest.fn((cb: any) => cb(txMock)),
   },
 }));
+
+beforeAll(() => {
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+});
 
 // ---------- helpers ----------
 const mockReq = (uid?: number, extras: Record<string, unknown> = {}): Request =>

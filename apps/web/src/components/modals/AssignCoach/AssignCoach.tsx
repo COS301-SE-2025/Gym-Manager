@@ -56,7 +56,7 @@ export default function AssignCoachModal({ isOpen, onClose, classInfo, onAssigne
       await axios.post(
         'http://localhost:4000/schedule/assign-coach',
         { classId: classInfo.classId, coachId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       if (onAssigned) onAssigned();
       onClose();
@@ -73,16 +73,31 @@ export default function AssignCoachModal({ isOpen, onClose, classInfo, onAssigne
         <h2>Assign Coach</h2>
 
         <div style={{ fontSize: '14px', lineHeight: '1.6', marginBottom: '16px' }}>
-          <p><strong>Scheduled Date:</strong> {classInfo.scheduledDate}</p>
-          <p><strong>Scheduled Time:</strong> {classInfo.scheduledTime}</p>
-          <p><strong>Duration:</strong> {classInfo.durationMinutes} minutes</p>
-          <p><strong>Capacity:</strong> {classInfo.capacity} people</p>
-          <p><strong>Current Coach:</strong> {classInfo.coachName || 'None assigned'}</p>
+          <p>
+            <strong>Scheduled Date:</strong> {classInfo.scheduledDate}
+          </p>
+          <p>
+            <strong>Scheduled Time:</strong> {classInfo.scheduledTime}
+          </p>
+          <p>
+            <strong>Duration:</strong> {classInfo.durationMinutes} minutes
+          </p>
+          <p>
+            <strong>Capacity:</strong> {classInfo.capacity} people
+          </p>
+          <p>
+            <strong>Current Coach:</strong> {classInfo.coachName || 'None assigned'}
+          </p>
         </div>
 
         <form onSubmit={handleAssign}>
-          <label>Select Coach:
-            <select value={coachId ?? ''} onChange={(e) => setCoachId(Number(e.target.value))} required>
+          <label>
+            Select Coach:
+            <select
+              value={coachId ?? ''}
+              onChange={(e) => setCoachId(Number(e.target.value))}
+              required
+            >
               <option value="">-- Select Coach --</option>
               {coaches.map((coach) => (
                 <option key={coach.userId} value={coach.userId}>
@@ -94,7 +109,9 @@ export default function AssignCoachModal({ isOpen, onClose, classInfo, onAssigne
 
           <div className="modal-actions">
             <button type="submit">Assign</button>
-            <button type="button" onClick={onClose}>Cancel</button>
+            <button type="button" onClick={onClose}>
+              Cancel
+            </button>
           </div>
         </form>
       </div>

@@ -1,12 +1,11 @@
 import axios from 'axios';
-import { User, UserRole, Member, Admin, Coach } from '@/types/types';
-
-export const UserRoleService = {
+import { User, UserRole } from '@/types/types';
+// import { Member, Admin, Coach } from '@/types/types';
+export const userRoleService = {
   async getUsersByRole(role: UserRole) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await axios.get(`http://localhost:4000/roles/getUsersByRole/${role}`, {
-        // params: { role },
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log(response.data);

@@ -1,8 +1,8 @@
-'use client'
+'use client';
 import { UserTable } from './table/page';
 export default function MembersList() {
-    return(
-        <main className="users-page">
+  return (
+    <main className="users-page">
       <section className="user-section">
         <h2>Members</h2>
         <UserTable role="member" />
@@ -10,7 +10,7 @@ export default function MembersList() {
 
       <section className="user-section">
         <h2>Coaches</h2>
-        <UserTable role="coach"/>
+        <UserTable role="coach" />
       </section>
 
       <section className="user-section">
@@ -23,5 +23,5 @@ export default function MembersList() {
         <UserTable role="manager" />
       </section>
     </main>
-    );
+  );
 }

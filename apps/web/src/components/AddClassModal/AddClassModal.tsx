@@ -20,9 +20,9 @@ const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose, onAddCla
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: name === 'capacity' ? parseInt(value) || 0 : value
+      [name]: name === 'capacity' ? parseInt(value) || 0 : value,
     }));
   };
 

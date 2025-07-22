@@ -1,6 +1,5 @@
-import axios from "axios"
+import axios from 'axios';
 
-export default function SchedulePage(){
-    return(
-        <p>schedule</p>
-    )};
+export default function SchedulePage() {
+  return <p>schedule</p>;
+}

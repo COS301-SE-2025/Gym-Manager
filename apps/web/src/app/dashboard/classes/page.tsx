@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
@@ -18,7 +18,7 @@ const ClassesTable = () => {
     scheduledTime: '',
     capacity: 10,
     coachId: '',
-    workoutId: ''
+    workoutId: '',
   });
 
   useEffect(() => {
@@ -32,8 +32,8 @@ const ClassesTable = () => {
       setLoading(true);
       const response = await fetch('/api/classes', {
         headers: {
-          'Authorization': `Bearer ${(session as any)?.accessToken || ''}`
-        }
+          Authorization: `Bearer ${(session as any)?.accessToken || ''}`,
+        },
       });
 
       if (!response.ok) {
@@ -57,9 +57,9 @@ const ClassesTable = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(session as any)?.accessToken || ''}`
+          Authorization: `Bearer ${(session as any)?.accessToken || ''}`,
         },
-        body: JSON.stringify(newClass)
+        body: JSON.stringify(newClass),
       });
 
       if (!response.ok) {
@@ -73,7 +73,7 @@ const ClassesTable = () => {
         scheduledTime: '',
         capacity: 10,
         coachId: '',
-        workoutId: ''
+        workoutId: '',
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add class');
@@ -83,9 +83,9 @@ const ClassesTable = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setNewClass(prev => ({
+    setNewClass((prev) => ({
       ...prev,
-      [name]: name === 'capacity' ? parseInt(value) : value
+      [name]: name === 'capacity' ? parseInt(value) : value,
     }));
   };
 

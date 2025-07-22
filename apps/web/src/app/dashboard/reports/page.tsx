@@ -1,4 +1,4 @@
-'use client'
+'use client';
 export default function ReportsPage() {
-    return(<p>Reports</p>);
+  return <p>Reports</p>;
 }

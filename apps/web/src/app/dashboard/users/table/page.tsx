@@ -13,11 +13,11 @@ interface UserTableProps {
 }
 
 export function UserTable({ role }: UserTableProps) {
-const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-   useEffect(() => {
+  useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
@@ -25,9 +25,7 @@ const [users, setUsers] = useState<User[]>([]);
         setUsers(data);
       } catch (err) {
         console.error('Using fallback mock data', err);
-        setError(axios.isAxiosError(err) 
-          ? err.message 
-          : 'An unknown error occurred');
+        setError(axios.isAxiosError(err) ? err.message : 'An unknown error occurred');
       } finally {
         setLoading(false);
       }
@@ -100,4 +98,4 @@ const [users, setUsers] = useState<User[]>([]);
       </table>
     </div>
   );
-};
+}

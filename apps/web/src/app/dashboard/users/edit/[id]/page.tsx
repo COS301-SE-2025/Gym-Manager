@@ -11,7 +11,7 @@ const ALL_ROLES: UserRole[] = ['member', 'coach', 'admin', 'manager'];
 export default function EditUser() {
   const params = useParams();
   const userId = parseInt(params.id as string, 10);
-  
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -25,13 +25,11 @@ export default function EditUser() {
         setLoading(true);
         const [userData, roles] = await Promise.all([
           UserRoleService.getUserById(userId),
-          UserRoleService.RolesByUser(userId)
+          UserRoleService.RolesByUser(userId),
         ]);
         setUser(userData);
         setUserRoles(roles);
-        setAvailableRoles(
-          ALL_ROLES.filter(role => role !== 'manager' && !roles.includes(role))
-        );
+        setAvailableRoles(ALL_ROLES.filter((role) => role !== 'manager' && !roles.includes(role)));
       } catch (err) {
         setError('Failed to load user data');
         console.error(err);
@@ -48,7 +46,7 @@ export default function EditUser() {
       setLoading(true);
       await UserRoleService.assignRole(userId, role);
       setUserRoles([...userRoles, role]);
-      setAvailableRoles(availableRoles.filter(r => r !== role));
+      setAvailableRoles(availableRoles.filter((r) => r !== role));
       setShowAvailableRoles(false);
     } catch (err) {
       setError('Failed to assign role');
@@ -62,7 +60,7 @@ export default function EditUser() {
     try {
       setLoading(true);
       await UserRoleService.removeRole(userId, role);
-      setUserRoles(userRoles.filter(r => r !== role));
+      setUserRoles(userRoles.filter((r) => r !== role));
       setAvailableRoles([...availableRoles, role]);
     } catch (err) {
       setError('Failed to remove role');
@@ -90,17 +88,17 @@ export default function EditUser() {
           <div className="card-title">
             <h2>Manage Roles</h2>
           </div>
-          
+
           <div className="card-content">
             <h3>Current Roles:</h3>
             <div className="form-group">
               {userRoles.length > 0 ? (
                 <div className="current-roles-grid">
-                  {userRoles.map(role => (
+                  {userRoles.map((role) => (
                     <div key={role} className="current-role-item">
                       <span className="role-name">{role}</span>
                       {role !== 'manager' && (
-                        <button 
+                        <button
                           onClick={() => handleRemove(role)}
                           disabled={loading}
                           className="remove-button"
@@ -131,7 +129,7 @@ export default function EditUser() {
                 <h3>Available Roles:</h3>
                 {availableRoles.length > 0 ? (
                   <div className="available-roles-grid">
-                    {availableRoles.map(role => (
+                    {availableRoles.map((role) => (
                       <button
                         key={role}
                         onClick={() => handleAssign(role)}
@@ -146,10 +144,7 @@ export default function EditUser() {
                   <p className="no-roles-message">All roles assigned</p>
                 )}
                 <div className="form-actions">
-                  <button
-                    onClick={() => setShowAvailableRoles(false)}
-                    className="cancel-button"
-                  >
+                  <button onClick={() => setShowAvailableRoles(false)} className="cancel-button">
                     Cancel
                   </button>
                 </div>

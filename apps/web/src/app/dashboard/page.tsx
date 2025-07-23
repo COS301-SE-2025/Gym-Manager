@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import WeeklyCalendar from '../../components/WeeklyCalendar/WeeklyCalendar';
 import { CalendarEvent, ClassScheduleItem, User } from '../../types/types';
 import { getDummyCalendarEvents, transformApiDataToEvents } from '../../utils/calendarHelpers';
-import { UserRoleService } from '../services/roles';
+import { userRoleService } from '../services/roles';
 import ClassCreationModal from '@/components/modals/CreateClass/CreateClass';
 import AssignCoachModal from '@/components/modals/AssignCoach/AssignCoach';
 import { ClassResource } from '@/components/modals/AssignCoach/AssignCoach';
@@ -22,8 +22,8 @@ export default function DashboardPage() {
     try {
       // Fetch both schedule and user data in parallel
       const [apiData, userData] = await Promise.all([
-        UserRoleService.getWeeklySchedule(),
-        UserRoleService.getCurrentUser(),
+        userRoleService.getWeeklySchedule(),
+        userRoleService.getCurrentUser(),
       ]);
 
       const calendarEvents = transformApiDataToEvents(apiData);
@@ -37,7 +37,7 @@ export default function DashboardPage() {
 
       // Try to get user data separately if schedule failed
       try {
-        const userData = await UserRoleService.getCurrentUser();
+        const userData = await userRoleService.getCurrentUser();
         setCurrentUser(userData);
       } catch (userError) {
         console.error('Failed to load user data:', userError);

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
-import { UserRoleService } from '@/app/services/roles';
+import { userRoleService } from '@/app/services/roles';
 import './style.css';
 export default function ClassCreationModal({
   isOpen,
@@ -32,7 +32,7 @@ export default function ClassCreationModal({
   const fetchCoaches = async () => {
     try {
       const token = localStorage.getItem('authToken');
-      const res = await UserRoleService.getUsersByRole('coach');
+      const res = await userRoleService.getUsersByRole('coach');
       setCoaches(res || []);
     } catch (err) {
       console.error('Failed to load coaches:', err);

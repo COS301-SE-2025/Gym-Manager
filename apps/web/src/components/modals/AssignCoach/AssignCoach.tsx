@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { UserRoleService } from '@/app/services/roles';
+import { userRoleService } from '@/app/services/roles';
 import './assign.css';
 
 interface Coach {
@@ -40,7 +40,7 @@ export default function AssignCoachModal({ isOpen, onClose, classInfo, onAssigne
 
   async function fetchCoaches() {
     try {
-      const res = await UserRoleService.getUsersByRole('coach');
+      const res = await userRoleService.getUsersByRole('coach');
       setCoaches(res);
     } catch (err) {
       console.error('Failed to fetch coaches', err);

@@ -20,6 +20,7 @@ import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import type { ApiLiveClassResponse } from '../HomeScreen';
+import config from '../../config';
 
 const { width } = Dimensions.get('window');
 
@@ -80,7 +81,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
       }
 
       const response = await axios.get<ApiCoachClass[]>(
-        'http://localhost:4000/coach/assignedClasses',
+        `${config.BASE_URL}/coach/assignedClasses`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
 

@@ -17,6 +17,7 @@ import type { ApiLiveClassResponse } from '../HomeScreen';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
+import config from '../../config';
 
 interface Participant {
   userId: number;
@@ -56,7 +57,7 @@ const CoachLiveClassScreen = () => {
             score: Number(val),
           })),
       };
-      await axios.post('http://localhost:4000/submitScore', payload, {
+      await axios.post(`${config.BASE_URL}/submitScore`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
       Alert.alert('Success', 'Scores submitted!');

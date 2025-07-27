@@ -6,7 +6,7 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { User, UserRole, Admin, Member, Coach } from '@/types/types';
-import { UserRoleService } from '@/app/services/roles';
+import { userRoleService } from '@/app/services/roles';
 
 interface UserTableProps {
   role: UserRole;
@@ -21,7 +21,7 @@ export function UserTable({ role }: UserTableProps) {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const data = await UserRoleService.getUsersByRole(role);
+        const data = await userRoleService.getUsersByRole(role);
         setUsers(data);
       } catch (err) {
         console.error('Using fallback mock data', err);

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { UserRole, User } from '@/types/types';
-import { UserRoleService } from '@/app/services/roles';
+import { userRoleService } from '@/app/services/roles';
 import './styles.css';
 
 const ALL_ROLES: UserRole[] = ['member', 'coach', 'admin', 'manager'];
@@ -24,8 +24,8 @@ export default function EditUser() {
       try {
         setLoading(true);
         const [userData, roles] = await Promise.all([
-          UserRoleService.getUserById(userId),
-          UserRoleService.RolesByUser(userId),
+          userRoleService.getUserById(userId),
+          userRoleService.RolesByUser(userId),
         ]);
         setUser(userData);
         setUserRoles(roles);
@@ -44,7 +44,7 @@ export default function EditUser() {
   const handleAssign = async (role: UserRole) => {
     try {
       setLoading(true);
-      await UserRoleService.assignRole(userId, role);
+      await userRoleService.assignRole(userId, role);
       setUserRoles([...userRoles, role]);
       setAvailableRoles(availableRoles.filter((r) => r !== role));
       setShowAvailableRoles(false);
@@ -59,7 +59,7 @@ export default function EditUser() {
   const handleRemove = async (role: UserRole) => {
     try {
       setLoading(true);
-      await UserRoleService.removeRole(userId, role);
+      await userRoleService.removeRole(userId, role);
       setUserRoles(userRoles.filter((r) => r !== role));
       setAvailableRoles([...availableRoles, role]);
     } catch (err) {

@@ -1,12 +1,11 @@
 """
-Simple seeding script for populating database
+NOTES FOR ANYONE READING THIS:
+1) You need to change the info below (lines 24 - 28) to match YOUR database info (change the 2nd argument)
+2) Relevant details will be printed on the terminal after you run the script (user passswords, classes, etc...)
+3) You need to download the dependencies on line 8
+4) All data in your database will be deleted, and then the new data from this script will be added
 
-• Uses environment variables for the connection string:
-  PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD
-
-Dependencies
-------------
-pip install psycopg2-binary Faker passlib
+pip install psycopg2-binary Faker passlib bcrypt
 """
 
 import os
@@ -17,8 +16,17 @@ import psycopg2
 from psycopg2.extras import execute_values
 from faker import Faker
 from passlib.hash import pbkdf2_sha256
+import bcrypt
 
 fake = Faker()
+
+DB_CFG = dict(
+    host=os.getenv("PGHOST", "localhost"),
+    port=os.getenv("PGPORT", 33322),
+    dbname=os.getenv("PGDATABASE", "HIIT_GYM_MANAGER"),
+    user=os.getenv("PGUSER", "postgres"),
+    password=os.getenv("PGPASSWORD", "denispi"),
+)
 
 # --- helpers --------------------------------------------------------------
 
@@ -34,7 +42,7 @@ def conn():
 
 
 def hash_pw(clear: str) -> str:
-    return pbkdf2_sha256.hash(clear, rounds=260000)
+    return bcrypt.hashpw(clear.encode(), bcrypt.gensalt()).decode()
 
 
 def rnd_pw() -> str:

@@ -37,7 +37,7 @@ export default function AddCoachModal({ onClose }: { onClose: () => void }) {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post('/api/auth/register', {
+      const response = await axios.post('http://localhost:4000/register', {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
@@ -46,15 +46,14 @@ export default function AddCoachModal({ onClose }: { onClose: () => void }) {
         roles: ['coach']
       });
 
-      // Add coach bio
-      await axios.post('/api/coaches', {
-        userId: response.data.userId,
-        bio: formData.bio
-      }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('authToken')}`
-        }
-      });
+      // await axios.post('/api/coaches', {
+      //   userId: response.data.userId,
+      //   bio: formData.bio
+      // }, {
+      //   headers: {
+      //     Authorization: `Bearer ${localStorage.getItem('authToken')}`
+      //   }
+      // });
 
       onClose();
     } catch (err: any) {

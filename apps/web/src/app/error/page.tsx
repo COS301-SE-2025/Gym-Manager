@@ -57,7 +57,9 @@ export default function ErrorPage() {
     <div className={'container'}>
       <div className={'card'}>
         <h1 className={`${'title'} ${colorClass}`}>{title}</h1>
-        <p className={'description'}>{description}</p>
+        {(errorType !== '404' && errorType) && (
+            <p className={'description'}>{description}</p>
+        )}
         {(errorType === '404' || !errorType) && (
           <button className={'button'} onClick={handleGoBack}>
             Go Back

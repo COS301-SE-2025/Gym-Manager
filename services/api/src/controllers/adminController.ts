@@ -14,6 +14,7 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { format } from 'date-fns';
 import { parseISO as dateFnsParseISO } from 'date-fns';
+import bcrypt from 'bcrypt';
 
 const dayToOffset: Record<string, number> = {
   Monday: 0,
@@ -29,7 +30,7 @@ export const createWeeklySchedule = async (req: Request, res: Response) => {
   try {
     const { startDate, createdBy, weeklySchedule } = req.body;
     const baseDate = dateFnsParseISO(startDate);
-    const insertedClasses = [];
+    const insertedClasses: typeof classes.$inferSelect[] = [];
 
     for (const dayBlock of weeklySchedule) {
       const offset = dayToOffset[dayBlock.day];
@@ -360,3 +361,60 @@ export const getUserById = async (req: Request, res: Response) => {
 
   res.json(user[0]);
 };
+
+//EDIT USER DETAILS 
+export const updateUserById = async (req: Request, res: Response) => {
+  const userId = parseInt(req.params.userId, 10);
+  if (isNaN(userId)) {
+    return res.status(400).json({ error: 'Invalid userId' });
+  }
+
+  const {
+    firstName,
+    lastName,
+    email,
+    phone,
+    password, // plain text password, optional
+  } = req.body;
+
+  // Basic validation
+  if (!firstName || !lastName || !email) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // Hash password if provided
+  let passwordHash;
+  if (password) {
+    const saltRounds = 10;
+    passwordHash = await bcrypt.hash(password, saltRounds);
+  }
+
+  try {
+    const updateData: any = {
+      firstName,
+      lastName,
+      email,
+      phone,
+    };
+
+    if (passwordHash) {
+      updateData.passwordHash = passwordHash;
+    }
+
+    const updated = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.userId, userId))
+      .returning();
+
+    if (updated.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ message: 'User updated successfully', user: updated[0] });
+  } catch (err) {
+    console.error('Error updating user:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+

@@ -36,18 +36,13 @@ app.use(errorHandler);
 setupSwagger(app);
 
 // 404 Handler
-app.use((req, res) => {
+app.use((_req, res, _next) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Global Error Handler
-app.use((err: any, req: express.Request, res: express.Response) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong on the server' });
-});
-
-// Export the app for testing
+// Export the app for testing / Vercel
 export { app };
+export default app;
 
 if (require.main === module) {
   app.listen(port, () => {

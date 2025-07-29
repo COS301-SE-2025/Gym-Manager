@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -17,49 +17,47 @@ export default function ErrorPage() {
           title: 'Login Required',
           description: message || 'You need to login to access this page',
           action: { text: 'Login', path: '/' },
-          colorClass: 'yellow'
-        }
+          colorClass: 'yellow',
+        };
       case 'session':
         return {
           title: 'Session Expired',
           description: message || 'Your session has expired. Please login again.',
           action: { text: 'Login', path: '/' },
-          colorClass: 'orange'
-        }
+          colorClass: 'orange',
+        };
       case '404':
         return {
           title: 'Page Not Found',
           description: message || "The page you're looking for doesn't exist.",
           action: { text: 'Go Home', path: '/' },
-          colorClass: 'red'
-        }
+          colorClass: 'red',
+        };
       default:
         return {
           title: 'Error',
           description: message || 'An unexpected error occurred',
           action: { text: 'Go back', path: '/' },
-          colorClass: 'yellow'
-        }
+          colorClass: 'yellow',
+        };
     }
-  }
+  };
 
-  const { title, description, action, colorClass } = getErrorDetails()
+  const { title, description, action, colorClass } = getErrorDetails();
 
   const handleGoBack = () => {
     if (window.history.length > 1) {
-      router.back()
+      router.back();
     } else {
-      router.push('/')
+      router.push('/');
     }
-  }
+  };
 
   return (
     <div className={'container'}>
       <div className={'card'}>
         <h1 className={`${'title'} ${colorClass}`}>{title}</h1>
-        {(errorType !== '404' && errorType) && (
-            <p className={'description'}>{description}</p>
-        )}
+        {errorType !== '404' && errorType && <p className={'description'}>{description}</p>}
         {(errorType === '404' || !errorType) && (
           <button className={'button'} onClick={handleGoBack}>
             Go Back
@@ -77,5 +75,5 @@ export default function ErrorPage() {
         )} */}
       </div>
     </div>
-  )
+  );
 }

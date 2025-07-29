@@ -11,16 +11,16 @@ export default function AddCoachModal({ onClose }: { onClose: () => void }) {
     phone: '',
     password: '',
     confirmPassword: '',
-    bio: ''
+    bio: '',
   });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -43,7 +43,7 @@ export default function AddCoachModal({ onClose }: { onClose: () => void }) {
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
-        roles: ['coach']
+        roles: ['coach'],
       });
 
       // await axios.post('/api/coaches', {
@@ -142,12 +142,7 @@ export default function AddCoachModal({ onClose }: { onClose: () => void }) {
 
           <label>
             Bio:
-            <textarea
-              name="bio"
-              value={formData.bio}
-              onChange={handleChange}
-              rows={3}
-            />
+            <textarea name="bio" value={formData.bio} onChange={handleChange} rows={3} />
           </label>
 
           <div className="modal-actions">

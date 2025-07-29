@@ -14,7 +14,6 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { format } from 'date-fns';
 import { parseISO as dateFnsParseISO } from 'date-fns';
-import bcrypt from 'bcrypt';
 
 const dayToOffset: Record<string, number> = {
   Monday: 0,
@@ -209,18 +208,19 @@ export const getUsersByRole = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid role' });
   }
 
-  const result = await db
-    .select({
-      userId: users.userId,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      email: users.email,
-    })
-    .from(users)
-    .innerJoin(userroles, eq(users.userId, userroles.userId))
-    .where(eq(userroles.userRole, role as RoleType));
+  if( role === 'member') {
+    return getAllMembers(req, res);
+  }
+  
 
-  res.json(result);
+  if( role === 'coach') {
+    return getAllCoaches(req, res);
+  }
+
+  if( role === 'admin') {
+    return getAllAdmins(req, res);
+  }
+
 };
 
 // GET /users/allUsers
@@ -369,52 +369,91 @@ export const updateUserById = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid userId' });
   }
 
-  const {
-    firstName,
-    lastName,
-    email,
-    phone,
-    password, // plain text password, optional
-  } = req.body;
-
-  // Basic validation
-  if (!firstName || !lastName || !email) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
-
-  // Hash password if provided
-  let passwordHash;
-  if (password) {
-    const saltRounds = 10;
-    passwordHash = await bcrypt.hash(password, saltRounds);
-  }
-
-  try {
-    const updateData: any = {
-      firstName,
-      lastName,
-      email,
-      phone,
-    };
-
-    if (passwordHash) {
-      updateData.passwordHash = passwordHash;
-    }
-
-    const updated = await db
+  //Update all member deatils if role is member
+  if (req.body.role === 'member') {
+    const { firstName, lastName, email, phone, status, creditsBalance } = req.body;
+    await db
       .update(users)
-      .set(updateData)
-      .where(eq(users.userId, userId))
-      .returning();
+      .set({ firstName, lastName, email, phone })
+      .where(eq(users.userId, userId));
 
-    if (updated.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    await db
+      .update(members)
+      .set({ status, creditsBalance })
+      .where(eq(members.userId, userId));
 
-    res.json({ message: 'User updated successfully', user: updated[0] });
-  } catch (err) {
-    console.error('Error updating user:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.json({ success: true });
+  }
+
+  //Update all coach deatils if role is coach
+  if (req.body.role === 'coach') {
+    const { firstName, lastName, email, phone, bio } = req.body;
+    await db
+      .update(users)
+      .set({ firstName, lastName, email, phone })
+      .where(eq(users.userId, userId));
+
+    await db
+      .update(coaches)
+      .set({ bio })
+      .where(eq(coaches.userId, userId));
+
+    return res.json({ success: true });
+  }
+
+  //Update all admin details if role is admin
+  if (req.body.role === 'admin') {
+    const { firstName, lastName, email, phone, authorisation } = req.body;
+    await db
+      .update(users)
+      .set({ firstName, lastName, email, phone })
+      .where(eq(users.userId, userId));
+
+    await db
+      .update(admins)
+      .set({ authorisation })
+      .where(eq(admins.userId, userId));
+
+    return res.json({ success: true });
   }
 };
+
+export const getAllCoaches = async (req: Request, res: Response) => {
+  return db
+    .select({
+      userId: users.userId,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+      phone: users.phone,
+      bio: coaches.bio,
+    })
+    .from(users)
+    .innerJoin(coaches, eq(users.userId, coaches.userId))
+    .then((result) => res.json(result))
+    .catch((err) => {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch coaches' });
+    });
+};
+
+export const getAllAdmins = async (req: Request, res: Response) => {
+  return db
+    .select({
+      userId: users.userId,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+      phone: users.phone,
+      role: userroles.userRole,
+      authorisation: admins.authorisation,
+    })
+    .from(users)
+    .innerJoin(admins, eq(users.userId, admins.userId))
+    .then((result) => res.json(result))
+    .catch((err) => {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch admins' });
+    });
+}
 

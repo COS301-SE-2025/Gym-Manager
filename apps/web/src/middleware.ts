@@ -23,7 +23,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!protectedRoutes.includes(pathname)) {
+  if (!protectedRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.redirect(
       new URL(`/error?error=404&message=${encodeURIComponent('Page not found')}`, request.url),
     );

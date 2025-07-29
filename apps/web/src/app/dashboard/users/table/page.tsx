@@ -4,7 +4,6 @@ import Link from 'next/link';
 import './styles.css';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { User, UserRole, Admin, Member, Coach } from '@/types/types';
 import { userRoleService } from '@/app/services/roles';
 
@@ -33,32 +32,32 @@ export function UserTable({ role }: UserTableProps) {
     fetchUsers();
   }, [role]);
 
-  // const renderUserRow = (user: User) => {
-  //   switch (role) {
-  //     case 'member':
-  //       const member = user as Member;
-  //       return (
-  //         <>
-  //           <td>{member.status}</td>
-  //           <td>{member.credits_balance}</td>
-  //         </>
-  //       );
-  //     case 'coach':
-  //       const coach = user as Coach;
-  //       return (
-  //         <>
-  //           <td>{coach.bio}</td>
-  //         </>
-  //       );
-  //     case 'admin':
-  //       const admin = user as Admin;
-  //       return (
-  //         <>
-  //           <td>{admin.authorisation}</td>
-  //         </>
-  //       );
-  //   }
-  // };
+  const renderUserRow = (user: User) => {
+    switch (role) {
+      case 'member':
+        const member = user as Member;
+        return (
+          <>
+            <td>{member.status}</td>
+            <td>{member.credits_balance}</td>
+          </>
+        );
+      case 'coach':
+        const coach = user as Coach;
+        return (
+          <>
+            <td>{coach.bio}</td>
+          </>
+        );
+      case 'admin':
+        const admin = user as Admin;
+        return (
+          <>
+            <td>{admin.authorisation}</td>
+          </>
+        );
+    }
+  };
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
@@ -73,10 +72,10 @@ export function UserTable({ role }: UserTableProps) {
             <th>Last Name</th>
             <th>Email</th>
             <th>Actions</th>
-            {/* {role === 'member' && <th>Status</th>}
+            {role === 'member' && <th>Status</th>}
             {role === 'member' && <th>Credits</th>}
             {role === 'coach' && <th>Bio</th>}
-            {role === 'admin' && <th>Auth Level</th>} */}
+            {role === 'admin' && <th>Auth Level</th>}
           </tr>
         </thead>
         <tbody>
@@ -86,7 +85,7 @@ export function UserTable({ role }: UserTableProps) {
               <td>{user.firstName}</td>
               <td>{user.lastName}</td>
               <td>{user.email}</td>
-              {/* {renderUserRow(user)} */}
+              {renderUserRow(user)}
               <td>
                 <Link href={`users/edit/${user.userId}`} className="edit-link">
                   Manage

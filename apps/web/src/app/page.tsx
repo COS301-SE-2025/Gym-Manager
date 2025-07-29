@@ -25,7 +25,7 @@ export default function Home() {
       );
 
       localStorage.setItem('authToken', response.data.token);
-
+      document.cookie = `authToken=${response.data.token}; path=/; max-age=86400; secure; samesite=strict`;
       router.push('/dashboard');
     } catch (err) {
       console.error('Login error:', err);

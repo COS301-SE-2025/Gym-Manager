@@ -15,12 +15,11 @@ export function middleware(request: NextRequest) {
     pathname.endsWith('.jpg') ||
     pathname.endsWith('.jpeg') ||
     pathname.endsWith('.gif') ||
-    pathname.endsWith('.webp')
+    pathname.endsWith('.webp') ||
+    pathname.startsWith('/error') ||
+    pathname === '' ||
+    pathname === '/'
   ) {
-    return NextResponse.next();
-  }
-
-  if (pathname.startsWith('/error') || pathname === '/login' || pathname === '/') {
     return NextResponse.next();
   }
 
@@ -69,6 +68,6 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// export const config = {
-//   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
-// };
+export const config = {
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+};

@@ -11,7 +11,7 @@ interface UserTableProps {
   role: UserRole;
 }
 
-export function UserTable({ role }: UserTableProps) {
+export default function UserTable({ role }: UserTableProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

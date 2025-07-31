@@ -38,7 +38,7 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
         return (
           <>
             <td>{member.status}</td>
-            <td>{member.credits_balance}</td>
+            <td>{member.credits}</td>
           </>
         );
       case 'coach':

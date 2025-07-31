@@ -38,7 +38,7 @@ export default function UserTable({ role }: UserTableProps) {
         return (
           <>
             <td>{member.status}</td>
-            <td>{member.credits_balance}</td>
+            <td>{member.credits}</td>
           </>
         );
       case 'coach':
@@ -55,6 +55,11 @@ export default function UserTable({ role }: UserTableProps) {
             <td>{admin.authorisation}</td>
           </>
         );
+      case 'manager':
+        // Assuming managers have no additional fields in this context
+        return null;
+      default:
+        return null;
     }
   };
 
@@ -70,11 +75,11 @@ export default function UserTable({ role }: UserTableProps) {
             <th>First Name</th>
             <th>Last Name</th>
             <th>Email</th>
-            <th>Actions</th>
-            {/* {role === 'member' && <th>Status</th>}
+            {role === 'member' && <th>Status</th>}
             {role === 'member' && <th>Credits</th>}
             {role === 'coach' && <th>Bio</th>}
-            {role === 'admin' && <th>Auth Level</th>} */}
+            {role === 'admin' && <th>Auth Level</th>}
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -84,7 +89,7 @@ export default function UserTable({ role }: UserTableProps) {
               <td>{user.firstName}</td>
               <td>{user.lastName}</td>
               <td>{user.email}</td>
-              {/* {renderUserRow(user)} */}
+              {renderUserRow(user)}
               <td>
                 <Link href={`users/edit/${user.userId}`} className="edit-link">
                   Manage

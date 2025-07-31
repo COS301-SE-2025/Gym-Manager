@@ -11,7 +11,7 @@ export const userRoleService = {
       console.log(response.data);
       return response.data;
     } catch (error) {
-      console.error('API call failed, returning mock data:', error);
+      console.error('API call failed:', error);
     }
   },
   async RolesByUser(userId: number): Promise<UserRole[]> {

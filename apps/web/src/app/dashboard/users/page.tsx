@@ -1,8 +1,11 @@
-'use client'
-import { UserTable } from './table/page';
+'use client';
+import { useState } from 'react';
+import UserTable from '@/components/UserTable/page';
+import AddCoachModal from '@/components/modals/AddCoach/AddCoach';
 export default function MembersList() {
-    return(
-        <main className="users-page">
+  const [showAddCoachModal, setShowAddCoachModal] = useState(false);
+  return (
+    <main className="users-page">
       <section className="user-section">
         <h2>Members</h2>
         <UserTable role="member" />
@@ -10,7 +13,21 @@ export default function MembersList() {
 
       <section className="user-section">
         <h2>Coaches</h2>
-        <UserTable role="coach"/>
+        <UserTable role="coach" />
+        <button
+          onClick={() => setShowAddCoachModal(true)}
+          style={{
+            padding: '8px 16px',
+            background: '#d8ff3e',
+            color: '#1e1e1e',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '500',
+          }}
+        >
+          Add Coach
+        </button>
       </section>
 
       <section className="user-section">
@@ -18,10 +35,18 @@ export default function MembersList() {
         <UserTable role="admin" />
       </section>
 
-      <section className="user-section">
+      {/* <section className="user-section">
         <h2>Managers</h2>
         <UserTable role="manager" />
-      </section>
+      </section> */}
+
+      {showAddCoachModal && (
+        <AddCoachModal
+          onClose={() => {
+            setShowAddCoachModal(false);
+          }}
+        />
+      )}
     </main>
-    );
+  );
 }

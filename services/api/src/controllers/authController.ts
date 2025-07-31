@@ -1,8 +1,10 @@
-import { db } from '../db/client'; // your Drizzle client
+import { db } from '../db/client';
 import { users, userroles, members, coaches, managers, admins } from '../db/schema';
-import { hashPassword, verifyPassword, generateJwt } from '../middleware/auth'; // your auth utils
+import { hashPassword, verifyPassword, generateJwt } from '../middleware/auth';
 import { eq } from 'drizzle-orm';
 import { Request, Response } from 'express';
+import { AuthenticatedRequest } from '../middleware/auth';
+
 
 export const register = async (req: Request, res: Response) => {
   const { firstName, lastName, email, phone, password, roles = ['member'] } = req.body;
@@ -62,6 +64,7 @@ export const register = async (req: Request, res: Response) => {
   res.json({ token });
 };
 
+
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -85,4 +88,33 @@ export const login = async (req: Request, res: Response) => {
       roles: roles,
     },
   });
+};
+
+
+export const getStatus = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const userId = req.user.userId;
+
+  const roleRows = await db
+    .select({ role: userroles.userRole })
+    .from(userroles)
+    .where(eq(userroles.userId, userId));
+
+  const roles: string[] = roleRows.map(r => r.role);
+
+  let membershipStatus: string;
+  if (roles.includes('member')) {
+    const [member] = await db
+      .select({ status: members.status })
+      .from(members)
+      .where(eq(members.userId, userId))
+      .limit(1);
+
+    membershipStatus = member ? member.status : 'pending';
+  } else {
+    membershipStatus = 'visitor';
+  }
+
+  return res.json({ userId, roles, membershipStatus });
 };

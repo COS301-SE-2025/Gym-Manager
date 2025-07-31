@@ -9,9 +9,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "eslint . --ext .ts,.tsx --quiet --fix",
-  "lint:fix": "eslint . --ext .ts,.tsx --quiet --fix",
-  "format": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json,css,md}'",
-  "format:fix": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,md}'"
+    "lint:fix": "eslint . --ext .ts,.tsx --quiet --fix",
+    "format": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json,css,md}'",
+    "format:fix": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css,md}'"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.1.5",
@@ -22,6 +22,7 @@
     "@react-navigation/stack": "^7.3.2",
     "@reduxjs/toolkit": "^2.8.2",
     "axios": "^1.9.0",
+    "dotenv": "^17.2.1",
     "expo": "~53.0.9",
     "expo-linear-gradient": "^14.1.4",
     "expo-status-bar": "~2.2.3",

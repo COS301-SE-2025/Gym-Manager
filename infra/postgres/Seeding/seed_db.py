@@ -1,11 +1,11 @@
 """
 NOTES FOR ANYONE READING THIS:
-1) You need to change the info below (lines 23 - 27) to match YOUR database info (change the 2nd argument)
+1) You need to change the info below (lines 24 - 28) to match YOUR database info (change the 2nd argument)
 2) Relevant details will be printed on the terminal after you run the script (user passswords, classes, etc...)
 3) You need to download the dependencies on line 8
 4) All data in your database will be deleted, and then the new data from this script will be added
 
-pip install psycopg2-binary Faker passlib
+pip install psycopg2-binary Faker passlib bcrypt
 """
 
 from __future__ import annotations
@@ -13,18 +13,20 @@ import os
 import random
 from datetime import datetime, timedelta, time, date
 
+import bcrypt
 import psycopg2
 from psycopg2.extras import execute_values
 from faker import Faker
 from passlib.hash import pbkdf2_sha256
+import bcrypt
 
 fake = Faker()
 DB_CFG = dict(
     host=os.getenv("PGHOST", "localhost"),
-    port=os.getenv("PGPORT", 5432),
+    port=os.getenv("PGPORT", 33322),
     dbname=os.getenv("PGDATABASE", "HIIT_GYM_MANAGER"),
     user=os.getenv("PGUSER", "postgres"),
-    password=os.getenv("PGPASSWORD", "denispi"),
+    password=os.getenv("PGPASSWORD", "root"),
 )
 
 # ---------------------------------------------------------------------------
@@ -34,11 +36,12 @@ DB_CFG = dict(
 DEMO_PASSWORD = "Passw0rd!" # one password to rule them all
 DEMO_HASH     = pbkdf2_sha256.hash(DEMO_PASSWORD, rounds=260_000)
 
+def hash_pw(clear: str) -> str:
+    return bcrypt.hashpw(clear.encode(), bcrypt.gensalt()).decode()
+
 def conn():            # tiny helper for brevity
     return psycopg2.connect(**DB_CFG)
 
-def hash_pw(clear: str) -> str:
-    return pbkdf2_sha256.hash(clear, rounds=260_000)
 
 def rand_pw() -> str:
     return fake.password(length=10)

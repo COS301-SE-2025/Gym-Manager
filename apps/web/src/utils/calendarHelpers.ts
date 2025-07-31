@@ -1,4 +1,4 @@
-import { WeeklyScheduleResponse, CalendarEvent, ClassScheduleItem } from '../types/types';
+import { WeeklyScheduleResponse, CalendarEvent } from '../types/types';
 
 // Transform API data to calendar events
 export const transformApiDataToEvents = (apiData: Record<string, any[]>): CalendarEvent[] => {

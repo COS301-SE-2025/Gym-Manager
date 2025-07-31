@@ -15,10 +15,10 @@ interface WeeklyCalendarProps {
   loading?: boolean;
 }
 
-const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ 
-  events, 
+const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
+  events,
   onSelectEvent,
-  loading = false 
+  loading = false,
 }) => {
   const handleSelectEvent = (event: CalendarEvent) => {
     if (onSelectEvent) {
@@ -61,4 +61,4 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
   );
 };
 
-export default WeeklyCalendar; 
+export default WeeklyCalendar;

@@ -221,22 +221,40 @@ export const getUsersByRole = async (req: Request, res: Response) => {
     return getAllAdmins(req, res);
   }
 
+  
+
 };
 
 // GET /users/allUsers
 export const getAllUsers = async (req: Request, res: Response) => {
-  const result = await db
-    .select({
-      userId: users.userId,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      email: users.email,
-      phone: users.phone,
-    })
-    .from(users);
+  try {
+    const result = await db
+      .select({
+        userId: users.userId,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        phone: users.phone,
+        role: userroles.userRole,
+        bio: coaches.bio,
+        authorisation: admins.authorisation,
+        status: members.status,
+        creditsBalance: members.creditsBalance,
+      })
+      .from(users)
+      .leftJoin(userroles, eq(users.userId, userroles.userId)) // Join role first to match field order
+      .leftJoin(coaches, eq(users.userId, coaches.userId))
+      .leftJoin(admins, eq(users.userId, admins.userId))
+      .leftJoin(members, eq(users.userId, members.userId))
+      .orderBy(asc(users.lastName), asc(users.firstName));
 
-  res.json(result);
+    res.json(result);
+  } catch (err) {
+    console.error('Failed to get all users:', err);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
 };
+
 
 // POST /users/removeCoachRole
 export const removeCoachRole = async (req: Request, res: Response) => {
@@ -445,15 +463,17 @@ export const getAllAdmins = async (req: Request, res: Response) => {
       lastName: users.lastName,
       email: users.email,
       phone: users.phone,
-      role: userroles.userRole,
+      role: userroles.userRole, // must come after the join!
       authorisation: admins.authorisation,
     })
     .from(users)
     .innerJoin(admins, eq(users.userId, admins.userId))
+    .innerJoin(userroles, eq(users.userId, userroles.userId)) // <- REQUIRED
     .then((result) => res.json(result))
     .catch((err) => {
       console.error(err);
       res.status(500).json({ error: 'Failed to fetch admins' });
     });
-}
+};
+
 

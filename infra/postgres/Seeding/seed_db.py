@@ -13,6 +13,7 @@ import os
 import random
 from datetime import datetime, timedelta, time, date
 
+import bcrypt
 import psycopg2
 from psycopg2.extras import execute_values
 from faker import Faker
@@ -23,8 +24,8 @@ DB_CFG = dict(
     host=os.getenv("PGHOST", "localhost"),
     port=os.getenv("PGPORT", 5432),
     dbname=os.getenv("PGDATABASE", "HIIT_GYM_MANAGER"),
-    user=os.getenv("PGUSER", "postgres"),
-    password=os.getenv("PGPASSWORD", "denispi"),
+    user=os.getenv("PGUSER", "jaredhurlimann"),
+    password=os.getenv("PGPASSWORD", "root"),
 )
 
 # ---------------------------------------------------------------------------
@@ -37,8 +38,8 @@ DEMO_HASH     = pbkdf2_sha256.hash(DEMO_PASSWORD, rounds=260_000)
 def conn():            # tiny helper for brevity
     return psycopg2.connect(**DB_CFG)
 
-def hash_pw(clear: str) -> str:
-    return pbkdf2_sha256.hash(clear, rounds=260_000)
+def hash_pw(clear_pw: str) -> str:
+    return bcrypt.hashpw(clear_pw.encode(),bcrypt.gensalt()).decode()
 
 def rand_pw() -> str:
     return fake.password(length=10)

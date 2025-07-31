@@ -93,6 +93,7 @@ export default function AuthNavigator() {
       <Stack.Screen name="Coach" component={CoachNavigator} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="FAQ" component={FAQScreen} />
     </Stack.Navigator>
   );

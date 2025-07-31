@@ -48,6 +48,8 @@ app.use((err: any, req: express.Request, res: express.Response) => {
 
 // Export the app for testing
 export { app };
+export default app;
+
 
 if (require.main === module) {
   app.listen(port, () => {

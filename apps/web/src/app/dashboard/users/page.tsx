@@ -35,10 +35,10 @@ export default function MembersList() {
         <UserTable role="admin" />
       </section>
 
-      <section className="user-section">
+      {/* <section className="user-section">
         <h2>Managers</h2>
         <UserTable role="manager" />
-      </section>
+      </section> */}
 
       {showAddCoachModal && (
         <AddCoachModal

@@ -26,7 +26,7 @@ DB_CFG = dict(
     port=os.getenv("PGPORT", 33322),
     dbname=os.getenv("PGDATABASE", "HIIT_GYM_MANAGER"),
     user=os.getenv("PGUSER", "postgres"),
-    password=os.getenv("PGPASSWORD", "denispi"),
+    password=os.getenv("PGPASSWORD", "root"),
 )
 
 # ---------------------------------------------------------------------------

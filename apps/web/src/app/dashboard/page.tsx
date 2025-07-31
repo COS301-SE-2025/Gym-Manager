@@ -8,6 +8,7 @@ import { userRoleService } from '../services/roles';
 import ClassCreationModal from '@/components/modals/CreateClass/CreateClass';
 import AssignCoachModal from '@/components/modals/AssignCoach/AssignCoach';
 import { ClassResource } from '@/components/modals/AssignCoach/AssignCoach';
+import axios from 'axios';
 
 export default function DashboardPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -44,6 +45,18 @@ export default function DashboardPage() {
       }
     } finally {
       setLoading(false);
+    }
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await axios.get(`http://localhost:4000/users/allUsers`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log('Fetched all users:', response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Failed to get user by ID:', err);
+      throw err;
     }
   };
 

@@ -20,6 +20,7 @@ import { getToken, getUser, User } from '../utils/authStorage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
 import { Ionicons } from '@expo/vector-icons';
+import config from '../config';
 
 const { width } = Dimensions.get('window');
 
@@ -137,7 +138,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setBookedError(null);
     try {
       const bookedResponse = await axios.get<ApiBookedClass[]>(
-        'http://localhost:4000/member/getBookedClass',
+        `${config.BASE_URL}/member/getBookedClass`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -187,7 +188,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setUpcomingError(null);
     try {
       const upcomingResponse = await axios.get<ApiUpcomingClass[]>(
-        'http://localhost:4000/member/getAllClasses',
+        `${config.BASE_URL}/member/getAllClasses`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -240,7 +241,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setIsLoadingLiveClass(true);
     setLiveClassError(null);
     try {
-      const response = await axios.get<ApiLiveClassResponse>('http://localhost:4000/live/class', {
+      const response = await axios.get<ApiLiveClassResponse>(`${config.BASE_URL}/live/class`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.data.ongoing && response.data.class) {
@@ -315,7 +316,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       }
 
       const response = await axios.post(
-        'http://localhost:4000/member/bookClass',
+        `${config.BASE_URL}/member/bookClass`,
         { classId: classId },
         { headers: { Authorization: `Bearer ${token}` } },
       );

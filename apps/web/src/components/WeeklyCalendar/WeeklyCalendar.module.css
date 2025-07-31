@@ -24,7 +24,11 @@
 .calendarWrapper :global(.rbc-calendar) {
   background-color: #2a2a2a;
   color: #e0e0e0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
@@ -69,9 +73,9 @@
 
 .calendarWrapper :global(.rbc-toolbar button:active),
 .calendarWrapper :global(.rbc-toolbar button.rbc-active) {
-  background-color: #D8FF3E;
+  background-color: #d8ff3e;
   color: #1e1e1e;
-  border-color: #D8FF3E;
+  border-color: #d8ff3e;
 }
 
 .calendarWrapper :global(.rbc-toolbar-label) {
@@ -169,7 +173,7 @@
 }
 
 .calendarWrapper :global(.rbc-event:focus) {
-  outline: 2px solid #D8FF3E;
+  outline: 2px solid #d8ff3e;
   outline-offset: 1px;
 }
 
@@ -182,7 +186,7 @@
 
 /* Selected event */
 .calendarWrapper :global(.rbc-selected) {
-  background: #D8FF3E;
+  background: #d8ff3e;
   color: #1e1e1e;
   font-weight: 600;
 }
@@ -239,22 +243,30 @@
   width: 40px;
   height: 40px;
   border: 3px solid #404040;
-  border-top: 3px solid #D8FF3E;
+  border-top: 3px solid #d8ff3e;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 16px;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .loadingText {
   color: #b0b0b0;
   font-size: 16px;
   font-weight: 500;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
 }
 
 /* Responsive design */
@@ -264,30 +276,30 @@
     height: 100%;
     padding: 10px;
   }
-  
+
   .calendarWrapper {
     height: 500px;
     width: 100%;
     max-width: calc(100vw - 20px);
   }
-  
+
   .calendarWrapper :global(.rbc-toolbar) {
     padding: 12px 16px;
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .calendarWrapper :global(.rbc-toolbar button) {
     font-size: 12px;
     padding: 6px 12px;
   }
-  
+
   .calendarWrapper :global(.rbc-toolbar-label) {
     font-size: 16px;
     order: -1;
   }
-  
+
   .calendarWrapper :global(.rbc-calendar) {
     font-size: 12px;
   }
-} 
+}

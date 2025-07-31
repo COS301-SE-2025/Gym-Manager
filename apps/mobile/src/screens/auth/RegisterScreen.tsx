@@ -17,6 +17,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import TrainwiseLogo from '../../components/common/TrainwiseLogo';
 import axios from 'axios';
+import config from '../../config';
 
 const { width } = Dimensions.get('window');
 
@@ -198,7 +199,7 @@ export default function RegisterScreen() {
 
     try {
       console.log('Register pressed', { firstName, lastName, email, password });
-      const response = await axios.post('http://localhost:4000/register', {
+      const response = await axios.post(`${config.BASE_URL}/register`, {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim().toLowerCase(),

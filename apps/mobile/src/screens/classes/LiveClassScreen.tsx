@@ -17,6 +17,7 @@ import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import type { ApiLiveClassResponse } from '../HomeScreen';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
+import config from '../../config';
 
 const LiveClassScreen = () => {
   const [score, setScore] = useState('');
@@ -35,7 +36,7 @@ const LiveClassScreen = () => {
     try {
       const token = await getToken();
       await axios.post(
-        'http://localhost:4000/submitScore',
+        `${config.BASE_URL}/submitScore`,
         { classId: liveClassData.class.classId, score: Number(score) },
         { headers: { Authorization: `Bearer ${token}` } },
       );

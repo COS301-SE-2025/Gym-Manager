@@ -4,30 +4,26 @@ import Link from 'next/link';
 import './styles.css';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { User, UserRole, Admin, Member, Coach } from '@/types/types';
-import { UserRoleService } from '@/app/services/roles';
+import { userRoleService } from '@/app/services/roles';
 
 interface UserTableProps {
   role: UserRole;
 }
 
-export function UserTable({ role }: UserTableProps) {
-const [users, setUsers] = useState<User[]>([]);
+export default function UserTable({ role }: UserTableProps) {
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-   useEffect(() => {
+  useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const data = await UserRoleService.getUsersByRole(role);
+        const data = await userRoleService.getUsersByRole(role);
         setUsers(data);
       } catch (err) {
-        console.error('Using fallback mock data', err);
-        setError(axios.isAxiosError(err) 
-          ? err.message 
-          : 'An unknown error occurred');
+        setError(axios.isAxiosError(err) ? err.message : 'An unknown error occurred');
       } finally {
         setLoading(false);
       }
@@ -35,32 +31,32 @@ const [users, setUsers] = useState<User[]>([]);
     fetchUsers();
   }, [role]);
 
-  // const renderUserRow = (user: User) => {
-  //   switch (role) {
-  //     case 'member':
-  //       const member = user as Member;
-  //       return (
-  //         <>
-  //           <td>{member.status}</td>
-  //           <td>{member.credits_balance}</td>
-  //         </>
-  //       );
-  //     case 'coach':
-  //       const coach = user as Coach;
-  //       return (
-  //         <>
-  //           <td>{coach.bio}</td>
-  //         </>
-  //       );
-  //     case 'admin':
-  //       const admin = user as Admin;
-  //       return (
-  //         <>
-  //           <td>{admin.authorisation}</td>
-  //         </>
-  //       );
-  //   }
-  // };
+  const renderUserRow = (user: User) => {
+    switch (role) {
+      case 'member':
+        const member = user as Member;
+        return (
+          <>
+            <td>{member.status}</td>
+            <td>{member.credits_balance}</td>
+          </>
+        );
+      case 'coach':
+        const coach = user as Coach;
+        return (
+          <>
+            <td>{coach.bio}</td>
+          </>
+        );
+      case 'admin':
+        const admin = user as Admin;
+        return (
+          <>
+            <td>{admin.authorisation}</td>
+          </>
+        );
+    }
+  };
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
@@ -100,4 +96,4 @@ const [users, setUsers] = useState<User[]>([]);
       </table>
     </div>
   );
-};
+}

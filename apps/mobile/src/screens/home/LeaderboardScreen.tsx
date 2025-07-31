@@ -11,6 +11,7 @@ import {
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import { getLiveClass } from '../../utils/liveClass';
+import config from '../../config';
 
 const LeaderboardScreen = () => {
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
@@ -33,7 +34,7 @@ const LeaderboardScreen = () => {
         return;
       }
       setClassId(liveClass.class.classId);
-      const res = await axios.get(`http://localhost:4000/leaderboard/${liveClass.class.classId}`, {
+      const res = await axios.get(`${config.BASE_URL}/leaderboard/${liveClass.class.classId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setLeaderboard(res.data);

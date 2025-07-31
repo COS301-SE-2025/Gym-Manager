@@ -1,17 +1,21 @@
 body {
-  background-color: #1E1E1E;
+  background-color: #1e1e1e;
   color: whitesmoke;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
 }
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
-  background-color: #1E1E1E;
+  background-color: #1e1e1e;
 }
 
 .sidebar {
   width: 300px;
-  background-color: #1E1E1E;
+  background-color: #1e1e1e;
   border-right: 1px solid #000;
 }
 
@@ -28,11 +32,11 @@ body {
   padding: 0;
   margin: 0;
   width: 100%;
-  background-color: #1E1E1E;
+  background-color: #1e1e1e;
 }
 
 .logo-holder {
-  background-color: #1E1E1E;
+  background-color: #1e1e1e;
 }
 .sidebar-nav li {
   border: #0f0f0f solid 1px;
@@ -54,7 +58,7 @@ a:hover {
 }
 
 a:active {
-  background-color: #D8FF3E;
+  background-color: #d8ff3e;
 }
 
 .dashboard-content {

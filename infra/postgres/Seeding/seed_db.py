@@ -22,9 +22,9 @@ fake = Faker()
 DB_CFG = dict(
     host=os.getenv("PGHOST", "localhost"),
     port=os.getenv("PGPORT", 5432),
-    dbname=os.getenv("PGDATABASE", "HIIT_GYM_MANAGER"),
+    dbname=os.getenv("PGDATABASE", "HIIT_GYM"),
     user=os.getenv("PGUSER", "postgres"),
-    password=os.getenv("PGPASSWORD", "denispi"),
+    password=os.getenv("PGPASSWORD", "root"),
 )
 
 # ---------------------------------------------------------------------------

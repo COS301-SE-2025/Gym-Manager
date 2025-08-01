@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 export default function AddCoachModal({ onClose }: { onClose: () => void }) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -37,7 +38,7 @@ export default function AddCoachModal({ onClose }: { onClose: () => void }) {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post('http://localhost:4000/register', {
+      const response = await axios.post(`${API_URL}/register`, {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,

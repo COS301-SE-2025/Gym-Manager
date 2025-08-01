@@ -49,7 +49,7 @@ export default function DashboardPage() {
 
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:4000/users/allUsers`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/allUsers`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log('Fetched all users:', response.data);

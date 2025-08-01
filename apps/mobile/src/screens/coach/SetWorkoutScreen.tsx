@@ -19,7 +19,6 @@ import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
 
-
 const { width } = Dimensions.get('window');
 
 interface ClassDetails {
@@ -32,14 +31,44 @@ interface ClassDetails {
   workoutName?: string;
 }
 
+interface Exercise {
+  id: string;
+  name: string;
+  reps: string;
+}
+
+interface SubRound {
+  id: string;
+  name: string;
+  exercises: Exercise[];
+  isExpanded: boolean;
+}
+
 type SetWorkoutScreenProps = StackScreenProps<CoachStackParamList, 'SetWorkout'>;
 
 export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreenProps) {
   const { classId } = route.params;
 
   const [classDetails, setClassDetails] = useState<ClassDetails | null>(null);
-  const [workoutName, setWorkoutName] = useState('');
-  const [workoutDescription, setWorkoutDescription] = useState('');
+  const [workoutName, setWorkoutName] = useState('Workout 1');
+  const [workoutType, setWorkoutType] = useState('EMOM');
+  const [workoutTime, setWorkoutTime] = useState('00:00:00');
+  const [numberOfRounds, setNumberOfRounds] = useState('');
+  const [numberOfSubRounds, setNumberOfSubRounds] = useState('');
+  const [subRounds, setSubRounds] = useState<SubRound[]>([
+    {
+      id: '1',
+      name: 'Sub Round 1',
+      exercises: [],
+      isExpanded: false,
+    },
+    {
+      id: '2',
+      name: 'Sub Round 2',
+      exercises: [{ id: '1', name: '', reps: '' }],
+      isExpanded: true,
+    },
+  ]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,84 +115,75 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
     }
   };
 
+  const toggleSubRound = (subRoundId: string) => {
+    setSubRounds(prev => 
+      prev.map(sr => 
+        sr.id === subRoundId 
+          ? { ...sr, isExpanded: !sr.isExpanded }
+          : sr
+      )
+    );
+  };
+
+  const addExercise = (subRoundId: string) => {
+    setSubRounds(prev => 
+      prev.map(sr => 
+        sr.id === subRoundId 
+          ? { 
+              ...sr, 
+              exercises: [...sr.exercises, { 
+                id: Date.now().toString(), 
+                name: '', 
+                reps: '' 
+              }]
+            }
+          : sr
+      )
+    );
+  };
+
+  const updateExercise = (subRoundId: string, exerciseId: string, field: 'name' | 'reps', value: string) => {
+    setSubRounds(prev => 
+      prev.map(sr => 
+        sr.id === subRoundId 
+          ? { 
+              ...sr, 
+              exercises: sr.exercises.map(ex => 
+                ex.id === exerciseId 
+                  ? { ...ex, [field]: value }
+                  : ex
+              )
+            }
+          : sr
+      )
+    );
+  };
+
+  const addSubRound = () => {
+    const newId = (subRounds.length + 1).toString();
+    setSubRounds(prev => [
+      ...prev,
+      {
+        id: newId,
+        name: `Sub Round ${newId}`,
+        exercises: [],
+        isExpanded: false,
+      }
+    ]);
+  };
+
   const handleSaveWorkout = async () => {
-    // Validate input
-    if (!workoutName.trim()) {
-      Alert.alert('Validation Error', 'Please enter a workout name.');
-      return;
-    }
-
-    if (!workoutDescription.trim()) {
-      Alert.alert('Validation Error', 'Please enter a workout description.');
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      const token = await getToken();
-      if (!token) {
-        Alert.alert('Authentication Error', 'No session token found. Please log in again.');
-        return;
-      }
-
-      const createWorkoutResponse = await axios.post(
-        // 'http://localhost:4000/coach/createWorkout',
-        `${config.BASE_URL}/coach/createWorkout`,
+    // For now, just show a success message
+    Alert.alert(
+      'Success!',
+      'Workout has been set successfully.',
+      [
         {
-          workoutName: workoutName.trim(),
-          workoutContent: workoutDescription.trim(),
+          text: 'OK',
+          onPress: () => navigation.goBack(),
         },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
-      if (!createWorkoutResponse.data.success) {
-        throw new Error('Failed to create workout');
-      }
-
-      const workoutId = createWorkoutResponse.data.workoutId;
-
-      const assignWorkoutResponse = await axios.post(
-        // 'http://localhost:4000/coach/assignWorkout',
-        `${config.BASE_URL}/coach/assignWorkout`,
-        {
-          classId: classId,
-          workoutId: workoutId,
-        },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
-      if (assignWorkoutResponse.data.success) {
-        Alert.alert(
-          'Success!',
-          'Workout has been created and assigned to the class successfully.',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.goBack(),
-            },
-          ],
-        );
-      } else {
-        throw new Error('Failed to assign workout to class');
-      }
-    } catch (error: any) {
-      console.error('Failed to save workout:', error);
-      let errorMessage = 'An unexpected error occurred while saving the workout.';
-
-      if (axios.isAxiosError(error) && error.response) {
-        errorMessage = error.response.data.error || `Save failed: ${error.response.statusText}`;
-        if (error.response.status === 401) {
-          errorMessage = 'Session expired. Please log in again.';
-        } else if (error.response.status === 403) {
-          errorMessage = 'You are not authorized to assign workouts to this class.';
-        }
-      }
-
-      Alert.alert('Save Error', errorMessage);
-    } finally {
-      setIsSaving(false);
-    }
+      ],
+    );
   };
 
   const handleCancel = () => {
@@ -204,7 +224,15 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(`${dateString}T00:00:00`).toLocaleDateString('en-US', {
+    const date = new Date(`${dateString}T00:00:00`);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    if (date.toDateString() === tomorrow.toDateString()) {
+      return 'Tomorrow';
+    }
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
     });
@@ -228,83 +256,162 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Workout Info Card */}
+        {/* Top Info Card */}
         <View style={styles.infoCard}>
           <View style={styles.infoHeader}>
             <View style={styles.infoDateSection}>
               <Text style={styles.infoDate}>{formatDate(classDetails.scheduledDate)}</Text>
               <Text style={styles.infoTime}>{formatTime(classDetails.scheduledTime)}</Text>
             </View>
-            <View style={styles.infoCapacitySection}>
-              <Text style={styles.infoCapacity}>0/{classDetails.capacity}</Text>
-              <Text style={styles.infoInstructor}>You</Text>
+            <View style={styles.infoProgressSection}>
+              <Text style={styles.infoProgress}>8/12</Text>
             </View>
+          </View>
+          <View style={styles.infoDetails}>
+            <Text style={styles.infoInstructor}>Vansh Sood</Text>
+            <Text style={styles.infoWorkoutName}>{workoutName}</Text>
           </View>
         </View>
 
-        {/* Workout Name Section */}
+        {/* Workout Title Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Workout Name</Text>
+          <Text style={styles.sectionTitle}>Workout Title</Text>
           <TextInput
             style={styles.textInput}
             value={workoutName}
             onChangeText={setWorkoutName}
-            placeholder="Enter workout name (e.g., HIIT Training, Strength Building)"
+            placeholder="Enter workout name"
             placeholderTextColor="#888"
             editable={!isSaving}
           />
         </View>
 
-        {/* Description Section */}
+        {/* Set Workout Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Workout Description</Text>
-          <TextInput
-            style={styles.textArea}
-            value={workoutDescription}
-            onChangeText={setWorkoutDescription}
-            placeholder="Describe the workout, exercises, and goals..."
-            placeholderTextColor="#888"
-            multiline
-            numberOfLines={6}
-            textAlignVertical="top"
-            editable={!isSaving}
-          />
-        </View>
+          <Text style={styles.sectionTitle}>Set Workout</Text>
+          
+          {/* Type of workout */}
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Type of workout</Text>
+            <TouchableOpacity style={styles.dropdownButton}>
+              <Text style={styles.dropdownText}>{workoutType}</Text>
+              <Text style={styles.dropdownArrow}>▼</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Additional Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Additional Information</Text>
-          <View style={styles.additionalInfoContainer}>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Duration</Text>
-              <Text style={styles.infoValue}>60 minutes</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Max Capacity</Text>
-              <Text style={styles.infoValue}>{classDetails.capacity} members</Text>
-            </View>
+          {/* Time */}
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Time</Text>
+            <TextInput
+              style={styles.timeInput}
+              value={workoutTime}
+              onChangeText={setWorkoutTime}
+              placeholder="00:00:00"
+              placeholderTextColor="#888"
+              editable={!isSaving}
+            />
+          </View>
+
+          {/* Number of Rounds */}
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Number of Rounds</Text>
+            <TextInput
+              style={styles.numberInput}
+              value={numberOfRounds}
+              onChangeText={setNumberOfRounds}
+              placeholder=""
+              placeholderTextColor="#888"
+              keyboardType="numeric"
+              editable={!isSaving}
+            />
+          </View>
+
+          {/* Number of Sub Rounds */}
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Number of Sub Rounds</Text>
+            <TextInput
+              style={styles.numberInput}
+              value={numberOfSubRounds}
+              onChangeText={setNumberOfSubRounds}
+              placeholder=""
+              placeholderTextColor="#888"
+              keyboardType="numeric"
+              editable={!isSaving}
+            />
           </View>
         </View>
+
+        {/* Sub Rounds Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Sub Rounds</Text>
+          
+          {subRounds.map((subRound) => (
+            <View key={subRound.id} style={styles.subRoundContainer}>
+              <TouchableOpacity 
+                style={styles.subRoundHeader}
+                onPress={() => toggleSubRound(subRound.id)}
+              >
+                <Text style={styles.subRoundTitle}>{subRound.name}</Text>
+                <Text style={styles.subRoundArrow}>
+                  {subRound.isExpanded ? '▲' : '▼'}
+                </Text>
+              </TouchableOpacity>
+              
+              {subRound.isExpanded && (
+                <View style={styles.subRoundContent}>
+                  {subRound.exercises.map((exercise) => (
+                    <View key={exercise.id} style={styles.exerciseRow}>
+                      <TextInput
+                        style={styles.exerciseInput}
+                        value={exercise.name}
+                        onChangeText={(value) => updateExercise(subRound.id, exercise.id, 'name', value)}
+                        placeholder="Input Exercise"
+                        placeholderTextColor="#888"
+                        editable={!isSaving}
+                      />
+                      <TextInput
+                        style={styles.repsInput}
+                        value={exercise.reps}
+                        onChangeText={(value) => updateExercise(subRound.id, exercise.id, 'reps', value)}
+                        placeholder="No. of reps"
+                        placeholderTextColor="#888"
+                        keyboardType="numeric"
+                        editable={!isSaving}
+                      />
+                    </View>
+                  ))}
+                  
+                  <TouchableOpacity 
+                    style={styles.addExerciseButton}
+                    onPress={() => addExercise(subRound.id)}
+                  >
+                    <Text style={styles.addExerciseIcon}>+</Text>
+                    <Text style={styles.addExerciseText}>Add Exercise</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+
+        {/* Add Workout Button */}
+        <TouchableOpacity style={styles.addWorkoutButton}>
+          <Text style={styles.addWorkoutIcon}>+</Text>
+          <Text style={styles.addWorkoutText}>Add Workout</Text>
+        </TouchableOpacity>
       </ScrollView>
 
-      {/* Action Buttons */}
-      <View style={styles.actionContainer}>
+      {/* Set Workout Button */}
+      <View style={styles.bottomContainer}>
         <TouchableOpacity
-          style={[styles.cancelButton, isSaving && styles.disabledButton]}
-          onPress={handleCancel}
-          disabled={isSaving}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.saveButton, isSaving && styles.disabledButton]}
+          style={[styles.setWorkoutButton, isSaving && styles.disabledButton]}
           onPress={handleSaveWorkout}
           disabled={isSaving}
         >
           {isSaving ? (
             <ActivityIndicator size="small" color="#1a1a1a" />
           ) : (
-            <Text style={styles.saveButtonText}>Save Workout</Text>
+            <Text style={styles.setWorkoutButtonText}>Set Workout</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -354,14 +461,13 @@ const styles = StyleSheet.create({
   infoCard: {
     backgroundColor: '#2a2a2a',
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#D8FF3E',
     padding: 16,
     marginBottom: 24,
   },
   infoHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 8,
   },
   infoDateSection: {
     flex: 1,
@@ -376,17 +482,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  infoCapacitySection: {
+  infoProgressSection: {
     alignItems: 'flex-end',
   },
-  infoCapacity: {
+  infoProgress: {
     color: '#D8FF3E',
     fontSize: 14,
     fontWeight: '600',
   },
+  infoDetails: {
+    marginTop: 8,
+  },
   infoInstructor: {
-    color: '#888',
-    fontSize: 12,
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  infoWorkoutName: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
     marginTop: 2,
   },
   section: {
@@ -398,6 +513,128 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 12,
   },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  settingLabel: {
+    color: 'white',
+    fontSize: 14,
+    flex: 1,
+  },
+  dropdownButton: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 100,
+  },
+  dropdownText: {
+    color: 'white',
+    fontSize: 14,
+    flex: 1,
+  },
+  dropdownArrow: {
+    color: 'white',
+    fontSize: 12,
+    marginLeft: 8,
+  },
+  timeInput: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: 'white',
+    fontSize: 14,
+    minWidth: 100,
+    textAlign: 'center',
+  },
+  numberInput: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: 'white',
+    fontSize: 14,
+    minWidth: 100,
+    textAlign: 'center',
+  },
+  subRoundContainer: {
+    marginBottom: 12,
+  },
+  subRoundHeader: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  subRoundTitle: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  subRoundArrow: {
+    color: 'white',
+    fontSize: 12,
+  },
+  subRoundContent: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 4,
+  },
+  exerciseRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  exerciseInput: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    color: 'white',
+    fontSize: 12,
+    flex: 2,
+  },
+  repsInput: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    color: 'white',
+    fontSize: 12,
+    flex: 1,
+  },
+  addExerciseButton: {
+    borderWidth: 1,
+    borderColor: '#555',
+    borderStyle: 'dashed',
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  addExerciseIcon: {
+    color: '#D8FF3E',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  addExerciseText: {
+    color: '#D8FF3E',
+    fontSize: 12,
+  },
   textInput: {
     backgroundColor: '#2a2a2a',
     borderRadius: 12,
@@ -407,64 +644,40 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
-  textArea: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 12,
-    padding: 16,
-    color: 'white',
-    fontSize: 16,
+  addWorkoutButton: {
     borderWidth: 1,
-    borderColor: '#333',
-    height: 120,
-  },
-  additionalInfoContainer: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  infoLabel: {
-    color: '#888',
-    fontSize: 14,
-  },
-  infoValue: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  actionContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    borderWidth: 2,
     borderColor: '#555',
+    borderStyle: 'dashed',
     borderRadius: 12,
     paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
   },
-  cancelButtonText: {
-    color: 'white',
-    fontSize: 16,
+  addWorkoutIcon: {
+    color: '#D8FF3E',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  addWorkoutText: {
+    color: '#D8FF3E',
+    fontSize: 14,
     fontWeight: '600',
   },
-  saveButton: {
-    flex: 1,
+  bottomContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
+  setWorkoutButton: {
     backgroundColor: '#D8FF3E',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  saveButtonText: {
+  setWorkoutButtonText: {
     color: '#1a1a1a',
     fontSize: 16,
     fontWeight: '700',

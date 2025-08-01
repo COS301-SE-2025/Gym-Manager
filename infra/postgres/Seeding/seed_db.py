@@ -12,22 +12,32 @@ from __future__ import annotations
 import os
 import random
 from datetime import datetime, timedelta, time, date
-
 import bcrypt
 import psycopg2
 from psycopg2.extras import execute_values
 from faker import Faker
 from passlib.hash import pbkdf2_sha256
-import bcrypt
+import urllib.parse, ssl
+from dotenv import load_dotenv
+load_dotenv()
 
 fake = Faker()
-DB_CFG = dict(
-    host=os.getenv("PGHOST", "localhost"),
-    port=os.getenv("PGPORT", 33322),
-    dbname=os.getenv("PGDATABASE", "HIIT_GYM_MANAGER"),
-    user=os.getenv("PGUSER", "postgres"),
-    password=os.getenv("PGPASSWORD", "root"),
-)
+
+SUPA_DSN = os.getenv("DATABASE_URL")
+if SUPA_DSN:
+    # ensure ?sslmode=require if connection string is used
+    if "sslmode=" not in SUPA_DSN:
+        SUPA_DSN += ("&" if "?" in SUPA_DSN else "?") + "sslmode=require"
+    DB_CFG = dict(dsn=SUPA_DSN, sslmode="require")   # psycopg2 accepts **dsn
+else:
+    # -------- local database --------
+    DB_CFG = dict(
+        host=os.getenv("PGHOST", "localhost"),
+        port=os.getenv("PGPORT", 33322),
+        dbname=os.getenv("PGDATABASE", "HIIT_GYM_MANAGER"),
+        user=os.getenv("PGUSER", "postgres"),
+        password=os.getenv("PGPASSWORD", "root"),
+    )
 
 # ---------------------------------------------------------------------------
 # helpers

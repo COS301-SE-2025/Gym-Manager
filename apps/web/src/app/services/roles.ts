@@ -5,7 +5,7 @@ export const userRoleService = {
   async getUsersByRole(role: UserRole) {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:4000/roles/getUsersByRole/${role}`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/roles/getUsersByRole/${role}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log(response.data);
@@ -17,7 +17,7 @@ export const userRoleService = {
   async RolesByUser(userId: number): Promise<UserRole[]> {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:4000/roles/getRolesByUserId/${userId}`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/roles/getRolesByUserId/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;
@@ -31,7 +31,7 @@ export const userRoleService = {
     try {
       const token = localStorage.getItem('authToken');
       await axios.post(
-        'http://localhost:4000/roles/assign',
+        `${process.env.NEXT_PUBLIC_API_URL}/roles/assign`,
         { userId, role },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -64,7 +64,7 @@ export const userRoleService = {
       }
 
       await axios.post(
-        `http://localhost:4000${endpoint}`,
+        `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`,
         { userId },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -77,7 +77,7 @@ export const userRoleService = {
   async getWeeklySchedule() {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get('http://localhost:4000/schedule/getWeeklySchedule', {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/schedule/getWeeklySchedule`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;
@@ -98,7 +98,7 @@ export const userRoleService = {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const userId = payload.userId;
 
-      const response = await axios.get(`http://localhost:4000/users/getUserById/${userId}`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/getUserById/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;
@@ -111,7 +111,7 @@ export const userRoleService = {
   async getUserById(userId: number): Promise<User> {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:4000/users/getUserById/${userId}`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/getUserById/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;

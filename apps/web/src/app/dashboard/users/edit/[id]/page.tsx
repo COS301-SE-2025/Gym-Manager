@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { UserRole, User, Member } from '@/types/types';
 import { userRoleService } from '@/app/services/roles';
+import { userManagementService } from '@/app/services/userManagementService';
 import './styles.css';
 
 const ALL_ROLES: UserRole[] = ['member', 'coach', 'admin', 'manager'];
 
 export default function EditUser() {
+  const [status, setStatus] = useState<string>('active');
+  const [statusLoading, setStatusLoading] = useState(false);
   const params = useParams();
   const userId = parseInt(params.id as string, 10);
 
@@ -18,6 +21,19 @@ export default function EditUser() {
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>([]);
   const [showAvailableRoles, setShowAvailableRoles] = useState(false);
+
+  const handleStatusUpdate = async () => {
+    try {
+      setStatusLoading(true);
+      await userManagementService.updateStatus(userId, status);
+      setError(null);
+    } catch (err) {
+      setError('Failed to update status');
+      console.error(err);
+    } finally {
+      setStatusLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -29,9 +45,10 @@ export default function EditUser() {
         ]);
         setUser(userData);
         setUserRoles(roles);
+        console.log('User:', userData);
         setAvailableRoles(ALL_ROLES.filter((role) => role !== 'manager' && !roles.includes(role)));
-        if (userRoles.includes('member')) {
-          const memberUser = user as Member;
+        if (roles.includes('member')) {
+          setStatus((userData as Member).status || 'active');
         }
       } catch (err) {
         setError('Failed to load user data');
@@ -78,6 +95,7 @@ export default function EditUser() {
 
   const displayName = user ? `${user.firstName} ${user.lastName} (ID: ${userId})` : `ID: ${userId}`;
   const memberUser = user as Member;
+
   return (
     <div className="page-container">
       <header className="page-header">
@@ -98,16 +116,19 @@ export default function EditUser() {
           <div className="form-group">
             <label>Status</label>
             <select
-              defaultValue={memberUser.status || 'active'}
+              value={status}
+              onChange={e => setStatus(e.target.value)}
               className="text-input"
+              disabled={statusLoading}
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="suspended">Suspended</option>
+              <option value="active">pending</option>
+              <option value="inactive">approved</option>
+              <option value="suspended">suspended</option>
+              <option value="cancelled">cancelled</option>
             </select>
             </div>
             <div className="form-actions">
-              <button className="submit-button">Update Status</button>
+              <button onClick={handleStatusUpdate} className="submit-button">Update Status</button>
             </div>
           </div>
         </div>

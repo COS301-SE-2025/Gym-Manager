@@ -21,20 +21,7 @@ export default function EditUser() {
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>([]);
   const [showAvailableRoles, setShowAvailableRoles] = useState(false);
-
-  const handleStatusUpdate = async () => {
-    try {
-      setStatusLoading(true);
-      await userManagementService.updateStatus(userId, status);
-      setError(null);
-    } catch (err) {
-      setError('Failed to update status');
-      console.error(err);
-    } finally {
-      setStatusLoading(false);
-    }
-  };
-
+  const [userData, setUserData] = useState<User | null>(null);
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -87,6 +74,19 @@ export default function EditUser() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async () => {
+    try {
+      setStatusLoading(true);
+      await userManagementService.updateStatus(userId, status, userData?.firstName || '');
+      setError(null);
+    } catch (err) {
+      setError('Failed to update status');
+      console.error(err);
+    } finally {
+      setStatusLoading(false);
     }
   };
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { UserRole, User } from '@/types/types';
+import { UserRole, User, Member } from '@/types/types';
 import { userRoleService } from '@/app/services/roles';
 import './styles.css';
 
@@ -30,6 +30,9 @@ export default function EditUser() {
         setUser(userData);
         setUserRoles(roles);
         setAvailableRoles(ALL_ROLES.filter((role) => role !== 'manager' && !roles.includes(role)));
+        if (userRoles.includes('member')) {
+          const memberUser = user as Member;
+        }
       } catch (err) {
         setError('Failed to load user data');
         console.error(err);
@@ -74,7 +77,7 @@ export default function EditUser() {
   if (error) return <div className="form-error">{error}</div>;
 
   const displayName = user ? `${user.firstName} ${user.lastName} (ID: ${userId})` : `ID: ${userId}`;
-
+  const memberUser = user as Member;
   return (
     <div className="page-container">
       <header className="page-header">
@@ -84,6 +87,31 @@ export default function EditUser() {
       </header>
 
       <main className="content-wrapper">
+      {userRoles.includes('member') && user && (
+        <div className="management-card">
+        <div className="card-title">
+          <h2>Manage Membership</h2>
+        </div>
+
+        <div className="card-content">
+          <p>Current status: {memberUser.status}</p>
+          <div className="form-group">
+            <label>Status</label>
+            <select
+              defaultValue={memberUser.status || 'active'}
+              className="text-input"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="suspended">Suspended</option>
+            </select>
+            </div>
+            <div className="form-actions">
+              <button className="submit-button">Update Status</button>
+            </div>
+          </div>
+        </div>
+      )}
         <div className="management-card">
           <div className="card-title">
             <h2>Manage Roles</h2>

@@ -20,6 +20,7 @@ export default function AdminProfile() {
   };
 
   const getUserDisplayName = () => {
+    fetchData();
     if (currentUser) {
       return `${currentUser.firstName} ${currentUser.lastName}`;
     }

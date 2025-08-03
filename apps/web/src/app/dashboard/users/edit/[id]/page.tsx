@@ -183,12 +183,6 @@ export default function EditUser() {
                 <input name="authorisation" value={editDetails.authorisation} onChange={handleEditChange} className="text-input" />
               </div>
             )}
-            {userRoles.includes('member') && (
-              <div className="form-group">
-                <label>Credits</label>
-                <input name="credits" value={editDetails.credits} onChange={handleEditChange} className="text-input" type="number" />
-              </div>
-            )}
             <div className="form-actions">
               <button onClick={handleSaveDetails} className="submit-button" disabled={editLoading}>
                 {editLoading ? 'Saving...' : 'Save Details'}
@@ -204,6 +198,7 @@ export default function EditUser() {
 
         <div className="card-content">
           <p>Current status: {memberUser.status}</p>
+          <p>Credit balance: {memberUser.credits}</p>
           <div className="form-group">
             <label>Status</label>
             <select

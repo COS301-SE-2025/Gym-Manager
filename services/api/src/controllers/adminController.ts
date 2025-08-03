@@ -371,14 +371,61 @@ export const getUserById = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid userId' });
   }
 
-  const user = await db.select().from(users).where(eq(users.userId, userId)).limit(1);
+  try {
+    const result = await db
+      .select({
+        userId: users.userId,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        phone: users.phone,
+        roles: userroles.userRole,
+        bio: coaches.bio,
+        status: members.status,
+        creditsBalance: members.creditsBalance,
+        authorisation: admins.authorisation,
+      })
+      .from(users)
+      .leftJoin(userroles, eq(users.userId, userroles.userId))
+      .leftJoin(coaches, eq(users.userId, coaches.userId))
+      .leftJoin(members, eq(users.userId, members.userId))
+      .leftJoin(admins, eq(users.userId, admins.userId))
+      .where(eq(users.userId, userId));
 
-  if (user.length === 0) {
-    return res.status(404).json({ error: 'User not found' });
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Consolidate roles and details
+    const base = {
+      userId: result[0].userId,
+      firstName: result[0].firstName,
+      lastName: result[0].lastName,
+      email: result[0].email,
+      phone: result[0].phone,
+      roles: result.map((r) => r.roles).filter(Boolean),
+    };
+
+    for (const row of result) {
+      if (row.roles === 'coach') {
+        Object.assign(base, { bio: row.bio });
+      } else if (row.roles === 'member') {
+        Object.assign(base, {
+          status: row.status,
+          creditsBalance: row.creditsBalance,
+        });
+      } else if (row.roles === 'admin') {
+        Object.assign(base, { authorisation: row.authorisation });
+      }
+    }
+
+    return res.json(base);
+  } catch (err) {
+    console.error('Error fetching user by ID:', err);
+    res.status(500).json({ error: 'Failed to fetch user' });
   }
-
-  res.json(user[0]);
 };
+
 
 //EDIT USER DETAILS 
 export const updateUserById = async (req: Request, res: Response) => {
@@ -387,54 +434,53 @@ export const updateUserById = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid userId' });
   }
 
-  //Update all member deatils if role is member
-  if (req.body.role === 'member') {
-    const { firstName, lastName, email, phone, status, creditsBalance } = req.body;
-    await db
-      .update(users)
-      .set({ firstName, lastName, email, phone })
-      .where(eq(users.userId, userId));
+  const { role, ...fields } = req.body;
 
-    await db
-      .update(members)
-      .set({ status, creditsBalance })
-      .where(eq(members.userId, userId));
-
-    return res.json({ success: true });
+  if (!role) {
+    return res.status(400).json({ error: 'Role is required to determine what to update' });
   }
 
-  //Update all coach deatils if role is coach
-  if (req.body.role === 'coach') {
-    const { firstName, lastName, email, phone, bio } = req.body;
-    await db
-      .update(users)
-      .set({ firstName, lastName, email, phone })
-      .where(eq(users.userId, userId));
+  const updates: Record<string, any> = {};
+  const roleUpdates: Record<string, any> = {};
 
-    await db
-      .update(coaches)
-      .set({ bio })
-      .where(eq(coaches.userId, userId));
+  // Shared fields
+  ['firstName', 'lastName', 'email', 'phone'].forEach((key) => {
+    if (fields[key] !== undefined) updates[key] = fields[key];
+  });
 
-    return res.json({ success: true });
+  if (Object.keys(updates).length > 0) {
+    await db.update(users).set(updates).where(eq(users.userId, userId));
   }
 
-  //Update all admin details if role is admin
-  if (req.body.role === 'admin') {
-    const { firstName, lastName, email, phone, authorisation } = req.body;
-    await db
-      .update(users)
-      .set({ firstName, lastName, email, phone })
-      .where(eq(users.userId, userId));
-
-    await db
-      .update(admins)
-      .set({ authorisation })
-      .where(eq(admins.userId, userId));
-
-    return res.json({ success: true });
+  // Role-specific fields
+  if (role === 'member') {
+    ['status', 'creditsBalance'].forEach((key) => {
+      if (fields[key] !== undefined) roleUpdates[key] = fields[key];
+    });
+    if (Object.keys(roleUpdates).length > 0) {
+      await db.update(members).set(roleUpdates).where(eq(members.userId, userId));
+    }
   }
+
+  if (role === 'coach') {
+    if (fields.bio !== undefined) {
+      await db.update(coaches).set({ bio: fields.bio }).where(eq(coaches.userId, userId));
+    }
+  }
+
+  if (role === 'admin') {
+    if (fields.authorisation !== undefined) {
+      await db.update(admins).set({ authorisation: fields.authorisation }).where(eq(admins.userId, userId));
+    }
+  }
+
+  if (Object.keys(updates).length === 0 && Object.keys(roleUpdates).length === 0 && fields.bio === undefined && fields.authorisation === undefined) {
+    return res.status(400).json({ error: 'No valid fields to update' });
+  }
+
+  return res.json({ success: true });
 };
+
 
 export const getAllCoaches = async (req: Request, res: Response) => {
   return db

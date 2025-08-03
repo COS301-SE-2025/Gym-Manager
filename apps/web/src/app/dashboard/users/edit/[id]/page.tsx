@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { UserRole, User, Member } from '@/types/types';
+import { Admin, Coach } from '@/types/types';
 import { userRoleService } from '@/app/services/roles';
 import { userManagementService } from '@/app/services/userManagementService';
 import './styles.css';
@@ -10,6 +11,17 @@ import './styles.css';
 const ALL_ROLES: UserRole[] = ['member', 'coach', 'admin', 'manager'];
 
 export default function EditUser() {
+  // State for editing details
+  const [editDetails, setEditDetails] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    bio: '', // coach
+    authorisation: '', // admin
+    credits: '', // member
+  });
+  const [editLoading, setEditLoading] = useState(false);
   const [status, setStatus] = useState<string>('active');
   const [statusLoading, setStatusLoading] = useState(false);
   const params = useParams();
@@ -22,6 +34,38 @@ export default function EditUser() {
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>([]);
   const [showAvailableRoles, setShowAvailableRoles] = useState(false);
   const [userData, setUserData] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      setEditDetails({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        bio: (userRoles.includes('coach') && (user as Coach).bio) ? (user as Coach).bio : '',
+        authorisation: (userRoles.includes('admin') && (user as Admin).authorisation) ? (user as Admin).authorisation : '',
+        credits: (userRoles.includes('member') && (user as Member).credits) ? String((user as Member).credits) : '',
+      });
+    }
+  }, [user, userRoles]);
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditDetails({ ...editDetails, [e.target.name]: e.target.value });
+  };
+
+  const handleSaveDetails = async () => {
+    try {
+      setEditLoading(true);
+      // @ts-ignore
+      await userManagementService.updateDetails?.(userId, editDetails, userRoles);
+      setError(null);
+    } catch (err) {
+      setError('Failed to update details');
+      console.error(err);
+    } finally {
+      setEditLoading(false);
+    }
+  };
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -105,6 +149,53 @@ export default function EditUser() {
       </header>
 
       <main className="content-wrapper">
+        {/* Edit Details Card */}
+        <div className="management-card">
+          <div className="card-title">
+            <h2>Edit Details</h2>
+          </div>
+          <div className="card-content">
+            <div className="form-group">
+              <label>First Name</label>
+              <input name="firstName" value={editDetails.firstName} onChange={handleEditChange} className="text-input" />
+            </div>
+            <div className="form-group">
+              <label>Last Name</label>
+              <input name="lastName" value={editDetails.lastName} onChange={handleEditChange} className="text-input" />
+            </div>
+            <div className="form-group">
+              <label>Email</label>
+              <input name="email" value={editDetails.email} onChange={handleEditChange} className="text-input" />
+            </div>
+            <div className="form-group">
+              <label>Phone</label>
+              <input name="phone" value={editDetails.phone} onChange={handleEditChange} className="text-input" />
+            </div>
+            {userRoles.includes('coach') && (
+              <div className="form-group">
+                <label>Bio</label>
+                <input name="bio" value={editDetails.bio} onChange={handleEditChange} className="text-input" />
+              </div>
+            )}
+            {userRoles.includes('admin') && (
+              <div className="form-group">
+                <label>Authorisation</label>
+                <input name="authorisation" value={editDetails.authorisation} onChange={handleEditChange} className="text-input" />
+              </div>
+            )}
+            {userRoles.includes('member') && (
+              <div className="form-group">
+                <label>Credits</label>
+                <input name="credits" value={editDetails.credits} onChange={handleEditChange} className="text-input" type="number" />
+              </div>
+            )}
+            <div className="form-actions">
+              <button onClick={handleSaveDetails} className="submit-button" disabled={editLoading}>
+                {editLoading ? 'Saving...' : 'Save Details'}
+              </button>
+            </div>
+          </div>
+        </div>
       {userRoles.includes('member') && user && (
         <div className="management-card">
         <div className="card-title">

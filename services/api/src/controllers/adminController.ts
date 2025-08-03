@@ -429,57 +429,98 @@ export const getUserById = async (req: Request, res: Response) => {
 
 //EDIT USER DETAILS 
 export const updateUserById = async (req: Request, res: Response) => {
-  const userId = parseInt(req.params.userId, 10);
-  if (isNaN(userId)) {
-    return res.status(400).json({ error: 'Invalid userId' });
-  }
+  const { userId } = req.params;
+  const updates = req.body;
 
-  const { role, ...fields } = req.body;
+  try {
+    // Step 1: Get user role
+    const [userRoleRow] = await db
+      .select({ role: userroles.userRole })
+      .from(userroles)
+      .where(eq(userroles.userId, Number(userId)));
 
-  if (!role) {
-    return res.status(400).json({ error: 'Role is required to determine what to update' });
-  }
-
-  const updates: Record<string, any> = {};
-  const roleUpdates: Record<string, any> = {};
-
-  // Shared fields
-  ['firstName', 'lastName', 'email', 'phone'].forEach((key) => {
-    if (fields[key] !== undefined) updates[key] = fields[key];
-  });
-
-  if (Object.keys(updates).length > 0) {
-    await db.update(users).set(updates).where(eq(users.userId, userId));
-  }
-
-  // Role-specific fields
-  if (role === 'member') {
-    ['status', 'creditsBalance'].forEach((key) => {
-      if (fields[key] !== undefined) roleUpdates[key] = fields[key];
-    });
-    if (Object.keys(roleUpdates).length > 0) {
-      await db.update(members).set(roleUpdates).where(eq(members.userId, userId));
+    if (!userRoleRow) {
+      return res.status(404).json({ error: 'User role not found' });
     }
-  }
 
-  if (role === 'coach') {
-    if (fields.bio !== undefined) {
-      await db.update(coaches).set({ bio: fields.bio }).where(eq(coaches.userId, userId));
+    const role = userRoleRow.role;
+
+    // Step 2: Update shared user fields
+    const userFieldsToUpdate = {
+      firstName: updates.firstName,
+      lastName: updates.lastName,
+      email: updates.email,
+      phone: updates.phone,
+    };
+
+    const filteredUserFields = Object.fromEntries(
+      Object.entries(userFieldsToUpdate).filter(([_, value]) => value !== undefined)
+    );
+
+    if (Object.keys(filteredUserFields).length > 0) {
+      await db
+        .update(users)
+        .set(filteredUserFields)
+        .where(eq(users.userId, Number(userId)));
     }
-  }
 
-  if (role === 'admin') {
-    if (fields.authorisation !== undefined) {
-      await db.update(admins).set({ authorisation: fields.authorisation }).where(eq(admins.userId, userId));
+    // Step 3: Role-specific updates
+    if (role === 'coach') {
+      const coachFields = {
+        bio: updates.bio,
+      };
+      const filteredCoachFields = Object.fromEntries(
+        Object.entries(coachFields).filter(([_, value]) => value !== undefined)
+      );
+
+      if (Object.keys(filteredCoachFields).length > 0) {
+        await db
+          .update(coaches)
+          .set(filteredCoachFields)
+          .where(eq(coaches.userId, Number(userId)));
+      }
     }
-  }
 
-  if (Object.keys(updates).length === 0 && Object.keys(roleUpdates).length === 0 && fields.bio === undefined && fields.authorisation === undefined) {
-    return res.status(400).json({ error: 'No valid fields to update' });
-  }
+    if (role === 'admin') {
+      const adminFields = {
+        authorisation: updates.authorisation,
+      };
+      const filteredAdminFields = Object.fromEntries(
+        Object.entries(adminFields).filter(([_, value]) => value !== undefined)
+      );
 
-  return res.json({ success: true });
+      if (Object.keys(filteredAdminFields).length > 0) {
+        await db
+          .update(admins)
+          .set(filteredAdminFields)
+          .where(eq(admins.userId, Number(userId)));
+      }
+    }
+
+    if (role === 'member') {
+      const memberFields = {
+        status: updates.status,
+        creditsBalance: updates.creditsBalance,
+      };
+      const filteredMemberFields = Object.fromEntries(
+        Object.entries(memberFields).filter(([_, value]) => value !== undefined)
+      );
+
+      if (Object.keys(filteredMemberFields).length > 0) {
+        await db
+          .update(members)
+          .set(filteredMemberFields)
+          .where(eq(members.userId, Number(userId)));
+      }
+    }
+
+    res.status(200).json({ message: 'User updated successfully' });
+  } catch (err) {
+    console.error('Update user error:', err);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
 };
+
 
 
 export const getAllCoaches = async (req: Request, res: Response) => {

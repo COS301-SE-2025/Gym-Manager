@@ -17,6 +17,8 @@ import IconLogo from '../../components/common/IconLogo';
 import { CoachStackParamList } from '../../navigation/CoachNavigator';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
+import config from '../../config';
+
 
 const { width } = Dimensions.get('window');
 
@@ -57,7 +59,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       }
 
       const response = await axios.get<ClassDetails[]>(
-        'http://localhost:4000/coach/assignedClasses',
+        `${config.BASE_URL}/coach/assignedClasses`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
@@ -106,7 +108,8 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       }
 
       const createWorkoutResponse = await axios.post(
-        'http://localhost:4000/coach/createWorkout',
+        // 'http://localhost:4000/coach/createWorkout',
+        `${config.BASE_URL}/coach/createWorkout`,
         {
           workoutName: workoutName.trim(),
           workoutContent: workoutDescription.trim(),
@@ -121,7 +124,8 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       const workoutId = createWorkoutResponse.data.workoutId;
 
       const assignWorkoutResponse = await axios.post(
-        'http://localhost:4000/coach/assignWorkout',
+        // 'http://localhost:4000/coach/assignWorkout',
+        `${config.BASE_URL}/coach/assignWorkout`,
         {
           classId: classId,
           workoutId: workoutId,

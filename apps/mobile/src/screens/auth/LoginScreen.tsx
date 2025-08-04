@@ -16,6 +16,7 @@ import TrainwiseLogo from '../../components/common/TrainwiseLogo';
 import axios from 'axios';
 import { storeToken, storeUser } from '../../utils/authStorage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import config from '../../config';
 
 const { width } = Dimensions.get('window');
 
@@ -84,7 +85,7 @@ export default function LoginScreen() {
   };
 
   const handleEmailChange = (value: string) => {
-    setEmail(value);
+    setEmail(value); 
     if (errors.email) {
       validateField('email', value);
     }
@@ -106,7 +107,7 @@ export default function LoginScreen() {
 
     try {
       console.log('Login pressed', { email, password });
-      const response = await axios.post('http://localhost:4000/login', {
+      const response = await axios.post(`${config.BASE_URL}/login`, {
         email: email.trim().toLowerCase(),
         password,
       });

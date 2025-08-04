@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { UserRoleService } from '@/app/services/roles';
+import { userRoleService } from '@/app/services/roles';
 import './assign.css';
 
 interface Coach {
@@ -29,6 +29,7 @@ interface Props {
 }
 
 export default function AssignCoachModal({ isOpen, onClose, classInfo, onAssigned }: Props) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const [coachId, setCoachId] = useState<number | null>(null);
   const [coaches, setCoaches] = useState<Coach[]>([]);
 
@@ -40,7 +41,7 @@ export default function AssignCoachModal({ isOpen, onClose, classInfo, onAssigne
 
   async function fetchCoaches() {
     try {
-      const res = await UserRoleService.getUsersByRole('coach');
+      const res = await userRoleService.getUsersByRole('coach');
       setCoaches(res);
     } catch (err) {
       console.error('Failed to fetch coaches', err);
@@ -54,9 +55,9 @@ export default function AssignCoachModal({ isOpen, onClose, classInfo, onAssigne
     try {
       const token = localStorage.getItem('authToken');
       await axios.post(
-        'http://localhost:4000/schedule/assign-coach',
+        `${API_URL}/schedule/assign-coach`,
         { classId: classInfo.classId, coachId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       if (onAssigned) onAssigned();
       onClose();
@@ -73,16 +74,31 @@ export default function AssignCoachModal({ isOpen, onClose, classInfo, onAssigne
         <h2>Assign Coach</h2>
 
         <div style={{ fontSize: '14px', lineHeight: '1.6', marginBottom: '16px' }}>
-          <p><strong>Scheduled Date:</strong> {classInfo.scheduledDate}</p>
-          <p><strong>Scheduled Time:</strong> {classInfo.scheduledTime}</p>
-          <p><strong>Duration:</strong> {classInfo.durationMinutes} minutes</p>
-          <p><strong>Capacity:</strong> {classInfo.capacity} people</p>
-          <p><strong>Current Coach:</strong> {classInfo.coachName || 'None assigned'}</p>
+          <p>
+            <strong>Scheduled Date:</strong> {classInfo.scheduledDate}
+          </p>
+          <p>
+            <strong>Scheduled Time:</strong> {classInfo.scheduledTime}
+          </p>
+          <p>
+            <strong>Duration:</strong> {classInfo.durationMinutes} minutes
+          </p>
+          <p>
+            <strong>Capacity:</strong> {classInfo.capacity} people
+          </p>
+          <p>
+            <strong>Current Coach:</strong> {classInfo.coachName || 'None assigned'}
+          </p>
         </div>
 
         <form onSubmit={handleAssign}>
-          <label>Select Coach:
-            <select value={coachId ?? ''} onChange={(e) => setCoachId(Number(e.target.value))} required>
+          <label>
+            Select Coach:
+            <select
+              value={coachId ?? ''}
+              onChange={(e) => setCoachId(Number(e.target.value))}
+              required
+            >
               <option value="">-- Select Coach --</option>
               {coaches.map((coach) => (
                 <option key={coach.userId} value={coach.userId}>
@@ -94,7 +110,9 @@ export default function AssignCoachModal({ isOpen, onClose, classInfo, onAssigne
 
           <div className="modal-actions">
             <button type="submit">Assign</button>
-            <button type="button" onClick={onClose}>Cancel</button>
+            <button type="button" onClick={onClose}>
+              Cancel
+            </button>
           </div>
         </form>
       </div>

@@ -29,7 +29,7 @@ export const createWeeklySchedule = async (req: Request, res: Response) => {
   try {
     const { startDate, createdBy, weeklySchedule } = req.body;
     const baseDate = dateFnsParseISO(startDate);
-    const insertedClasses = [];
+    const insertedClasses: typeof classes.$inferSelect[] = [];
 
     for (const dayBlock of weeklySchedule) {
       const offset = dayToOffset[dayBlock.day];
@@ -208,34 +208,53 @@ export const getUsersByRole = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid role' });
   }
 
-  const result = await db
-    .select({
-      userId: users.userId,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      email: users.email,
-    })
-    .from(users)
-    .innerJoin(userroles, eq(users.userId, userroles.userId))
-    .where(eq(userroles.userRole, role as RoleType));
+  if( role === 'member') {
+    return getAllMembers(req, res);
+  }
+  
 
-  res.json(result);
+  if( role === 'coach') {
+    return getAllCoaches(req, res);
+  }
+
+  if( role === 'admin') {
+    return getAllAdmins(req, res);
+  }
+
+  
+
 };
 
 // GET /users/allUsers
 export const getAllUsers = async (req: Request, res: Response) => {
-  const result = await db
-    .select({
-      userId: users.userId,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      email: users.email,
-      phone: users.phone,
-    })
-    .from(users);
+  try {
+    const result = await db
+      .select({
+        userId: users.userId,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        phone: users.phone,
+        role: userroles.userRole,
+        bio: coaches.bio,
+        authorisation: admins.authorisation,
+        status: members.status,
+        creditsBalance: members.creditsBalance,
+      })
+      .from(users)
+      .leftJoin(userroles, eq(users.userId, userroles.userId)) // Join role first to match field order
+      .leftJoin(coaches, eq(users.userId, coaches.userId))
+      .leftJoin(admins, eq(users.userId, admins.userId))
+      .leftJoin(members, eq(users.userId, members.userId))
+      .orderBy(asc(users.lastName), asc(users.firstName));
 
-  res.json(result);
+    res.json(result);
+  } catch (err) {
+    console.error('Failed to get all users:', err);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
 };
+
 
 // POST /users/removeCoachRole
 export const removeCoachRole = async (req: Request, res: Response) => {
@@ -352,11 +371,196 @@ export const getUserById = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid userId' });
   }
 
-  const user = await db.select().from(users).where(eq(users.userId, userId)).limit(1);
+  try {
+    const result = await db
+      .select({
+        userId: users.userId,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        phone: users.phone,
+        roles: userroles.userRole,
+        bio: coaches.bio,
+        status: members.status,
+        creditsBalance: members.creditsBalance,
+        authorisation: admins.authorisation,
+      })
+      .from(users)
+      .leftJoin(userroles, eq(users.userId, userroles.userId))
+      .leftJoin(coaches, eq(users.userId, coaches.userId))
+      .leftJoin(members, eq(users.userId, members.userId))
+      .leftJoin(admins, eq(users.userId, admins.userId))
+      .where(eq(users.userId, userId));
 
-  if (user.length === 0) {
-    return res.status(404).json({ error: 'User not found' });
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Consolidate roles and details
+    const base = {
+      userId: result[0].userId,
+      firstName: result[0].firstName,
+      lastName: result[0].lastName,
+      email: result[0].email,
+      phone: result[0].phone,
+      roles: result.map((r) => r.roles).filter(Boolean),
+    };
+
+    for (const row of result) {
+      if (row.roles === 'coach') {
+        Object.assign(base, { bio: row.bio });
+      } else if (row.roles === 'member') {
+        Object.assign(base, {
+          status: row.status,
+          creditsBalance: row.creditsBalance,
+        });
+      } else if (row.roles === 'admin') {
+        Object.assign(base, { authorisation: row.authorisation });
+      }
+    }
+
+    return res.json(base);
+  } catch (err) {
+    console.error('Error fetching user by ID:', err);
+    res.status(500).json({ error: 'Failed to fetch user' });
   }
-
-  res.json(user[0]);
 };
+
+
+//EDIT USER DETAILS 
+export const updateUserById = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const updates = req.body;
+
+  try {
+    // Step 1: Get user role
+    const [userRoleRow] = await db
+      .select({ role: userroles.userRole })
+      .from(userroles)
+      .where(eq(userroles.userId, Number(userId)));
+
+    if (!userRoleRow) {
+      return res.status(404).json({ error: 'User role not found' });
+    }
+
+    const role = userRoleRow.role;
+
+    // Step 2: Update shared user fields
+    const userFieldsToUpdate = {
+      firstName: updates.firstName,
+      lastName: updates.lastName,
+      email: updates.email,
+      phone: updates.phone,
+    };
+
+    const filteredUserFields = Object.fromEntries(
+      Object.entries(userFieldsToUpdate).filter(([_, value]) => value !== undefined)
+    );
+
+    if (Object.keys(filteredUserFields).length > 0) {
+      await db
+        .update(users)
+        .set(filteredUserFields)
+        .where(eq(users.userId, Number(userId)));
+    }
+
+    // Step 3: Role-specific updates
+    if (role === 'coach') {
+      const coachFields = {
+        bio: updates.bio,
+      };
+      const filteredCoachFields = Object.fromEntries(
+        Object.entries(coachFields).filter(([_, value]) => value !== undefined)
+      );
+
+      if (Object.keys(filteredCoachFields).length > 0) {
+        await db
+          .update(coaches)
+          .set(filteredCoachFields)
+          .where(eq(coaches.userId, Number(userId)));
+      }
+    }
+
+    if (role === 'admin') {
+      const adminFields = {
+        authorisation: updates.authorisation,
+      };
+      const filteredAdminFields = Object.fromEntries(
+        Object.entries(adminFields).filter(([_, value]) => value !== undefined)
+      );
+
+      if (Object.keys(filteredAdminFields).length > 0) {
+        await db
+          .update(admins)
+          .set(filteredAdminFields)
+          .where(eq(admins.userId, Number(userId)));
+      }
+    }
+
+    if (role === 'member') {
+      const memberFields = {
+        status: updates.status,
+        creditsBalance: updates.creditsBalance,
+      };
+      const filteredMemberFields = Object.fromEntries(
+        Object.entries(memberFields).filter(([_, value]) => value !== undefined)
+      );
+
+      if (Object.keys(filteredMemberFields).length > 0) {
+        await db
+          .update(members)
+          .set(filteredMemberFields)
+          .where(eq(members.userId, Number(userId)));
+      }
+    }
+
+    res.status(200).json({ message: 'User updated successfully' });
+  } catch (err) {
+    console.error('Update user error:', err);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+};
+
+
+
+export const getAllCoaches = async (req: Request, res: Response) => {
+  return db
+    .select({
+      userId: users.userId,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+      phone: users.phone,
+      bio: coaches.bio,
+    })
+    .from(users)
+    .innerJoin(coaches, eq(users.userId, coaches.userId))
+    .then((result) => res.json(result))
+    .catch((err) => {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch coaches' });
+    });
+};
+
+export const getAllAdmins = async (req: Request, res: Response) => {
+  return db
+    .select({
+      userId: users.userId,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+      phone: users.phone,
+      role: userroles.userRole, // must come after the join!
+      authorisation: admins.authorisation,
+    })
+    .from(users)
+    .innerJoin(admins, eq(users.userId, admins.userId))
+    .innerJoin(userroles, eq(users.userId, userroles.userId)) // <- REQUIRED
+    .then((result) => res.json(result))
+    .catch((err) => {
+      console.error(err);
+      res.status(500).json({ error: 'Failed to fetch admins' });
+    });
+};
+
+

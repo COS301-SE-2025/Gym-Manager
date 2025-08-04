@@ -31,7 +31,9 @@ module.exports = [
         SharedArrayBuffer: 'readonly',
         console: true,
         process: true,
-        module: true
+        module: true,
+        localStorage: true,
+        atob: 'readonly'
       }
     },
     plugins: {

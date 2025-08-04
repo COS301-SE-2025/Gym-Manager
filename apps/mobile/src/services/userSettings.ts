@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { getToken } from '../utils/authStorage';
+import config from '../config';
 
-const API_BASE_URL = 'http://localhost:4000';
+const API_BASE_URL = config.BASE_URL;
 
 export interface UserSettings {
   publicVisibility: boolean;

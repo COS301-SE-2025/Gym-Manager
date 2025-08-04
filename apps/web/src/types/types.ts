@@ -8,7 +8,7 @@ export interface BaseUser {
 
 export interface Member extends BaseUser {
   status: string;
-  credits_balance: number;
+  credits: number;
 }
 
 export interface Admin extends BaseUser {

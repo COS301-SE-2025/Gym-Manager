@@ -4,7 +4,7 @@ import Link from 'next/link';
 import './styles.css';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { User, UserRole, Admin, Member, Coach } from '@/types/types';
+import { User, UserRole } from '@/types/types';
 import { userRoleService } from '@/app/services/roles';
 
 interface UserTableProps {
@@ -31,32 +31,7 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
     fetchUsers();
   }, [role]);
 
-  const renderUserRow = (user: User) => {
-    switch (role) {
-      case 'member':
-        const member = user as Member;
-        return (
-          <>
-            <td>{member.status}</td>
-            <td>{member.credits}</td>
-          </>
-        );
-      case 'coach':
-        const coach = user as Coach;
-        return (
-          <>
-            <td>{coach.bio}</td>
-          </>
-        );
-      case 'admin':
-        const admin = user as Admin;
-        return (
-          <>
-            <td>{admin.authorisation}</td>
-          </>
-        );
-    }
-  };
+
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
@@ -71,7 +46,7 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
             <th>Last Name</th>
             <th>Email</th>
             <th>Phone</th>
-            <th>Actions</th>      
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -80,12 +55,35 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
               <td>{user.userId}</td>
               <td>{user.firstName}</td>
               <td>{user.lastName}</td>
-              <td>{user.phone}</td>
               <td>{user.email}</td>
+              <td>{user.phone}</td>
               <td>
-                <Link href={`dashboard/users/edit/${user.userId}`} className="edit-link">
+                <button
+                  className="approve-btn"
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      await axios.patch(
+                        `${process.env.NEXT_PUBLIC_API_URL}/users/updateUserById/${user.userId}`,
+                        { status: 'approved' },
+                        {
+                          headers: {
+                            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+                          },
+                        }
+                      );
+                      // Refresh users list
+                      const data = await userRoleService.getUsersByRole(role);
+                      setUsers(data);
+                    } catch (err) {
+                      setError(axios.isAxiosError(err) ? err.message : 'Failed to approve user');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                >
                   Approve
-                </Link>
+                </button>
               </td>
             </tr>
           ))}

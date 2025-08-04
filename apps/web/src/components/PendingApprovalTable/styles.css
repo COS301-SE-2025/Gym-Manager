@@ -1,3 +1,18 @@
+.approve-btn {
+  background-color: #d8ff3e;
+  color: #1e1e1e;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.approve-btn:hover {
+  background-color: #c0c0c0;
+}
 .user-table-container {
   overflow-x: auto;
   background-color: #1e1e1e;

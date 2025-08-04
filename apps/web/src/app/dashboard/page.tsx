@@ -189,7 +189,7 @@ export default function DashboardPage() {
         }}
       >
       <WeeklyCalendar events={events} onSelectEvent={handleEventClick} loading={loading} />
-      {/* Pending users table below calendar */}
+      {/* Pending users table*/}
       <div style={{ marginTop: '32px' }}>
         <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>
           Pending User Approvals

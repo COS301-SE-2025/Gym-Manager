@@ -124,7 +124,7 @@ export default function EditUser() {
   const handleStatusUpdate = async () => {
     try {
       setStatusLoading(true);
-      await userManagementService.updateStatus(userId, status, userData?.firstName || '');
+      await userManagementService.updateStatus(userId, status);
       setError(null);
     } catch (err) {
       setError('Failed to update status');

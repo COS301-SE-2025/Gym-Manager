@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../db/client';
-import { classes, workouts, classbookings, userroles, classattendance } from '../db/schema';
+import { classes, workouts, rounds, subrounds, subroundExercises, classbookings, userroles, classattendance } from '../db/schema';
 import { eq, and, gt, gte, or, sql } from 'drizzle-orm';
 import { AuthenticatedRequest } from '../middleware/auth';
 
@@ -37,7 +37,7 @@ export const getCoachClassesWithWorkouts = async (req: AuthenticatedRequest, res
       scheduledDate: classes.scheduledDate,
       scheduledTime: classes.scheduledTime,
       workoutName: workouts.workoutName,
-      workoutContent: workouts.workoutContent,
+      // workoutContent: workouts.workoutContent,
     })
     .from(classes)
     .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
@@ -63,36 +63,141 @@ export const assignWorkoutToClass = async (req: AuthenticatedRequest, res: Respo
   res.json({ success: true });
 };
 
+const WORKOUT_TYPES = ['FOR_TIME', 'AMRAP', 'TABATA', 'EMOM'] as const;
+type WorkoutType = (typeof WORKOUT_TYPES)[number];
+
+const QUANTITY_TYPES = ['reps', 'duration'] as const;
+type QuantityType = (typeof QUANTITY_TYPES)[number];
+
 export const createWorkout = async (req: AuthenticatedRequest, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+  type ReqBody = {
+    workoutName?: string;
+    type?: string;
+    metadata?: Record<string, unknown>;
+    rounds?: Array<{
+      roundNumber: number;
+      subrounds: Array<{
+        subroundNumber: number;
+        exercises: Array<{
+          exerciseId: number;
+          position: number;
+          quantityType: QuantityType;
+          quantity: number;
+          notes?: string;
+        }>;
+      }>;
+    }>;
+  };
+
+  const { workoutName, type, metadata, rounds: roundsInput } =
+    req.body as ReqBody;
+
+  // 1) BASIC VALIDATION
+  if (!workoutName?.trim())
+    return res.status(400).json({ error: 'workoutName is required' });
+
+  if (!type || !(WORKOUT_TYPES as readonly string[]).includes(type))
+    return res
+      .status(400)
+      .json({ error: `type must be one of ${WORKOUT_TYPES.join(', ')}` });
+
+  if (typeof metadata !== 'object' || metadata === null)
+    return res.status(400).json({ error: 'metadata must be an object' });
+
+  if (!Array.isArray(roundsInput) || roundsInput.length === 0)
+    return res
+      .status(400)
+      .json({ error: 'rounds must be a non-empty array' });
+
+  // 2) SHAPE-VALIDATION
+  for (const r of roundsInput) {
+    if (typeof r.roundNumber !== 'number' || !Array.isArray(r.subrounds))
+      return res
+        .status(400)
+        .json({ error: 'each round needs roundNumber & subrounds[]' });
+
+    for (const sr of r.subrounds) {
+      if (
+        typeof sr.subroundNumber !== 'number' ||
+        !Array.isArray(sr.exercises) ||
+        sr.exercises.length === 0
+      ) {
+        return res.status(400).json({
+          error: 'each subround needs subroundNumber & non-empty exercises[]',
+        });
+      }
+      for (const ex of sr.exercises) {
+        if (
+          typeof ex.exerciseId !== 'number' ||
+          typeof ex.position !== 'number' ||
+          !QUANTITY_TYPES.includes(ex.quantityType) ||
+          typeof ex.quantity !== 'number'
+        ) {
+          return res.status(400).json({
+            error:
+              'exercise entries must have exerciseId:number, position:number, quantityType:(reps|duration), quantity:number',
+          });
+        }
+      }
+    }
   }
 
-  const { workoutName, workoutContent } = req.body;
-
-  // Validate input
-  if (!workoutName || !workoutContent) {
-    return res.status(400).json({ error: 'Workout name and content are required' });
-  }
-
+  // 3) TRANSACTIONAL INSERT
   try {
-    // Insert new workout
-    const [newWorkout] = await db
-      .insert(workouts)
-      .values({
-        workoutName: workoutName.trim(),
-        workoutContent: workoutContent.trim(),
-      })
-      .returning({ workoutId: workouts.workoutId });
+    const workoutId = await db.transaction(async (tx) => {
+      const [w] = await tx
+        .insert(workouts)
+        .values({
+          workoutName: workoutName.trim(),
+          type: type as WorkoutType,
+          metadata,
+        })
+        .returning({ workoutId: workouts.workoutId });
 
-    res.json({
-      success: true,
-      workoutId: newWorkout.workoutId,
-      message: 'Workout created successfully',
+      for (const r of roundsInput) {
+        const [roundRec] = await tx
+          .insert(rounds)
+          .values({
+            workoutId: w.workoutId,
+            roundNumber: r.roundNumber,
+          })
+          .returning({ roundId: rounds.roundId });
+
+        for (const sr of r.subrounds) {
+          const [subRec] = await tx
+            .insert(subrounds)
+            .values({
+              roundId: roundRec.roundId,
+              subroundNumber: sr.subroundNumber,
+            })
+            .returning({ subroundId: subrounds.subroundId });
+
+          for (const ex of sr.exercises) {
+            await tx.insert(subroundExercises).values({
+              subroundId: subRec.subroundId,
+              exerciseId: ex.exerciseId,
+              position: ex.position,
+              quantityType: ex.quantityType,
+              quantity: ex.quantity,
+              notes: ex.notes ?? null,
+            });
+          }
+        }
+      }
+
+      return w.workoutId;
     });
-  } catch (error) {
-    console.error('Error creating workout:', error);
-    res.status(500).json({ error: 'Failed to create workout' });
+
+    return res.json({
+      success: true,
+      workoutId,
+      message: 'Workout + rounds/subrounds/exercises created',
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to create workout' });
   }
 };
 

@@ -78,7 +78,7 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
         coachId: classes.coachId,
         workoutId: classes.workoutId,
         workoutName: workouts.workoutName,
-        workoutContent: workouts.workoutContent,
+        // workoutContent: workouts.workoutContent,
       })
       .from(classes)
       .innerJoin(workouts, eq(classes.workoutId, workouts.workoutId))
@@ -123,7 +123,7 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
         coachId: classes.coachId,
         workoutId: classes.workoutId,
         workoutName: workouts.workoutName,
-        workoutContent: workouts.workoutContent,
+        // workoutContent: workouts.workoutContent,
       })
       .from(classes)
       .innerJoin(classbookings, eq(classes.classId, classbookings.classId))

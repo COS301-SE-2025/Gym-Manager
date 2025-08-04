@@ -76,7 +76,7 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
                           },
                         }
                       );
-                      // Refresh users list
+                      //refresh users list
                       const data = await userRoleService.getUsersByRole(role);
                       setUsers(data);
                     } catch (err) {

@@ -17,6 +17,7 @@ import axios from 'axios';
 import { storeToken, storeUser } from '../../utils/authStorage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import config from '../../config';
+import { getUserStatus } from './Model/userStatus';
 
 const { width } = Dimensions.get('window');
 
@@ -127,6 +128,16 @@ export default function LoginScreen() {
       } else {
         console.warn('Login response does not contain user information.');
       }
+      try {
+        const userStatus = await getUserStatus();
+        
+        if (userStatus.membershipStatus === 'pending') {
+          navigation.navigate('Pending' as never);
+          return;
+        }
+      } catch (statusError) {
+        console.error('Failed to check user status:', statusError);
+      }
 
       if (response.data && response.data.user && response.data.user.roles) {
         const roles = response.data.user.roles;
@@ -134,6 +145,8 @@ export default function LoginScreen() {
           navigation.navigate('RoleSelection' as never);
         } else if (roles.includes('member')) {
           navigation.navigate('Home' as never);
+        } else if (roles.includes('coach')) {
+          navigation.navigate('Coach' as never);
         } else {
           console.warn('User roles not recognized for navigation:', roles);
           navigation.navigate('Home' as never);
@@ -142,6 +155,8 @@ export default function LoginScreen() {
         console.error('Login response does not contain user roles information.');
         navigation.navigate('Home' as never);
       }
+
+      
     } catch (error: any) {
       console.error('Login error:', error);
       let errorMessage = 'An unexpected error occurred. Please try again.';

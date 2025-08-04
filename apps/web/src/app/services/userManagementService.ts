@@ -13,7 +13,7 @@ export const userManagementService = {
     const token = localStorage.getItem('authToken');
     await axios.patch(
       `${process.env.NEXT_PUBLIC_API_URL}/users/updateUserById/${userId}`,
-      { status, role: 'member', firstName },
+      { status, role: 'member' },
       { headers: { Authorization: `Bearer ${token}` } },
     );
   },

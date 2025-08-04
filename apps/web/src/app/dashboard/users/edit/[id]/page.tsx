@@ -208,7 +208,7 @@ export default function EditUser() {
               disabled={statusLoading}
             >
               <option value="active">pending</option>
-              <option value="inactive">approved</option>
+              <option value="approved">approved</option>
               <option value="suspended">suspended</option>
               <option value="cancelled">cancelled</option>
             </select>

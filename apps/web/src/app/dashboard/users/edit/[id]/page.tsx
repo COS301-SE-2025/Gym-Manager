@@ -17,9 +17,9 @@ export default function EditUser() {
     lastName: '',
     email: '',
     phone: '',
-    bio: '', // coach
-    authorisation: '', // admin
-    credits: '', // member
+    bio: '', //coach
+    authorisation: '', //admin
+    credits: '', //member
   });
   const [editLoading, setEditLoading] = useState(false);
   const [status, setStatus] = useState<string>('active');
@@ -124,7 +124,7 @@ export default function EditUser() {
   const handleStatusUpdate = async () => {
     try {
       setStatusLoading(true);
-      await userManagementService.updateStatus(userId, status, userData?.firstName || '');
+      await userManagementService.updateStatus(userId, status);
       setError(null);
     } catch (err) {
       setError('Failed to update status');
@@ -208,7 +208,7 @@ export default function EditUser() {
               disabled={statusLoading}
             >
               <option value="active">pending</option>
-              <option value="inactive">approved</option>
+              <option value="approved">approved</option>
               <option value="suspended">suspended</option>
               <option value="cancelled">cancelled</option>
             </select>

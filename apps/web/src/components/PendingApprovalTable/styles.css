@@ -1,0 +1,41 @@
+/* PendingApprovalTable styles - matches UserTable */
+.user-table-container {
+  overflow-x: auto;
+  background-color: #1e1e1e;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+}
+
+.user-table th {
+  background-color: #434343;
+  padding: 12px 15px;
+  text-align: left;
+  font-size: 14px;
+  border-bottom: 2px solid #2e2e2e;
+}
+
+.user-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #2e2e2e;
+  background-color: #383838;
+}
+
+.user-table tr:hover td {
+  background-color: #434343;
+}
+
+.edit-link {
+  color: #d8ff3e;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.edit-link:hover {
+  text-decoration: underline;
+}

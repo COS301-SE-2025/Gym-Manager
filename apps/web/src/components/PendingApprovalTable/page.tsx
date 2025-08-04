@@ -36,6 +36,10 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
 
+  const pendingMembers = users.filter(
+    (user) => (user as any).status === 'pending'
+  );
+
   return (
     <div className="user-table-container">
       <table className="user-table">
@@ -50,7 +54,7 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => (
+          {pendingMembers.map((user) => (
             <tr key={user.userId}>
               <td>{user.userId}</td>
               <td>{user.firstName}</td>

@@ -70,11 +70,8 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
             <th>First Name</th>
             <th>Last Name</th>
             <th>Email</th>
-            <th>Actions</th>
-            {/* {role === 'member' && <th>Status</th>}
-            {role === 'member' && <th>Credits</th>}
-            {role === 'coach' && <th>Bio</th>}
-            {role === 'admin' && <th>Auth Level</th>} */}
+            <th>Phone</th>
+            <th>Actions</th>      
           </tr>
         </thead>
         <tbody>
@@ -83,11 +80,11 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
               <td>{user.userId}</td>
               <td>{user.firstName}</td>
               <td>{user.lastName}</td>
+              <td>{user.phone}</td>
               <td>{user.email}</td>
-              {/* {renderUserRow(user)} */}
               <td>
-                <Link href={`users/edit/${user.userId}`} className="edit-link">
-                  Manage
+                <Link href={`dashboard/users/edit/${user.userId}`} className="edit-link">
+                  Approve
                 </Link>
               </td>
             </tr>

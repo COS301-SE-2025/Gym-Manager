@@ -17,9 +17,9 @@ export default function EditUser() {
     lastName: '',
     email: '',
     phone: '',
-    bio: '', // coach
-    authorisation: '', // admin
-    credits: '', // member
+    bio: '', //coach
+    authorisation: '', //admin
+    credits: '', //member
   });
   const [editLoading, setEditLoading] = useState(false);
   const [status, setStatus] = useState<string>('active');

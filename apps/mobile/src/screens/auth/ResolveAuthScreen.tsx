@@ -55,18 +55,6 @@ const ResolveAuthScreen = ({ navigation }: ResolveAuthScreenProps) => {
           return;
         }
 
-        // Check if user is pending
-        try {
-          const userStatus = await getUserStatus();
-          if (userStatus.membershipStatus === 'pending') {
-            navigation.replace('Pending');
-            return;
-          }
-        } catch (statusError) {
-          console.error('Failed to check user status:', statusError);
-          // Continue with normal flow if status check fails
-        }
-
         navigation.replace('Login');
       } catch (error) {
         console.error('Failed to get auth status:', error);

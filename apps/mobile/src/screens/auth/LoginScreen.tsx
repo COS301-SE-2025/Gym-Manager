@@ -129,8 +129,10 @@ export default function LoginScreen() {
         console.warn('Login response does not contain user information.');
       }
       try {
+        console.log('Checking user status');
+        console.log('JWT token:', response.data.token);
         const userStatus = await getUserStatus();
-        
+        console.log('User status:', userStatus);
         if (userStatus.membershipStatus === 'pending') {
           navigation.navigate('Pending' as never);
           return;

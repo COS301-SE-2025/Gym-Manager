@@ -15,7 +15,7 @@ export const getUserStatus = async (): Promise<UserStatus> => {
       throw new Error('No authentication token found');
     }
 
-    const response = await axios.get<UserStatus>(`${config.BASE_URL}/auth/status`, {
+    const response = await axios.get<UserStatus>(`${config.BASE_URL}/status`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

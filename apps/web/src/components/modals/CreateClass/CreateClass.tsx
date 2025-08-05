@@ -48,13 +48,14 @@ export default function ClassCreationModal({
   }
 
   const handleSubmit = async () => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
     try {
       const token = localStorage.getItem('authToken');
       if (!token) throw new Error('Missing token');
       const userJWT = jwtDecode<JwtPayload>(token);
       const adminID = userJWT.userId;
       await axios.post(
-        'http://localhost:4000/schedule/createClass',
+        `${API_URL}/schedule/createClass`,
         { ...form, createdBy: adminID },
         { headers: { Authorization: `Bearer ${token}` } },
       );

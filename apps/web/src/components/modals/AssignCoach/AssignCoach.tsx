@@ -29,6 +29,7 @@ interface Props {
 }
 
 export default function AssignCoachModal({ isOpen, onClose, classInfo, onAssigned }: Props) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const [coachId, setCoachId] = useState<number | null>(null);
   const [coaches, setCoaches] = useState<Coach[]>([]);
 
@@ -54,7 +55,7 @@ export default function AssignCoachModal({ isOpen, onClose, classInfo, onAssigne
     try {
       const token = localStorage.getItem('authToken');
       await axios.post(
-        'http://localhost:4000/schedule/assign-coach',
+        `${API_URL}/schedule/assign-coach`,
         { classId: classInfo.classId, coachId },
         { headers: { Authorization: `Bearer ${token}` } },
       );

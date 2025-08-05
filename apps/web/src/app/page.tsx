@@ -6,6 +6,7 @@ import Image from 'next/image';
 import axios from 'axios';
 
 export default function Home() {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function Home() {
 
     try {
       const response = await axios.post(
-        `http://localhost:4000/login`,
+        `${API_URL}/login`,
         { email, password },
         {
           headers: {

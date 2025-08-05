@@ -8,6 +8,7 @@ import { userRoleService } from '../services/roles';
 import ClassCreationModal from '@/components/modals/CreateClass/CreateClass';
 import AssignCoachModal from '@/components/modals/AssignCoach/AssignCoach';
 import { ClassResource } from '@/components/modals/AssignCoach/AssignCoach';
+import Link from 'next/link';
 import axios from 'axios';
 
 export default function DashboardPage() {
@@ -49,7 +50,7 @@ export default function DashboardPage() {
 
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:4000/users/allUsers`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/allUsers`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log('Fetched all users:', response.data);
@@ -123,18 +124,20 @@ export default function DashboardPage() {
         }}
       >
         <div>
-          <h1
-            style={{
-              fontSize: '24px',
-              fontWeight: '700',
-              color: 'white',
-              fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
-              margin: 0,
-              padding: 0,
-            }}
-          >
-            Welcome, {getUserDisplayName()} 👋
-          </h1>
+          <Link href="/dashboard/profile" style={{ textDecoration: 'none' }}>
+            <h1
+              style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: 'white',
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+                margin: 0,
+                padding: 0,
+              }}
+            >
+              Welcome, {getUserDisplayName()} 👋
+            </h1>
+          </Link>
           <p
             style={{
               color: '#ffffff',

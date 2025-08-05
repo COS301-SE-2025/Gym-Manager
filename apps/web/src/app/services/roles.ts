@@ -1,13 +1,16 @@
 import axios from 'axios';
-import { User, UserRole } from '@/types/types';
+import { Admin, Coach, Member, User, UserRole } from '@/types/types';
 // import { Member, Admin, Coach } from '@/types/types';
 export const userRoleService = {
   async getUsersByRole(role: UserRole) {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:4000/roles/getUsersByRole/${role}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/roles/getUsersByRole/${role}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       console.log(response.data);
       return response.data;
     } catch (error) {
@@ -17,9 +20,12 @@ export const userRoleService = {
   async RolesByUser(userId: number): Promise<UserRole[]> {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:4000/roles/getRolesByUserId/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/roles/getRolesByUserId/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       return response.data;
     } catch (error) {
       console.error('Could not get roles by user:', error);
@@ -31,7 +37,7 @@ export const userRoleService = {
     try {
       const token = localStorage.getItem('authToken');
       await axios.post(
-        'http://localhost:4000/roles/assign',
+        `${process.env.NEXT_PUBLIC_API_URL}/roles/assign`,
         { userId, role },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -64,7 +70,7 @@ export const userRoleService = {
       }
 
       await axios.post(
-        `http://localhost:4000${endpoint}`,
+        `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`,
         { userId },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -77,9 +83,12 @@ export const userRoleService = {
   async getWeeklySchedule() {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get('http://localhost:4000/schedule/getWeeklySchedule', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/schedule/getWeeklySchedule`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       return response.data;
     } catch (error) {
       console.error('Failed to fetch weekly schedule:', error);
@@ -98,9 +107,12 @@ export const userRoleService = {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const userId = payload.userId;
 
-      const response = await axios.get(`http://localhost:4000/users/getUserById/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/getUserById/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       return response.data;
     } catch (error) {
       console.error('Failed to get current user:', error);
@@ -111,10 +123,25 @@ export const userRoleService = {
   async getUserById(userId: number): Promise<User> {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:4000/users/getUserById/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.data;
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/getUserById/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      const userData = response.data;
+      const rolesResponse = await this.RolesByUser(userId);
+      const roles: UserRole[] = rolesResponse;
+      if (roles.includes('member')) {
+        return userData as Member;
+      }
+      if (roles.includes('coach')) {
+        return userData as Coach;
+      }
+      if (roles.includes('admin')) {
+        return userData as Admin;
+      }
+      return userData as User;
     } catch (err) {
       console.error('Failed to get user by ID:', err);
       throw err;

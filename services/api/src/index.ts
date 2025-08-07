@@ -25,7 +25,7 @@ app.use(
 );
 
 app.use(bodyParser.json());
-app.use(requestTimeout(10_000));
+app.use(requestTimeout(20_000));
 app.use(healthRoutes);
 app.use(authRoutes);
 app.use(adminRoutes);

@@ -301,7 +301,10 @@ import {
   removeMemberRole,
   getRolesByUserId,
   getUserById,
-  updateUserById
+  updateUserById,
+  getAllCoaches,
+  getAllAdmins,
+  changeUserPassword
 } from '../controllers/adminController';
 import { isAuthenticated } from '../middleware/auth';
 
@@ -322,5 +325,8 @@ router.post('/roles/removeMemberRole', isAuthenticated, removeMemberRole);
 router.get('/roles/getRolesByUserId/:userId', isAuthenticated, getRolesByUserId);
 router.get('/users/getUserById/:userId', isAuthenticated, getUserById);
 router.patch('/users/updateUserById/:userId', isAuthenticated, updateUserById);
+router.get('/users/getAllCoaches', isAuthenticated, getAllCoaches);
+router.get('/users/getAllAdmins', isAuthenticated, getAllAdmins);
+router.patch('/users/changePassword/:userId', isAuthenticated, changeUserPassword);
 
 export default router;

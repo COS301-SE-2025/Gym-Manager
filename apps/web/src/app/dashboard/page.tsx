@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import WeeklyCalendar from '../../components/WeeklyCalendar/WeeklyCalendar';
+import PendingApprovalTable from '../../components/PendingApprovalTable/page';
 import { CalendarEvent, ClassScheduleItem, User } from '../../types/types';
 import { getDummyCalendarEvents, transformApiDataToEvents } from '../../utils/calendarHelpers';
 import { userRoleService } from '../services/roles';
 import ClassCreationModal from '@/components/modals/CreateClass/CreateClass';
 import AssignCoachModal from '@/components/modals/AssignCoach/AssignCoach';
 import { ClassResource } from '@/components/modals/AssignCoach/AssignCoach';
+import Link from 'next/link';
 import axios from 'axios';
 
 export default function DashboardPage() {
@@ -49,7 +51,7 @@ export default function DashboardPage() {
 
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`http://localhost:4000/users/allUsers`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/allUsers`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log('Fetched all users:', response.data);
@@ -123,18 +125,20 @@ export default function DashboardPage() {
         }}
       >
         <div>
-          <h1
-            style={{
-              fontSize: '24px',
-              fontWeight: '700',
-              color: 'white',
-              fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
-              margin: 0,
-              padding: 0,
-            }}
-          >
-            Welcome, {getUserDisplayName()} 👋
-          </h1>
+          <Link href="/dashboard/profile" style={{ textDecoration: 'none' }}>
+            <h1
+              style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: 'white',
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+                margin: 0,
+                padding: 0,
+              }}
+            >
+              Welcome, {getUserDisplayName()} 👋
+            </h1>
+          </Link>
           <p
             style={{
               color: '#ffffff',
@@ -184,7 +188,14 @@ export default function DashboardPage() {
           minHeight: '700px',
         }}
       >
-        <WeeklyCalendar events={events} onSelectEvent={handleEventClick} loading={loading} />
+      <WeeklyCalendar events={events} onSelectEvent={handleEventClick} loading={loading} />
+      {/* Pending users table*/}
+      <div style={{ marginTop: '32px' }}>
+        <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>
+          Pending User Approvals
+        </h2>
+        <PendingApprovalTable role="member" />
+      </div>
       </div>
       <ClassCreationModal
         isOpen={isClassModalOpen}

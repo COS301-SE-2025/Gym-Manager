@@ -11,7 +11,7 @@ import {
 } from '../db/schema';
 import { eq, and, asc, between } from 'drizzle-orm';
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { hashPassword, verifyPassword, AuthenticatedRequest } from '../middleware/auth';
 import { format } from 'date-fns';
 import { parseISO as dateFnsParseISO } from 'date-fns';
 
@@ -371,70 +371,157 @@ export const getUserById = async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid userId' });
   }
 
-  const user = await db.select().from(users).where(eq(users.userId, userId)).limit(1);
+  try {
+    const result = await db
+      .select({
+        userId: users.userId,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        phone: users.phone,
+        roles: userroles.userRole,
+        bio: coaches.bio,
+        status: members.status,
+        creditsBalance: members.creditsBalance,
+        authorisation: admins.authorisation,
+      })
+      .from(users)
+      .leftJoin(userroles, eq(users.userId, userroles.userId))
+      .leftJoin(coaches, eq(users.userId, coaches.userId))
+      .leftJoin(members, eq(users.userId, members.userId))
+      .leftJoin(admins, eq(users.userId, admins.userId))
+      .where(eq(users.userId, userId));
 
-  if (user.length === 0) {
-    return res.status(404).json({ error: 'User not found' });
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Consolidate roles and details
+    const base = {
+      userId: result[0].userId,
+      firstName: result[0].firstName,
+      lastName: result[0].lastName,
+      email: result[0].email,
+      phone: result[0].phone,
+      roles: result.map((r) => r.roles).filter(Boolean),
+    };
+
+    for (const row of result) {
+      if (row.roles === 'coach') {
+        Object.assign(base, { bio: row.bio });
+      } else if (row.roles === 'member') {
+        Object.assign(base, {
+          status: row.status,
+          creditsBalance: row.creditsBalance,
+        });
+      } else if (row.roles === 'admin') {
+        Object.assign(base, { authorisation: row.authorisation });
+      }
+    }
+
+    return res.json(base);
+  } catch (err) {
+    console.error('Error fetching user by ID:', err);
+    res.status(500).json({ error: 'Failed to fetch user' });
   }
-
-  res.json(user[0]);
 };
+
 
 //EDIT USER DETAILS 
 export const updateUserById = async (req: Request, res: Response) => {
-  const userId = parseInt(req.params.userId, 10);
-  if (isNaN(userId)) {
-    return res.status(400).json({ error: 'Invalid userId' });
-  }
+  const { userId } = req.params;
+  const updates = req.body;
 
-  //Update all member deatils if role is member
-  if (req.body.role === 'member') {
-    const { firstName, lastName, email, phone, status, creditsBalance } = req.body;
-    await db
-      .update(users)
-      .set({ firstName, lastName, email, phone })
-      .where(eq(users.userId, userId));
+  try {
+    // Step 1: Get user role
+    const [userRoleRow] = await db
+      .select({ role: userroles.userRole })
+      .from(userroles)
+      .where(eq(userroles.userId, Number(userId)));
 
-    await db
-      .update(members)
-      .set({ status, creditsBalance })
-      .where(eq(members.userId, userId));
+    if (!userRoleRow) {
+      return res.status(404).json({ error: 'User role not found' });
+    }
 
-    return res.json({ success: true });
-  }
+    const role = userRoleRow.role;
 
-  //Update all coach deatils if role is coach
-  if (req.body.role === 'coach') {
-    const { firstName, lastName, email, phone, bio } = req.body;
-    await db
-      .update(users)
-      .set({ firstName, lastName, email, phone })
-      .where(eq(users.userId, userId));
+    // Step 2: Update shared user fields
+    const userFieldsToUpdate = {
+      firstName: updates.firstName,
+      lastName: updates.lastName,
+      email: updates.email,
+      phone: updates.phone,
+    };
 
-    await db
-      .update(coaches)
-      .set({ bio })
-      .where(eq(coaches.userId, userId));
+    const filteredUserFields = Object.fromEntries(
+      Object.entries(userFieldsToUpdate).filter(([_, value]) => value !== undefined)
+    );
 
-    return res.json({ success: true });
-  }
+    if (Object.keys(filteredUserFields).length > 0) {
+      await db
+        .update(users)
+        .set(filteredUserFields)
+        .where(eq(users.userId, Number(userId)));
+    }
 
-  //Update all admin details if role is admin
-  if (req.body.role === 'admin') {
-    const { firstName, lastName, email, phone, authorisation } = req.body;
-    await db
-      .update(users)
-      .set({ firstName, lastName, email, phone })
-      .where(eq(users.userId, userId));
+    // Step 3: Role-specific updates
+    if (role === 'coach') {
+      const coachFields = {
+        bio: updates.bio,
+      };
+      const filteredCoachFields = Object.fromEntries(
+        Object.entries(coachFields).filter(([_, value]) => value !== undefined)
+      );
 
-    await db
-      .update(admins)
-      .set({ authorisation })
-      .where(eq(admins.userId, userId));
+      if (Object.keys(filteredCoachFields).length > 0) {
+        await db
+          .update(coaches)
+          .set(filteredCoachFields)
+          .where(eq(coaches.userId, Number(userId)));
+      }
+    }
 
-    return res.json({ success: true });
+    if (role === 'admin') {
+      const adminFields = {
+        authorisation: updates.authorisation,
+      };
+      const filteredAdminFields = Object.fromEntries(
+        Object.entries(adminFields).filter(([_, value]) => value !== undefined)
+      );
+
+      if (Object.keys(filteredAdminFields).length > 0) {
+        await db
+          .update(admins)
+          .set(filteredAdminFields)
+          .where(eq(admins.userId, Number(userId)));
+      }
+    }
+
+    if (role === 'member') {
+      const memberFields = {
+        status: updates.status,
+        creditsBalance: updates.creditsBalance,
+      };
+      const filteredMemberFields = Object.fromEntries(
+        Object.entries(memberFields).filter(([_, value]) => value !== undefined)
+      );
+
+      if (Object.keys(filteredMemberFields).length > 0) {
+        await db
+          .update(members)
+          .set(filteredMemberFields)
+          .where(eq(members.userId, Number(userId)));
+      }
+    }
+
+    res.status(200).json({ message: 'User updated successfully' });
+  } catch (err) {
+    console.error('Update user error:', err);
+    res.status(500).json({ error: 'Failed to update user' });
   }
 };
+
+
 
 export const getAllCoaches = async (req: Request, res: Response) => {
   return db
@@ -476,4 +563,70 @@ export const getAllAdmins = async (req: Request, res: Response) => {
     });
 };
 
+// PATCH /users/:userId/password
+export const changeUserPassword = async (req: AuthenticatedRequest, res: Response) => {
+  const { userId } = req.params;
+  const { currentPassword, newPassword } = req.body;
 
+  const requestingUserId = req.user?.userId;
+  const requesterRole = req.user?.roles;
+  //console.log(`Requesting user ID: ${requestingUserId}, Role: ${requesterRole}`);
+
+  if (!newPassword) {
+    return res.status(400).json({ error: 'New password is required' });
+  }
+
+  try {
+    // Step 1: Fetch target user by ID
+    const [user] = await db
+      .select({ userId: users.userId, password: users.passwordHash })
+      .from(users)
+      .where(eq(users.userId, Number(userId)));
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const isSelf = Number(requestingUserId) === Number(userId);
+    const isAdmin =
+    Array.isArray(requesterRole)
+    ? requesterRole.includes('admin')
+    : requesterRole === 'admin' || requesterRole?.includes('admin');
+    //console.log(`isSelf: ${isSelf}, isAdmin: ${isAdmin}`);
+
+    // Step 2: Require current password if not admin
+    if (!isAdmin && isSelf) {
+      if (!currentPassword) {
+        return res.status(400).json({ error: 'Current password is required' });
+      }
+
+      const isValid = await verifyPassword(currentPassword, user.password);
+      if (!isValid) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
+    }
+
+    // Step 3: Only admin or self can change
+    if (!isAdmin && !isSelf) {
+      return res.status(403).json({ error: 'You are not authorized to change this password' });
+    }
+
+    // Step 4: Hash and update new password
+    const hashedNewPassword = await hashPassword(newPassword);
+
+    await db
+      .update(users)
+      .set({ passwordHash: hashedNewPassword })
+      .where(eq(users.userId, Number(userId)));
+
+    // Step 5: Log password change
+    console.log(
+      `Password changed for user ID ${userId} by user ID ${requestingUserId} at ${new Date().toISOString()}`
+    );
+
+    return res.status(200).json({ message: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Error changing password:', err);
+    return res.status(500).json({ error: 'Failed to update password' });
+  }
+};

@@ -303,7 +303,8 @@ import {
   getUserById,
   updateUserById,
   getAllCoaches,
-  getAllAdmins
+  getAllAdmins,
+  changeUserPassword
 } from '../controllers/adminController';
 import { isAuthenticated } from '../middleware/auth';
 
@@ -326,5 +327,6 @@ router.get('/users/getUserById/:userId', isAuthenticated, getUserById);
 router.patch('/users/updateUserById/:userId', isAuthenticated, updateUserById);
 router.get('/users/getAllCoaches', isAuthenticated, getAllCoaches);
 router.get('/users/getAllAdmins', isAuthenticated, getAllAdmins);
+router.patch('/users/changePassword/:userId', isAuthenticated, changeUserPassword);
 
 export default router;

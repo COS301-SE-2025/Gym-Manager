@@ -11,7 +11,7 @@ import {
 } from '../db/schema';
 import { eq, and, asc, between } from 'drizzle-orm';
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { hashPassword, verifyPassword, AuthenticatedRequest } from '../middleware/auth';
 import { format } from 'date-fns';
 import { parseISO as dateFnsParseISO } from 'date-fns';
 
@@ -563,4 +563,70 @@ export const getAllAdmins = async (req: Request, res: Response) => {
     });
 };
 
+// PATCH /users/:userId/password
+export const changeUserPassword = async (req: AuthenticatedRequest, res: Response) => {
+  const { userId } = req.params;
+  const { currentPassword, newPassword } = req.body;
 
+  const requestingUserId = req.user?.userId;
+  const requesterRole = req.user?.roles;
+  //console.log(`Requesting user ID: ${requestingUserId}, Role: ${requesterRole}`);
+
+  if (!newPassword) {
+    return res.status(400).json({ error: 'New password is required' });
+  }
+
+  try {
+    // Step 1: Fetch target user by ID
+    const [user] = await db
+      .select({ userId: users.userId, password: users.passwordHash })
+      .from(users)
+      .where(eq(users.userId, Number(userId)));
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const isSelf = Number(requestingUserId) === Number(userId);
+    const isAdmin =
+    Array.isArray(requesterRole)
+    ? requesterRole.includes('admin')
+    : requesterRole === 'admin' || requesterRole?.includes('admin');
+    //console.log(`isSelf: ${isSelf}, isAdmin: ${isAdmin}`);
+
+    // Step 2: Require current password if not admin
+    if (!isAdmin && isSelf) {
+      if (!currentPassword) {
+        return res.status(400).json({ error: 'Current password is required' });
+      }
+
+      const isValid = await verifyPassword(currentPassword, user.password);
+      if (!isValid) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
+    }
+
+    // Step 3: Only admin or self can change
+    if (!isAdmin && !isSelf) {
+      return res.status(403).json({ error: 'You are not authorized to change this password' });
+    }
+
+    // Step 4: Hash and update new password
+    const hashedNewPassword = await hashPassword(newPassword);
+
+    await db
+      .update(users)
+      .set({ passwordHash: hashedNewPassword })
+      .where(eq(users.userId, Number(userId)));
+
+    // Step 5: Log password change
+    console.log(
+      `Password changed for user ID ${userId} by user ID ${requestingUserId} at ${new Date().toISOString()}`
+    );
+
+    return res.status(200).json({ message: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Error changing password:', err);
+    return res.status(500).json({ error: 'Failed to update password' });
+  }
+};

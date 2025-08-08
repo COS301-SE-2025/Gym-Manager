@@ -17,9 +17,17 @@ import { setupSwagger } from './swagger';
 const app = express();
 const port = process.env.PORT || 4000;
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://api-green-zeta-48.vercel.app', // VERCEL DEPLOYMENT
+];
+
 app.use(
   cors({
-    origin: 'http://localhost:3000',
+    origin(origin, cb) {
+      if (!origin) return cb(null, true); // allow Postman/cURL
+      cb(null, allowedOrigins.includes(origin)); // allow only listed origins
+    },
     credentials: true,
   }),
 );

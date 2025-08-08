@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 // Ensure dotenv is loaded as early as possible
 dotenv.config();
 
-console.log('--- DRIZZLE CLIENT DB CONNECwwwwwwTION ATTEMPT ---');
+console.log('--- DRIZZLE CLIENT DB CONNECTION ATTEMPT ---');
 
 const url =
   process.env.DATABASE_URL // Production URL

@@ -1,7 +1,7 @@
 // === services/api/src/index.ts ===
 import dotenv from 'dotenv';
 dotenv.config();
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import express from 'express';
 import bodyParser from 'body-parser';
 import adminRoutes from './routes/admin';
@@ -17,29 +17,38 @@ import { setupSwagger } from './swagger';
 const app = express();
 const port = process.env.PORT || 4000;
 
+// Allow both the Web App URL, and localhost for local testing. This should be
+// the Web App URL, NOT the API (took me longer than it should have to figure that out)
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://api-green-zeta-48.vercel.app', // VERCEL DEPLOYMENT
+  'https://gym-manager-ashen.vercel.app', // Vercel
 ];
 
-app.use(
-  cors({
-    origin(origin, cb) {
-      if (!origin) return cb(null, true); // allow Postman/cURL
-      cb(null, allowedOrigins.includes(origin)); // allow only listed origins
-    },
-    credentials: true,
-  }),
-);
+const corsOptions: CorsOptions = {
+  origin(origin, cb) {
+    if (!origin) return cb(null, true); // Allow Postman/cURL
+    cb(null, allowedOrigins.includes(origin));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200,
+};
+
+// CORS must run before any other routes
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 app.use(bodyParser.json());
 app.use(requestTimeout(20_000));
+
 app.use(healthRoutes);
 app.use(authRoutes);
 app.use(adminRoutes);
 app.use(classRoutes);
 app.use(ongoingClassRoutes);
 app.use(userSettingsRoutes);
+
 app.use(errorHandler);
 setupSwagger(app);
 
@@ -57,7 +66,6 @@ app.use((err: any, req: express.Request, res: express.Response) => {
 // Export the app for testing
 export { app };
 export default app;
-
 
 if (require.main === module) {
   app.listen(port, () => {

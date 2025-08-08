@@ -1,187 +1,57 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
-import type { CoachStackParamList } from '../../navigation/CoachNavigator';
-import type { ApiLiveClassResponse } from '../HomeScreen';
-import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
-import config from '../../config';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, FlatList } from 'react-native';
+import { RouteProp, useRoute } from '@react-navigation/native';
+import type { AuthStackParamList } from '../../navigation/AuthNavigator';
+import { useLiveSession } from '../../hooks/useLiveSession';
+import { useLeaderboard } from '../../hooks/useLeaderboard';
+import { coachStart, coachStop } from '../../hooks/useProgressActions';
+import { useClassTimer } from '../../hooks/useClassTimer';
 
-interface Participant {
-  userId: number;
-  firstName: string;
-  lastName: string;
-  score?: number;
-}
+type CoachRoute = RouteProp<AuthStackParamList, 'CoachLiveClass'>;
 
-const CoachLiveClassScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute<RouteProp<CoachStackParamList, 'CoachLiveClass'>>();
-  const { liveClassData } = route.params;
-  const [scores, setScores] = useState<{ [userId: number]: string }>(() =>
-    Object.fromEntries(
-      (liveClassData.participants as Participant[])?.map((p: Participant) => [
-        p.userId,
-        p.score?.toString() || '',
-      ]) || [],
-    ),
-  );
-  const [loading, setLoading] = useState(false);
+export default function CoachLiveClassScreen() {
+  const { params } = useRoute<CoachRoute>();
+  const classId = params.classId;
 
-  const handleScoreChange = (userId: number, value: string) => {
-    setScores((prev) => ({ ...prev, [userId]: value }));
-  };
-
-  const handleSubmitScores = async () => {
-    setLoading(true);
-    try {
-      const token = await getToken();
-      const payload = {
-        classId: liveClassData.class.classId,
-        scores: Object.entries(scores)
-          .filter(([_, val]) => val !== '' && !isNaN(Number(val)))
-          .map(([userId, val]) => ({
-            userId: Number(userId),
-            score: Number(val),
-          })),
-      };
-      await axios.post(`${config.BASE_URL}/submitScore`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      Alert.alert('Success', 'Scores submitted!');
-    } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.error || 'Failed to submit scores.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const session = useLiveSession(classId);
+  const leaderboard = useLeaderboard(classId);
+  const timer = useClassTimer(session?.started_at ?? null, session?.time_cap_seconds);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
+    <SafeAreaView style={s.container}>
+      <Text style={s.h}>Coach Panel</Text>
+      <Text style={s.sub}>Status: {session?.status ?? '—'}</Text>
+      <Text style={s.sub}>Timer: <Text style={s.timer}>{timer.fmt}</Text></Text>
+
+      <View style={s.row}>
+        <TouchableOpacity style={s.btn} onPress={() => coachStart(classId)}><Text style={s.btnTxt}>Start</Text></TouchableOpacity>
+        <TouchableOpacity style={s.btn} onPress={() => coachStop(classId)}><Text style={s.btnTxt}>Stop</Text></TouchableOpacity>
       </View>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.liveClassBanner}>
-          <View style={styles.liveClassLeft}>
-            <View style={styles.liveIndicator} />
-            <View>
-              <Text style={styles.liveLabel}>LIVE CLASS</Text>
-              <Text style={styles.liveClassName}>{liveClassData.class.workoutName}</Text>
-            </View>
+
+      <Text style={s.h}>Leaderboard</Text>
+      <FlatList
+        data={leaderboard}
+        keyExtractor={(r) => `${r.user_id}`}
+        renderItem={({ item, index }) => (
+          <View style={s.lbRow}>
+            <Text style={s.rank}>{index+1}</Text>
+            <Text style={s.score}>{item.display_score}</Text>
           </View>
-          <View style={styles.liveClassRight}>
-            <Text style={styles.liveInstructor}>Coach</Text>
-            <Text style={styles.liveCapacity}>
-              {(liveClassData.participants as Participant[])?.length ?? 0}/30
-            </Text>
-          </View>
-        </View>
-        {(liveClassData.participants as Participant[])?.map((p: Participant, idx: number) => (
-          <View key={p.userId} style={styles.participantRow}>
-            <Text style={styles.participantName}>
-              {p.firstName} {p.lastName}:
-            </Text>
-            <TextInput
-              style={styles.scoreInput}
-              value={scores[p.userId]}
-              onChangeText={(val) => handleScoreChange(p.userId, val)}
-              placeholder="input time"
-            />
-          </View>
-        ))}
-        <TouchableOpacity
-          style={styles.submitButton}
-          onPress={handleSubmitScores}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#1a1a1a" />
-          ) : (
-            <Text style={styles.submitButtonText}>Submit Scores</Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
+        )}
+      />
     </SafeAreaView>
   );
-};
+}
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a1a1a' },
-  header: { paddingHorizontal: 20, paddingTop: 10, width: '100%' },
-  backButton: {
-    backgroundColor: '#2a2a2a',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollContainer: { padding: 20, paddingBottom: 40 },
-  liveClassBanner: {
-    backgroundColor: '#D8FF3E',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  liveClassLeft: { flexDirection: 'row', alignItems: 'center' },
-  liveIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#20C934',
-    marginRight: 12,
-  },
-  liveLabel: {
-    color: '#1a1a1a',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  liveClassName: { color: '#1a1a1a', fontSize: 18, fontWeight: '700' },
-  liveClassRight: { alignItems: 'flex-end' },
-  liveInstructor: { color: '#1a1a1a', fontSize: 12, fontWeight: '500' },
-  liveCapacity: { color: '#1a1a1a', fontSize: 10, fontWeight: '700', marginTop: 2 },
-  participantRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  participantName: { color: 'white', fontSize: 16, flex: 1 },
-  scoreInput: {
-    backgroundColor: '#222',
-    color: 'white',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    minWidth: 100,
-    textAlign: 'center',
-    fontSize: 16,
-  },
-  submitButton: {
-    backgroundColor: '#D8FF3E',
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: 'center',
-    marginTop: 40,
-  },
-  submitButtonText: { color: '#1a1a1a', fontSize: 20, fontWeight: 'bold' },
+const s = StyleSheet.create({
+  container:{ flex:1, backgroundColor:'#1a1a1a', padding:16, gap:12 },
+  h:{ color:'white', fontSize:22, fontWeight:'800' },
+  sub:{ color:'#aaa' },
+  timer:{ color:'#D8FF3E', fontWeight:'800' },
+  row:{ flexDirection:'row', gap:10 },
+  btn:{ backgroundColor:'#D8FF3E', padding:12, borderRadius:8 },
+  btnTxt:{ color:'#111', fontWeight:'800' },
+  lbRow:{ flexDirection:'row', justifyContent:'space-between', backgroundColor:'#222', padding:12, borderRadius:8, marginVertical:6 },
+  rank:{ color:'#D8FF3E', fontWeight:'900' },
+  score:{ color:'white', fontWeight:'700' },
 });
-
-export default CoachLiveClassScreen;

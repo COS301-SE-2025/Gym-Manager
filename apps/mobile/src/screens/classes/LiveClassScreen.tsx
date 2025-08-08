@@ -1,269 +1,164 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useMemo, useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, TextInput, FlatList, Pressable, Dimensions } from 'react-native';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
-import type { ApiLiveClassResponse } from '../HomeScreen';
-import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
-import config from '../../config';
+import * as ScreenOrientation from 'expo-screen-orientation';
 
-const LiveClassScreen = () => {
-  const [score, setScore] = useState('');
-  const [loading, setLoading] = useState(false);
-  const navigation = useNavigation();
-  const route = useRoute<RouteProp<AuthStackParamList, 'LiveClass'>>();
-  const { liveClassData } = route.params;
+import { useLiveSession } from '../../hooks/useLiveSession';
+import { useLeaderboard } from '../../hooks/useLeaderboard';
+import { useMyProgress } from '../../hooks/useMyProgress';
+import { useProgressActions } from '../../hooks/useProgressActions';
+import { useClassTimer } from '../../hooks/useClassTimer';
 
-  const handleSubmitScore = async () => {
-    console.log({ classId: liveClassData.class.classId, score: Number(score) });
-    if (!score || isNaN(Number(score)) || Number(score) < 0) {
-      Alert.alert('Invalid Score', 'Please enter a valid score.');
-      return;
+type LiveRoute = RouteProp<AuthStackParamList, 'LiveClass'>;
+const { width, height } = Dimensions.get('window');
+
+export default function LiveClassScreen() {
+  const { params } = useRoute<LiveRoute>();
+  const classId = params.classId;
+
+  const session = useLiveSession(classId);
+  const leaderboard = useLeaderboard(classId);
+  const { progress } = useMyProgress(classId);
+  const { advance, submitPartial } = useProgressActions(classId);
+  const timer = useClassTimer(session?.started_at ?? null, session?.time_cap_seconds);
+  const [partial, setPartial] = useState('0');
+
+  // Lock to landscape during live
+  useEffect(() => {
+    if (session?.status === 'live') {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+    } else {
+      ScreenOrientation.unlockAsync();
     }
-    setLoading(true);
-    try {
-      const token = await getToken();
-      await axios.post(
-        `${config.BASE_URL}/submitScore`,
-        { classId: liveClassData.class.classId, score: Number(score) },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      Alert.alert('Success', 'Score submitted!');
-    } catch (err: any) {
-      console.log('Score submission error:', err.response?.data || err.message);
-      Alert.alert('Error', err.response?.data?.error || 'Failed to submit score.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => { ScreenOrientation.unlockAsync(); };
+  }, [session?.status]);
+
+  const view: 'overview'|'active'|'partial'|'results' = useMemo(() => {
+    if (!session) return 'overview';
+    if (session.status === 'ready') return 'overview';
+    if (session.status === 'live') return 'active';
+    // ended:
+    const finished = Boolean(progress.finished_at);
+    return finished ? 'results' : 'partial';
+  }, [session, progress.finished_at]);
+
+  const steps = session?.steps ?? [];
+  const current = steps[progress.current_step];
+  const next = steps[progress.current_step + 1];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
-      </View>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.scoreSection}>
-          <Text style={styles.scoreLabel}>Your Score</Text>
-          <TextInput
-            style={styles.scoreInput}
-            value={score}
-            onChangeText={setScore}
-            keyboardType="numeric"
-            maxLength={6}
-            textAlign="center"
-            editable={!loading}
-            placeholder="000"
-          />
-        </View>
+    <SafeAreaView style={s.container}>
+      {!session && <Text style={s.h}>Loading…</Text>}
 
-        <View style={styles.liveClassBanner}>
-          <View style={styles.liveClassLeft}>
-            <View style={styles.liveIndicator} />
-            <View>
-              <Text style={styles.liveLabel}>LIVE CLASS</Text>
-              <Text style={styles.liveClassName}>{liveClassData.class.workoutName}</Text>
+      {view === 'overview' && (
+        <View style={s.block}>
+          <Text style={s.h}>For Time</Text>
+          <Text style={s.sub}>Workout overview</Text>
+          <FlatList
+            data={steps}
+            keyExtractor={(it) => String(it.index)}
+            renderItem={({ item }) => <View style={s.card}><Text style={s.cardText}>{item.name}</Text></View>}
+          />
+          <Text style={s.note}>Waiting for coach to start…</Text>
+        </View>
+      )}
+
+      {view === 'active' && (
+        <View style={s.activeRoot}>
+          {/* Top bar: timer + mini leaderboard */}
+          <View style={s.topBar}>
+            <Text style={s.timer}>{timer.fmt}{session?.time_cap_seconds ? ` / ${Math.floor(session.time_cap_seconds/60)}m` : ''}</Text>
+            <View style={s.lbMini}>
+              {leaderboard.slice(0,3).map((r,i) => (
+                <Text key={r.user_id} style={s.lbMiniText}>{i+1}. {r.display_score}</Text>
+              ))}
             </View>
           </View>
-          <View style={styles.liveClassRight}>
-            <Text style={styles.liveInstructor}>Coach ID: {liveClassData.class.coachId}</Text>
-            <Text style={styles.liveCapacity}>
-              Participants:{' '}
-              {Array.isArray(liveClassData.participants) ? liveClassData.participants.length : 0}
-            </Text>
+
+          {/* Center labels */}
+          <View style={s.centerLabels}>
+            <Text style={s.label}>Current</Text>
+            <Text style={s.big}>{current?.name ?? '—'}</Text>
+            <Text style={s.label}>Next</Text>
+            <Text style={s.bigSmall}>{next?.name ?? '—'}</Text>
+          </View>
+
+          {/* Full screen left/right tap zones */}
+          <View style={s.tapsRow}>
+            <Pressable
+              style={s.tapLeft}
+              onPress={() => advance('prev')}
+              disabled={progress.current_step <= 0}
+            />
+            <Pressable
+              style={[s.tapRight, timer.capped && { opacity: 0.4 }]}
+              onPress={() => !timer.capped && advance('next')}
+            />
           </View>
         </View>
+      )}
 
-        <View style={styles.detailsContainer}>
-          <Text style={styles.detailsTitle}>Class Details</Text>
-          <View style={styles.detailsContent}>
-            <Text style={styles.detailsText}>{liveClassData.class.workoutContent}</Text>
-          </View>
+      {view === 'partial' && (
+        <View style={s.block}>
+          <Text style={s.h}>Time’s up!</Text>
+          <Text style={s.sub}>Enter reps completed on the last exercise:</Text>
+          <TextInput style={s.input} value={partial} onChangeText={setPartial} keyboardType="numeric" />
+          <TouchableOpacity style={s.cta} onPress={() => submitPartial(Number(partial))}>
+            <Text style={s.ctaTxt}>Submit</Text>
+          </TouchableOpacity>
+          <Text style={s.note}>After you submit, the leaderboard will update automatically.</Text>
         </View>
+      )}
 
-        <View style={styles.scoreConfirmationContainer}>
-          <Text style={styles.scoreConfirmationLabel}>Score</Text>
-          <View style={styles.scoreConfirmationValueContainer}>
-            <Text style={styles.scoreConfirmationValue}>{score}</Text>
-          </View>
+      {view === 'results' && (
+        <View style={s.block}>
+          <Text style={s.h}>Results</Text>
+          <FlatList
+            data={leaderboard}
+            keyExtractor={(r) => `${r.user_id}`}
+            renderItem={({ item, index }) => (
+              <View style={s.lbRow}>
+                <Text style={s.rank}>{index+1}</Text>
+                <Text style={s.score}>{item.display_score}</Text>
+              </View>
+            )}
+          />
         </View>
-
-        <TouchableOpacity
-          style={styles.submitButton}
-          onPress={handleSubmitScore}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#1a1a1a" />
-          ) : (
-            <Text style={styles.submitButtonText}>Submit Score</Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
+      )}
     </SafeAreaView>
   );
-};
+}
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#1a1a1a',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    width: '100%',
-  },
-  backButton: {
-    backgroundColor: '#2a2a2a',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  scrollContainer: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  scoreSection: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  scoreLabel: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    alignSelf: 'flex-start',
-    marginBottom: 10,
-  },
-  scoreInput: {
-    color: '#a0a0a0',
-    fontSize: 120,
-    fontWeight: 'bold',
-    minWidth: '80%',
-  },
-  liveClassBanner: {
-    backgroundColor: '#D8FF3E',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  liveClassLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  liveIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#20C934',
-    marginRight: 12,
-  },
-  liveLabel: {
-    color: '#1a1a1a',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  liveClassName: {
-    color: '#1a1a1a',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  liveClassRight: {
-    alignItems: 'flex-end',
-  },
-  liveInstructor: {
-    color: '#1a1a1a',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  liveCapacity: {
-    color: '#1a1a1a',
-    fontSize: 10,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  detailsContainer: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 30,
-    height: 200,
-  },
-  detailsTitle: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 10,
-  },
-  detailsContent: {
-    flex: 1,
-  },
-  detailsText: {
-    color: '#a0a0a0',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  scoreConfirmationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  scoreConfirmationLabel: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  scoreConfirmationValueContainer: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-  },
-  scoreConfirmationValue: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  submitButton: {
-    backgroundColor: '#D8FF3E',
-    paddingVertical: 18,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  submitButtonText: {
-    color: '#1a1a1a',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+const s = StyleSheet.create({
+  container:{ flex:1, backgroundColor:'#1a1a1a', padding:16 },
+  block:{ gap:12 },
+  h:{ color:'white', fontSize:22, fontWeight:'800' },
+  sub:{ color:'#aaa' },
+  note:{ color:'#888' },
+  card:{ backgroundColor:'#2a2a2a', padding:12, borderRadius:8, marginVertical:6 },
+  cardText:{ color:'white' },
+
+  activeRoot:{ flex:1, backgroundColor:'#1a1a1a' },
+  topBar:{ position:'absolute', top:8, left:12, right:12, flexDirection:'row', justifyContent:'space-between', zIndex:2 },
+  timer:{ color:'#D8FF3E', fontSize:22, fontWeight:'800' },
+  lbMini:{ alignItems:'flex-end' },
+  lbMiniText:{ color:'#D8FF3E', fontWeight:'800' },
+
+  centerLabels:{ position:'absolute', top: height * 0.2, left: 16, right: 16, alignItems:'center', zIndex:1 },
+  label:{ color:'#aaa', marginTop:6 },
+  big:{ color:'white', fontSize:26, fontWeight:'700', textAlign:'center', marginVertical:6 },
+  bigSmall:{ color:'#ddd', fontSize:18, fontWeight:'600', textAlign:'center' },
+
+  tapsRow:{ flex:1, flexDirection:'row' },
+  tapLeft:{ flex:1, backgroundColor:'transparent' },
+  tapRight:{ flex:1, backgroundColor:'transparent' },
+
+  input:{ backgroundColor:'#222', color:'white', padding:12, borderRadius:8, width:120 },
+  cta:{ backgroundColor:'#D8FF3E', padding:14, borderRadius:10, alignItems:'center' },
+  ctaTxt:{ color:'#111', fontWeight:'800' },
+
+  lbRow:{ flexDirection:'row', justifyContent:'space-between', backgroundColor:'#222', padding:12, borderRadius:8, marginVertical:6 },
+  rank:{ color:'#D8FF3E', fontWeight:'900' },
+  score:{ color:'white', fontWeight:'700' },
 });
-
-export default LiveClassScreen;

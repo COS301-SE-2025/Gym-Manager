@@ -47,12 +47,14 @@ export const getLeaderboard = async (req: Request, res: Response) => {
 };
 
 // GET /live/class
+// GET /live/class
 export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ success: false, error: 'UNAUTHORIZED' });
 
   const userId = req.user.userId;
   let roles = req.user.roles as string[] | undefined;
 
+  // Ensure we have roles
   if (!roles) {
     const rows = await db
       .select({ role: userroles.userRole })
@@ -61,14 +63,18 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
     roles = rows.map((r) => r.role as string);
   }
 
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const time = now.toTimeString().slice(0, 8);
-
   let current: any[] = [];
 
-  // ── coach branch ───────────────────────────────────────────────
+  // ----- COACH BRANCH -------------------------------------------------
   if (roles.includes('coach')) {
+    const coachWhere = and(
+      eq(classes.coachId, userId),
+      // class start <= now
+      sql`(classes.scheduled_date + classes.scheduled_time) <= now()`,
+      // class end >= now
+      sql`(classes.scheduled_date + classes.scheduled_time + (classes.duration_minutes || ' minutes')::interval) >= now()`
+    );
+
     current = await db
       .select({
         classId: classes.classId,
@@ -78,28 +84,15 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
         coachId: classes.coachId,
         workoutId: classes.workoutId,
         workoutName: workouts.workoutName,
-        // workoutContent: workouts.workoutContent,
       })
       .from(classes)
       .innerJoin(workouts, eq(classes.workoutId, workouts.workoutId))
-      .where(
-        and(
-          eq(classes.coachId, userId),
-          eq(classes.scheduledDate, today),
-          lte(classes.scheduledTime, time),
-          gte(
-            sql`(classes.scheduled_time + (classes.duration_minutes || ' minutes')::interval)`,
-            time,
-          ),
-        ),
-      )
+      .where(coachWhere)
       .limit(1);
 
     if (current.length) {
       const participants = await db
-        .select({
-          userId: classbookings.memberId,
-        })
+        .select({ userId: classbookings.memberId })
         .from(classbookings)
         .where(eq(classbookings.classId, current[0].classId));
 
@@ -112,8 +105,14 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
     }
   }
 
-  // ── member branch ──────────────────────────────────────────────
+  // ----- MEMBER BRANCH ------------------------------------------------
   if (roles.includes('member')) {
+    const memberWhere = and(
+      eq(classbookings.memberId, userId),
+      sql`(classes.scheduled_date + classes.scheduled_time) <= now()`,
+      sql`(classes.scheduled_date + classes.scheduled_time + (classes.duration_minutes || ' minutes')::interval) >= now()`
+    );
+
     current = await db
       .select({
         classId: classes.classId,
@@ -123,22 +122,11 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
         coachId: classes.coachId,
         workoutId: classes.workoutId,
         workoutName: workouts.workoutName,
-        // workoutContent: workouts.workoutContent,
       })
       .from(classes)
       .innerJoin(classbookings, eq(classes.classId, classbookings.classId))
       .innerJoin(workouts, eq(classes.workoutId, workouts.workoutId))
-      .where(
-        and(
-          eq(classbookings.memberId, userId),
-          eq(classes.scheduledDate, today),
-          lte(classes.scheduledTime, time),
-          gte(
-            sql`(classes.scheduled_time + (classes.duration_minutes || ' minutes')::interval)`,
-            time,
-          ),
-        ),
-      )
+      .where(memberWhere)
       .limit(1);
 
     if (current.length) {
@@ -150,9 +138,10 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
     }
   }
 
-  // ── nothing live ───────────────────────────────────────────────
+  // ----- NOTHING LIVE -------------------------------------------------
   res.json({ ongoing: false });
 };
+
 
 // POST /submitScore
 export const submitScore = async (req: AuthenticatedRequest, res: Response) => {

@@ -1,6 +1,6 @@
 // src/config.ts
 
-const BASE_URL = 'https://api-green-zeta-48.vercel.app';
+const BASE_URL = 'https://localhost:4000';
 
 const config = {
   BASE_URL,

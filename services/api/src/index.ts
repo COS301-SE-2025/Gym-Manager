@@ -13,6 +13,7 @@ import healthRoutes from './routes/health';
 import { requestTimeout } from './middleware/requestTimeout';
 import { errorHandler } from './middleware/errorHandler';
 import { setupSwagger } from './swagger';
+import './listeners/adminNotificationListener';
 
 const app = express();
 const port = process.env.PORT || 4000;

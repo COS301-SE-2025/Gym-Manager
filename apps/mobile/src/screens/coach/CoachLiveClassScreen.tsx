@@ -13,7 +13,7 @@ export default function CoachLiveClassScreen() {
   const classId = params?.classId as number;
 
   const session = useLiveSession(classId);
-  const leaderboard = useLeaderboard(classId);
+  const { rows: leaderboard } = useLeaderboard(classId);
 
   return (
     <SafeAreaView style={s.container}>

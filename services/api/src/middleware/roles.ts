@@ -1,25 +1,30 @@
-// Flexible roles middleware: supports req.user.role or req.user.roles (string[])
-import { Response, NextFunction } from 'express';
-import { AuthenticatedRequest } from './auth';
+// services/api/src/middleware/roles.ts
+import { Request, Response, NextFunction } from 'express';
+import { db } from '../db/client';
+import { userroles } from '../db/schema';
+import { eq } from 'drizzle-orm';
 
-export function roles(allowed: string[]) {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
-
-    // accept either a single role or an array of roles
-    const userRoles: string[] = Array.isArray(req.user.roles)
-      ? req.user.roles as string[]
-      : req.user.role
-      ? [String(req.user.role)]
-      : [];
-
-    const ok = allowed.some(r => userRoles.includes(r));
-    if (!ok) return res.status(403).json({ error: 'FORBIDDEN' });
-    next();
-  };
+export interface AuthedReq extends Request {
+  user?: { userId: number; roles?: string[] };
 }
 
-// Back-compat: keep your old API too
-export const requireRole = (role: string) => roles([role]);
+export const roles = (allowed: string[]) => {
+  return async (req: AuthedReq, res: Response, next: NextFunction) => {
+    if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
 
-export default roles;
+    let userRoles = req.user.roles;
+    if (!userRoles || userRoles.length === 0) {
+      const rows = await db
+        .select({ role: userroles.userRole })
+        .from(userroles)
+        .where(eq(userroles.userId, req.user.userId));
+      userRoles = rows.map(r => String(r.role));
+      req.user.roles = userRoles;
+    }
+
+    if (!allowed.some(r => userRoles?.includes(r))) {
+      return res.status(403).json({ error: 'FORBIDDEN' });
+    }
+    next();
+  };
+};

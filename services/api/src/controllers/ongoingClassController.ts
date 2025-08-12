@@ -88,6 +88,7 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
         coachId: classes.coachId,
         workoutId: classes.workoutId,
         workoutName: workouts.workoutName,
+        workoutType: workouts.type,
       })
       .from(classes)
       .innerJoin(workouts, eq(classes.workoutId, workouts.workoutId))
@@ -120,6 +121,7 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
         coachId: classes.coachId,
         workoutId: classes.workoutId,
         workoutName: workouts.workoutName,
+        workoutType: workouts.type,
       })
       .from(classes)
       .innerJoin(classbookings, eq(classes.classId, classbookings.classId))
@@ -140,13 +142,22 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
 };
 
 
-// GET /workout/:workoutId/steps  -> { steps, repsPerRound }
+// GET /workout/:workoutId/steps
+// GET /workout/:workoutId/steps  -> { steps, stepsCumReps, workoutType }
 export const getWorkoutSteps = async (req: AuthenticatedRequest, res: Response) => {
   const workoutId = Number(req.params.workoutId);
   if (!workoutId) return res.status(400).json({ error: 'INVALID_WORKOUT_ID' });
-  const { steps, repsPerRound } = await flattenWorkoutToSteps(workoutId);
-  res.json({ steps, repsPerRound });
+
+  const { steps, stepsCumReps } = await flattenWorkoutToSteps(workoutId);
+
+  const { rows } = await db.execute(sql`
+    select type from public.workouts where workout_id=${workoutId} limit 1
+  `);
+
+  res.json({ steps, stepsCumReps, workoutType: rows[0]?.type ?? 'FOR_TIME' });
 };
+
+
 
 
 
@@ -295,45 +306,109 @@ async function ensureProgressRow(classId: number, userId: number) {
 }
 
 
+// POST /coach/live/:classId/start  (coach)
 export const startLiveClass = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
 
-  const classId = Number(req.params.classId);
-  if (Number.isNaN(classId)) return res.status(400).json({ error: 'Invalid classId' });
+  try {
+    const classId = Number(req.params.classId);
+    if (!Number.isFinite(classId)) return res.status(400).json({ error: 'INVALID_CLASS_ID' });
 
-  // Validate class + get workout/duration
-  const cls = await db.execute(sql`
-    select class_id, workout_id, duration_minutes
-    from public.classes
-    where class_id = ${classId}
-  `);
-  const row = cls.rows[0] as any;
-  if (!row) return res.status(404).json({ error: 'Class not found' });
+    // Load class + workout/duration
+    const cls = await db.execute(sql`
+      select class_id, workout_id, duration_minutes
+      from public.classes
+      where class_id = ${classId}
+    `);
+    const row = cls.rows[0] as any;
+    if (!row) return res.status(404).json({ error: 'CLASS_NOT_FOUND' });
+    if (!row.workout_id) return res.status(400).json({ error: 'WORKOUT_NOT_ASSIGNED' });
 
-  // Flatten workout → steps + cumulative reps
-  const { steps, stepsCumReps } = await flattenWorkoutToSteps(Number(row.workout_id));
+    // Build steps/cumulative reps
+    const { steps, stepsCumReps } = await flattenWorkoutToSteps(Number(row.workout_id));
 
-  await db.execute(sql`
-    insert into public.class_sessions
-      (class_id, workout_id, status, time_cap_seconds, started_at, steps, steps_cum_reps)
-    values (
-      ${classId},
-      ${row.workout_id},
-      'live',
-      ${Number(row.duration_minutes) * 60},
-      now(),
-      ${JSON.stringify(steps)}::jsonb,
-      ${JSON.stringify(stepsCumReps)}::jsonb
-    )
-    on conflict (class_id) do update
-      set status='live',
-          time_cap_seconds=excluded.time_cap_seconds,
-          started_at=now(),
-          steps=excluded.steps,
-          steps_cum_reps=excluded.steps_cum_reps
-  `);
+    // Lookup workout type
+    const { rows: tw } = await db.execute(sql`
+      select type from public.workouts where workout_id=${row.workout_id} limit 1
+    `);
+    const workoutType = (tw[0]?.type as string) ?? 'FOR_TIME';
 
-  return res.json({ ok: true, classId, stepCount: steps.length });
+    // Upsert the live session (persist workout_type)
+    await db.execute(sql`
+      insert into public.class_sessions
+        (class_id, workout_id, status, time_cap_seconds, started_at, ended_at, steps, steps_cum_reps, workout_type)
+      values (
+        ${classId},
+        ${row.workout_id},
+        'live',
+        ${Number(row.duration_minutes) * 60},
+        now(),
+        null,
+        ${JSON.stringify(steps)}::jsonb,
+        ${JSON.stringify(stepsCumReps)}::jsonb,
+        ${workoutType}
+      )
+      on conflict (class_id) do update
+        set status           = 'live',
+            time_cap_seconds = excluded.time_cap_seconds,
+            started_at       = now(),
+            ended_at         = null,
+            steps            = excluded.steps,
+            steps_cum_reps   = excluded.steps_cum_reps,
+            workout_type     = excluded.workout_type
+    `);
+
+    // Clear stale partial reps on (re)start
+    await db.execute(sql`
+      update public.live_progress
+      set dnf_partial_reps = 0
+      where class_id = ${classId}
+    `);
+
+    // Optional full restart (?restart=1|true|yes)
+    const restartParam = String(req.query.restart ?? '').toLowerCase();
+    const restarted = restartParam === '1' || restartParam === 'true' || restartParam === 'yes';
+    if (restarted) {
+      await db.execute(sql`
+        update public.live_progress
+        set current_step = 0,
+            rounds_completed = 0,
+            finished_at  = null,
+            updated_at   = now()
+        where class_id = ${classId}
+      `);
+    }
+
+    // Return the fresh session row the client needs
+    const { rows: sessionRows } = await db.execute(sql`
+      select
+        class_id,
+        workout_id,
+        status,
+        time_cap_seconds,
+        started_at,
+        ended_at,
+        steps,
+        workout_type
+      from public.class_sessions
+      where class_id = ${classId}
+      limit 1
+    `);
+
+    if (!sessionRows.length) {
+      console.error('[startLiveClass] upsert succeeded but row not found', { classId });
+      return res.status(500).json({ error: 'SESSION_NOT_FOUND_AFTER_START' });
+    }
+
+    return res.json({
+      ok: true,
+      restarted,
+      session: sessionRows[0],
+    });
+  } catch (err) {
+    console.error('[startLiveClass] error', err);
+    return res.status(500).json({ error: 'START_LIVE_FAILED' });
+  }
 };
 
 
@@ -362,41 +437,104 @@ export const advanceProgress = async (req: AuthenticatedRequest, res: Response) 
 
   await ensureProgressRow(classId, userId);
 
-  // Step count
-  const sc = await db.execute(sql`
-    select coalesce(jsonb_array_length(steps),0) as step_count
-    from public.class_sessions
-    where class_id=${classId}
+  // Get workout type + step_count
+  const { rows: meta } = await db.execute(sql`
+    select w.type as workout_type, coalesce(jsonb_array_length(cs.steps),0) as step_count
+    from public.class_sessions cs
+    join public.workouts w on w.workout_id = cs.workout_id
+    where cs.class_id=${classId}
+    limit 1
   `);
-  const stepCount = Number(sc.rows[0]?.step_count ?? 0);
-  if (stepCount === 0) return res.status(400).json({ error: 'Class session not started' });
+  const workoutType = (meta[0]?.workout_type as string) ?? 'FOR_TIME';
+  const stepCount = Number(meta[0]?.step_count ?? 0);
+  if (stepCount === 0) return res.status(400).json({ error: 'CLASS_SESSION_NOT_STARTED' });
 
-  // Current progress
-  const prog = await db.execute(sql`
-    select current_step, finished_at
-    from public.live_progress
-    where class_id=${classId} and user_id=${userId}
+  if (workoutType === 'AMRAP') {
+    // wrap across steps; bump/decrement rounds_completed on wrap
+    const { rows } = await db.execute(sql`
+      with cur as (
+        select current_step, rounds_completed
+        from public.live_progress
+        where class_id=${classId} and user_id=${userId}
+        for update
+      ),
+      upd as (
+        update public.live_progress lp
+        set
+          current_step = case
+            when ${dir} > 0 then ((select current_step from cur) + 1) % ${stepCount}
+            else case
+              when (select current_step from cur) = 0 and (select rounds_completed from cur) > 0 then ${stepCount-1}
+              else greatest(0, (select current_step from cur) - 1)
+            end
+          end,
+          rounds_completed = case
+            when ${dir} > 0 and ((select current_step from cur) + 1) >= ${stepCount}
+              then (select rounds_completed from cur) + 1
+            when ${dir} < 0 and (select current_step from cur) = 0 and (select rounds_completed from cur) > 0
+              then (select rounds_completed from cur) - 1
+            else (select rounds_completed from cur)
+          end,
+          -- while navigating, don't keep any "partial"; it only applies at CAP/STOP
+          dnf_partial_reps = 0,
+          updated_at = now()
+        where lp.class_id=${classId} and lp.user_id=${userId}
+        returning current_step, rounds_completed
+      )
+      select * from upd;
+    `);
+
+    return res.json({
+      ok: true,
+      current_step: rows[0]?.current_step ?? 0,
+      finished: false   // AMRAP never "finishes" early
+    });
+  }
+
+  // Default: FOR_TIME (your original behavior)
+  const { rows } = await db.execute(sql`
+    with sc as (
+      select coalesce(jsonb_array_length(steps), 0) as step_count
+      from public.class_sessions
+      where class_id = ${classId}
+    ),
+    cur as (
+      select lp.current_step, (select step_count from sc) as step_count
+      from public.live_progress lp
+      where lp.class_id = ${classId} and lp.user_id = ${userId}
+      for update
+    ),
+    upd as (
+      update public.live_progress lp
+      set current_step = greatest(
+            0,
+            least((select current_step from cur) + ${dir}, (select step_count from cur))
+          ),
+          finished_at = case
+            when lp.finished_at is not null then lp.finished_at
+            when greatest(0, least((select current_step from cur) + ${dir}, (select step_count from cur))) >= (select step_count from cur)
+                then now()
+            else null
+          end,
+          dnf_partial_reps = case
+            when greatest(
+                  0,
+                  least((select current_step from cur) + ${dir}, (select step_count from cur))
+                ) < (select step_count from cur)
+              then 0
+            else lp.dnf_partial_reps
+          end,
+          updated_at = now()
+      where lp.class_id = ${classId} and lp.user_id = ${userId}
+      returning lp.current_step, lp.finished_at
+    )
+    select * from upd;
   `);
-  const current = Number(prog.rows[0]?.current_step ?? 0);
-  let next = current + dir;
-  next = Math.max(0, Math.min(stepCount, next));
 
-  const finished_at =
-    next >= stepCount
-      ? new Date()
-      : (prog.rows[0]?.finished_at ?? null);
-
-  await db.execute(sql`
-    update public.live_progress
-    set current_step=${next},
-        finished_at=${finished_at},
-        updated_at=now()
-    where class_id=${classId} and user_id=${userId}
-  `);
-
-  // Trigger recomputes leaderboard; phones get Realtime event
-  return res.json({ ok: true, current_step: next, finished: Boolean(finished_at) });
+  return res.json({ ok: true, current_step: rows[0]?.current_step ?? 0, finished: !!rows[0]?.finished_at });
 };
+
+
 
 // POST /live/:classId/partial  body: { reps: number } (member after cap) */
 export const submitPartial = async (req: AuthenticatedRequest, res: Response) => {
@@ -428,4 +566,19 @@ export const getRealtimeLeaderboard = async (req: Request, res: Response) => {
     order by sort_key asc
   `);
   res.json(result.rows);
+};
+
+
+export const getMyProgress = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+  const classId = Number(req.params.classId);
+  const userId = Number(req.user.userId);
+
+  const { rows } = await db.execute(sql`
+    select current_step, finished_at, dnf_partial_reps
+    from public.live_progress
+    where class_id=${classId} and user_id=${userId}
+  `);
+
+  res.json(rows[0] ?? { current_step: 0, finished_at: null, dnf_partial_reps: 0 });
 };

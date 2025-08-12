@@ -15,6 +15,7 @@ import {
   submitPartial,
   getRealtimeLeaderboard,
   getWorkoutSteps,
+  getMyProgress,
 } from '../controllers/ongoingClassController';
 
 const router = express.Router();
@@ -23,6 +24,8 @@ router.get('/live/class', isAuthenticated, getLiveClass);
 router.get('/workout/:workoutId/steps', isAuthenticated, getWorkoutSteps);
 router.get('/leaderboard/:classId', isAuthenticated, getLeaderboard);
 router.post('/submitScore', isAuthenticated, submitScore);
+router.get('/live/:classId/me', isAuthenticated, getMyProgress);
+
 
 
 // Coach controls

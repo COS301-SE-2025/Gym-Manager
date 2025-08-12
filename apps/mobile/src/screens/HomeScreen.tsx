@@ -65,6 +65,7 @@ export interface ApiLiveClassResponse {
     workoutId: number;
     workoutName: string;
     workoutContent: string;
+    workoutType: 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA';
   };
   participants: {
     userId: number;

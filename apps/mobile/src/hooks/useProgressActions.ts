@@ -3,18 +3,36 @@ import config from '../config';
 import { getToken } from '../utils/authStorage';
 
 export function useProgressActions(classId: number) {
-  async function advance(direction: 'next'|'prev' = 'next') {
+  const advance = async (direction: 'next' | 'prev') => {
     const token = await getToken();
-    await axios.post(`${config.BASE_URL}/live/${classId}/advance`, { direction }, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-  }
-  async function submitPartial(reps: number) {
+    await axios.post(
+      `${config.BASE_URL}/live/${classId}/advance`,
+      { direction },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    // Return fresh progress so the screen can update immediately
+    const { data } = await axios.get(
+      `${config.BASE_URL}/live/${classId}/me`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return data as { current_step:number; finished_at:string|null; dnf_partial_reps:number };
+  };
+
+  const submitPartial = async (reps: number) => {
     const token = await getToken();
-    await axios.post(`${config.BASE_URL}/live/${classId}/partial`, { reps }, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-  }
+    await axios.post(
+      `${config.BASE_URL}/live/${classId}/partial`,
+      { reps },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    // fetch again so leaderboard/progress is in sync
+    const { data } = await axios.get(
+      `${config.BASE_URL}/live/${classId}/me`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return data;
+  };
+
   return { advance, submitPartial };
 }
 

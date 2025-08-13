@@ -254,16 +254,30 @@ export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
 
 
 // ============ HELPERS FOR LIVE CLASSES ============
-type Step = { index:number; name:string; reps?:number; duration?:number; round:number; subround:number };
+type Step = {
+  index: number;
+  name: string;
+  reps?: number;
+  duration?: number;
+  round: number;
+  subround: number;
+  is_rest: boolean;        // NEW
+  exercise: string;        // NEW (raw exercise name)
+};
 
 async function flattenWorkoutToSteps(workoutId: number): Promise<{
   steps: Step[];
-  stepsCumReps: number[]; // NEW
+  stepsCumReps: number[];
 }> {
   const result = await db.execute(sql`
     select
-      r.round_number, sr.subround_number, se.position,
-      e.name, se.quantity_type, se.quantity
+      r.round_number,
+      sr.subround_number,
+      se.position,
+      e.name as exercise_name,
+      se.quantity_type,
+      se.quantity,
+      coalesce(se.notes, '') as notes
     from public.rounds r
     join public.subrounds sr on sr.round_id = r.round_id
     join public.subround_exercises se on se.subround_id = sr.subround_id
@@ -274,18 +288,27 @@ async function flattenWorkoutToSteps(workoutId: number): Promise<{
 
   const rows = result.rows as any[];
 
-  const steps: Step[] = rows.map((row, idx) => ({
-    index: idx,
-    name: row.quantity_type === 'reps'
-      ? `${row.quantity}x ${row.name}`
-      : `${row.name} ${row.quantity}s`,
-    reps: row.quantity_type === 'reps' ? Number(row.quantity) : undefined,
-    duration: row.quantity_type === 'duration' ? Number(row.quantity) : undefined,
-    round: Number(row.round_number),
-    subround: Number(row.subround_number),
-  }));
+  const steps: Step[] = rows.map((row, idx) => {
+    const isRest =
+      String(row.notes).toLowerCase() === 'rest' ||
+      String(row.exercise_name).toLowerCase() === 'rest';
 
-  // cumulative reps after each step
+    return {
+      index: idx,
+      name:
+        row.quantity_type === 'reps'
+          ? `${row.quantity}x ${row.exercise_name}`
+          : `${row.exercise_name} ${row.quantity}s`,
+      reps: row.quantity_type === 'reps' ? Number(row.quantity) : undefined,
+      duration: row.quantity_type === 'duration' ? Number(row.quantity) : undefined,
+      round: Number(row.round_number),
+      subround: Number(row.subround_number),
+      is_rest: isRest,
+      exercise: String(row.exercise_name),
+    };
+  });
+
+  // cumulative reps after each step (for DNF ordering where relevant)
   const stepsCumReps: number[] = [];
   let running = 0;
   for (const s of steps) {
@@ -559,14 +582,53 @@ export const submitPartial = async (req: AuthenticatedRequest, res: Response) =>
 // GET /live/:classId/leaderboard
 export const getRealtimeLeaderboard = async (req: Request, res: Response) => {
   const classId = Number(req.params.classId);
-  const result = await db.execute(sql`
-    select *
-    from public.leaderboard
-    where class_id=${classId}
-    order by sort_key asc
-  `);
-  res.json(result.rows);
+  if (!Number.isFinite(classId)) return res.status(400).json({ error: 'INVALID_CLASS_ID' });
+
+  try {
+    // Determine workout type for this class
+    const { rows: w } = await db.execute(sql`
+      select w.type
+      from public.classes c
+      join public.workouts w on w.workout_id = c.workout_id
+      where c.class_id = ${classId}
+      limit 1
+    `);
+    const type = (w[0]?.type ?? '').toString().toUpperCase();
+
+    // INTERVAL / TABATA: sum reps by user from live_interval_scores
+    if (type === 'INTERVAL' || type === 'TABATA') {
+      const { rows } = await db.execute(sql`
+        select
+          lis.class_id,
+          lis.user_id,
+          sum(lis.reps)::int as total_reps,
+          /* unify contract fields expected by the mobile hook */
+          false as finished,
+          null::numeric as elapsed_seconds,
+          1 as sort_bucket,
+          -sum(lis.reps)::numeric as sort_key
+        from public.live_interval_scores lis
+        where lis.class_id = ${classId}
+        group by lis.class_id, lis.user_id
+        order by total_reps desc
+      `);
+      return res.json(rows);
+    }
+
+    // Default (FOR_TIME / AMRAP): use existing computed view
+    const result = await db.execute(sql`
+      select class_id, user_id, finished, elapsed_seconds, total_reps, sort_bucket, sort_key
+      from public.leaderboard
+      where class_id = ${classId}
+      order by sort_key asc
+    `);
+    return res.json(result.rows);
+  } catch (err) {
+    console.error('[getRealtimeLeaderboard] error', err);
+    return res.status(500).json({ error: 'LEADERBOARD_FAILED' });
+  }
 };
+
 
 
 export const getMyProgress = async (req: AuthenticatedRequest, res: Response) => {

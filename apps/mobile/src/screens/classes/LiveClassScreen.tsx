@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar,
-  TextInput, ActivityIndicator, FlatList, Modal
+  TextInput, ActivityIndicator, FlatList, Modal, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
@@ -9,37 +9,33 @@ import { useLiveSession } from '../../hooks/useLiveSession';
 import { useMyProgress } from '../../hooks/useMyProgress';
 import { useProgressActions } from '../../hooks/useProgressActions';
 import { useLeaderboard } from '../../hooks/useLeaderboard';
-import { useIntervalLeaderboard } from '../../hooks/useIntervalLeaderboard';
 import axios from 'axios';
 import config from '../../config';
 import { getToken } from '../../utils/authStorage';
 
 type R = RouteProp<AuthStackParamList, 'LiveClass'>;
+type Step = { index:number; name:string; reps?:number; duration?:number; round:number; subround:number };
 
-type Step = {
-  index: number;
-  name: string;
-  reps?: number;
-  duration?: number;
-  round: number;
-  subround: number;
-  is_rest?: boolean;
-};
+async function submitIntervalRepsApi(classId: number, stepIndex: number, reps: number) {
+  const token = await getToken();
+  await axios.post(
+    `${config.BASE_URL}/live/${classId}/interval/score`,
+    { stepIndex, reps },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+}
 
 export default function LiveClassScreen() {
   const { params } = useRoute<R>();
   const classId = params?.classId as number;
   const workoutId = params?.liveClassData?.class?.workoutId as number | undefined;
-  const workoutTypeFromRoute = params?.liveClassData?.class?.workoutType as
-    | 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA' | 'INTERVAL' | undefined;
 
   const session = useLiveSession(classId);
   const { progress, refresh: refreshProgress, setProgress } = useMyProgress(classId);
   const { advance, submitPartial } = useProgressActions(classId);
-  const { rows: timeLb } = useLeaderboard(classId);           // FOR_TIME
-  const { rows: intervalLb } = useIntervalLeaderboard(classId); // TABATA/INTERVAL
+  const { rows: leaderboard } = useLeaderboard(classId);
 
-  // stopwatch
+  // ===== Shared timer for the session =====
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
     if (!session?.started_at) return;
@@ -51,137 +47,144 @@ export default function LiveClassScreen() {
     return () => clearInterval(id);
   }, [session?.started_at]);
 
-  // fallback steps/type pre-start
+  // ===== Fallback steps pre-start =====
   const [fallbackSteps, setFallbackSteps] = useState<Step[]>([]);
-  const [fallbackType, setFallbackType] = useState<'FOR_TIME'|'AMRAP'|'EMOM'|'TABATA'|'INTERVAL'>('FOR_TIME');
-
   useEffect(() => {
     const fetchFallback = async () => {
       if (!workoutId || session) return;
       const token = await getToken();
-      const { data } = await axios.get(
-        `${config.BASE_URL}/workout/${workoutId}/steps`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const { data } = await axios.get(`${config.BASE_URL}/workout/${workoutId}/steps`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setFallbackSteps((data?.steps ?? []) as Step[]);
-      if (data?.workoutType) setFallbackType(data.workoutType);
     };
     fetchFallback();
   }, [session, workoutId]);
 
-  const steps: Step[] = (session?.steps as Step[] | undefined) ?? fallbackSteps;
-  const mode: 'FOR_TIME'|'AMRAP'|'EMOM'|'TABATA'|'INTERVAL' =
-    (session?.workout_type as any) ?? workoutTypeFromRoute ?? fallbackType;
+  const steps = (session?.steps as Step[] | undefined) ?? fallbackSteps;
+  const stepCount = steps.length;
+
+  // ===== Workout type detection =====
+  const workoutType = (session?.['workout_type'] as string | undefined)?.toUpperCase?.();
+  const inferredInterval =
+    steps.length > 0 && steps.every(s => typeof s.duration === 'number' && !s.reps);
+  const isInterval = workoutType === 'INTERVAL' || workoutType === 'TABATA' || inferredInterval;
+
+  // ===== FOR TIME / AMRAP state (unchanged) =====
+  const cap = session?.time_cap_seconds ?? 0;
+  const inCap = cap === 0 ? true : elapsed <= cap;
   const status = session?.status ?? 'ready';
 
-  const timeCap = session?.time_cap_seconds ?? 0;
-  const inCap = timeCap === 0 ? true : elapsed <= timeCap;
-
-  /* ================= FOR_TIME / AMRAP existing path ================= */
-
-  const ftOrAmrap = mode === 'FOR_TIME' || mode === 'AMRAP';
-  const stepCount = steps.length;
   const currentIdx = Math.max(0, Math.min(stepCount, progress.current_step ?? 0));
-  const ft_next =
-    stepCount === 0 ? undefined :
-    mode === 'AMRAP' ? steps[(currentIdx + 1) % stepCount] : steps[currentIdx + 1];
+  const current = steps[currentIdx];
+  const nextStep = steps[currentIdx + 1];
 
-  const logicallyFinishedFT = currentIdx >= stepCount;
-  const finishedFT = mode === 'FOR_TIME'
-    ? Boolean(progress.finished_at) || logicallyFinishedFT
-    : false;
+  const logicallyFinished = currentIdx >= stepCount;
+  const finished = Boolean(progress.finished_at) || logicallyFinished;
 
-  // AMRAP completed-partial toggle
-  const [submittedPartial, setSubmittedPartial] = useState(false);
+  const canGoBack = !finished && status === 'live' && inCap && currentIdx > 0;
+  const canGoNext = !finished && status === 'live' && inCap && currentIdx < stepCount;
 
-  /* ================= INTERVAL/TABATA path (auto-timed) ================ */
+  const onBack = async () => {
+    if (!canGoBack) return;
+    setProgress(p => ({ ...p, current_step: Math.max(0, (p.current_step ?? 0) - 1), finished_at: null }));
+    try { await advance('prev'); } finally { refreshProgress(); }
+  };
+  const onNext = async () => {
+    if (!canGoNext) return;
+    setProgress(p => ({ ...p, current_step: Math.min(stepCount, (p.current_step ?? 0) + 1) }));
+    try { await advance('next'); } finally { refreshProgress(); }
+  };
 
-  const intervalMode = mode === 'TABATA' || mode === 'INTERVAL';
+  // ===== INTERVAL/TABATA derived by time =====
+  const stepDurations = useMemo(() => steps.map(s => Math.max(0, Number(s.duration ?? 0))), [steps]);
 
-  // durations per step (must be defined for interval workouts)
-  const durations = useMemo(
-    () => steps.map(s => Number(s.duration ?? 0)),
-    [steps]
-  );
-  const cycleSeconds = useMemo(
-    () => durations.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0),
-    [durations]
-  );
-
-  // compute which step should be active by time
-  const intervalIdx = useMemo(() => {
-    if (!intervalMode || !cycleSeconds) return 0;
-    const t = timeCap ? Math.min(elapsed, timeCap) : elapsed;
-    const mod = cycleSeconds ? (t % cycleSeconds) : t;
-
-    let acc = 0;
-    for (let i = 0; i < durations.length; i++) {
-      const d = durations[i] || 0;
-      if (mod < acc + d) return i;
-      acc += d;
+  const intervalIdxInfo = useMemo(() => {
+    if (!isInterval || steps.length === 0 || !session?.started_at) {
+      return { idx: 0, within: 0, remain: 0 };
     }
-    return Math.max(0, durations.length - 1);
-  }, [intervalMode, elapsed, timeCap, durations, cycleSeconds]);
-
-  const intervalTimeLeft = useMemo(() => {
-    if (!intervalMode || !cycleSeconds) return 0;
-    const t = timeCap ? Math.min(elapsed, timeCap) : elapsed;
-    const mod = t % (cycleSeconds || 1);
+    const ceiling = cap > 0 ? Math.min(elapsed, cap) : elapsed;
     let acc = 0;
-    for (let i = 0; i < durations.length; i++) {
-      const d = durations[i] || 0;
-      if (mod < acc + d) return Math.max(0, Math.floor(acc + d - mod));
-      acc += d;
+    let idx = 0;
+    while (idx < stepDurations.length && ceiling >= acc + stepDurations[idx]) {
+      acc += stepDurations[idx];
+      idx++;
     }
-    return 0;
-  }, [intervalMode, elapsed, timeCap, durations, cycleSeconds]);
+    const within = Math.max(0, ceiling - acc);
+    const remain = Math.max(0, (stepDurations[idx] ?? 0) - within);
+    return { idx: Math.min(idx, stepDurations.length - 1), within, remain };
+  }, [isInterval, steps.length, session?.started_at, elapsed, cap, stepDurations]);
 
-  // detect step boundary → prompt for reps if previous step was a WORK step
+  const intervalIdx = intervalIdxInfo.idx;
+  const intervalCurrent = steps[intervalIdx];
+  const intervalNext = steps[intervalIdx + 1];
+
+  const endOfIntervalTime = isInterval && (status === 'ended' || !inCap);
+
+  function isRestStep(step?: Step) {
+    const n = (step?.name ?? '').toLowerCase();
+    return n.includes('rest');
+  }
+
+  // Prompt when a work step ends (index advances)
+  const prevIdxRef = useRef<number>(intervalIdx);
   const [promptOpen, setPromptOpen] = useState(false);
-  const [promptVal, setPromptVal] = useState('');
-  const [pendingIndex, setPendingIndex] = useState<number | null>(null);
-  const prevIdx = useRef<number>(-1);
+  const [promptForStep, setPromptForStep] = useState<number | null>(null);
+  const [promptValue, setPromptValue] = useState<string>('');
+  const [scoredSteps, setScoredSteps] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (!intervalMode || status !== 'live' || !inCap || durations.length === 0) return;
+    if (!isInterval || status !== 'live') return;
 
-    const cur = intervalIdx;
-    const prev = prevIdx.current;
+    const prev = prevIdxRef.current;
+    const nowIdx = intervalIdx;
 
-    // boundary crossed
-    if (prev !== -1 && cur !== prev && !promptOpen) {
-      const justEnded = prev;
-      const endedStep = steps[justEnded];
+    if (nowIdx !== prev) {
+      const justEndedIdx = prev;
+      const justEnded = steps[justEndedIdx];
 
-      // only collect reps for WORK steps (not rest)
-      const workLike = endedStep && !endedStep.is_rest;
-      if (workLike) {
-        setPendingIndex(justEnded);
-        setPromptVal('');
+      if (justEnded && !isRestStep(justEnded) && !scoredSteps.has(justEndedIdx)) {
+        setPromptForStep(justEndedIdx);
+        setPromptValue('');
         setPromptOpen(true);
       }
+      prevIdxRef.current = nowIdx;
     }
-    prevIdx.current = cur;
-  }, [intervalMode, intervalIdx, status, inCap, durations.length, steps, promptOpen]);
+  }, [isInterval, status, intervalIdx, steps, scoredSteps]);
 
-  // After time cap or ended: if a prompt is still open we let them submit;
-  // once submitted, show final leaderboard.
+  // If the class ends or cap hits while still inside a WORK step, prompt once
+  const endPromptedRef = useRef(false);
+  useEffect(() => {
+    if (!isInterval) return;
+    if (!endOfIntervalTime) return;
+    if (endPromptedRef.current) return;
 
-  /* ================= Render helpers ================= */
+    const step = intervalCurrent;
+    if (step && !isRestStep(step) && !scoredSteps.has(intervalIdx) && !promptOpen) {
+      setPromptForStep(intervalIdx);
+      setPromptValue('');
+      setPromptOpen(true);
+      endPromptedRef.current = true;
+    }
+  }, [isInterval, endOfIntervalTime, intervalCurrent, intervalIdx, scoredSteps, promptOpen]);
 
-  const label = intervalMode ? (mode === 'TABATA' ? 'TABATA' : 'INTERVAL')
-              : (mode === 'AMRAP' ? 'AMRAP' : 'For Time');
+  const submitIntervalReps = async () => {
+    const n = Math.max(0, Number(promptValue) || 0);
+    if (promptForStep == null) return;
+    try {
+      await submitIntervalRepsApi(classId, promptForStep, n);
+      setScoredSteps(s => new Set(s).add(promptForStep));
+      setPromptOpen(false);
+      setPromptForStep(null);
+      setPromptValue('');
+      // After final save at session end/cap -> results view appears automatically
+    } catch {
+      /* keep modal open on error */
+    }
+  };
 
-  const timerText = intervalMode
-    ? fmtTime(Math.max(0, (session?.time_cap_seconds ?? 0) - elapsed))  // countdown class
-    : (mode === 'AMRAP' ? fmtTime(Math.max(0, (session?.time_cap_seconds ?? 0) - elapsed))
-                        : fmtTime(elapsed));                              // FT: stopwatch
-
-  const LB = intervalMode ? intervalLb : timeLb;
-
-  /* ================= Render ================= */
-
-  if ((!session && steps.length === 0) || (!steps || steps.length === 0)) {
+  // ====== render branches ======
+  if (!session && steps.length === 0) {
     return shell(<ActivityIndicator size="large" />);
   }
 
@@ -189,94 +192,92 @@ export default function LiveClassScreen() {
   if (!session || status === 'ready') {
     return shell(
       <>
-        <Text style={styles.heading}>{label}</Text>
-        {!!session?.time_cap_seconds && (
+        <Text style={styles.heading}>
+          {isInterval ? 'Interval / Tabata' : 'For Time'}
+        </Text>
+        {session?.time_cap_seconds ? (
           <Text style={styles.subtle}>Time cap: {fmtTime(session.time_cap_seconds)}</Text>
-        )}
+        ) : null}
         <WorkoutCard steps={steps} />
-        <MiniLB rows={LB} />
+        <MiniLB rows={leaderboard} />
         <Text style={styles.hint}>Waiting for coach to start…</Text>
       </>
     );
   }
 
-  // ended / capped
-  const classEnded = status === 'ended';
-  const cappedByTimer = !inCap;
-
-  if (classEnded || cappedByTimer) {
-    // FOR_TIME → partial if not finished; AMRAP → needs partial until submittedPartial
-    if (ftOrAmrap) {
-      const needsPartial = (mode === 'FOR_TIME' ? !finishedFT : !submittedPartial);
-      return needsPartial
-        ? shell(
-            <CappedCard
-              mode={mode as any}
-              onSubmit={async n => {
-                await submitPartial(n);
-                if (mode === 'AMRAP') setSubmittedPartial(true);
-                await refreshProgress();
-              }}
-              leaderboard={LB}
-            />
-          )
-        : shell(<CompletedCard leaderboard={LB} />);
+  // ===== INTERVAL/TABATA =====
+  if (isInterval) {
+    // If time ended or coach stopped: show prompt if needed, otherwise results
+    if (endOfIntervalTime) {
+      return shell(
+        <>
+          {!promptOpen ? (
+            <>
+              <Text style={styles.heading}>Session complete</Text>
+              <MiniLB rows={leaderboard} />
+            </>
+          ) : null}
+          <IntervalPrompt
+            open={promptOpen}
+            title={`Enter reps for: ${steps[promptForStep ?? 0]?.name ?? ''}`}
+            value={promptValue}
+            onChange={setPromptValue}
+            onClose={() => setPromptOpen(false)}
+            onSubmit={submitIntervalReps}
+          />
+        </>
+      );
     }
 
-    // INTERVAL/TABATA: just show final LB (we’ve been collecting per-interval reps)
-    if (!promptOpen) {
-      return shell(<CompletedCard leaderboard={LB} />);
-    }
-    // if a prompt is still open, show the prompt so the last interval can be recorded
-  }
-
-  // LIVE — FOR_TIME/AMRAP path
-  if (status === 'live' && ftOrAmrap) {
-    const nextLabel =
-      stepCount === 0 ? '—' :
-      mode === 'AMRAP' ? steps[(currentIdx + 1) % stepCount]?.name ?? '—'
-                       : steps[currentIdx + 1]?.name ?? '—';
-
-    const canGoNext = (mode === 'AMRAP' ? stepCount > 0 : currentIdx < stepCount) && inCap && !finishedFT;
-    const canGoBack = (mode === 'AMRAP'
-      ? (stepCount > 0 && (currentIdx > 0 || (progress.rounds_completed ?? 0) > 0))
-      : currentIdx > 0) && inCap && !finishedFT;
-
-    const current = steps[currentIdx];
-
+    // Live interval screen
     return shell(
       <>
-        <Text style={styles.timer}>{timerText}</Text>
-        {mode === 'AMRAP' ? (
-          <Text style={styles.round}>Rounds: {progress.rounds_completed ?? 0}</Text>
-        ) : (
-          <Text style={styles.round}>Round {current?.round ?? 1}</Text>
-        )}
+        <Text style={styles.timer}>{fmtTime(elapsed)}</Text>
+        <Text style={styles.round}>
+          Step {intervalIdx + 1} / {stepCount}
+        </Text>
+        <Text style={styles.current}>{intervalCurrent?.name ?? '—'}</Text>
+        <Text style={styles.next}>Next: {intervalNext?.name ?? '—'}</Text>
+        <MiniLB rows={leaderboard} />
+        <IntervalPrompt
+          open={promptOpen}
+          title={`Enter reps for: ${steps[promptForStep ?? 0]?.name ?? ''}`}
+          value={promptValue}
+          onChange={setPromptValue}
+          onClose={() => setPromptOpen(false)}
+          onSubmit={submitIntervalReps}
+        />
+      </>
+    );
+  }
+
+  // ===== FOR TIME / AMRAP =====
+  if (status === 'ended') {
+    return finished
+      ? shell(<CompletedCard leaderboard={leaderboard} />)
+      : shell(<CappedCard onSubmit={async n => { await submitPartial(n); await refreshProgress(); }} leaderboard={leaderboard} />);
+  }
+
+  if (!inCap) {
+    return finished
+      ? shell(<CompletedCard leaderboard={leaderboard} />)
+      : shell(<CappedCard onSubmit={async n => { await submitPartial(n); await refreshProgress(); }} leaderboard={leaderboard} />);
+  }
+
+  if (status === 'live') {
+    if (finished) return shell(<CompletedCard leaderboard={leaderboard} />);
+    return shell(
+      <>
+        <Text style={styles.timer}>{fmtTime(elapsed)}</Text>
+        <Text style={styles.round}>Round {current?.round ?? 1}</Text>
         <Text style={styles.current}>{current?.name ?? '—'}</Text>
-        <Text style={styles.next}>Next: {nextLabel}</Text>
+        <Text style={styles.next}>Next: {nextStep?.name ?? '—'}</Text>
 
         <View style={styles.navRow}>
           <TouchableOpacity
             style={[styles.navBtn, canGoBack ? styles.back : styles.disabled]}
             disabled={!canGoBack}
-            onPress={async () => {
-              if (!canGoBack) return;
-              if (mode === 'AMRAP' && stepCount > 0) {
-                setProgress(p => {
-                  const cur = p.current_step ?? 0;
-                  if (cur > 0) return { ...p, current_step: cur - 1 };
-                  const hasPrevRound = (p.rounds_completed ?? 0) > 0;
-                  return {
-                    ...p,
-                    current_step: hasPrevRound ? stepCount - 1 : 0,
-                    rounds_completed: hasPrevRound ? Math.max(0, (p.rounds_completed ?? 0) - 1) : (p.rounds_completed ?? 0)
-                  };
-                });
-              } else {
-                setProgress(p => ({ ...p, current_step: Math.max(0, (p.current_step ?? 0) - 1), finished_at: null }));
-              }
-              try { await advance('prev'); } finally { await refreshProgress(); }
-            }}
+            onPress={onBack}
           >
             <Text style={[styles.navText, !canGoBack && styles.navTextDisabled]}>Back</Text>
           </TouchableOpacity>
@@ -284,91 +285,13 @@ export default function LiveClassScreen() {
           <TouchableOpacity
             style={[styles.navBtn, canGoNext ? styles.nextBtn : styles.disabled]}
             disabled={!canGoNext}
-            onPress={async () => {
-              if (!canGoNext) return;
-              if (mode === 'AMRAP' && stepCount > 0) {
-                setProgress(p => {
-                  const cur = p.current_step ?? 0;
-                  const next = (cur + 1) % stepCount;
-                  const addRound = (cur + 1) >= stepCount ? 1 : 0;
-                  return { ...p, current_step: next, rounds_completed: (p.rounds_completed ?? 0) + addRound };
-                });
-              } else {
-                setProgress(p => ({ ...p, current_step: Math.min(stepCount, (p.current_step ?? 0) + 1) }));
-              }
-              try { await advance('next'); } finally { await refreshProgress(); }
-            }}
+            onPress={onNext}
           >
             <Text style={[styles.navTextDark, !canGoNext && styles.navTextDisabledDark]}>Next</Text>
           </TouchableOpacity>
         </View>
 
-        <MiniLB rows={LB} />
-      </>
-    );
-  }
-
-  // LIVE — INTERVAL/TABATA path
-  if (status === 'live' && intervalMode) {
-    const cur = steps[intervalIdx];
-    const next = steps[(intervalIdx + 1) % steps.length];
-
-    return shell(
-      <>
-        <Text style={styles.timer}>{timerText}</Text>
-        <Text style={styles.round}>
-          Interval {intervalIdx + 1} / {steps.length} · {intervalTimeLeft}s left
-        </Text>
-        <Text style={styles.current}>{cur?.name ?? '—'}</Text>
-        <Text style={styles.next}>Next: {next?.name ?? '—'}</Text>
-
-        <MiniLB rows={LB} />
-
-        {/* Prompt modal after each work interval */}
-        <Modal visible={promptOpen} transparent animationType="fade">
-          <View style={styles.modalBackdrop}>
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>Enter reps for "{steps[pendingIndex ?? 0]?.name}"</Text>
-              <TextInput
-                style={styles.input}
-                keyboardType="numeric"
-                value={promptVal}
-                onChangeText={setPromptVal}
-                placeholder="0"
-                placeholderTextColor="#666"
-                autoFocus
-              />
-              <TouchableOpacity
-                style={styles.submitBtn}
-                onPress={async () => {
-                  const reps = Math.max(0, Number(promptVal) || 0);
-                  const token = await getToken();
-                  await axios.post(
-                    `${config.BASE_URL}/live/${classId}/interval/score`,
-                    { stepIndex: pendingIndex, reps },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                  );
-                  setPromptOpen(false);
-                  setPendingIndex(null);
-                  setPromptVal('');
-                }}
-              >
-                <Text style={styles.submitText}>Save</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.submitBtn, { backgroundColor: '#333', marginTop: 8 }]}
-                onPress={() => {
-                  // allow skipping (records nothing)
-                  setPromptOpen(false);
-                  setPendingIndex(null);
-                  setPromptVal('');
-                }}
-              >
-                <Text style={{ color: '#fff', fontWeight: '800' }}>Skip</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
+        <MiniLB rows={leaderboard} />
       </>
     );
   }
@@ -376,7 +299,7 @@ export default function LiveClassScreen() {
   return shell(<Text style={styles.subtle}>Loading…</Text>);
 }
 
-/* ------- UI helpers ------- */
+/* ------- tiny UI helpers ------- */
 function shell(children: React.ReactNode) {
   return (
     <SafeAreaView style={styles.container}>
@@ -385,17 +308,11 @@ function shell(children: React.ReactNode) {
     </SafeAreaView>
   );
 }
-
 function fmtTime(total: number) {
   const t = Math.max(0, Math.floor(total || 0));
-  const h = Math.floor(t / 3600);
-  const m = Math.floor((t % 3600) / 60);
-  const s = t % 60;
-  return h > 0
-    ? [h, m, s].map(n => String(n).padStart(2,'0')).join(':')
-    : [m, s].map(n => String(n).padStart(2,'0')).join(':');
+  const m = Math.floor(t / 60); const s = t % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
-
 function WorkoutCard({ steps }: { steps: Step[] }) {
   return (
     <View style={styles.card}>
@@ -404,83 +321,109 @@ function WorkoutCard({ steps }: { steps: Step[] }) {
         data={steps}
         keyExtractor={(s) => String(s.index)}
         renderItem={({ item }) => (
-          <Text style={styles.stepText}>
-            {item.name}{item.is_rest ? ' (Rest)' : ''}
-          </Text>
+          <Text style={styles.stepText}>R{item.round} · {item.name}</Text>
         )}
       />
     </View>
   );
 }
-
 function MiniLB({ rows }: { rows: any[] }) {
   return (
     <View style={styles.lbCard}>
       <Text style={styles.lbTitle}>Leaderboard</Text>
-      {rows.slice(0, 6).map((r, i) => (
+      {rows.slice(0, 5).map((r, i) => (
         <View key={`${r.user_id}-${i}`} style={styles.lbRow}>
           <Text style={styles.lbPos}>{i + 1}</Text>
           <Text style={styles.lbUser}>User {r.user_id}</Text>
-          <Text style={styles.lbScore}>{r.display_score}</Text>
+          <Text style={styles.lbScore}>
+            {r.finished ? `${fmtTime(Number(r.elapsed_seconds ?? 0))}` : `${Number(r.total_reps ?? 0)} reps`}
+          </Text>
         </View>
       ))}
     </View>
   );
 }
-
 function CompletedCard({ leaderboard }: { leaderboard: any[] }) {
   return (
     <>
-      <Text style={styles.heading}>Session Complete 🎉</Text>
+      <Text style={styles.heading}>You’re done! 🎉</Text>
+      <Text style={styles.subtle}>Waiting for others / coach results…</Text>
       <MiniLB rows={leaderboard} />
     </>
   );
 }
-
 function CappedCard({
-  onSubmit, leaderboard, mode,
-}: {
-  onSubmit: (n: number) => Promise<void>;
-  leaderboard: any[];
-  mode: 'FOR_TIME'|'AMRAP'|'EMOM'|'TABATA'|'INTERVAL';
-}) {
+  onSubmit, leaderboard,
+}: { onSubmit: (n: number) => Promise<void>; leaderboard: any[] }) {
   const [val, setVal] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const n = useMemo(() => Number(val) || 0, [val]);
-
-  const subtitle =
-    mode === 'AMRAP'
-      ? 'Enter extra reps completed on your last exercise'
-      : 'Enter reps completed on your last exercise';
+  const n = Math.max(0, Number(val) || 0);
 
   return (
     <>
       <Text style={styles.heading}>Time’s up</Text>
-      <Text style={styles.subtle}>{subtitle}</Text>
-      <View style={styles.inputRow}>
-        <Text style={styles.inputLabel}>Reps</Text>
+      <Text style={styles.subtle}>Enter reps completed on your last exercise</Text>
+      <View style={styles.bigInputWrap}>
         <TextInput
-          style={styles.input}
+          style={styles.bigInput}
           keyboardType="numeric"
           value={val}
           onChangeText={setVal}
           placeholder="0"
           placeholderTextColor="#666"
-          editable={!submitting}
+          maxLength={6}
         />
       </View>
-      <TouchableOpacity
-        style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
-        onPress={async () => {
-          if (submitting) return;
-          setSubmitting(true);
-          try { await onSubmit(n); } finally { setSubmitting(false); }
-        }}
-      >
+      <TouchableOpacity style={styles.submitBtn} onPress={() => onSubmit(n)}>
         <Text style={styles.submitText}>Submit Score</Text>
       </TouchableOpacity>
       <MiniLB rows={leaderboard} />
     </>
+  );
+}
+
+/* ====== Interval Reps Prompt ====== */
+function IntervalPrompt({
+  open, title, value, onChange, onClose, onSubmit
+}: {
+  open: boolean;
+  title: string;
+  value: string;
+  onChange: (v: string) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        behavior={Platform.select({ ios: 'padding', android: undefined })}
+        style={styles.modalWrap}
+      >
+        <View style={styles.modalCard}>
+          <Text style={styles.modalTitle}>{title}</Text>
+          <View style={styles.bigInputWrap}>
+            <TextInput
+              style={styles.bigInput}
+              keyboardType="numeric"
+              value={value}
+              onChangeText={onChange}
+              placeholder="0"
+              placeholderTextColor="#666"
+              maxLength={6}
+              autoFocus
+            />
+          </View>
+          <View style={styles.modalRow}>
+            <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <View style={{ width: 12 }} />
+            <TouchableOpacity style={styles.modalSubmit} onPress={onSubmit}>
+              <Text style={styles.modalSubmitText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -499,7 +442,7 @@ const styles = StyleSheet.create({
 
   timer: { color: '#888', fontSize: 24, textAlign: 'center' },
   round: { color: '#777', textAlign: 'center', marginTop: 8 },
-  current: { color: '#fff', fontSize: 32, textAlign: 'center', fontWeight: '800', marginTop: 10 },
+  current: { color: '#fff', fontSize: 32, textAlign: 'center', fontWeight: '800', marginTop: 8 },
   next: { color: '#888', textAlign: 'center', marginTop: 6 },
 
   navRow: { flexDirection: 'row', gap: 12, marginTop: 24 },
@@ -520,14 +463,29 @@ const styles = StyleSheet.create({
   lbUser: { flex: 1, color: '#ddd' },
   lbScore: { color: '#fff', fontWeight: '700' },
 
-  inputRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 16, gap: 12 },
-  inputLabel: { color: '#fff', width: 70 },
-  input: { flex: 1, backgroundColor: '#222', color: '#fff', borderRadius: 8, padding: 12 },
-
+  bigInputWrap: {
+    backgroundColor: '#222',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginVertical: 8,
+  },
+  bigInput: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '800',
+    paddingVertical: 6,
+    textAlign: 'center',
+  },
   submitBtn: { backgroundColor: '#d8ff3e', paddingVertical: 16, borderRadius: 10, marginTop: 10, alignItems: 'center' },
   submitText: { color: '#111', fontWeight: '800' },
 
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalCard: { width: '100%', backgroundColor: '#1b1b1b', borderRadius: 12, padding: 16 },
-  modalTitle: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 10 },
+  modalWrap: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 20 },
+  modalCard: { backgroundColor: '#1b1b1b', borderRadius: 16, padding: 20 },
+  modalTitle: { color: '#fff', fontSize: 18, fontWeight: '700', marginBottom: 12 },
+  modalRow: { flexDirection: 'row', marginTop: 8 },
+  modalCancel: { flex: 1, backgroundColor: '#2a2a2a', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
+  modalCancelText: { color: '#ddd', fontWeight: '800' },
+  modalSubmit: { flex: 1, backgroundColor: '#d8ff3e', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
+  modalSubmitText: { color: '#111', fontWeight: '800' },
 });

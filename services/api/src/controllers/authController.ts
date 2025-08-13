@@ -7,7 +7,9 @@ import { AuthenticatedRequest } from '../middleware/auth';
 
 
 export const register = async (req: Request, res: Response) => {
+
   const { firstName, lastName, email, phone, password, roles = ['member'] } = req.body;
+  
   // check existing email
   const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (existingUser.length > 0) {

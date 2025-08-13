@@ -1,71 +1,51 @@
-import { db } from '../db/client';
-import { users, userroles, members, coaches, managers, admins } from '../db/schema';
-import { hashPassword, verifyPassword, generateJwt } from '../middleware/auth';
-import { eq } from 'drizzle-orm';
 import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import UserRepository from '../repositories/user.repository';
+import { hashPassword, verifyPassword, generateJwt } from '../middleware/auth';
 
+const userRepo = new UserRepository();
 
 export const register = async (req: Request, res: Response) => {
+  try {
+    const { firstName, lastName, email, phone, password, roles = ['member'] } = req.body;
 
-  const { firstName, lastName, email, phone, password, roles = ['member'] } = req.body;
+    if (!email || !password || !firstName || !lastName) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
 
-  // Check existing email via repo
-  const existing = await userRepo.findByEmail(email);
-  if (existing) {
-    return res.status(400).json({ error: 'Email already registered' });
+    // Check existing email via repo
+    const existing = await userRepo.findByEmail(email);
+    if (existing) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Hash password
+    const passwordHash = await hashPassword(password);
+
+    // Create user + role rows transactionally (repository helper)
+    const created = await userRepo.createUserWithRoles(
+      {
+        firstName,
+        lastName,
+        email,
+        phone,
+        passwordHash,
+      },
+      roles as Array<'member' | 'coach' | 'admin' | 'manager'>,
+    );
+
+    // Optionally fetch roles from DB to be authoritative (but using `roles` is fine too)
+    const assignedRoles = await userRepo.getRolesByUserId(created.userId);
+
+    // Generate token
+    const token = generateJwt({ userId: created.userId, roles: assignedRoles });
+
+    // Return token (keeps same minimal response shape you used before)
+    return res.status(201).json({ token });
+  } catch (err: any) {
+    console.error('Register error:', err);
+    return res.status(500).json({ error: 'Failed to register user' });
   }
-
-  // create user
-  const passwordHash = await hashPassword(password);
-  const [newUser] = await db
-    .insert(users)
-    .values({
-      firstName,
-      lastName,
-      email,
-      phone,
-      passwordHash,
-    })
-    .returning();
-
-  // assign roles
-  const roleEntries = roles.map((role: 'member' | 'coach' | 'admin' | 'manager') => ({
-    userId: newUser.userId,
-    userRole: role,
-  }));
-
-  await db.insert(userroles).values(roleEntries);
-  if (roles.includes('member')) {
-    await db.insert(members).values({
-      userId: newUser.userId,
-      status: 'pending', // default status
-      creditsBalance: 0, // default balance
-    });
-  }
-
-  if (roles.includes('coach')) {
-    await db.insert(coaches).values({
-      userId: newUser.userId,
-      bio: '', // default bio
-    });
-  }
-
-  if (roles.includes('manager')) {
-    await db.insert(managers).values({
-      userId: newUser.userId, // default empty permissions
-    });
-  }
-
-  if (roles.includes('admin')) {
-    await db.insert(admins).values({
-      userId: newUser.userId, // default empty permissions
-    });
-  }
-
-  const token = generateJwt({ userId: newUser.userId, roles });
-  res.json({ token });
 };
 
 

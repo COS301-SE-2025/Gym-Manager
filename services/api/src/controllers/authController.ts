@@ -3,21 +3,6 @@ import { AuthenticatedRequest } from '../middleware/auth';
 import UserRepository from '../repositories/user.repository';
 import { hashPassword, verifyPassword, generateJwt } from '../middleware/auth';
 
-
-// src/repositories/user.repository.ts
-import { db } from '../db/client';
-import {
-  users,
-  userroles,
-  members,
-  coaches,
-  admins,
-  managers,
-} from '../db/schema';
-import { eq, and, inArray, sql } from 'drizzle-orm';
-import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
-
-
 const userRepo = new UserRepository();
 
 export const register = async (req: Request, res: Response) => {

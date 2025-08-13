@@ -8,7 +8,7 @@ import {
   admins,
   managers,
 } from '../db/schema';
-import { eq, and, inArray, sql } from 'drizzle-orm';
+import { eq, and, inArray, sql, asc} from 'drizzle-orm';
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 
 /**
@@ -179,7 +179,7 @@ export class UserRepository {
       .leftJoin(coaches, eq(users.userId, coaches.userId))
       .leftJoin(admins, eq(users.userId, admins.userId))
       .leftJoin(members, eq(users.userId, members.userId))
-      .orderBy(users.lastName.asc, users.firstName.asc);
+      .orderBy(asc(users.lastName), asc(users.firstName));
   }
 
   async getAllMembers(tx?: Executor) {
@@ -276,12 +276,10 @@ export class UserRepository {
   /**
    * Utility: check if a user has a role
    */
-  async userHasRole(userId: number, role: string, tx?: Executor): Promise<boolean> {
+  async userHasRole(userId: number, role: 'member' | 'coach' | 'admin' | 'manager', tx?: Executor): Promise<boolean> {
     const rows = await this.exec(tx).select().from(userroles).where(and(eq(userroles.userId, userId), eq(userroles.userRole, role))).limit(1);
     return rows.length > 0;
   }
-
-  // inside src/repositories/user.repository.ts (add method to the UserRepository class)
 
   /**
    * Get membership status for a user (if any).

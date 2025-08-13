@@ -198,86 +198,70 @@ export const createWorkout = async (req: AuthenticatedRequest, res: Response) =>
   }
 };
 
+/**
+ * GET /classes  (member view of upcoming classes)
+ */
 export const getAllClasses = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
   const userId = req.user.userId;
 
-  const rolesRows = await db
-    .select({ role: userroles.userRole })
-    .from(userroles)
-    .where(eq(userroles.userId, userId));
+  try {
+    // get roles via repository
+    const roles = await userRepo.getRolesByUserId(userId);
+    if (roles.length === 0) return res.status(403).json({ error: 'Unauthorized' });
+    if (!roles.includes('member')) return res.status(403).json({ error: 'Unauthorized' });
 
-  if (rolesRows.length === 0) return res.status(403).json({ error: 'Unauthorized' });
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10); // YYYY-MM-DD
+    const time = now.toTimeString().slice(0, 8); // HH:MM:SS
 
-  const roles = rolesRows.map((r) => r.role as string);
+    // Drizzle condition: classes.scheduled_date > today OR (classes.scheduled_date = today AND scheduled_time >= time)
+    const notPastCondition = or(
+      gt(classes.scheduledDate, today),
+      and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time)),
+    );
 
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10); // YYYY-MM-DD
-  const time = now.toTimeString().slice(0, 8); // HH:MM:SS
-
-  const notPast = or(
-    gt(classes.scheduledDate, today),
-    and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time)),
-  );
-
-  // -- members can see everything upcoming; coaches ignored for now -------------
-  if (!roles.includes('member')) {
-    return res.status(403).json({ error: 'Unauthorized' });
+    const classesList = await classRepo.getUpcomingClassesForMembers(notPastCondition);
+    return res.json(classesList);
+  } catch (err) {
+    console.error('getAllClasses error:', err);
+    return res.status(500).json({ error: 'Failed to fetch classes' });
   }
-
-  const classesList = await db
-    .select({
-      classId: classes.classId,
-      scheduledDate: classes.scheduledDate,
-      scheduledTime: classes.scheduledTime,
-      capacity: classes.capacity,
-      coachId: classes.coachId,
-      workoutId: classes.workoutId,
-      workoutName: workouts.workoutName,
-    })
-    .from(classes)
-    .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
-    .where(notPast); // ← filter out old ones
-
-  res.json(classesList);
 };
 
+
+/**
+ * GET /member/classes
+ */
 export const getMemberClasses = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
   const memberId = req.user.userId;
 
-  // same not-in-the-past helper
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const time = now.toTimeString().slice(0, 8);
+  try {
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+    const time = now.toTimeString().slice(0, 8);
 
-  const notPast = or(
-    gt(classes.scheduledDate, today),
-    and(
-      eq(classes.scheduledDate, today),
-      gte(
-        sql`${classes.scheduledTime}::time + (classes.duration_minutes || ' minutes')::interval`,
-        time,
+    // Use the same end-time calculation as original code
+    const notPastCondition = or(
+      gt(classes.scheduledDate, today),
+      and(
+        eq(classes.scheduledDate, today),
+        gte(
+          sql`${classes.scheduledTime}::time + (classes.duration_minutes || ' minutes')::interval`,
+          time,
+        ),
       ),
-    ),
-  );
+    );
 
-  const bookedClasses = await db
-    .select({
-      bookingId: classbookings.bookingId,
-      classId: classes.classId,
-      scheduledDate: classes.scheduledDate,
-      scheduledTime: classes.scheduledTime,
-      workoutName: workouts.workoutName,
-    })
-    .from(classbookings)
-    .innerJoin(classes, eq(classbookings.classId, classes.classId))
-    .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
-    .where(and(eq(classbookings.memberId, memberId), notPast));
-
-  res.json(bookedClasses);
+    const bookedClasses = await classRepo.getBookedClassesForMember(memberId, notPastCondition);
+    return res.json(bookedClasses);
+  } catch (err) {
+    console.error('getMemberClasses error:', err);
+    return res.status(500).json({ error: 'Failed to fetch member classes' });
+  }
 };
 
 export const bookClass = async (req: AuthenticatedRequest, res: Response) => {

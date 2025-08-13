@@ -244,16 +244,18 @@ export class ClassRepository {
     await this.exec(tx).insert(classbookings).values({ classId, memberId });
   }
 
-  async insertAttendance(classId: number, memberId: number, tx?: Executor) {
-    const [attendance] = await this.exec(tx)
-      .insert(classattendance)
-      .values({
-        classId,
-        memberId,
-      })
-      .returning();
-    return attendance;
-  }
+// class.repository.ts (inside ClassRepository)
+async insertAttendance(classId: number, memberId: number, tx?: Executor) {
+    const executor = this.exec(tx);
+    const [attendance] = await executor
+        .insert(classattendance)
+        .values({ classId, memberId })
+        .onConflictDoNothing()
+        .returning();
+
+    // if null/undefined => row wasn't inserted (duplicate existed)
+    return attendance ?? null;
+}
 
   async deleteBooking(classId: number, memberId: number, tx?: Executor) {
     return this.exec(tx)

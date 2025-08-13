@@ -264,6 +264,9 @@ export const getMemberClasses = async (req: AuthenticatedRequest, res: Response)
   }
 };
 
+/**
+ * POST /book
+ */
 export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -275,104 +278,70 @@ export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
 
   try {
     await db.transaction(async (tx) => {
-      const [cls] = await tx
-        .select({
-          capacity: classes.capacity,
-          scheduledDate: classes.scheduledDate,
-          scheduledTime: classes.scheduledTime,
-          duration: classes.durationMinutes,
-        })
-        .from(classes)
-        .where(eq(classes.classId, classId))
-        .for('update') // row lock
-        .limit(1);
-
+      // lock & read class row
+      const cls = await classRepo.findClassByIdForUpdate(classId, tx);
       if (!cls) throw { code: 404, msg: 'Class not found' };
 
-      // 2. Reject past classes
+      // Reject past classes
       const now = new Date();
-
       const classEnd = new Date(`${cls.scheduledDate}T${cls.scheduledTime}`);
-      classEnd.setMinutes(classEnd.getMinutes() + cls.duration);
+      classEnd.setMinutes(classEnd.getMinutes() + Number(cls.durationMinutes ?? cls.duration));
 
       if (now >= classEnd) throw { code: 400, msg: 'Class has already ended' };
 
-      // 3. Already booked?
-      const dup = await tx
-        .select()
-        .from(classbookings)
-        .where(and(eq(classbookings.classId, classId), eq(classbookings.memberId, memberId)))
-        .limit(1);
+      // Already booked?
+      const already = await classRepo.alreadyBooked(classId, memberId, tx);
+      if (already) throw { code: 400, msg: 'Already booked' };
 
-      if (dup.length) throw { code: 400, msg: 'Already booked' };
-
-      // 4. Seats left?
-      const [{ count }] = await tx
-        .select({ count: sql<number>`count(*)` })
-        .from(classbookings)
-        .where(eq(classbookings.classId, classId));
-
+      // Seats left?
+      const count = await classRepo.countBookingsForClass(classId, tx);
       if (count >= cls.capacity) throw { code: 400, msg: 'Class full' };
 
-      // 5. Insert booking
-      await tx.insert(classbookings).values({ classId, memberId });
+      // Insert booking
+      await classRepo.insertBooking(classId, memberId, tx);
     });
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err: any) {
     if (err?.code) return res.status(err.code).json({ error: err.msg });
-    console.error(err);
-    res.status(500).json({ error: 'Internal error' });
+    console.error('bookClass error:', err);
+    return res.status(500).json({ error: 'Internal error' });
   }
 };
 
+/**
+ * POST /checkin
+ */
 export const checkInToClass = async (req: Request, res: Response) => {
   const { classId, memberId } = req.body;
-
-  if (!classId || !memberId) {
-    return res.status(400).json({ error: 'classId and memberId are required' });
-  }
+  if (!classId || !memberId) return res.status(400).json({ error: 'classId and memberId are required' });
 
   try {
-    // Insert attendance
-    const [attendance] = await db
-      .insert(classattendance)
-      .values({
-        classId,
-        memberId,
-      })
-      .returning();
-
+    const attendance = await classRepo.insertAttendance(classId, memberId);
+    if (!attendance) return res.status(409).json({ error: 'Already checked in' });
     return res.status(201).json({ success: true, attendance });
-  } catch (err: any) {
-    if (err.code === '23505') {
-      // Unique violation
-      return res.status(409).json({ error: 'Already checked in' });
-    }
-    console.error(err);
+  } catch (err) {
+    console.error('checkInToClass error:', err);
     return res.status(500).json({ error: 'Failed to check in, class not booked' });
   }
 };
 
+/**
+ * POST /cancel
+ */
 export const cancelBooking = async (req: Request, res: Response) => {
   const { classId, memberId } = req.body;
-
-  if (!classId || !memberId) {
-    return res.status(400).json({ error: 'classId and memberId are required' });
-  }
+  if (!classId || !memberId) return res.status(400).json({ error: 'classId and memberId are required' });
 
   try {
-    const result = await db
-      .delete(classbookings)
-      .where(and(eq(classbookings.classId, classId), eq(classbookings.memberId, memberId)));
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Booking not found' });
-    }
+    const result: any = await classRepo.deleteBooking(classId, memberId);
+    // Drizzle delete may return different shapes depending on driver; attempt to detect row count
+    const rowCount = result?.rowCount ?? (Array.isArray(result) ? result.length : undefined);
+    if (rowCount === 0) return res.status(404).json({ error: 'Booking not found' });
 
     return res.json({ success: true });
   } catch (err) {
-    console.error(err);
+    console.error('cancelBooking error:', err);
     return res.status(500).json({ error: 'Failed to cancel booking' });
   }
 };

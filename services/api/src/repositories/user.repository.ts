@@ -295,6 +295,27 @@ export class UserRepository {
     return row ? row.status : null;
   }
 
+  // Returns { publicVisibility: boolean } or null if not found
+  async getMemberSettings(userId: number, tx?: Executor): Promise<{ publicVisibility: boolean } | null> {
+    const [row] = await this.exec(tx)
+      .select({ publicVisibility: members.publicVisibility })
+      .from(members)
+      .where(eq(members.userId, userId))
+      .limit(1);
+
+    return row ?? null;
+  }
+
+  async updateMemberVisibility(userId: number, publicVisibility: boolean, tx?: Executor): Promise<{ userId: number } | null> {
+    const [updated] = await this.exec(tx)
+      .update(members)
+      .set({ publicVisibility })
+      .where(eq(members.userId, userId))
+      .returning({ userId: members.userId });
+
+    return updated ?? null;
+  }
+
 }
 
 export default UserRepository;

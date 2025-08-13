@@ -84,36 +84,6 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-
-// export const getStatus = async (req: AuthenticatedRequest, res: Response) => {
-//   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-
-//   const userId = req.user.userId;
-
-//   const roleRows = await db
-//     .select({ role: userroles.userRole })
-//     .from(userroles)
-//     .where(eq(userroles.userId, userId));
-
-//   const roles: string[] = roleRows.map(r => r.role);
-
-//   let membershipStatus: string;
-//   if (roles.includes('member')) {
-//     const [member] = await db
-//       .select({ status: members.status })
-//       .from(members)
-//       .where(eq(members.userId, userId))
-//       .limit(1);
-
-//     membershipStatus = member ? member.status : 'pending';
-//   } else {
-//     membershipStatus = 'visitor';
-//   }
-
-//   return res.json({ userId, roles, membershipStatus });
-// };
-
-
 /**
  * GET /status
  */

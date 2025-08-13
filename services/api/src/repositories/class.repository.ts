@@ -2,11 +2,15 @@
 import { duration } from 'drizzle-orm/gel-core';
 import { db as globalDb } from '../db/client';
 import {
-  classes,
-  workouts,
-  classbookings,
-  classattendance,
-  userroles,
+    classes,
+    classbookings,
+    classattendance,
+    userroles,
+    workouts,
+    exercises, 
+    rounds, 
+    subrounds, 
+    subroundExercises,
   // other tables if needed
 } from '../db/schema';
 import { eq, and, gt, gte, or, sql, inArray } from 'drizzle-orm';
@@ -81,15 +85,109 @@ export class ClassRepository {
   }
 
   // Workouts
-  async createWorkout(payload: { workoutName: string; workoutContent: string }, tx?: Executor) {
-    const [ins] = await this.exec(tx)
-      .insert(workouts)
-      .values({
-        workoutName: payload.workoutName,
-        workoutContent: payload.workoutContent,
-      })
-      .returning({ workoutId: workouts.workoutId });
-    return ins;
+  async createWorkout(
+    workoutPayload: { workoutName: string; type: string; metadata: Record<string, unknown> },
+    roundsInput: Array<any>, // keep loose here; controller validates shape
+  ): Promise<number> {
+    return (await globalDb.transaction(async (tx: any) => {
+      // 1) Insert workout
+      const [created] = await tx
+        .insert(workouts)
+        .values({
+          workoutName: workoutPayload.workoutName,
+          type: workoutPayload.type,
+          metadata: workoutPayload.metadata,
+        })
+        .returning({ workoutId: workouts.workoutId });
+
+      const workoutId = created.workoutId;
+
+      // 2) Gather all requested IDs & names
+      const wantedIds = new Set<number>();
+      const wantedNames = new Set<string>();
+      for (const r of roundsInput) {
+        for (const sr of r.subrounds) {
+          for (const ex of sr.exercises) {
+            if (ex.exerciseId != null) wantedIds.add(ex.exerciseId);
+            else wantedNames.add(ex.exerciseName);
+          }
+        }
+      }
+
+      // 3) Verify existing IDs
+      if (wantedIds.size > 0) {
+        const existingIdRows = await tx
+          .select({ id: exercises.exerciseId })
+          .from(exercises)
+          .where(inArray(exercises.exerciseId, [...wantedIds]));
+        const existingIds = new Set(existingIdRows.map((r: any) => r.id));
+        const missingIds = [...wantedIds].filter((id) => !existingIds.has(id));
+        if (missingIds.length) {
+          throw new Error(`These exerciseIds do not exist: ${missingIds.join(', ')}`);
+        }
+      }
+
+      // 4) Resolve names → IDs (upsert missing names)
+      const nameToId = new Map<string, number>();
+      if (wantedNames.size > 0) {
+        // 4a) Fetch any that already exist by name
+        const existingByNameRows = await tx
+          .select({ id: exercises.exerciseId, name: exercises.name })
+          .from(exercises)
+          .where(inArray(exercises.name, [...wantedNames]));
+
+        existingByNameRows.forEach((r: any) => nameToId.set(r.name, r.id));
+
+        // 4b) Insert the truly new names
+        for (const name of wantedNames) {
+          if (!nameToId.has(name)) {
+            const [ins] = await tx
+              .insert(exercises)
+              .values({ name, description: null })
+              .returning({ id: exercises.exerciseId });
+            nameToId.set(name, ins.id);
+          }
+        }
+      }
+
+      // 5) Insert rounds, subrounds & subround_exercises
+      for (const r of roundsInput) {
+        const [roundRec] = await tx
+          .insert(rounds)
+          .values({ workoutId, roundNumber: r.roundNumber })
+          .returning({ roundId: rounds.roundId });
+        const roundId = roundRec.roundId;
+
+        for (const sr of r.subrounds) {
+          const [subRec] = await tx
+            .insert(subrounds)
+            .values({
+              roundId,
+              subroundNumber: sr.subroundNumber,
+            })
+            .returning({ subroundId: subrounds.subroundId });
+          const subroundId = subRec.subroundId;
+
+          for (const ex of sr.exercises) {
+            const exId = ex.exerciseId != null ? ex.exerciseId : nameToId.get(ex.exerciseName);
+            if (!exId) {
+              // Defensive: should not happen if controller validated inputs and repo inserted missing names
+              throw new Error(`Unable to resolve exercise id for ${ex.exerciseName ?? ex.exerciseId}`);
+            }
+            await tx.insert(subroundExercises).values({
+              subroundId,
+              exerciseId: exId,
+              position: ex.position,
+              quantityType: ex.quantityType,
+              quantity: ex.quantity,
+              notes: ex.notes ?? null,
+            });
+          }
+        }
+      }
+
+      return workoutId;
+    })) as number;
   }
 
   // Member / listing queries

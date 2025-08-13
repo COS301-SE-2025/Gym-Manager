@@ -12,8 +12,11 @@ import {
   varchar,
   primaryKey,
   pgEnum,
+  jsonb,
+  bigint,
 } from 'drizzle-orm/pg-core';
 
+// -------------- ENUMS --------------
 export const membershipStatus = pgEnum('membership_status', [
   'pending',
   'approved',
@@ -22,6 +25,15 @@ export const membershipStatus = pgEnum('membership_status', [
 ]);
 export const userRole = pgEnum('user_role', ['member', 'coach', 'admin', 'manager']);
 
+export const quantityType = pgEnum('quantity_type', ['reps', 'duration']);
+export const workoutType = pgEnum('workout_type', [
+  'FOR_TIME',
+  'AMRAP',
+  'TABATA',
+  'EMOM',
+]);
+
+// -------------- TABLES --------------
 export const users = pgTable(
   'users',
   {
@@ -129,10 +141,62 @@ export const members = pgTable(
 );
 
 export const workouts = pgTable('workouts', {
-  workoutId: serial('workout_id').primaryKey().notNull(),
-  workoutName: varchar('workout_name', { length: 255 }).notNull(),
-  workoutContent: text('workout_content').notNull(),
+  workoutId      : serial('workout_id').primaryKey(),
+  workoutName    : varchar('workout_name', { length: 255 }),
+  type           : text('type'),       
+  metadata       : jsonb('metadata'),   
 });
+
+export const rounds = pgTable('rounds', {
+  roundId     : serial('round_id').primaryKey(),
+  workoutId   : integer('workout_id').notNull(),
+  roundNumber : integer('round_number').notNull(),
+}, (table) => [
+  foreignKey({
+    columns: [table.workoutId],
+    foreignColumns: [workouts.workoutId],
+    name: 'rounds_workout_id_fkey',
+  }).onDelete('cascade'),
+]);
+
+export const subrounds = pgTable('subrounds', {
+  subroundId     : serial('subround_id').primaryKey(),
+  roundId        : integer('round_id').notNull(),
+  subroundNumber : integer('subround_number').notNull(),
+}, (table) => [
+  foreignKey({
+    columns: [table.roundId],
+    foreignColumns: [rounds.roundId],
+    name: 'subrounds_round_id_fkey',
+  }).onDelete('cascade'),
+]);
+
+export const exercises = pgTable('exercises', {
+  exerciseId : serial('exercise_id').primaryKey(),
+  name       : text('name').notNull(),
+  description: text('description'),
+});
+
+export const subroundExercises = pgTable('subround_exercises', {
+  subroundExerciseId : serial('subround_exercise_id').primaryKey(),
+  subroundId         : integer('subround_id').notNull(),
+  exerciseId         : integer('exercise_id').notNull(),
+  position           : integer('position').notNull(),         // ordering
+  quantityType       : text('quantity_type').notNull(),       // 'reps' | 'duration'
+  quantity           : integer('quantity').notNull(),         // e.g. 20 or 30
+  notes              : text('notes'),
+}, (table) => [
+  foreignKey({
+    columns: [table.subroundId],
+    foreignColumns: [subrounds.subroundId],
+    name: 'subround_exercises_subround_id_fkey',
+  }).onDelete('cascade'),
+  foreignKey({
+    columns: [table.exerciseId],
+    foreignColumns: [exercises.exerciseId],
+    name: 'subround_exercises_exercise_id_fkey',
+  }).onDelete('cascade'),
+]);
 
 export const classbookings = pgTable(
   'classbookings',

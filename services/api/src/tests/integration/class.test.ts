@@ -103,7 +103,7 @@ describe('Class Booking Integration Tests', () => {
     // Create test workout
     const [testWorkout] = await db.insert(workouts).values({
       workoutName: 'Test Yoga Class',
-      workoutContent: 'A relaxing yoga session focusing on flexibility and mindfulness.',
+      // workoutContent: 'A relaxing yoga session focusing on flexibility and mindfulness.',
     }).returning();
 
     testWorkoutId = testWorkout.workoutId;
@@ -248,7 +248,7 @@ describe('Class Booking Integration Tests', () => {
         // Create another workout for assignment test
         const [newWorkout] = await db.insert(workouts).values({
           workoutName: 'Test HIIT',
-          workoutContent: 'High intensity interval training',
+          // workoutContent: 'High intensity interval training',
         }).returning();
         newWorkoutId = newWorkout.workoutId;
 
@@ -350,7 +350,7 @@ describe('Class Booking Integration Tests', () => {
       it('should create a new workout for authenticated coach', async () => {
         const workoutData = {
           workoutName: 'Test Pilates',
-          workoutContent: 'Core strengthening pilates workout',
+          // workoutContent: 'Core strengthening pilates workout',
         };
 
         const response = await request(testApp)
@@ -369,7 +369,7 @@ describe('Class Booking Integration Tests', () => {
           .from(workouts)
           .where(eq(workouts.workoutId, response.body.workoutId));
         expect(createdWorkout.workoutName).toBe(workoutData.workoutName);
-        expect(createdWorkout.workoutContent).toBe(workoutData.workoutContent);
+        // expect(createdWorkout.workoutContent).toBe(workoutData.workoutContent);
 
         // Cleanup
         await db.delete(workouts).where(eq(workouts.workoutId, response.body.workoutId));
@@ -380,7 +380,7 @@ describe('Class Booking Integration Tests', () => {
           .post('/coach/createWorkout')
           .set('Authorization', `Bearer ${coachAuthToken}`)
           .send({
-            workoutContent: 'Content without name',
+            // workoutContent: 'Content without name',
           })
           .expect(400);
       });
@@ -400,7 +400,7 @@ describe('Class Booking Integration Tests', () => {
           .post('/coach/createWorkout')
           .send({
             workoutName: 'Test Workout',
-            workoutContent: 'Test content',
+            // workoutContent: 'Test content',
           })
           .expect(401);
       });

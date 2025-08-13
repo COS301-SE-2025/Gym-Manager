@@ -140,7 +140,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
     setIsLoadingLiveClass(true);
     setLiveClassError(null);
     try {
-      const response = await axios.get<ApiLiveClassResponse>('http://localhost:4000/live/class', {
+      const response = await axios.get<ApiLiveClassResponse>(`${config.BASE_URL}/live/class`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.data.ongoing && response.data.class) {

@@ -472,12 +472,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <TouchableOpacity
             style={styles.liveClassBanner}
             onPress={() => {
-              // Only navigate to CoachLiveClass if the user is a coach and NOT a member
-              if (
-                Array.isArray(currentUser?.roles) &&
-                currentUser.roles.includes('coach') &&
-                !currentUser.roles.includes('member')
-              ) {
+              const rolesFromApi = Array.isArray(liveClass?.roles) ? liveClass.roles : [];
+              if (rolesFromApi.includes('coach')) {
                 navigation.navigate('CoachLiveClass', {
                   classId: liveClass.class.classId,
                   liveClassData: liveClass,
@@ -489,6 +485,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 });
               }
             }}
+
           >
             <View style={styles.liveClassLeft}>
               <View style={styles.liveIndicator} />

@@ -101,93 +101,54 @@ type RoundInput = {
   subrounds: SubroundInput[];
 };
 
+const WORKOUT_TYPES = ['FOR_TIME', 'AMRAP', 'TABATA', 'EMOM'] as const;
+type WorkoutType = (typeof WORKOUT_TYPES)[number];
+
+const QUANTITY_TYPES = ['reps', 'duration'] as const;
+type QuantityType = (typeof QUANTITY_TYPES)[number];
+
+type ExerciseInput = {
+  exerciseId?: number;
+  exerciseName?: string;
+  position: number;
+  quantityType: QuantityType;
+  quantity: number;
+  notes?: string;
+};
+
+type SubroundInput = {
+  subroundNumber: number;
+  exercises: ExerciseInput[];
+};
+
+type RoundInput = {
+  roundNumber: number;
+  subrounds: SubroundInput[];
+};
+
 export const createWorkout = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const {
-    workoutName,
-    type,
-    metadata,
-    rounds: roundsInput,
-  } = req.body as {
-    workoutName?: string;
-    type?: string;
-    metadata?: Record<string, unknown>;
-    rounds?: RoundInput[];
-  };
+  const { workoutName, workoutContent } = req.body;
 
-  // ----- BASIC VALIDATION ----- (keep this identical to previous)
-  if (!workoutName || !workoutName.trim()) {
-    return res.status(400).json({ error: 'workoutName is required' });
-  }
-  if (!type || !WORKOUT_TYPES.includes(type as WorkoutType)) {
-    return res
-      .status(400)
-      .json({ error: `type must be one of ${WORKOUT_TYPES.join(', ')}` });
-  }
-  if (typeof metadata !== 'object' || metadata === null) {
-    return res.status(400).json({ error: 'metadata must be an object' });
-  }
-  if (!Array.isArray(roundsInput) || roundsInput.length === 0) {
-    return res.status(400).json({ error: 'rounds must be a non-empty array' });
-  }
-
-  for (const r of roundsInput) {
-    if (typeof r.roundNumber !== 'number' || !Array.isArray(r.subrounds)) {
-      return res
-        .status(400)
-        .json({ error: 'each round needs roundNumber & subrounds[]' });
-    }
-    for (const sr of r.subrounds) {
-      if (
-        typeof sr.subroundNumber !== 'number' ||
-        !Array.isArray(sr.exercises) ||
-        sr.exercises.length === 0
-      ) {
-        return res
-          .status(400)
-          .json({
-            error:
-              'each subround needs subroundNumber & a non-empty exercises[]',
-          });
-      }
-      for (const ex of sr.exercises) {
-        if (
-          (ex.exerciseId == null && !ex.exerciseName) ||
-          (ex.exerciseId != null && ex.exerciseName)
-        ) {
-          return res
-            .status(400)
-            .json({
-              error:
-                'each exercise must have exactly one of exerciseId or exerciseName',
-            });
-        }
-        if (
-          typeof ex.position !== 'number' ||
-          !QUANTITY_TYPES.includes(ex.quantityType) ||
-          typeof ex.quantity !== 'number'
-        ) {
-          return res
-            .status(400)
-            .json({
-              error:
-                'exercise entries need position:number, quantityType:(reps|duration), quantity:number',
-            });
-        }
-      }
-    }
+  // Validate input
+  if (!workoutName || !workoutContent) {
+    return res.status(400).json({ error: 'Workout name and content are required' });
   }
 
   try {
-    const newWorkoutId = await classRepo.createWorkout(
-      { workoutName: workoutName.trim(), type: type as WorkoutType, metadata },
-      roundsInput,
-    );
+    // Insert new workout
+    const [newWorkout] = await db
+      .insert(workouts)
+      .values({
+        workoutName: workoutName.trim(),
+        workoutContent: workoutContent.trim(),
+      })
+      .returning({ workoutId: workouts.workoutId });
 
-    return res.json({
+    res.json({
       success: true,
       workoutId: newWorkoutId,
       message: 'Workout created with rounds, subrounds & exercises.',
@@ -197,6 +158,7 @@ export const createWorkout = async (req: AuthenticatedRequest, res: Response) =>
     return res.status(400).json({ error: err.message || 'Insert failed' });
   }
 };
+
 
 /**
  * GET /classes  (member view of upcoming classes)

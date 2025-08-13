@@ -61,7 +61,7 @@ let randomEmail = generateRandomEmail();
     // Create test workout
     const [testWorkout] = await db.insert(workouts).values({
       workoutName: 'Test Yoga',
-      workoutContent: 'Test yoga class',
+      // workoutContent: 'Test yoga class',
     }).returning();
     
     testWorkoutId = testWorkout.workoutId;

@@ -53,23 +53,33 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
   const userId = req.user.userId;
   let roles = req.user.roles as string[] | undefined;
 
+  // Ensure roles exist
   if (!roles) {
     const rows = await db
       .select({ role: userroles.userRole })
       .from(userroles)
       .where(eq(userroles.userId, userId));
-    roles = rows.map((r) => r.role as string);
+    roles = rows.map(r => r.role as string);
   }
 
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const time = now.toTimeString().slice(0, 8);
+  // Using SAST "local wall time" for the window check:
+  // (classes.scheduled_date + classes.scheduled_time) is a timestamp w/o tz (local),
+  // so compare to (now() at time zone 'Africa/Johannesburg') which is also local timestamp (w/o tz).
+  const coachWindow = and(
+    eq(classes.coachId, userId),
+    sql`(classes.scheduled_date + classes.scheduled_time) <= (now() at time zone 'Africa/Johannesburg')`,
+    sql`(classes.scheduled_date + classes.scheduled_time + (classes.duration_minutes || ' minutes')::interval) >= (now() at time zone 'Africa/Johannesburg')`
+  );
 
-  let current: any[] = [];
+  const memberWindow = and(
+    eq(classbookings.memberId, userId),
+    sql`(classes.scheduled_date + classes.scheduled_time) <= (now() at time zone 'Africa/Johannesburg')`,
+    sql`(classes.scheduled_date + classes.scheduled_time + (classes.duration_minutes || ' minutes')::interval) >= (now() at time zone 'Africa/Johannesburg')`
+  );
 
-  // ── coach branch ───────────────────────────────────────────────
+  // ----- COACH -----
   if (roles.includes('coach')) {
-    current = await db
+    const currentCoach = await db
       .select({
         classId: classes.classId,
         scheduledDate: classes.scheduledDate,
@@ -78,43 +88,30 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
         coachId: classes.coachId,
         workoutId: classes.workoutId,
         workoutName: workouts.workoutName,
-        workoutContent: workouts.workoutContent,
       })
       .from(classes)
       .innerJoin(workouts, eq(classes.workoutId, workouts.workoutId))
-      .where(
-        and(
-          eq(classes.coachId, userId),
-          eq(classes.scheduledDate, today),
-          lte(classes.scheduledTime, time),
-          gte(
-            sql`(classes.scheduled_time + (classes.duration_minutes || ' minutes')::interval)`,
-            time,
-          ),
-        ),
-      )
+      .where(coachWindow)
       .limit(1);
 
-    if (current.length) {
+    if (currentCoach.length) {
       const participants = await db
-        .select({
-          userId: classbookings.memberId,
-        })
+        .select({ userId: classbookings.memberId })
         .from(classbookings)
-        .where(eq(classbookings.classId, current[0].classId));
+        .where(eq(classbookings.classId, currentCoach[0].classId));
 
       return res.json({
         ongoing: true,
         roles,
-        class: current[0],
+        class: currentCoach[0],
         participants,
       });
     }
   }
 
-  // ── member branch ──────────────────────────────────────────────
+  // ----- MEMBER -----
   if (roles.includes('member')) {
-    current = await db
+    const currentMember = await db
       .select({
         classId: classes.classId,
         scheduledDate: classes.scheduledDate,
@@ -123,36 +120,35 @@ export const getLiveClass = async (req: AuthenticatedRequest, res: Response) => 
         coachId: classes.coachId,
         workoutId: classes.workoutId,
         workoutName: workouts.workoutName,
-        workoutContent: workouts.workoutContent,
       })
       .from(classes)
       .innerJoin(classbookings, eq(classes.classId, classbookings.classId))
       .innerJoin(workouts, eq(classes.workoutId, workouts.workoutId))
-      .where(
-        and(
-          eq(classbookings.memberId, userId),
-          eq(classes.scheduledDate, today),
-          lte(classes.scheduledTime, time),
-          gte(
-            sql`(classes.scheduled_time + (classes.duration_minutes || ' minutes')::interval)`,
-            time,
-          ),
-        ),
-      )
+      .where(memberWindow)
       .limit(1);
 
-    if (current.length) {
+    if (currentMember.length) {
       return res.json({
         ongoing: true,
         roles,
-        class: current[0],
+        class: currentMember[0],
       });
     }
   }
 
-  // ── nothing live ───────────────────────────────────────────────
   res.json({ ongoing: false });
 };
+
+
+// GET /workout/:workoutId/steps  -> { steps, repsPerRound }
+export const getWorkoutSteps = async (req: AuthenticatedRequest, res: Response) => {
+  const workoutId = Number(req.params.workoutId);
+  if (!workoutId) return res.status(400).json({ error: 'INVALID_WORKOUT_ID' });
+  const { steps, repsPerRound } = await flattenWorkoutToSteps(workoutId);
+  res.json({ steps, repsPerRound });
+};
+
+
 
 // POST /submitScore
 export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
@@ -242,4 +238,194 @@ export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
     });
 
   return res.json({ success: true });
+};
+
+
+
+// ============ HELPERS FOR LIVE CLASSES ============
+type Step = { index:number; name:string; reps?:number; duration?:number; round:number; subround:number };
+
+async function flattenWorkoutToSteps(workoutId: number): Promise<{
+  steps: Step[];
+  stepsCumReps: number[]; // NEW
+}> {
+  const result = await db.execute(sql`
+    select
+      r.round_number, sr.subround_number, se.position,
+      e.name, se.quantity_type, se.quantity
+    from public.rounds r
+    join public.subrounds sr on sr.round_id = r.round_id
+    join public.subround_exercises se on se.subround_id = sr.subround_id
+    join public.exercises e on e.exercise_id = se.exercise_id
+    where r.workout_id = ${workoutId}
+    order by r.round_number asc, sr.subround_number asc, se.position asc
+  `);
+
+  const rows = result.rows as any[];
+
+  const steps: Step[] = rows.map((row, idx) => ({
+    index: idx,
+    name: row.quantity_type === 'reps'
+      ? `${row.quantity}x ${row.name}`
+      : `${row.name} ${row.quantity}s`,
+    reps: row.quantity_type === 'reps' ? Number(row.quantity) : undefined,
+    duration: row.quantity_type === 'duration' ? Number(row.quantity) : undefined,
+    round: Number(row.round_number),
+    subround: Number(row.subround_number),
+  }));
+
+  // cumulative reps after each step
+  const stepsCumReps: number[] = [];
+  let running = 0;
+  for (const s of steps) {
+    if (typeof s.reps === 'number') running += s.reps;
+    stepsCumReps.push(running);
+  }
+
+  return { steps, stepsCumReps };
+}
+
+
+async function ensureProgressRow(classId: number, userId: number) {
+  await db.execute(sql`
+    insert into public.live_progress (class_id, user_id)
+    values (${classId}, ${userId})
+    on conflict (class_id, user_id) do nothing
+  `);
+}
+
+
+export const startLiveClass = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+
+  const classId = Number(req.params.classId);
+  if (Number.isNaN(classId)) return res.status(400).json({ error: 'Invalid classId' });
+
+  // Validate class + get workout/duration
+  const cls = await db.execute(sql`
+    select class_id, workout_id, duration_minutes
+    from public.classes
+    where class_id = ${classId}
+  `);
+  const row = cls.rows[0] as any;
+  if (!row) return res.status(404).json({ error: 'Class not found' });
+
+  // Flatten workout → steps + cumulative reps
+  const { steps, stepsCumReps } = await flattenWorkoutToSteps(Number(row.workout_id));
+
+  await db.execute(sql`
+    insert into public.class_sessions
+      (class_id, workout_id, status, time_cap_seconds, started_at, steps, steps_cum_reps)
+    values (
+      ${classId},
+      ${row.workout_id},
+      'live',
+      ${Number(row.duration_minutes) * 60},
+      now(),
+      ${JSON.stringify(steps)}::jsonb,
+      ${JSON.stringify(stepsCumReps)}::jsonb
+    )
+    on conflict (class_id) do update
+      set status='live',
+          time_cap_seconds=excluded.time_cap_seconds,
+          started_at=now(),
+          steps=excluded.steps,
+          steps_cum_reps=excluded.steps_cum_reps
+  `);
+
+  return res.json({ ok: true, classId, stepCount: steps.length });
+};
+
+
+
+/** POST /coach/live/:classId/stop  (coach only) */
+export const stopLiveClass = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+
+  const classId = Number(req.params.classId);
+  await db.execute(sql`
+    update public.class_sessions
+      set status='ended', ended_at=now()
+    where class_id=${classId}
+  `);
+  // Phones will switch to View 3/4 based on their own LB row
+  return res.json({ ok: true, classId });
+};
+
+// POST /live/:classId/advance
+export const advanceProgress = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+
+  const classId = Number(req.params.classId);
+  const userId = Number(req.user.userId);
+  const dir = req.body?.direction === 'prev' ? -1 : 1;
+
+  await ensureProgressRow(classId, userId);
+
+  // Step count
+  const sc = await db.execute(sql`
+    select coalesce(jsonb_array_length(steps),0) as step_count
+    from public.class_sessions
+    where class_id=${classId}
+  `);
+  const stepCount = Number(sc.rows[0]?.step_count ?? 0);
+  if (stepCount === 0) return res.status(400).json({ error: 'Class session not started' });
+
+  // Current progress
+  const prog = await db.execute(sql`
+    select current_step, finished_at
+    from public.live_progress
+    where class_id=${classId} and user_id=${userId}
+  `);
+  const current = Number(prog.rows[0]?.current_step ?? 0);
+  let next = current + dir;
+  next = Math.max(0, Math.min(stepCount, next));
+
+  const finished_at =
+    next >= stepCount
+      ? new Date()
+      : (prog.rows[0]?.finished_at ?? null);
+
+  await db.execute(sql`
+    update public.live_progress
+    set current_step=${next},
+        finished_at=${finished_at},
+        updated_at=now()
+    where class_id=${classId} and user_id=${userId}
+  `);
+
+  // Trigger recomputes leaderboard; phones get Realtime event
+  return res.json({ ok: true, current_step: next, finished: Boolean(finished_at) });
+};
+
+// POST /live/:classId/partial  body: { reps: number } (member after cap) */
+export const submitPartial = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+
+  const classId = Number(req.params.classId);
+  const userId = Number(req.user.userId);
+  const reps = Math.max(0, Number(req.body?.reps ?? 0));
+
+  await ensureProgressRow(classId, userId);
+
+  // (Optional) verify class ended or time reached – omitted for MVP
+  await db.execute(sql`
+    update public.live_progress
+    set dnf_partial_reps=${reps}, updated_at=now()
+    where class_id=${classId} and user_id=${userId}
+  `);
+
+  return res.json({ ok: true, reps });
+};
+
+// GET /live/:classId/leaderboard
+export const getRealtimeLeaderboard = async (req: Request, res: Response) => {
+  const classId = Number(req.params.classId);
+  const result = await db.execute(sql`
+    select *
+    from public.leaderboard
+    where class_id=${classId}
+    order by sort_key asc
+  `);
+  res.json(result.rows);
 };

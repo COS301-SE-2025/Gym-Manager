@@ -13,6 +13,7 @@ import AssignCoachModal from '@/components/modals/AssignCoach/AssignCoach';
 import { ClassResource } from '@/components/modals/AssignCoach/AssignCoach';
 import Link from 'next/link';
 import axios from 'axios';
+import { Bell } from 'lucide-react';
 
 export default function DashboardPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -23,8 +24,9 @@ export default function DashboardPage() {
   const [selectedClassInfo, setSelectedClassInfo] = useState<ClassResource | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [allNotifications, setAllNotifications] = useState<any[]>([]);
 
-  // Unread = notifications where user hasn't marked as read
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
@@ -33,7 +35,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (currentUser) {
-      fetchNotifications();
+      fetchUnreadNotifications();
       setupRealtime();
     }
     return () => {
@@ -64,7 +66,6 @@ export default function DashboardPage() {
       setLoading(false);
     }
 
-    // Example: fetch all users (if needed for dashboard)
     try {
       const token = localStorage.getItem('authToken');
       await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/allUsers`, {
@@ -75,29 +76,27 @@ export default function DashboardPage() {
     }
   };
 
-  const fetchNotifications = async () => {
+  const fetchUnreadNotifications = async () => {
     if (!currentUser) return;
 
     const { data: notifs, error: notifError } = await supabase
       .from('notifications')
-      .select(
-        `
+      .select(`
         notification_id,
         title,
         message,
         created_at,
         notification_targets!inner(target_role)
-      `
-      )
-      .eq('notification_targets.target_role', "admin")
-      .order('created_at', { ascending: false });
+      `)
+      .eq('notification_targets.target_role', 'admin')
+      .order('created_at', { ascending: false })
+      .limit(5);
 
     if (notifError) {
       console.error('Error fetching notifications:', notifError);
       return;
     }
 
-    // Get read statuses for this user
     const { data: reads, error: readsError } = await supabase
       .from('notification_reads')
       .select('notification_id')
@@ -117,6 +116,46 @@ export default function DashboardPage() {
     setNotifications(merged);
   };
 
+  const fetchAllNotifications = async () => {
+    if (!currentUser) return;
+
+    const { data: notifs, error } = await supabase
+      .from('notifications')
+      .select(`
+        notification_id,
+        title,
+        message,
+        created_at
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all notifications:', error);
+      return;
+    }
+
+    setAllNotifications(notifs);
+  };
+
+  const deleteNotification = async (notificationId: number) => {
+    if (!currentUser) return;
+
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('notification_id', notificationId);
+
+    if (error) {
+      console.error('Error deleting notification:', error);
+      return;
+    }
+
+    setAllNotifications((prev) => prev.filter((n) => n.notification_id !== notificationId));
+    toast('Notification deleted', { duration: 2000 });
+    await fetchAllNotifications(); // for overlay
+    await fetchUnreadNotifications(); // for small dropdown
+  };
+
   const setupRealtime = () => {
     supabase
       .channel('notifications_channel')
@@ -126,13 +165,13 @@ export default function DashboardPage() {
         (payload) => {
           const notif = payload.new;
           toast(`${notif.title}: ${notif.message}`, { duration: 5000 });
-          // Only show if matches current user's role
+
           if (
             notif.notification_targets?.some(
-              (t: any) => t.target_role === "admin"
+              (t: any) => t.target_role === 'admin'
             )
           ) {
-            setNotifications((prev) => [{ ...notif, read: false }, ...prev]);
+            setNotifications((prev) => [{ ...notif, read: false }, ...prev].slice(0, 5));
           }
         }
       )
@@ -156,6 +195,9 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
     }
+    toast('Notification marked as read', { duration: 2000 });
+    await fetchAllNotifications(); // for overlay
+    await fetchUnreadNotifications(); // for small dropdown
   };
 
   const handleEventClick = (event: CalendarEvent) => {
@@ -223,7 +265,7 @@ export default function DashboardPage() {
               }}
               onClick={() => setShowNotifications((prev) => !prev)}
             >
-              <span style={{ fontSize: '22px', color: 'white' }}>🔔</span>
+              <Bell size={22} color="#aaa" />
               {unreadCount > 0 && (
                 <span
                   style={{
@@ -262,21 +304,39 @@ export default function DashboardPage() {
                     No notifications
                   </div>
                 ) : (
-                  notifications.map((n) => (
+                  <>
+                    {notifications.map((n) => (
+                      <div
+                        key={n.notification_id}
+                        style={{
+                          padding: '10px 14px',
+                          borderBottom: '1px solid #444',
+                          cursor: 'pointer',
+                          backgroundColor: n.read ? 'transparent' : '#333',
+                        }}
+                        onClick={() => markNotificationAsRead(n.notification_id)}
+                      >
+                        <strong>{n.title}</strong>
+                        <p style={{ margin: 0, fontSize: '12px', color: '#ccc' }}>{n.message}</p>
+                      </div>
+                    ))}
                     <div
-                      key={n.notification_id}
                       style={{
-                        padding: '10px 14px',
-                        borderBottom: '1px solid #444',
+                        padding: '10px',
+                        textAlign: 'center',
                         cursor: 'pointer',
-                        backgroundColor: n.read ? 'transparent' : '#333',
+                        color: '#D8FF3E',
+                        fontSize: '13px',
                       }}
-                      onClick={() => markNotificationAsRead(n.notification_id)}
+                      onClick={() => {
+                        setShowNotifications(false);
+                        setShowOverlay(true);
+                        fetchAllNotifications();
+                      }}
                     >
-                      <strong>{n.title}</strong>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#ccc' }}>{n.message}</p>
+                      View all notifications
                     </div>
-                  ))
+                  </>
                 )}
               </div>
             )}
@@ -299,6 +359,72 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
+
+      {/* Overlay for All Notifications */}
+      {showOverlay && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            zIndex: 100,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          onClick={() => setShowOverlay(false)}
+        >
+          <div
+            style={{
+              backgroundColor: '#2a2a2a',
+              borderRadius: '8px',
+              padding: '20px',
+              width: '500px',
+              maxHeight: '80%',
+              overflowY: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ color: 'white', marginBottom: '10px' }}>All Notifications</h2>
+            {allNotifications.length === 0 ? (
+              <p style={{ color: '#aaa' }}>No notifications found.</p>
+            ) : (
+              allNotifications.map((n) => (
+                <div
+                  key={n.notification_id}
+                  style={{
+                    backgroundColor: '#333',
+                    padding: '10px',
+                    marginBottom: '8px',
+                    borderRadius: '4px',
+                  }}
+                >
+                  <strong>{n.title}</strong>
+                  <p style={{ fontSize: '12px', color: '#ccc' }}>{n.message}</p>
+                  <button
+                    onClick={() => deleteNotification(n.notification_id)}
+                    style={{
+                      backgroundColor: 'red',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '4px 8px',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      marginTop: '6px',
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Calendar Section */}
       <div

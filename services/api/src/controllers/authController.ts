@@ -3,6 +3,21 @@ import { AuthenticatedRequest } from '../middleware/auth';
 import UserRepository from '../repositories/user.repository';
 import { hashPassword, verifyPassword, generateJwt } from '../middleware/auth';
 
+
+// src/repositories/user.repository.ts
+import { db } from '../db/client';
+import {
+  users,
+  userroles,
+  members,
+  coaches,
+  admins,
+  managers,
+} from '../db/schema';
+import { eq, and, inArray, sql } from 'drizzle-orm';
+import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
+
+
 const userRepo = new UserRepository();
 
 export const register = async (req: Request, res: Response) => {
@@ -49,56 +64,93 @@ export const register = async (req: Request, res: Response) => {
 };
 
 
+/**
+ * POST /login
+ */
 export const login = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
-  const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Missing credentials' });
 
-  const passwordValid = await verifyPassword(password, user.passwordHash);
-  if (!passwordValid) return res.status(401).json({ error: 'Invalid credentials' });
+    const user = await userRepo.findByEmail(email);
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
-  // get roles
-  const userRoles = await db.select().from(userroles).where(eq(userroles.userId, user.userId));
-  const roles = userRoles.map((r) => r.userRole);
+    const passwordValid = await verifyPassword(password, user.passwordHash as string);
+    if (!passwordValid) return res.status(401).json({ error: 'Invalid credentials' });
 
-  const token = generateJwt({ userId: user.userId, roles });
-  res.json({
-    token: token,
-    user: {
-      id: user.userId,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      roles: roles,
-    },
-  });
+    // Fetch roles using repository
+    const roles = await userRepo.getRolesByUserId(user.userId);
+
+    const token = generateJwt({ userId: user.userId, roles });
+
+    return res.json({
+      token,
+      user: {
+        id: user.userId,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        roles,
+      },
+    });
+  } catch (err: any) {
+    console.error('Login error:', err);
+    return res.status(500).json({ error: 'Login failed' });
+  }
 };
 
 
+// export const getStatus = async (req: AuthenticatedRequest, res: Response) => {
+//   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+//   const userId = req.user.userId;
+
+//   const roleRows = await db
+//     .select({ role: userroles.userRole })
+//     .from(userroles)
+//     .where(eq(userroles.userId, userId));
+
+//   const roles: string[] = roleRows.map(r => r.role);
+
+//   let membershipStatus: string;
+//   if (roles.includes('member')) {
+//     const [member] = await db
+//       .select({ status: members.status })
+//       .from(members)
+//       .where(eq(members.userId, userId))
+//       .limit(1);
+
+//     membershipStatus = member ? member.status : 'pending';
+//   } else {
+//     membershipStatus = 'visitor';
+//   }
+
+//   return res.json({ userId, roles, membershipStatus });
+// };
+
+
+/**
+ * GET /status
+ */
 export const getStatus = async (req: AuthenticatedRequest, res: Response) => {
-  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const userId = req.user.userId;
+    const userId = req.user.userId as number;
 
-  const roleRows = await db
-    .select({ role: userroles.userRole })
-    .from(userroles)
-    .where(eq(userroles.userId, userId));
+    // Get roles
+    const roles = await userRepo.getRolesByUserId(userId);
 
-  const roles: string[] = roleRows.map(r => r.role);
+    // Get membership status if user has member role
+    let membershipStatus = 'visitor';
+    if (roles.includes('member')) {
+      const status = await userRepo.getMemberStatus(userId);
+      membershipStatus = status ?? 'pending';
+    }
 
-  let membershipStatus: string;
-  if (roles.includes('member')) {
-    const [member] = await db
-      .select({ status: members.status })
-      .from(members)
-      .where(eq(members.userId, userId))
-      .limit(1);
-
-    membershipStatus = member ? member.status : 'pending';
-  } else {
-    membershipStatus = 'visitor';
+    return res.json({ userId, roles, membershipStatus });
+  } catch (err: any) {
+    console.error('Status fetch error:', err);
+    return res.status(500).json({ error: 'Failed to fetch status' });
   }
-
-  return res.json({ userId, roles, membershipStatus });
 };

@@ -4,17 +4,19 @@ import { hashPassword, verifyPassword, generateJwt } from '../middleware/auth';
 import { eq } from 'drizzle-orm';
 import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
+import UserRepository from '../repositories/user.repository';
 
 
 export const register = async (req: Request, res: Response) => {
 
   const { firstName, lastName, email, phone, password, roles = ['member'] } = req.body;
-  
-  // check existing email
-  const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  if (existingUser.length > 0) {
+
+  // Check existing email via repo
+  const existing = await userRepo.findByEmail(email);
+  if (existing) {
     return res.status(400).json({ error: 'Email already registered' });
   }
+
   // create user
   const passwordHash = await hashPassword(password);
   const [newUser] = await db

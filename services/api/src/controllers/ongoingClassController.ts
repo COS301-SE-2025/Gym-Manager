@@ -575,10 +575,16 @@ export const getMyProgress = async (req: AuthenticatedRequest, res: Response) =>
   const userId = Number(req.user.userId);
 
   const { rows } = await db.execute(sql`
-    select current_step, finished_at, dnf_partial_reps
+    select current_step, finished_at, dnf_partial_reps, rounds_completed
     from public.live_progress
     where class_id=${classId} and user_id=${userId}
   `);
 
-  res.json(rows[0] ?? { current_step: 0, finished_at: null, dnf_partial_reps: 0 });
+  res.json(rows[0] ?? {
+    current_step: 0,
+    finished_at: null,
+    dnf_partial_reps: 0,
+    rounds_completed: 0
+  });
 };
+

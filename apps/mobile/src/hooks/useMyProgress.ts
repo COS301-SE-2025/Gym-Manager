@@ -6,6 +6,7 @@ export type MyProgress = {
   current_step: number;
   finished_at: string | null;
   dnf_partial_reps: number;
+  rounds_completed: number;      // NEW
 };
 
 export function useMyProgress(classId: number) {
@@ -13,6 +14,7 @@ export function useMyProgress(classId: number) {
     current_step: 0,
     finished_at: null,
     dnf_partial_reps: 0,
+    rounds_completed: 0,
   });
   const [userId, setUserId] = useState<number | null>(null);
 
@@ -22,7 +24,7 @@ export function useMyProgress(classId: number) {
     if (!userId) return;
     const { data } = await supabase
       .from('live_progress')
-      .select('current_step, finished_at, dnf_partial_reps')
+      .select('current_step, finished_at, dnf_partial_reps, rounds_completed')
       .eq('class_id', classId)
       .eq('user_id', userId)
       .maybeSingle();
@@ -35,26 +37,20 @@ export function useMyProgress(classId: number) {
     // initial
     fetchOnce();
 
-    // realtime (filter by both class_id AND user_id)
+    // realtime
     const ch = supabase.channel(`me-${classId}-${userId}`)
       .on('postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'live_progress',
-          filter: `class_id=eq.${classId}`,
-        },
+        { event: '*', schema: 'public', table: 'live_progress', filter: `class_id=eq.${classId}` },
         (payload) => {
           const row = payload.new as any;
           if (row?.user_id === userId) {
-            const { current_step, finished_at, dnf_partial_reps } = row;
-            setProgress({ current_step, finished_at, dnf_partial_reps });
+            const { current_step, finished_at, dnf_partial_reps, rounds_completed } = row;
+            setProgress({ current_step, finished_at, dnf_partial_reps, rounds_completed });
           }
         }
       )
       .subscribe();
 
-    // polling fallback (guarantees UI moves)
     const poll = setInterval(fetchOnce, 1200);
 
     return () => {
@@ -63,5 +59,5 @@ export function useMyProgress(classId: number) {
     };
   }, [classId, userId, fetchOnce]);
 
-  return { progress, userId, refresh: fetchOnce, setProgress }; // expose refresh + setter for optimism
+  return { progress, userId, refresh: fetchOnce, setProgress };
 }

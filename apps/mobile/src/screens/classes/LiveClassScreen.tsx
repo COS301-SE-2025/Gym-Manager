@@ -31,21 +31,13 @@ export default function LiveClassScreen() {
   const workoutTypeFromRoute = params?.liveClassData?.class?.workoutType as
     | 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA' | undefined;
 
-  // Supabase session row (realtime)
   const session = useLiveSession(classId);
-
-  // My progress (realtime)
   const { progress, refresh: refreshProgress, setProgress } = useMyProgress(classId);
-
-  // Actions (API)
   const { advance, submitPartial } = useProgressActions(classId);
-
-  // Leaderboard (polling)
   const { rows: leaderboard } = useLeaderboard(classId);
 
-  // Local timers
+  // stopwatch / countdown
   const [elapsed, setElapsed] = useState(0);
-
   useEffect(() => {
     if (!session?.started_at) return;
     const startMs = new Date(session.started_at).getTime();
@@ -56,13 +48,13 @@ export default function LiveClassScreen() {
     return () => clearInterval(id);
   }, [session?.started_at]);
 
-  // Pre-start: fallback steps + type (from API) so you can render View 1
+  // fallback steps/type pre-start
   const [fallbackSteps, setFallbackSteps] = useState<Step[]>([]);
   const [fallbackType, setFallbackType] = useState<'FOR_TIME'|'AMRAP'|'EMOM'|'TABATA'>('FOR_TIME');
 
   useEffect(() => {
     const fetchFallback = async () => {
-      if (!workoutId || session) return; // if live session exists, it already has steps/type
+      if (!workoutId || session) return;
       const token = await getToken();
       const { data } = await axios.get(
         `${config.BASE_URL}/workout/${workoutId}/steps`,
@@ -74,71 +66,101 @@ export default function LiveClassScreen() {
     fetchFallback();
   }, [session, workoutId]);
 
-  // Derived data
+  // derived
   const steps: Step[] = (session?.steps as Step[] | undefined) ?? fallbackSteps;
   const stepCount = steps.length;
-
-  // Workout mode (FOR_TIME / AMRAP) from session, else route param, else fallback
-  const mode: 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA' =
+  const mode: 'FOR_TIME'|'AMRAP'|'EMOM'|'TABATA' =
     (session?.workout_type as any) ?? workoutTypeFromRoute ?? fallbackType;
 
   const status = session?.status ?? 'ready';
   const currentIdx = Math.max(0, Math.min(stepCount, progress.current_step ?? 0));
-  const current = steps[currentIdx];
-  const nextStep = steps[currentIdx + 1];
+
+  // choose next label per mode (AMRAP wraps)
+  const nextStep =
+    stepCount === 0 ? undefined :
+    mode === 'AMRAP' ? steps[(currentIdx + 1) % stepCount] : steps[currentIdx + 1];
 
   const cap = session?.time_cap_seconds ?? 0;
   const inCap = cap === 0 ? true : elapsed <= cap;
 
-  // FOR_TIME can finish early (when user reaches last step),
-  // AMRAP never finishes early (only at cap/stop); we still keep your finished_at handling for FOR_TIME.
+  // FOR_TIME can "finish"; AMRAP never finishes early
   const logicallyFinishedFT = currentIdx >= stepCount;
-  const finished =
-    mode === 'FOR_TIME'
-      ? Boolean(progress.finished_at) || logicallyFinishedFT
-      : false;
+  const finished = mode === 'FOR_TIME'
+    ? Boolean(progress.finished_at) || logicallyFinishedFT
+    : false;
 
-  // UI labels & timer presentation
   const label = mode === 'AMRAP' ? 'AMRAP' : 'For Time';
-  const timerText =
-    mode === 'AMRAP'
-      ? fmtTime(Math.max(0, (session?.time_cap_seconds ?? 0) - elapsed)) // countdown
-      : fmtTime(elapsed);                                                // stopwatch
+  const timerText = mode === 'AMRAP'
+    ? fmtTime(Math.max(0, (session?.time_cap_seconds ?? 0) - elapsed)) // countdown
+    : fmtTime(elapsed);                                                // stopwatch
 
-  // Buttons
-  const canGoBack = status === 'live' && inCap && !finished && currentIdx > 0;
-  const canGoNext = status === 'live' && inCap && !finished && currentIdx < stepCount;
+  // navigation gating
+  const canGoNext = status === 'live' && inCap && !finished &&
+    (mode === 'AMRAP' ? stepCount > 0 : currentIdx < stepCount);
+  const canGoBack = status === 'live' && inCap && !finished &&
+    (mode === 'AMRAP' ? (stepCount > 0 && (currentIdx > 0 || (progress.rounds_completed ?? 0) > 0))
+                      : currentIdx > 0);
 
-  // Handlers (optimistic update + confirm)
-  const onBack = async () => {
-    if (!canGoBack) return;
-    setProgress(p => ({ ...p, current_step: Math.max(0, (p.current_step ?? 0) - 1), finished_at: null }));
-    try { await advance('prev'); } finally { refreshProgress(); }
-  };
-
+  // optimistic actions that WRAP for AMRAP
   const onNext = async () => {
     if (!canGoNext) return;
-    setProgress(p => ({ ...p, current_step: Math.min(stepCount, (p.current_step ?? 0) + 1) }));
-    try { await advance('next'); } finally { refreshProgress(); }
+    if (mode === 'AMRAP' && stepCount > 0) {
+      setProgress(p => {
+        const cur = p.current_step ?? 0;
+        const next = (cur + 1) % stepCount;
+        const addRound = (cur + 1) >= stepCount ? 1 : 0;
+        return {
+          ...p,
+          current_step: next,
+          rounds_completed: (p.rounds_completed ?? 0) + addRound
+        };
+      });
+    } else {
+      setProgress(p => ({ ...p, current_step: Math.min(stepCount, (p.current_step ?? 0) + 1) }));
+    }
+    try { await advance('next'); } finally { await refreshProgress(); }
   };
 
-  // ────────────────────── RENDER STATES ──────────────────────
+  const onBack = async () => {
+    if (!canGoBack) return;
+    if (mode === 'AMRAP' && stepCount > 0) {
+      setProgress(p => {
+        const cur = p.current_step ?? 0;
+        if (cur > 0) {
+          return { ...p, current_step: cur - 1 };
+        }
+        // cur === 0
+        const hasPrevRound = (p.rounds_completed ?? 0) > 0;
+        return {
+          ...p,
+          current_step: hasPrevRound ? stepCount - 1 : 0,
+          rounds_completed: hasPrevRound ? Math.max(0, (p.rounds_completed ?? 0) - 1) : (p.rounds_completed ?? 0)
+        };
+      });
+    } else {
+      setProgress(p => ({ ...p, current_step: Math.max(0, (p.current_step ?? 0) - 1), finished_at: null }));
+    }
+    try { await advance('prev'); } finally { await refreshProgress(); }
+  };
+
+  // ===== FIX: after submitting partial reps, show Completed view =====
+  const [submittedPartial, setSubmittedPartial] = useState(false);
+
+  // ─────────── render ───────────
   if (!session && steps.length === 0) {
     return shell(<ActivityIndicator size="large" />);
   }
 
-  // VIEW 1 — overview (pre-start)
+  // VIEW 1 — overview
   if (!session || status === 'ready') {
     return shell(
       <>
         <Text style={styles.heading}>{label}</Text>
-        {mode === 'AMRAP' ? (
+        {!!session?.time_cap_seconds && (
           <Text style={styles.subtle}>
-            Time cap: {fmtTime(session?.time_cap_seconds ?? 0)}
+            Time cap: {fmtTime(session.time_cap_seconds)}
           </Text>
-        ) : session?.time_cap_seconds ? (
-          <Text style={styles.subtle}>Time cap: {fmtTime(session.time_cap_seconds)}</Text>
-        ) : null}
+        )}
         <WorkoutCard steps={steps} />
         <MiniLB rows={leaderboard} />
         <Text style={styles.hint}>Waiting for coach to start…</Text>
@@ -146,35 +168,42 @@ export default function LiveClassScreen() {
     );
   }
 
-  // Coach stopped OR countdown expired → collect partials if needed, then show LB
+  // stop/cap states
   const classEnded = status === 'ended';
-  const cappedByTimer = !inCap && mode !== 'FOR_TIME'; // AMRAP cap (For-Time uses finish/time-cap flow below)
+  const cappedByTimer = mode === 'AMRAP' ? !inCap : false;
 
   if (classEnded || cappedByTimer) {
-    // For-Time: if user finished before stop → show completed; else ask partial reps.
-    // AMRAP: always ask partial reps at cap/stop (users never "finish" early).
-    const needsPartial = (mode === 'FOR_TIME' ? !finished : true);
+    // FOR_TIME needs partial only if not finished.
+    // AMRAP needs partial until user has submitted; then show Completed.
+    const needsPartial = (mode === 'FOR_TIME' ? !finished : !submittedPartial);
 
     return needsPartial
       ? shell(
           <CappedCard
             mode={mode}
-            onSubmit={async n => { await submitPartial(n); await refreshProgress(); }}
+            onSubmit={async n => {
+              await submitPartial(n);   // writes dnf_partial_reps
+              setSubmittedPartial(true); // ➜ switch to Completed view
+              await refreshProgress();
+            }}
             leaderboard={leaderboard}
           />
         )
       : shell(<CompletedCard leaderboard={leaderboard} />);
   }
 
-  // LIVE view (tap through exercises)
+  // LIVE
+  const current = steps[currentIdx];
   if (status === 'live') {
-    // For-Time: if finished early, show completed waiting card
     if (finished) return shell(<CompletedCard leaderboard={leaderboard} />);
-
     return shell(
       <>
         <Text style={styles.timer}>{timerText}</Text>
-        <Text style={styles.round}>Round {current?.round ?? 1}</Text>
+        {mode === 'AMRAP' ? (
+          <Text style={styles.round}>Rounds: {progress.rounds_completed ?? 0}</Text>
+        ) : (
+          <Text style={styles.round}>Round {current?.round ?? 1}</Text>
+        )}
         <Text style={styles.current}>{current?.name ?? '—'}</Text>
         <Text style={styles.next}>Next: {nextStep?.name ?? '—'}</Text>
 
@@ -187,7 +216,7 @@ export default function LiveClassScreen() {
             <Text style={[styles.navText, !canGoBack && styles.navTextDisabled]}>Back</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
+        <TouchableOpacity
             style={[styles.navBtn, canGoNext ? styles.nextBtn : styles.disabled]}
             disabled={!canGoNext}
             onPress={onNext}
@@ -206,7 +235,7 @@ export default function LiveClassScreen() {
   return shell(<Text style={styles.subtle}>Loading…</Text>);
 }
 
-/* ------- small UI helpers ------- */
+/* ------- helpers ------- */
 function shell(children: React.ReactNode) {
   return (
     <SafeAreaView style={styles.container}>
@@ -249,9 +278,7 @@ function MiniLB({ rows }: { rows: any[] }) {
         <View key={`${r.user_id}-${i}`} style={styles.lbRow}>
           <Text style={styles.lbPos}>{i + 1}</Text>
           <Text style={styles.lbUser}>User {r.user_id}</Text>
-          <Text style={styles.lbScore}>
-            {r.finished ? r.display_score : r.display_score}
-          </Text>
+          <Text style={styles.lbScore}>{r.display_score}</Text>
         </View>
       ))}
     </View>
@@ -276,10 +303,9 @@ function CappedCard({
   mode: 'FOR_TIME'|'AMRAP'|'EMOM'|'TABATA';
 }) {
   const [val, setVal] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const n = useMemo(() => Number(val) || 0, [val]);
 
-  // Copy explains what we’re asking for in each mode
-  const title = mode === 'AMRAP' ? 'Time’s up' : 'Time’s up';
   const subtitle =
     mode === 'AMRAP'
       ? 'Enter extra reps completed on your last exercise'
@@ -287,7 +313,7 @@ function CappedCard({
 
   return (
     <>
-      <Text style={styles.heading}>{title}</Text>
+      <Text style={styles.heading}>Time’s up</Text>
       <Text style={styles.subtle}>{subtitle}</Text>
       <View style={styles.inputRow}>
         <Text style={styles.inputLabel}>Reps</Text>
@@ -298,9 +324,17 @@ function CappedCard({
           onChangeText={setVal}
           placeholder="0"
           placeholderTextColor="#666"
+          editable={!submitting}
         />
       </View>
-      <TouchableOpacity style={styles.submitBtn} onPress={() => onSubmit(n)}>
+      <TouchableOpacity
+        style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
+        onPress={async () => {
+          if (submitting) return;
+          setSubmitting(true);
+          try { await onSubmit(n); } finally { setSubmitting(false); }
+        }}
+      >
         <Text style={styles.submitText}>Submit Score</Text>
       </TouchableOpacity>
       <MiniLB rows={leaderboard} />

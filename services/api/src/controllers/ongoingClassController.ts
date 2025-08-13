@@ -588,3 +588,72 @@ export const getMyProgress = async (req: AuthenticatedRequest, res: Response) =>
   });
 };
 
+
+
+export const postIntervalScore = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+  const classId = Number(req.params.classId);
+  const userId = Number(req.user.userId);
+  const stepIndex = Number(req.body?.stepIndex);
+  const reps = Math.max(0, Number(req.body?.reps ?? 0));
+
+  if (!Number.isFinite(stepIndex) || stepIndex < 0)
+    return res.status(400).json({ error: 'INVALID_STEP_INDEX' });
+
+  // Validate step exists
+  const { rows: sessRows } = await db.execute(sql`
+    select steps, workout_type from public.class_sessions where class_id=${classId} limit 1
+  `);
+  const sess = sessRows[0] as any;
+  if (!sess) return res.status(404).json({ error: 'SESSION_NOT_FOUND' });
+  if (sess.workout_type !== 'TABATA' && sess.workout_type !== 'INTERVAL')
+    return res.status(400).json({ error: 'NOT_INTERVAL_WORKOUT' });
+
+  const steps: any[] = Array.isArray(sess.steps) ? sess.steps : [];
+  if (stepIndex >= steps.length) return res.status(400).json({ error: 'STEP_INDEX_OUT_OF_RANGE' });
+
+  // Must be booked
+  const booked = await db
+    .select()
+    .from(classbookings)
+    .where(and(eq(classbookings.classId, classId), eq(classbookings.memberId, userId)))
+    .limit(1);
+  if (booked.length === 0) return res.status(403).json({ error: 'NOT_BOOKED' });
+
+  await db.execute(sql`
+    insert into public.live_interval_scores (class_id, user_id, step_index, reps)
+    values (${classId}, ${userId}, ${stepIndex}, ${reps})
+    on conflict (class_id, user_id, step_index) do update
+      set reps = excluded.reps, updated_at = now()
+  `);
+
+  return res.json({ ok: true });
+};
+
+/** GET /live/:classId/interval/leaderboard
+ *  returns: [{ user_id, total_reps, first_name, last_name }]
+ */
+export const getIntervalLeaderboard = async (req: Request, res: Response) => {
+  const classId = Number(req.params.classId);
+  const { rows } = await db.execute(sql`
+    select s.user_id,
+           sum(s.reps) as total_reps,
+           u.first_name,
+           u.last_name
+    from public.live_interval_scores s
+    join public.users u on u.user_id = s.user_id
+    where s.class_id = ${classId}
+    group by s.user_id, u.first_name, u.last_name
+    order by sum(s.reps) desc, u.first_name asc
+  `);
+
+  // Add a display field like the other LB hook expects
+  const mapped = rows.map((r: any) => ({
+    user_id: r.user_id,
+    total_reps: Number(r.total_reps ?? 0),
+    display_score: `${Number(r.total_reps ?? 0)} reps`,
+    first_name: r.first_name,
+    last_name: r.last_name,
+  }));
+  res.json(mapped);
+};

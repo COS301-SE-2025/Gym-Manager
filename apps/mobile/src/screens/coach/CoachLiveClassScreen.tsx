@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useIsFocused, useRoute } from '@react-navigation/native';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useLiveSession } from '../../hooks/useLiveSession';
 import { useLeaderboard } from '../../hooks/useLeaderboard';
@@ -9,11 +9,16 @@ import { coachStart, coachStop } from '../../hooks/useProgressActions';
 type R = RouteProp<AuthStackParamList, 'CoachLiveClass'>;
 
 export default function CoachLiveClassScreen() {
+  const isFocused = useIsFocused();
   const { params } = useRoute<R>();
   const classId = params?.classId as number;
+  const liveClassData = params?.liveClassData;
+  const session = useLiveSession(classId, isFocused);
+  const { rows: leaderboard } = useLeaderboard(classId, isFocused);
 
-  const session = useLiveSession(classId);
-  const { rows: leaderboard } = useLeaderboard(classId);
+  // Try to get workout type from session or passed data
+  const workoutType = (session as any)?.workout_type?.toUpperCase?.() 
+    || liveClassData?.class?.workoutType?.toUpperCase?.();
 
   return (
     <SafeAreaView style={s.container}>
@@ -22,6 +27,7 @@ export default function CoachLiveClassScreen() {
         <Text style={s.title}>Coach Controls</Text>
         <Text style={s.meta}>Class #{classId}</Text>
         <Text style={s.meta}>Status: {session?.status ?? '—'}</Text>
+        {workoutType ? <Text style={s.meta}>Type: {workoutType}</Text> : null}
 
         <View style={{ height: 12 }} />
 
@@ -38,11 +44,16 @@ export default function CoachLiveClassScreen() {
         <View style={{ height: 24 }} />
 
         <Text style={s.section}>Leaderboard</Text>
-        {leaderboard.slice(0, 10).map((r, i) => (
+        {leaderboard.slice(0, 12).map((r, i) => (
           <View key={`${r.user_id}-${i}`} style={s.row}>
             <Text style={s.pos}>{i + 1}</Text>
             <Text style={s.user}>User {r.user_id}</Text>
-            <Text style={s.score}>{r.display_score}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {typeof r.completed_minutes === 'number' && r.completed_minutes > 0 ? (
+                <Text style={s.badge}>{r.completed_minutes}m ✓</Text>
+              ) : null}
+              <Text style={s.score}>{r.display_score}</Text>
+            </View>
           </View>
         ))}
       </View>
@@ -61,7 +72,8 @@ const s = StyleSheet.create({
   danger: { backgroundColor: '#ff5c5c', padding: 16, borderRadius: 10, alignItems: 'center' },
   dangerText: { color: '#fff', fontWeight: '800' },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
-  pos: { width: 20, color: '#d8ff3e', fontWeight: '800' },
+  pos: { width: 24, color: '#d8ff3e', fontWeight: '800' },
   user: { flex: 1, color: '#ddd' },
   score: { color: '#fff', fontWeight: '700' },
+  badge: { color: '#d8ff3e', fontWeight: '800' },
 });

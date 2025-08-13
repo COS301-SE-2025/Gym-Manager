@@ -6,10 +6,10 @@ export type MyProgress = {
   current_step: number;
   finished_at: string | null;
   dnf_partial_reps: number;
-  rounds_completed: number;      // NEW
+  rounds_completed?: number;
 };
 
-export function useMyProgress(classId: number) {
+export function useMyProgress(classId: number, enabled = true) {
   const [progress, setProgress] = useState<MyProgress>({
     current_step: 0,
     finished_at: null,
@@ -18,7 +18,9 @@ export function useMyProgress(classId: number) {
   });
   const [userId, setUserId] = useState<number | null>(null);
 
-  useEffect(() => { getUser().then(u => setUserId(u?.userId ?? null)); }, []);
+  useEffect(() => {
+    getUser().then(u => setUserId(u?.userId ?? null));
+  }, []);
 
   const fetchOnce = useCallback(async () => {
     if (!userId) return;
@@ -28,36 +30,46 @@ export function useMyProgress(classId: number) {
       .eq('class_id', classId)
       .eq('user_id', userId)
       .maybeSingle();
-    if (data) setProgress(data as any);
+    if (data) {
+      setProgress(data as MyProgress);
+    }
   }, [classId, userId]);
 
   useEffect(() => {
-    if (!userId) return;
-
-    // initial
+    if (!enabled || !userId) return;
     fetchOnce();
 
-    // realtime
     const ch = supabase.channel(`me-${classId}-${userId}`)
       .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'live_progress', filter: `class_id=eq.${classId}` },
+        {
+          event: '*',
+          schema: 'public',
+          table: 'live_progress',
+          filter: `class_id=eq.${classId}`,
+        },
         (payload) => {
           const row = payload.new as any;
           if (row?.user_id === userId) {
             const { current_step, finished_at, dnf_partial_reps, rounds_completed } = row;
-            setProgress({ current_step, finished_at, dnf_partial_reps, rounds_completed });
+            setProgress({
+              current_step,
+              finished_at,
+              dnf_partial_reps,
+              rounds_completed: typeof rounds_completed === 'number' ? rounds_completed : 0,
+            });
           }
         }
       )
       .subscribe();
 
-    const poll = setInterval(fetchOnce, 1200);
+    // fallback poll (20s)
+    const poll = setInterval(fetchOnce, 20000);
 
     return () => {
       supabase.removeChannel(ch);
       clearInterval(poll);
     };
-  }, [classId, userId, fetchOnce]);
+  }, [classId, userId, enabled, fetchOnce]);
 
   return { progress, userId, refresh: fetchOnce, setProgress };
 }

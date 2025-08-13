@@ -10,12 +10,12 @@ export function useProgressActions(classId: number) {
       { direction },
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    // Return fresh progress so the screen can update immediately
+    // Return fresh progress so the screen can update immediately if needed
     const { data } = await axios.get(
       `${config.BASE_URL}/live/${classId}/me`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    return data as { current_step:number; finished_at:string|null; dnf_partial_reps:number };
+    return data as { current_step: number; finished_at: string | null; dnf_partial_reps: number; rounds_completed?: number };
   };
 
   const submitPartial = async (reps: number) => {

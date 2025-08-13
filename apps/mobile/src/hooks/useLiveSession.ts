@@ -1,22 +1,31 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
+export type StepRow = {
+  index: number;
+  name: string;
+  reps?: number;
+  duration?: number;
+  round: number;
+  subround: number;
+  target_reps?: number;
+};
 export type SessionRow = {
   class_id: number;
-  status: 'ready'|'live'|'paused'|'ended';
+  status: 'ready' | 'live' | 'paused' | 'ended';
   started_at: string | null;
   ended_at: string | null;
   time_cap_seconds: number;
-  workout_type: 'FOR_TIME'|'AMRAP'|'EMOM'|'TABATA';
-  steps: Array<{ index:number; name:string; reps?:number; duration?:number; round:number; subround:number }>;
+  steps: StepRow[];
+  // workout_type might be present if backend stores it, but not guaranteed
 };
 
-
-export function useLiveSession(classId: number) {
+export function useLiveSession(classId: number, enabled = true) {
   const [session, setSession] = useState<SessionRow | null>(null);
 
   useEffect(() => {
-    let poll: any;
+    if (!enabled) return;
+    let stopped = false;
 
     const fetchOnce = async () => {
       const { data, error } = await supabase
@@ -24,13 +33,13 @@ export function useLiveSession(classId: number) {
         .select('*')
         .eq('class_id', classId)
         .maybeSingle();
-      if (!error && data) setSession(data as SessionRow);
+      if (!stopped && !error && data) {
+        setSession(data as SessionRow);
+      }
     };
 
-    // initial
     fetchOnce();
 
-    // realtime
     const ch = supabase.channel(`session-${classId}`)
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'class_sessions', filter: `class_id=eq.${classId}` },
@@ -38,14 +47,15 @@ export function useLiveSession(classId: number) {
       )
       .subscribe();
 
-    // polling fallback (keeps UI moving if realtime misses)
-    poll = setInterval(fetchOnce, 1500);
+    // fallback poll (20s) in case realtime misses update
+    const poll = setInterval(fetchOnce, 20000);
 
     return () => {
+      stopped = true;
       supabase.removeChannel(ch);
       clearInterval(poll);
     };
-  }, [classId]);
+  }, [classId, enabled]);
 
   return session;
 }

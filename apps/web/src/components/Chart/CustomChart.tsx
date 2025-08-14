@@ -1,37 +1,88 @@
-import React from 'react';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
-import { Bar, Line, Pie, Doughnut, Radar } from 'react-chartjs-2';
+'use client';
 
+import { 
+  Chart as ChartJS, 
+  CategoryScale, 
+  LinearScale, 
+  BarElement, 
+  Title, 
+  Tooltip, 
+  Legend, 
+  PointElement, 
+  LineElement, 
+  ArcElement, 
+  RadialLinearScale,
+  ChartOptions
+} from 'chart.js';
+import { Chart } from 'react-chartjs-2';
+
+// Register ChartJS components
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  Title,
+  Tooltip,
+  Legend,
   PointElement,
   LineElement,
   ArcElement,
-  Title,
-  Tooltip,
-  Legend
+  RadialLinearScale
 );
 
-const chartComponents = {
-  bar: Bar,
-  line: Line,
-  pie: Pie,
-  doughnut: Doughnut,
-  radar: Radar,
+type ChartType = 'bar' | 'line' | 'pie' | 'doughnut';
+
+interface Dataset {
+  label: string;
+  data: number[];
+  backgroundColor?: string | string[];
+  borderColor?: string | string[];
+  borderWidth?: number;
 }
 
-type ChartType = keyof typeof chartComponents;
+interface CustomChartProps {
+  type: ChartType;
+  labels: string[];
+  datasets: Dataset[];
+  options?: ChartOptions;
+}
 
+export function CustomChart({ type, labels, datasets, options }: CustomChartProps) {
+  const defaultColors = [
+    'rgba(216, 255, 62, 0.7)',
+    'rgba(75, 192, 192, 0.7)',
+    'rgba(255, 99, 132, 0.7)',
+    'rgba(54, 162, 235, 0.7)',
+    'rgba(255, 206, 86, 0.7)',
+    'rgba(153, 102, 255, 0.7)',
+    'rgba(255, 159, 64, 0.7)'
+  ];
 
-export default function CustomChart(props : { type : ChartType, labels: string[], datasets: any[], options?:object }) { 
-  const ChartComponent = chartComponents[type];
-  if (!ChartComponent) 
-    ChartComponent = Pie;
+  const processedDatasets = datasets.map(dataset => {
+    if (type === 'pie' || type === 'doughnut') {
+      return {
+        ...dataset,
+        backgroundColor: dataset.backgroundColor || defaultColors,
+        borderColor: dataset.borderColor || '#2e2e2e',
+        borderWidth: dataset.borderWidth || 1
+      };
+    }
+    return {
+      ...dataset,
+      borderWidth: dataset.borderWidth || 1
+    };
+  });
 
-  const data = { labels, datasets };
-  return (
-    <ChartComponent data={data} options={options} />;
-    );
+  const chartData = {
+    labels,
+    datasets: processedDatasets
+  };
+
+  const chartOptions: ChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    ...options
+  };
+
+  return <Chart type={type} data={chartData} options={chartOptions} />;
 }

@@ -10,6 +10,8 @@ import {
   classbookings,
   userroles,
   classattendance,
+  classSessions,
+  liveProgress,
 } from './schema';
 
 export const classesRelations = relations(classes, ({ one, many }) => ({
@@ -94,5 +96,32 @@ export const classattendanceRelations = relations(classattendance, ({ one }) => 
   classbooking: one(classbookings, {
     fields: [classattendance.classId],
     references: [classbookings.classId],
+  }),
+}));
+
+export const classSessionsRelations = relations(classSessions, ({ one, many }) => ({
+  class: one(classes, {
+    fields: [classSessions.classId],
+    references: [classes.classId],
+  }),
+  workout: one(workouts, {
+    fields: [classSessions.workoutId],
+    references: [workouts.workoutId],
+  }),
+  liveProgress: many(liveProgress),
+}));
+
+export const liveProgressRelations = relations(liveProgress, ({ one }) => ({
+  class: one(classes, {
+    fields: [liveProgress.classId],
+    references: [classes.classId],
+  }),
+  user: one(users, {
+    fields: [liveProgress.userId],
+    references: [users.userId],
+  }),
+  classSession: one(classSessions, {
+    fields: [liveProgress.classId],
+    references: [classSessions.classId],
   }),
 }));

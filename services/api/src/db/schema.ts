@@ -254,3 +254,56 @@ export const classattendance = pgTable(
     primaryKey({ columns: [table.classId, table.memberId], name: 'classattendance_pkey' }),
   ],
 );
+
+// Live class functionality tables
+export const classSessions = pgTable(
+  'class_sessions',
+  {
+    classId: integer('class_id').primaryKey().notNull(),
+    workoutId: integer('workout_id'),
+    status: text('status').notNull(), // 'live', 'finished', 'cancelled'
+    timeCapSeconds: integer('time_cap_seconds'),
+    startedAt: timestamp('started_at', { mode: 'string' }).defaultNow(),
+    endedAt: timestamp('ended_at', { mode: 'string' }),
+    steps: jsonb('steps'),
+    stepsCumReps: jsonb('steps_cum_reps'),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.classId],
+      foreignColumns: [classes.classId],
+      name: 'class_sessions_class_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.workoutId],
+      foreignColumns: [workouts.workoutId],
+      name: 'class_sessions_workout_id_fkey',
+    }),
+  ],
+);
+
+export const liveProgress = pgTable(
+  'live_progress',
+  {
+    classId: integer('class_id').notNull(),
+    userId: integer('user_id').notNull(),
+    currentStep: integer('current_step').default(0),
+    roundsCompleted: integer('rounds_completed').default(0),
+    finishedAt: timestamp('finished_at', { mode: 'string' }),
+    dnfPartialReps: integer('dnf_partial_reps').default(0),
+    updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.classId],
+      foreignColumns: [classes.classId],
+      name: 'live_progress_class_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.userId],
+      name: 'live_progress_user_id_fkey',
+    }).onDelete('cascade'),
+    primaryKey({ columns: [table.classId, table.userId], name: 'live_progress_pkey' }),
+  ],
+);

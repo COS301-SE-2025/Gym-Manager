@@ -1,5 +1,4 @@
-// src/repositories/admin.repository.ts
-import { db as globalDb } from '../db/client';
+import { db as globalDb } from '../../db/client';
 import {
   classes,
   coaches,
@@ -9,12 +8,14 @@ import {
   admins,
   managers,
   users,
-} from '../db/schema';
+} from '../../db/schema';
 import { eq, and, asc, between } from 'drizzle-orm';
 import { format } from 'date-fns';
 import { parseISO as dateFnsParseISO } from 'date-fns';
+import { IAdminRepository } from '../../domain/interfaces/class.interface';
+import { Class, WeeklyScheduleInput } from '../../domain/entities/class.entity';
 
-type Executor = typeof globalDb; // drizzle executor/tx
+type Executor = typeof globalDb;
 
 // Map day -> weekday offset from Monday
 const dayToOffset: Record<'Monday'|'Tuesday'|'Wednesday'|'Thursday'|'Friday'|'Saturday'|'Sunday', number> = {
@@ -27,18 +28,11 @@ const dayToOffset: Record<'Monday'|'Tuesday'|'Wednesday'|'Thursday'|'Friday'|'Sa
   Sunday: 6,
 };
 
-export type WeeklyScheduleInput = Array<{
-  day: keyof typeof dayToOffset;
-  classes: Array<{
-    time: string;               // "HH:mm:ss"
-    durationMinutes: number;
-    capacity: number;
-    coachId?: number | null;
-    workoutId?: number | null;
-  }>;
-}>;
-
-export class AdminRepository {
+/**
+ * AdminRepository - Persistence Layer
+ * Implements IAdminRepository interface and handles all database operations
+ */
+export class AdminRepository implements IAdminRepository {
   private exec(tx?: Executor) {
     return tx ?? globalDb;
   }
@@ -50,7 +44,7 @@ export class AdminRepository {
     createdBy: number,
     weeklySchedule: WeeklyScheduleInput,
     tx?: Executor,
-  ) {
+  ): Promise<any[]> {
     const baseDate = dateFnsParseISO(startDate);
     const inserted: (typeof classes.$inferSelect)[] = [];
 
@@ -78,7 +72,7 @@ export class AdminRepository {
     return inserted;
   }
 
-  async getWeeklySchedule(tx?: Executor) {
+  async getWeeklySchedule(tx?: Executor): Promise<any> {
     const today = new Date();
 
     // Monday–Sunday window
@@ -126,12 +120,12 @@ export class AdminRepository {
       createdBy: number;
     },
     tx?: Executor,
-  ) {
+  ): Promise<Class> {
     const [created] = await this.exec(tx).insert(classes).values(payload).returning();
-    return created;
+    return this.mapToClass(created);
   }
 
-  async assignCoachToClass(classId: number, coachId: number, tx?: Executor) {
+  async assignCoachToClass(classId: number, coachId: number, tx?: Executor): Promise<{ ok: boolean; reason?: string }> {
     const [coach] = await this.exec(tx).select().from(coaches).where(eq(coaches.userId, coachId));
     if (!coach) return { ok: false, reason: 'invalid_coach' };
 
@@ -141,7 +135,7 @@ export class AdminRepository {
 
   /* ============== ROLES & USERS ============== */
 
-  async assignUserToRole(userId: number, role: 'coach'|'member'|'admin'|'manager', tx?: Executor) {
+  async assignUserToRole(userId: number, role: 'coach'|'member'|'admin'|'manager', tx?: Executor): Promise<{ ok: boolean; reason?: string }> {
     const roleExists = await this.exec(tx)
       .select()
       .from(userroles)
@@ -169,7 +163,7 @@ export class AdminRepository {
     return { ok: true };
   }
 
-  async getAllMembers(tx?: Executor) {
+  async getAllMembers(tx?: Executor): Promise<any[]> {
     return this.exec(tx)
       .select({
         userId: users.userId,
@@ -184,7 +178,7 @@ export class AdminRepository {
       .innerJoin(members, eq(users.userId, members.userId));
   }
 
-  async getAllCoaches(tx?: Executor) {
+  async getAllCoaches(tx?: Executor): Promise<any[]> {
     return this.exec(tx)
       .select({
         userId: users.userId,
@@ -198,7 +192,7 @@ export class AdminRepository {
       .innerJoin(coaches, eq(users.userId, coaches.userId));
   }
 
-  async getAllAdmins(tx?: Executor) {
+  async getAllAdmins(tx?: Executor): Promise<any[]> {
     return this.exec(tx)
       .select({
         userId: users.userId,
@@ -214,7 +208,7 @@ export class AdminRepository {
       .innerJoin(userroles, eq(users.userId, userroles.userId));
   }
 
-  async getUsersByRole(role: 'coach'|'member'|'admin'|'manager', tx?: Executor) {
+  async getUsersByRole(role: 'coach'|'member'|'admin'|'manager', tx?: Executor): Promise<any[]> {
     if (role === 'member') return this.getAllMembers(tx);
     if (role === 'coach') return this.getAllCoaches(tx);
     if (role === 'admin') return this.getAllAdmins(tx);
@@ -233,7 +227,7 @@ export class AdminRepository {
     return [];
   }
 
-  async getAllUsers(tx?: Executor) {
+  async getAllUsers(tx?: Executor): Promise<any[]> {
     return this.exec(tx)
       .select({
         userId: users.userId,
@@ -255,7 +249,7 @@ export class AdminRepository {
       .orderBy(asc(users.lastName), asc(users.firstName));
   }
 
-  async removeRole(userId: number, role: 'coach'|'member'|'admin'|'manager', tx?: Executor) {
+  async removeRole(userId: number, role: 'coach'|'member'|'admin'|'manager', tx?: Executor): Promise<void> {
     switch (role) {
       case 'coach':
         await this.exec(tx).delete(coaches).where(eq(coaches.userId, userId));
@@ -274,11 +268,9 @@ export class AdminRepository {
     await this.exec(tx)
       .delete(userroles)
       .where(and(eq(userroles.userId, userId), eq(userroles.userRole, role)));
-
-    return { ok: true };
   }
 
-  async getRolesByUserId(userId: number, tx?: Executor) {
+  async getRolesByUserId(userId: number, tx?: Executor): Promise<string[]> {
     const rows = await this.exec(tx)
       .select({ role: userroles.userRole })
       .from(userroles)
@@ -286,7 +278,7 @@ export class AdminRepository {
     return rows.map(r => r.role);
   }
 
-  async getUserById(userId: number, tx?: Executor) {
+  async getUserById(userId: number, tx?: Executor): Promise<any> {
     const result = await this.exec(tx)
       .select({
         userId: users.userId,
@@ -331,7 +323,7 @@ export class AdminRepository {
     return base;
   }
 
-  async updateUserById(userId: number, updates: any, tx?: Executor) {
+  async updateUserById(userId: number, updates: any, tx?: Executor): Promise<{ ok: boolean; reason?: string }> {
     const [userRoleRow] = await this.exec(tx)
       .select({ role: userroles.userRole })
       .from(userroles)
@@ -378,6 +370,21 @@ export class AdminRepository {
 
     return { ok: true };
   }
+
+  // Utility methods
+  private mapToClass(row: any): Class {
+    return {
+      classId: row.classId,
+      capacity: row.capacity,
+      scheduledDate: row.scheduledDate,
+      scheduledTime: row.scheduledTime,
+      durationMinutes: row.durationMinutes,
+      coachId: row.coachId || undefined,
+      workoutId: row.workoutId || undefined,
+      createdBy: row.createdBy || undefined,
+      createdAt: row.createdAt,
+    };
+  }
 }
 
 /* ------------ small helpers ------------- */
@@ -408,5 +415,3 @@ function endOfWeek(date: Date, options: { weekStartsOn: number }): Date {
   end.setHours(23, 59, 59, 999);
   return end;
 }
-
-export default AdminRepository;

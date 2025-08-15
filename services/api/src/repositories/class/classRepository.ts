@@ -1,35 +1,47 @@
-// src/repositories/class.repository.ts
-import { duration } from 'drizzle-orm/gel-core';
-import { db as globalDb } from '../db/client';
+import { db as globalDb } from '../../db/client';
 import {
-    classes,
-    classbookings,
-    classattendance,
-    userroles,
-    workouts,
-    exercises, 
-    rounds, 
-    subrounds, 
-    subroundExercises,
-  // other tables if needed
-} from '../db/schema';
-import { eq, and, gt, gte, or, sql, inArray } from 'drizzle-orm';
+  classes,
+  classbookings,
+  classattendance,
+  workouts,
+  exercises,
+  rounds,
+  subrounds,
+  subroundExercises,
+} from '../../db/schema';
+import { eq, and, gt, gte, or, sql, inArray, asc } from 'drizzle-orm';
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
+import { IClassRepository } from '../../domain/interfaces/class.interface';
+import { Class, ClassWithWorkout, ClassAttendance } from '../../domain/entities/class.entity';
 
+/**
+ * Types derived from Drizzle schema
+ */
 export type ClassRow = InferSelectModel<typeof classes>;
 export type WorkoutRow = InferSelectModel<typeof workouts>;
 export type BookingRow = InferSelectModel<typeof classbookings>;
 export type AttendanceRow = InferSelectModel<typeof classattendance>;
+
+/**
+ * Executor type: either the global db or a transaction object
+ */
 type Executor = typeof globalDb | any;
 
-export class ClassRepository {
+/**
+ * ClassRepository - Persistence Layer
+ * Implements IClassRepository interface and handles all database operations
+ */
+export class ClassRepository implements IClassRepository {
+  /**
+   * Helper to pick the executor (tx or global db)
+   */
   private exec(tx?: Executor): Executor {
     return tx ?? globalDb;
   }
 
   // Coach-specific queries
-  async findAssignedClassesByCoach(coachId: number, tx?: Executor): Promise<ClassRow[]> {
-    return this.exec(tx)
+  async findAssignedClassesByCoach(coachId: number, tx?: Executor): Promise<Class[]> {
+    const rows = await this.exec(tx)
       .select({
         classId: classes.classId,
         scheduledDate: classes.scheduledDate,
@@ -37,31 +49,40 @@ export class ClassRepository {
         capacity: classes.capacity,
         workoutId: classes.workoutId,
         coachId: classes.coachId,
-        workoutName: workouts.workoutName,
+        durationMinutes: classes.durationMinutes,
+        createdBy: classes.createdBy,
+        createdAt: classes.createdAt,
       })
       .from(classes)
-      .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
       .where(eq(classes.coachId, coachId));
+
+    return rows.map(row => this.mapToClass(row));
   }
 
-  async findAssignedClassesWithWorkoutsByCoach(coachId: number, tx?: Executor): Promise<any[]> {
-    return this.exec(tx)
+  async findAssignedClassesWithWorkoutsByCoach(coachId: number, tx?: Executor): Promise<ClassWithWorkout[]> {
+    const rows = await this.exec(tx)
       .select({
         classId: classes.classId,
         capacity: classes.capacity,
         scheduledDate: classes.scheduledDate,
         scheduledTime: classes.scheduledTime,
         durationMinutes: classes.durationMinutes,
+        coachId: classes.coachId,
+        createdBy: classes.createdBy,
+        createdAt: classes.createdAt,
         workoutName: workouts.workoutName,
         workoutId: workouts.workoutId,
+        workoutType: workouts.type,
+        workoutMetadata: workouts.metadata,
       })
       .from(classes)
       .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
       .where(eq(classes.coachId, coachId));
+
+    return rows.map(row => this.mapToClassWithWorkout(row));
   }
 
-  async findClassByIdForUpdate(classId: number, tx: Executor): Promise<any | null> {
-    // used inside a transaction with FOR UPDATE locking
+  async findClassByIdForUpdate(classId: number, tx?: Executor): Promise<Class | null> {
     const [row] = await this.exec(tx)
       .select({
         classId: classes.classId,
@@ -69,12 +90,17 @@ export class ClassRepository {
         scheduledDate: classes.scheduledDate,
         scheduledTime: classes.scheduledTime,
         durationMinutes: classes.durationMinutes,
+        coachId: classes.coachId,
+        workoutId: classes.workoutId,
+        createdBy: classes.createdBy,
+        createdAt: classes.createdAt,
       })
       .from(classes)
       .where(eq(classes.classId, classId))
       .for('update')
       .limit(1);
-    return row ?? null;
+
+    return row ? this.mapToClass(row) : null;
   }
 
   async updateWorkoutForClass(classId: number, workoutId: number, tx?: Executor): Promise<void> {
@@ -86,18 +112,15 @@ export class ClassRepository {
 
   // Workouts
   async createWorkout(
-    workoutPayload: { workoutName: string; type: string; metadata: Record<string, unknown> },
-    roundsInput: Array<any>, // keep loose here; controller validates shape
+    workoutData: Omit<WorkoutRow, 'workoutId'>,
+    roundsInput: Array<any>,
+    tx?: Executor
   ): Promise<number> {
-    return (await globalDb.transaction(async (tx: any) => {
+    return (await this.exec(tx).transaction(async (tx: any) => {
       // 1) Insert workout
       const [created] = await tx
         .insert(workouts)
-        .values({
-          workoutName: workoutPayload.workoutName,
-          type: workoutPayload.type,
-          metadata: workoutPayload.metadata,
-        })
+        .values(workoutData)
         .returning({ workoutId: workouts.workoutId });
 
       const workoutId = created.workoutId;
@@ -171,7 +194,6 @@ export class ClassRepository {
           for (const ex of sr.exercises) {
             const exId = ex.exerciseId != null ? ex.exerciseId : nameToId.get(ex.exerciseName);
             if (!exId) {
-              // Defensive: should not happen if controller validated inputs and repo inserted missing names
               throw new Error(`Unable to resolve exercise id for ${ex.exerciseName ?? ex.exerciseId}`);
             }
             await tx.insert(subroundExercises).values({
@@ -191,8 +213,8 @@ export class ClassRepository {
   }
 
   // Member / listing queries
-  async getUpcomingClassesForMembers(notPastCondition: any, tx?: Executor) {
-    return this.exec(tx)
+  async getUpcomingClassesForMembers(notPastCondition: any, tx?: Executor): Promise<ClassWithWorkout[]> {
+    const rows = await this.exec(tx)
       .select({
         classId: classes.classId,
         scheduledDate: classes.scheduledDate,
@@ -200,30 +222,47 @@ export class ClassRepository {
         capacity: classes.capacity,
         coachId: classes.coachId,
         workoutId: classes.workoutId,
+        durationMinutes: classes.durationMinutes,
+        createdBy: classes.createdBy,
+        createdAt: classes.createdAt,
         workoutName: workouts.workoutName,
+        workoutType: workouts.type,
+        workoutMetadata: workouts.metadata,
       })
       .from(classes)
       .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
       .where(notPastCondition);
+
+    return rows.map(row => this.mapToClassWithWorkout(row));
   }
 
-  async getBookedClassesForMember(memberId: number, notPastCondition: any, tx?: Executor) {
-    return this.exec(tx)
+  async getBookedClassesForMember(memberId: number, notPastCondition: any, tx?: Executor): Promise<ClassWithWorkout[]> {
+    const rows = await this.exec(tx)
       .select({
         bookingId: classbookings.bookingId,
         classId: classes.classId,
         scheduledDate: classes.scheduledDate,
         scheduledTime: classes.scheduledTime,
+        capacity: classes.capacity,
+        coachId: classes.coachId,
+        workoutId: classes.workoutId,
+        durationMinutes: classes.durationMinutes,
+        createdBy: classes.createdBy,
+        createdAt: classes.createdAt,
         workoutName: workouts.workoutName,
+        workoutType: workouts.type,
+        workoutMetadata: workouts.metadata,
       })
       .from(classbookings)
       .innerJoin(classes, eq(classbookings.classId, classes.classId))
       .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
       .where(and(eq(classbookings.memberId, memberId), notPastCondition));
+
+    return rows.map(row => this.mapToClassWithWorkout(row));
   }
 
   // Booking helpers used within transactions
-  async alreadyBooked(classId: number, memberId: number, tx: Executor) {
+  async alreadyBooked(classId: number, memberId: number, tx?: Executor): Promise<boolean> {
     const rows = await this.exec(tx)
       .select()
       .from(classbookings)
@@ -232,7 +271,7 @@ export class ClassRepository {
     return rows.length > 0;
   }
 
-  async countBookingsForClass(classId: number, tx: Executor) {
+  async countBookingsForClass(classId: number, tx?: Executor): Promise<number> {
     const [{ count }] = await this.exec(tx)
       .select({ count: sql<number>`count(*)` })
       .from(classbookings)
@@ -240,28 +279,60 @@ export class ClassRepository {
     return Number(count);
   }
 
-  async insertBooking(classId: number, memberId: number, tx: Executor) {
+  async insertBooking(classId: number, memberId: number, tx?: Executor): Promise<void> {
     await this.exec(tx).insert(classbookings).values({ classId, memberId });
   }
 
-// class.repository.ts (inside ClassRepository)
-async insertAttendance(classId: number, memberId: number, tx?: Executor) {
+  async insertAttendance(classId: number, memberId: number, tx?: Executor): Promise<ClassAttendance | null> {
     const executor = this.exec(tx);
     const [attendance] = await executor
-        .insert(classattendance)
-        .values({ classId, memberId })
-        .onConflictDoNothing()
-        .returning();
+      .insert(classattendance)
+      .values({ classId, memberId })
+      .onConflictDoNothing()
+      .returning();
 
-    // if null/undefined => row wasn't inserted (duplicate existed)
-    return attendance ?? null;
-}
+    return attendance ? this.mapToClassAttendance(attendance) : null;
+  }
 
-  async deleteBooking(classId: number, memberId: number, tx?: Executor) {
+  async deleteBooking(classId: number, memberId: number, tx?: Executor): Promise<any> {
     return this.exec(tx)
       .delete(classbookings)
       .where(and(eq(classbookings.classId, classId), eq(classbookings.memberId, memberId)));
   }
-}
 
-export default ClassRepository;
+  // Utility methods to map database rows to domain entities
+  private mapToClass(row: any): Class {
+    return {
+      classId: row.classId,
+      capacity: row.capacity,
+      scheduledDate: row.scheduledDate,
+      scheduledTime: row.scheduledTime,
+      durationMinutes: row.durationMinutes,
+      coachId: row.coachId || undefined,
+      workoutId: row.workoutId || undefined,
+      createdBy: row.createdBy || undefined,
+      createdAt: row.createdAt,
+    };
+  }
+
+  private mapToClassWithWorkout(row: any): ClassWithWorkout {
+    return {
+      ...this.mapToClass(row),
+      workout: row.workoutId ? {
+        workoutId: row.workoutId,
+        workoutName: row.workoutName,
+        type: row.workoutType,
+        metadata: row.workoutMetadata,
+      } : undefined,
+    };
+  }
+
+  private mapToClassAttendance(row: AttendanceRow): ClassAttendance {
+    return {
+      classId: row.classId,
+      memberId: row.memberId,
+      markedAt: row.markedAt,
+      score: row.score,
+    };
+  }
+}

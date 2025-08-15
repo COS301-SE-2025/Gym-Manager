@@ -1,8 +1,12 @@
-// src/repositories/health.repository.ts
-import { db as globalDb } from '../db/client';
+import { db as globalDb } from '../../db/client';
 import { sql } from 'drizzle-orm';
+import { IHealthRepository } from '../../domain/interfaces/health.interface';
 
-export class HealthRepository {
+/**
+ * HealthRepository - Persistence Layer
+ * Implements IHealthRepository interface and handles all database operations
+ */
+export class HealthRepository implements IHealthRepository {
   /**
    * Ping DB, rejects on timeout.
    * Throws any DB error or a 'timeout' Error when timed out.
@@ -17,5 +21,3 @@ export class HealthRepository {
     await Promise.race([globalDb.execute(sql`SELECT 1`), timeoutP]);
   }
 }
-
-export default new HealthRepository();

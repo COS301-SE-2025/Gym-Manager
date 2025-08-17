@@ -12,7 +12,7 @@ export default function ProfilePage() {
   const handleSave = async () => {
     try {
       const token = localStorage.getItem('authToken');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${user!.userId}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${user!.userId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -27,3 +27,5 @@ export default function ProfilePage() {
 
   return null;
 }
+
+

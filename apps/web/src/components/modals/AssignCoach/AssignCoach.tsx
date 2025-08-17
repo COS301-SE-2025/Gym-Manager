@@ -55,7 +55,7 @@ export default function AssignCoachModal({ isOpen, onClose, classInfo, onAssigne
     try {
       const token = localStorage.getItem('authToken');
       await axios.post(
-        `${API_URL}/admin/assign-coach`,
+        `${API_URL}/assign-coach`,
         { classId: classInfo.classId, coachId },
         { headers: { Authorization: `Bearer ${token}` } },
       );

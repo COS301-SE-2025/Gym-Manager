@@ -189,7 +189,8 @@ export class AdminRepository implements IAdminRepository {
         bio: coaches.bio,
       })
       .from(users)
-      .innerJoin(coaches, eq(users.userId, coaches.userId));
+      .innerJoin(coaches, eq(users.userId, coaches.userId))
+      .orderBy(asc(users.userId));
   }
 
   async getAllAdmins(tx?: Executor): Promise<any[]> {
@@ -200,12 +201,12 @@ export class AdminRepository implements IAdminRepository {
         lastName: users.lastName,
         email: users.email,
         phone: users.phone,
-        role: userroles.userRole,
+        // role: userroles.userRole,
         authorisation: admins.authorisation,
       })
       .from(users)
       .innerJoin(admins, eq(users.userId, admins.userId))
-      .innerJoin(userroles, eq(users.userId, userroles.userId));
+      .orderBy(asc(users.userId));
   }
 
   async getUsersByRole(role: 'coach'|'member'|'admin'|'manager', tx?: Executor): Promise<any[]> {
@@ -222,7 +223,8 @@ export class AdminRepository implements IAdminRepository {
           phone: users.phone,
         })
         .from(users)
-        .innerJoin(managers, eq(users.userId, managers.userId));
+        .innerJoin(managers, eq(users.userId, managers.userId))
+        .orderBy(asc(users.userId));
     }
     return [];
   }

@@ -17,6 +17,7 @@
     "@fullcalendar/interaction": "^6.1.17",
     "@fullcalendar/react": "^6.1.17",
     "@fullcalendar/timegrid": "^6.1.17",
+    "@popperjs/core": "^2.11.8",
     "axios": "^1.10.0",
     "chart.js": "^4.5.0",
     "jwt-decode": "^4.0.0",

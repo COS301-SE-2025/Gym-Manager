@@ -34,7 +34,7 @@ const LeaderboardScreen = () => {
         return;
       }
       setClassId(liveClass.class.classId);
-      const res = await axios.get(`${config.BASE_URL}/leaderboard/${liveClass.class.classId}`, {
+      const res = await axios.get(`${config.BASE_URL}/live/leaderboard/${liveClass.class.classId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setLeaderboard(res.data);

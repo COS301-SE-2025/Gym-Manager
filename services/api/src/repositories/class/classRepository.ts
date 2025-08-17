@@ -213,7 +213,11 @@ export class ClassRepository implements IClassRepository {
   }
 
   // Member / listing queries
-  async getUpcomingClassesForMembers(notPastCondition: any, tx?: Executor): Promise<ClassWithWorkout[]> {
+  async getUpcomingClassesForMembers(
+    window: { today: string; time: string },
+    tx?: Executor,
+  ): Promise<ClassWithWorkout[]> {
+    const { today, time } = window;
     const rows = await this.exec(tx)
       .select({
         classId: classes.classId,
@@ -231,12 +235,22 @@ export class ClassRepository implements IClassRepository {
       })
       .from(classes)
       .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
-      .where(notPastCondition);
+      .where(
+        or(
+          gt(classes.scheduledDate, today),
+          and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time))
+        ),
+      );
 
     return rows.map(row => this.mapToClassWithWorkout(row));
   }
 
-  async getBookedClassesForMember(memberId: number, notPastCondition: any, tx?: Executor): Promise<ClassWithWorkout[]> {
+  async getBookedClassesForMember(
+    memberId: number,
+    window: { today: string; time: string },
+    tx?: Executor,
+  ): Promise<ClassWithWorkout[]> {
+    const { today, time } = window;
     const rows = await this.exec(tx)
       .select({
         bookingId: classbookings.bookingId,
@@ -256,7 +270,15 @@ export class ClassRepository implements IClassRepository {
       .from(classbookings)
       .innerJoin(classes, eq(classbookings.classId, classes.classId))
       .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
-      .where(and(eq(classbookings.memberId, memberId), notPastCondition));
+      .where(
+        and(
+          eq(classbookings.memberId, memberId),
+          or(
+            gt(classes.scheduledDate, today),
+            and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time))
+          )
+        ),
+      );
 
     return rows.map(row => this.mapToClassWithWorkout(row));
   }

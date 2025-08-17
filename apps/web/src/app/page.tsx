@@ -16,7 +16,7 @@ export default function Home() {
 
     try {
       const response = await axios.post(
-        `${API_URL}/login`,
+        `${API_URL}/auth/login`,
         { email, password },
         {
           headers: {

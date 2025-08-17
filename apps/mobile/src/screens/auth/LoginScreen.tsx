@@ -108,7 +108,7 @@ export default function LoginScreen() {
 
     try {
       console.log('Login pressed', { email, password });
-      const response = await axios.post(`${config.BASE_URL}/login`, {
+      const response = await axios.post(`${config.BASE_URL}/auth/login`, {
         email: email.trim().toLowerCase(),
         password,
       });

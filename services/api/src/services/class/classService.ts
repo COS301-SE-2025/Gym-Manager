@@ -55,26 +55,13 @@ export class ClassService implements IClassService {
   }
 
   async getAllClasses(userId: number): Promise<ClassWithWorkout[]> {
-    // Verify user has member role
-    const roles = await this.userRepository.getRolesByUserId(userId);
-    if (roles.length === 0 || !roles.includes('member')) {
-      throw new Error('Unauthorized');
-    }
-
+    // Any authenticated user can list upcoming classes
     const now = new Date();
     const today = now.toISOString().slice(0, 10);
     const time = now.toTimeString().slice(0, 8);
 
-    // Create condition for upcoming classes
-    const notPastCondition = {
-      scheduledDate: { $gt: today },
-      $or: [
-        { scheduledDate: { $gt: today } },
-        { $and: [{ scheduledDate: today }, { scheduledTime: { $gte: time } }] }
-      ]
-    };
-
-    return this.classRepository.getUpcomingClassesForMembers(notPastCondition);
+    // Ask repository for classes using a precise window
+    return this.classRepository.getUpcomingClassesForMembers({ today, time });
   }
 
   async getMemberClasses(memberId: number): Promise<ClassWithWorkout[]> {
@@ -82,16 +69,8 @@ export class ClassService implements IClassService {
     const today = now.toISOString().slice(0, 10);
     const time = now.toTimeString().slice(0, 8);
 
-    // Create condition for upcoming classes
-    const notPastCondition = {
-      scheduledDate: { $gt: today },
-      $or: [
-        { scheduledDate: { $gt: today } },
-        { $and: [{ scheduledDate: today }, { scheduledTime: { $gte: time } }] }
-      ]
-    };
-
-    return this.classRepository.getBookedClassesForMember(memberId, notPastCondition);
+    // Ask repository for bookings using a precise window
+    return this.classRepository.getBookedClassesForMember(memberId, { today, time });
   }
 
   async bookClass(memberId: number, classId: number): Promise<void> {

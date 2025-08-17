@@ -68,7 +68,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
       }
 
       const response = await axios.get<ApiCoachClass[]>(
-        `${config.BASE_URL}/coach/assignedClasses`,
+        `${config.BASE_URL}/classes/coach/assigned`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
@@ -130,7 +130,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
       const token = await getToken();
       if (!token) throw new Error('Missing token');
       const response = await axios.get<ApiLiveClassResponse>(
-        `${config.BASE_URL}/live/class`,
+        `${config.BASE_URL}/live/live/class`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       if (response.data?.ongoing && response.data?.class) {

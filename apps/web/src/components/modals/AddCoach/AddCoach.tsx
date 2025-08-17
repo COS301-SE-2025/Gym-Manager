@@ -38,7 +38,7 @@ export default function AddCoachModal({ onClose }: { onClose: () => void }) {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post(`${API_URL}/register`, {
+      const response = await axios.post(`${API_URL}/auth/register`, {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,

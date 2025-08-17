@@ -199,7 +199,7 @@ export default function RegisterScreen() {
 
     try {
       console.log('Register pressed', { firstName, lastName, email, password });
-      const response = await axios.post(`${config.BASE_URL}/register`, {
+      const response = await axios.post(`${config.BASE_URL}/auth/register`, {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim().toLowerCase(),

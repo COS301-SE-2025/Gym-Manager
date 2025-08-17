@@ -4,7 +4,7 @@ import config from '../config';
 export const getLiveClass = async (token: string | null) => {
   if (!token) return null;
   try {
-    const res = await axios.get(`${config.BASE_URL}/live/class`, {
+    const res = await axios.get(`${config.BASE_URL}/live/live/class`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return res.data;

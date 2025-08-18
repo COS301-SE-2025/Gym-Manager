@@ -10,7 +10,9 @@
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "format": "prettier --check 'src/**/*.{ts,tsx,json,css,md}'",
     "format:fix": "prettier --write 'src/**/*.{ts,tsx,json,css,md}'",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.17",

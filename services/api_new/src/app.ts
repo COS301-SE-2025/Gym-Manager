@@ -1,0 +1,87 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { DependencyContainer } from './infrastructure/container/dependencyContainer';
+
+/**
+ * Main Application - Entry Point
+ * Demonstrates how to use the layered architecture
+ */
+export class App {
+  private app: express.Application;
+  private container: DependencyContainer;
+
+  constructor() {
+    this.app = express();
+    this.container = DependencyContainer.getInstance();
+    this.setupMiddleware();
+    this.setupRoutes();
+  }
+
+  private setupMiddleware(): void {
+    // Security middleware
+    this.app.use(helmet());
+    this.app.use(cors());
+    
+    // Body parsing middleware
+    this.app.use(express.json());
+    this.app.use(express.urlencoded({ extended: true }));
+  }
+
+  private setupRoutes(): void {
+    // Get routes from dependency container
+    const authRoutes = this.container.getAuthRoutes();
+    const classRoutes = this.container.getClassRoutes();
+    const adminRoutes = this.container.getAdminRoutes();
+    const liveClassRoutes = this.container.getLiveClassRoutes();
+    const userSettingsRoutes = this.container.getUserSettingsRoutes();
+    const healthRoutes = this.container.getHealthRoutes();
+    
+    // Mount routes
+    // this.app.use('/auth', authRoutes.getRouter());
+    // this.app.use('/classes', classRoutes.getRouter());
+    // this.app.use('/admin', adminRoutes.getRouter());
+    // this.app.use('/live', liveClassRoutes.getRouter());
+    // this.app.use('/settings', userSettingsRoutes.getRouter());
+    // this.app.use('/', healthRoutes.getRouter());
+
+    this.app.use( authRoutes.getRouter());
+    this.app.use(classRoutes.getRouter());
+    this.app.use( adminRoutes.getRouter());
+    this.app.use(liveClassRoutes.getRouter());
+    this.app.use( userSettingsRoutes.getRouter());
+    this.app.use( healthRoutes.getRouter());
+    
+    // Health check
+    this.app.get('/health', (req, res) => {
+      res.json({ status: 'OK', timestamp: new Date().toISOString() });
+    });
+  }
+
+  getApp(): express.Application {
+    return this.app;
+  }
+
+  start(port: number = 3000): void {
+    this.app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
+      console.log('Layered Architecture Demo:');
+      console.log('- Presentation Layer: Routes handle HTTP concerns');
+      console.log('- Controller Layer: Controllers handle request/response');
+      console.log('- Service Layer: Business logic and orchestration');
+      console.log('- Repository Layer: Data access and persistence');
+      console.log('- Infrastructure Layer: External concerns (JWT, passwords, etc.)');
+      console.log('');
+      console.log('Available endpoints:');
+      console.log('- /auth/* - Authentication endpoints');
+      console.log('- /classes/* - Class management endpoints');
+      console.log('- /admin/* - Admin management endpoints');
+      console.log('- /live/* - Live class endpoints');
+      console.log('- /settings/* - User settings endpoints');
+      console.log('- /health - Health check endpoint');
+    });
+  }
+}
+
+// Export for use in index.ts
+export default App;

@@ -4,9 +4,15 @@
   "description": "Gym Manager Backend API",
   "main": "dist/index.js",
   "scripts": {
+<<<<<<< HEAD
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+=======
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+>>>>>>> c1781474751a74e1b8038e2937c0ae609c4776a3
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "format": "prettier --check 'src/**/*.{ts,tsx,json,css,md}'",
@@ -27,6 +33,10 @@
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.43.1",
     "express": "^4.21.2",
+<<<<<<< HEAD
+    "helmet": "^8.1.0",
+=======
+>>>>>>> c1781474751a74e1b8038e2937c0ae609c4776a3
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.0",
     "swagger-jsdoc": "^6.2.8",
@@ -38,6 +48,10 @@
     "@types/date-fns": "^2.6.3",
     "@types/dotenv": "^8.2.3",
     "@types/express": "^4.17.22",
+<<<<<<< HEAD
+    "@types/helmet": "^4.0.0",
+=======
+>>>>>>> c1781474751a74e1b8038e2937c0ae609c4776a3
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/mocha": "^10.0.10",

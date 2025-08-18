@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react';
 import { CustomChart } from '@/components/Chart/CustomChart';
 import { userRoleService } from '@/app/services/roles';
 
-type ChartType = 'bar' | 'line' | 'pie' | 'doughnut';
-
 export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [userRoleData, setUserRoleData] = useState<{ labels: string[]; datasets: any[] } | null>(
@@ -14,8 +12,6 @@ export default function ReportsPage() {
   const [scheduleData, setScheduleData] = useState<{ labels: string[]; datasets: any[] } | null>(
     null,
   );
-  const [userRoleChartType, setUserRoleChartType] = useState<ChartType>('pie');
-  const [scheduleChartType, setScheduleChartType] = useState<ChartType>('bar');
 
   const chartColors = [
     '#d8ff3e', // Primary accent
@@ -131,7 +127,7 @@ export default function ReportsPage() {
     fetchData();
   }, []);
 
-  const getChartOptions = (title: string, type: ChartType) => ({
+  const getChartOptions = (title: string) => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -155,7 +151,7 @@ export default function ReportsPage() {
         },
         padding: {
           top: 10,
-          bottom: type === 'pie' || type === 'doughnut' ? 30 : 10,
+          bottom: 20,
         },
       },
       tooltip: {
@@ -168,53 +164,19 @@ export default function ReportsPage() {
         usePointStyle: true,
       },
     },
-    scales:
-      type === 'bar' || type === 'line'
-        ? {
-            x: {
-              ticks: {
-                color: '#aaaaaa',
-                font: {
-                  size: 12,
-                },
-              },
-              grid: {
-                color: '#434343',
-                drawBorder: false,
-              },
-            },
-            y: {
-              ticks: {
-                color: '#aaaaaa',
-                font: {
-                  size: 12,
-                },
-                precision: 0,
-              },
-              grid: {
-                color: '#434343',
-                drawBorder: false,
-              },
-              beginAtZero: true,
-            },
-          }
-        : undefined,
-    elements: {
-      bar: {
-        borderRadius: 4,
-        borderSkipped: false,
-      },
-      arc: {
-        borderWidth: 0,
-      },
-      line: {
-        borderWidth: 3,
-      },
-      point: {
-        radius: 5,
-        hoverRadius: 7,
-      },
-    },
+    scales: title.includes('Weekly')
+      ? {
+          x: {
+            ticks: { color: '#aaaaaa', font: { size: 12 } },
+            grid: { color: '#434343', drawBorder: false },
+          },
+          y: {
+            ticks: { color: '#aaaaaa', font: { size: 12 }, precision: 0 },
+            grid: { color: '#434343', drawBorder: false },
+            beginAtZero: true,
+          },
+        }
+      : undefined,
   });
 
   if (loading) {
@@ -243,33 +205,21 @@ export default function ReportsPage() {
         {userRoleData && (
           <div className="management-card">
             <div className="card-title">
-              <div className="flex justify-between items-center">
-                <h2>User Role Distribution</h2>
-                <select
-                  value={userRoleChartType}
-                  onChange={(e) => setUserRoleChartType(e.target.value as ChartType)}
-                  className="p-2 bg-[#2e2e2e] border border-[#434343] rounded text-white focus:border-[#d8ff3e] focus:ring-1 focus:ring-[#d8ff3e] transition-colors"
-                >
-                  <option value="bar">Bar</option>
-                  <option value="line">Line</option>
-                  <option value="pie">Pie</option>
-                  <option value="doughnut">Doughnut</option>
-                </select>
-              </div>
+              <h2>User Role Distribution</h2>
             </div>
             <div className="card-content">
               <div
                 className="relative"
                 style={{
-                  height: `${chartDimensions[userRoleChartType].height}px`,
-                  width: chartDimensions[userRoleChartType].width,
+                  height: `${chartDimensions.pie.height}px`,
+                  width: chartDimensions.pie.width,
                 }}
               >
                 <CustomChart
-                  type={userRoleChartType}
+                  type="pie"
                   labels={userRoleData.labels}
                   datasets={userRoleData.datasets}
-                  options={getChartOptions('User Role Distribution', userRoleChartType)}
+                  options={getChartOptions('User Role Distribution')}
                 />
               </div>
             </div>
@@ -279,37 +229,21 @@ export default function ReportsPage() {
         {scheduleData && (
           <div className="management-card">
             <div className="card-title">
-              <div className="flex justify-between items-center">
-                <h2>Weekly Session Schedule</h2>
-                <select
-                  value={scheduleChartType}
-                  onChange={(e) => setScheduleChartType(e.target.value as ChartType)}
-                  className="p-2 bg-[#2e2e2e] border border-[#434343] rounded text-white focus:border-[#d8ff3e] focus:ring-1 focus:ring-[#d8ff3e] transition-colors"
-                >
-                  <option value="bar">Bar</option>
-                  <option value="line">Line</option>
-                  <option value="pie">Pie</option>
-                  <option value="doughnut">Doughnut</option>
-                </select>
-              </div>
+              <h2>Weekly Session Schedule</h2>
             </div>
             <div className="card-content">
               <div
                 className="relative"
                 style={{
-                  height: `${chartDimensions[scheduleChartType].height}px`,
-                  width: chartDimensions[scheduleChartType].width,
+                  height: `${chartDimensions.line.height}px`,
+                  width: chartDimensions.line.width,
                 }}
               >
                 <CustomChart
-                  type={
-                    scheduleChartType === 'pie' || scheduleChartType === 'doughnut'
-                      ? 'bar'
-                      : scheduleChartType
-                  }
+                  type="line"
                   labels={scheduleData.labels}
                   datasets={scheduleData.datasets}
-                  options={getChartOptions('Weekly Session Schedule', scheduleChartType)}
+                  options={getChartOptions('Weekly Session Schedule')}
                 />
               </div>
             </div>

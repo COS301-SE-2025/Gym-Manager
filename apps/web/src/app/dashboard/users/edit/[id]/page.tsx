@@ -17,9 +17,9 @@ export default function EditUser() {
     lastName: '',
     email: '',
     phone: '',
-    bio: '', // coach
-    authorisation: '', // admin
-    credits: '', // member
+    bio: '', //coach
+    authorisation: '', //admin
+    credits: '', //member
   });
   const [editLoading, setEditLoading] = useState(false);
   const [status, setStatus] = useState<string>('active');
@@ -42,9 +42,15 @@ export default function EditUser() {
         lastName: user.lastName || '',
         email: user.email || '',
         phone: user.phone || '',
-        bio: (userRoles.includes('coach') && (user as Coach).bio) ? (user as Coach).bio : '',
-        authorisation: (userRoles.includes('admin') && (user as Admin).authorisation) ? (user as Admin).authorisation : '',
-        credits: (userRoles.includes('member') && (user as Member).credits) ? String((user as Member).credits) : '',
+        bio: userRoles.includes('coach') && (user as Coach).bio ? (user as Coach).bio : '',
+        authorisation:
+          userRoles.includes('admin') && (user as Admin).authorisation
+            ? (user as Admin).authorisation
+            : '',
+        credits:
+          userRoles.includes('member') && (user as Member).credits
+            ? String((user as Member).credits)
+            : '',
       });
     }
   }, [user, userRoles]);
@@ -124,7 +130,7 @@ export default function EditUser() {
   const handleStatusUpdate = async () => {
     try {
       setStatusLoading(true);
-      await userManagementService.updateStatus(userId, status, userData?.firstName || '');
+      await userManagementService.updateStatus(userId, status);
       setError(null);
     } catch (err) {
       setError('Failed to update status');
@@ -157,30 +163,60 @@ export default function EditUser() {
           <div className="card-content">
             <div className="form-group">
               <label>First Name</label>
-              <input name="firstName" value={editDetails.firstName} onChange={handleEditChange} className="text-input" />
+              <input
+                name="firstName"
+                value={editDetails.firstName}
+                onChange={handleEditChange}
+                className="text-input"
+              />
             </div>
             <div className="form-group">
               <label>Last Name</label>
-              <input name="lastName" value={editDetails.lastName} onChange={handleEditChange} className="text-input" />
+              <input
+                name="lastName"
+                value={editDetails.lastName}
+                onChange={handleEditChange}
+                className="text-input"
+              />
             </div>
             <div className="form-group">
               <label>Email</label>
-              <input name="email" value={editDetails.email} onChange={handleEditChange} className="text-input" />
+              <input
+                name="email"
+                value={editDetails.email}
+                onChange={handleEditChange}
+                className="text-input"
+              />
             </div>
             <div className="form-group">
               <label>Phone</label>
-              <input name="phone" value={editDetails.phone} onChange={handleEditChange} className="text-input" />
+              <input
+                name="phone"
+                value={editDetails.phone}
+                onChange={handleEditChange}
+                className="text-input"
+              />
             </div>
             {userRoles.includes('coach') && (
               <div className="form-group">
                 <label>Bio</label>
-                <input name="bio" value={editDetails.bio} onChange={handleEditChange} className="text-input" />
+                <input
+                  name="bio"
+                  value={editDetails.bio}
+                  onChange={handleEditChange}
+                  className="text-input"
+                />
               </div>
             )}
             {userRoles.includes('admin') && (
               <div className="form-group">
                 <label>Authorisation</label>
-                <input name="authorisation" value={editDetails.authorisation} onChange={handleEditChange} className="text-input" />
+                <input
+                  name="authorisation"
+                  value={editDetails.authorisation}
+                  onChange={handleEditChange}
+                  className="text-input"
+                />
               </div>
             )}
             <div className="form-actions">
@@ -190,35 +226,37 @@ export default function EditUser() {
             </div>
           </div>
         </div>
-      {userRoles.includes('member') && user && (
-        <div className="management-card">
-        <div className="card-title">
-          <h2>Manage Membership</h2>
-        </div>
-
-        <div className="card-content">
-          <p>Current status: {memberUser.status}</p>
-          <p>Credit balance: {memberUser.credits}</p>
-          <div className="form-group">
-            <label>Status</label>
-            <select
-              value={status}
-              onChange={e => setStatus(e.target.value)}
-              className="text-input"
-              disabled={statusLoading}
-            >
-              <option value="active">pending</option>
-              <option value="inactive">approved</option>
-              <option value="suspended">suspended</option>
-              <option value="cancelled">cancelled</option>
-            </select>
+        {userRoles.includes('member') && user && (
+          <div className="management-card">
+            <div className="card-title">
+              <h2>Manage Membership</h2>
             </div>
-            <div className="form-actions">
-              <button onClick={handleStatusUpdate} className="submit-button">Update Status</button>
+
+            <div className="card-content">
+              <p>Current status: {memberUser.status}</p>
+              <p>Credit balance: {memberUser.credits}</p>
+              <div className="form-group">
+                <label>Status</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="text-input"
+                  disabled={statusLoading}
+                >
+                  <option value="active">pending</option>
+                  <option value="approved">approved</option>
+                  <option value="suspended">suspended</option>
+                  <option value="cancelled">cancelled</option>
+                </select>
+              </div>
+              <div className="form-actions">
+                <button onClick={handleStatusUpdate} className="submit-button">
+                  Update Status
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
         <div className="management-card">
           <div className="card-title">
             <h2>Manage Roles</h2>

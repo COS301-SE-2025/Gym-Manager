@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/utils/supabaseClient';
+import { toast } from 'sonner';
 import WeeklyCalendar from '../../components/WeeklyCalendar/WeeklyCalendar';
-import { CalendarEvent, ClassScheduleItem, User } from '../../types/types';
+import PendingApprovalTable from '../../components/PendingApprovalTable/page';
+import { CalendarEvent, User } from '../../types/types';
 import { getDummyCalendarEvents, transformApiDataToEvents } from '../../utils/calendarHelpers';
 import { userRoleService } from '../services/roles';
 import ClassCreationModal from '@/components/modals/CreateClass/CreateClass';
@@ -10,6 +13,7 @@ import AssignCoachModal from '@/components/modals/AssignCoach/AssignCoach';
 import { ClassResource } from '@/components/modals/AssignCoach/AssignCoach';
 import Link from 'next/link';
 import axios from 'axios';
+import { Bell } from 'lucide-react';
 
 export default function DashboardPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -17,27 +21,41 @@ export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [selectedClassInfo, setSelectedClassInfo] = useState<ClassResource | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [allNotifications, setAllNotifications] = useState<any[]>([]);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchUnreadNotifications();
+      setupRealtime();
+    }
+    return () => {
+      supabase.removeAllChannels();
+    };
+  }, [currentUser]);
 
   const fetchData = async () => {
     try {
-      // Fetch both schedule and user data in parallel
       const [apiData, userData] = await Promise.all([
         userRoleService.getWeeklySchedule(),
         userRoleService.getCurrentUser(),
       ]);
 
-      const calendarEvents = transformApiDataToEvents(apiData);
-      setEvents(calendarEvents);
+      setEvents(transformApiDataToEvents(apiData));
       setCurrentUser(userData);
     } catch (error) {
-      console.error('Failed to load data:', error);
-      // Fallback to dummy data
-      const calendarEvents = getDummyCalendarEvents();
-      setEvents(calendarEvents);
+      console.error('Failed to load schedule or user data:', error);
+      setEvents(getDummyCalendarEvents());
 
-      // Try to get user data separately if schedule failed
       try {
         const userData = await userRoleService.getCurrentUser();
         setCurrentUser(userData);
@@ -50,56 +68,146 @@ export default function DashboardPage() {
 
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/allUsers`, {
+      await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/allUsers`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('Fetched all users:', response.data);
-      return response.data;
     } catch (err) {
-      console.error('Failed to get user by ID:', err);
-      throw err;
+      console.error('Failed to get all users:', err);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const fetchUnreadNotifications = async () => {
+    if (!currentUser) return;
 
-  // const handleEventClick = (event: CalendarEvent) => {
-  //   const classInfo = event.resource;
-  //   if (classInfo) {
-  //     // Create a custom modal instead of alert for better UX
-  //     const modalContent = `
-  //       🏋️ ${classInfo.workoutName}
-  //       👨‍💼 Coach: ${classInfo.coachName}
-  //       👥 Capacity: ${classInfo.capacity} people
-  //       ⏱️ Duration: ${classInfo.durationMinutes} minutes
-  //       📅 ${new Date(classInfo.scheduledDate).toLocaleDateString()}
-  //       🕒 ${classInfo.scheduledTime}
-  //     `;
-  //     alert(modalContent);
-  //   }
-  //   if (classInfo && classInfo.classId) {
-  //     setSelectedClassId(classInfo.classId);
-  //     setAssignModalOpen(true);
-  //   }
-  // };
+    const { data: notifs, error: notifError } = await supabase
+      .from('notifications')
+      .select(`
+        notification_id,
+        title,
+        message,
+        created_at,
+        notification_targets!inner(target_role)
+      `)
+      .eq('notification_targets.target_role', 'admin')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (notifError) {
+      console.error('Error fetching notifications:', notifError);
+      return;
+    }
+
+    const { data: reads, error: readsError } = await supabase
+      .from('notification_reads')
+      .select('notification_id')
+      .eq('user_id', currentUser.userId);
+
+    if (readsError) {
+      console.error('Error fetching notification reads:', readsError);
+      return;
+    }
+
+    const readIds = new Set(reads.map((r) => r.notification_id));
+    const merged = notifs.map((n) => ({
+      ...n,
+      read: readIds.has(n.notification_id),
+    }));
+
+    setNotifications(merged);
+  };
+
+  const fetchAllNotifications = async () => {
+    if (!currentUser) return;
+
+    const { data: notifs, error } = await supabase
+      .from('notifications')
+      .select(`
+        notification_id,
+        title,
+        message,
+        created_at
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all notifications:', error);
+      return;
+    }
+
+    setAllNotifications(notifs);
+  };
+
+  const deleteNotification = async (notificationId: number) => {
+    if (!currentUser) return;
+
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('notification_id', notificationId);
+
+    if (error) {
+      console.error('Error deleting notification:', error);
+      return;
+    }
+
+    setAllNotifications((prev) => prev.filter((n) => n.notification_id !== notificationId));
+    toast('Notification deleted', { duration: 2000 });
+    await fetchAllNotifications(); // for overlay
+    await fetchUnreadNotifications(); // for small dropdown
+  };
+
+  const setupRealtime = () => {
+    supabase
+      .channel('notifications_channel')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications' },
+        (payload) => {
+          const notif = payload.new;
+          toast(`${notif.title}: ${notif.message}`, { duration: 5000 });
+
+          if (
+            notif.notification_targets?.some(
+              (t: any) => t.target_role === 'admin'
+            )
+          ) {
+            setNotifications((prev) => [{ ...notif, read: false }, ...prev].slice(0, 5));
+          }
+        },
+      )
+      .subscribe();
+  };
+
+  const markNotificationAsRead = async (notificationId: number) => {
+    if (!currentUser) return;
+
+    try {
+      await supabase.from('notification_reads').insert({
+        notification_id: notificationId,
+        user_id: currentUser.userId,
+      });
+
+      setNotifications((prev) =>
+        prev.map((n) => (n.notification_id === notificationId ? { ...n, read: true } : n)),
+      );
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+    toast('Notification marked as read', { duration: 2000 });
+    await fetchAllNotifications(); // for overlay
+    await fetchUnreadNotifications(); // for small dropdown
+  };
 
   const handleEventClick = (event: CalendarEvent) => {
     const classInfo = event.resource;
     if (classInfo && classInfo.classId) {
-      setSelectedClassId(classInfo.classId);
       setSelectedClassInfo(classInfo);
       setAssignModalOpen(true);
     }
   };
 
-  const getUserDisplayName = () => {
-    if (currentUser) {
-      return `${currentUser.firstName} ${currentUser.lastName}`;
-    }
-    return 'User';
-  };
+  const getUserDisplayName = () =>
+    currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'User';
 
   return (
     <div
@@ -112,7 +220,7 @@ export default function DashboardPage() {
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
       }}
     >
-      {/* Header Section */}
+      {/* Header */}
       <div
         style={{
           padding: '20px',
@@ -120,7 +228,7 @@ export default function DashboardPage() {
           backgroundColor: '#1E1E1E',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'flex-center',
+          alignItems: 'center',
         }}
       >
         <div>
@@ -130,7 +238,6 @@ export default function DashboardPage() {
                 fontSize: '24px',
                 fontWeight: '700',
                 color: 'white',
-                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
                 margin: 0,
                 padding: 0,
               }}
@@ -138,44 +245,184 @@ export default function DashboardPage() {
               Welcome, {getUserDisplayName()} 👋
             </h1>
           </Link>
-          <p
-            style={{
-              color: '#ffffff',
-              fontSize: '12px',
-              fontWeight: '400',
-              fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
-              margin: 0,
-              padding: 0,
-            }}
-          >
+          <p style={{ color: '#ffffff', fontSize: '12px', margin: 0 }}>
             View and manage the upcoming week
           </p>
         </div>
 
-        <button
-          style={{
-            backgroundColor: '#D8FF3E',
-            color: 'black',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '12px 24px',
-            fontSize: '16px',
-            fontWeight: '500',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = '#c0c0c0';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = '#d0d0d0';
-          }}
-          onClick={() => setIsClassModalOpen(true)}
-        >
-          Add Class
-        </button>
+        {/* Notifications + Add Class */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', position: 'relative' }}>
+          <div style={{ position: 'relative' }}>
+            <button
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                position: 'relative',
+                padding: '8px',
+              }}
+              onClick={() => setShowNotifications((prev) => !prev)}
+            >
+              <Bell size={22} color="#aaa" />
+              {unreadCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '2px',
+                    right: '2px',
+                    backgroundColor: 'red',
+                    color: 'white',
+                    borderRadius: '50%',
+                    fontSize: '10px',
+                    padding: '2px 5px',
+                  }}
+                >
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '40px',
+                  right: 0,
+                  backgroundColor: '#2a2a2a',
+                  color: 'white',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.4)',
+                  minWidth: '280px',
+                  zIndex: 50,
+                  padding: '8px 0',
+                }}
+              >
+                {notifications.length === 0 ? (
+                  <div style={{ padding: '12px', textAlign: 'center', color: '#aaa' }}>
+                    No notifications
+                  </div>
+                ) : (
+                  <>
+                    {notifications.map((n) => (
+                      <div
+                        key={n.notification_id}
+                        style={{
+                          padding: '10px 14px',
+                          borderBottom: '1px solid #444',
+                          cursor: 'pointer',
+                          backgroundColor: n.read ? 'transparent' : '#333',
+                        }}
+                        onClick={() => markNotificationAsRead(n.notification_id)}
+                      >
+                        <strong>{n.title}</strong>
+                        <p style={{ margin: 0, fontSize: '12px', color: '#ccc' }}>{n.message}</p>
+                      </div>
+                    ))}
+                    <div
+                      style={{
+                        padding: '10px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        color: '#D8FF3E',
+                        fontSize: '13px',
+                      }}
+                      onClick={() => {
+                        setShowNotifications(false);
+                        setShowOverlay(true);
+                        fetchAllNotifications();
+                      }}
+                    >
+                      View all notifications
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          <button
+            style={{
+              backgroundColor: '#D8FF3E',
+              color: 'black',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '12px 24px',
+              fontSize: '16px',
+              fontWeight: '500',
+              cursor: 'pointer',
+            }}
+            onClick={() => setIsClassModalOpen(true)}
+          >
+            Add Class
+          </button>
+        </div>
       </div>
+
+      {/* Overlay for All Notifications */}
+      {showOverlay && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            zIndex: 100,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          onClick={() => setShowOverlay(false)}
+        >
+          <div
+            style={{
+              backgroundColor: '#2a2a2a',
+              borderRadius: '8px',
+              padding: '20px',
+              width: '500px',
+              maxHeight: '80%',
+              overflowY: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ color: 'white', marginBottom: '10px' }}>All Notifications</h2>
+            {allNotifications.length === 0 ? (
+              <p style={{ color: '#aaa' }}>No notifications found.</p>
+            ) : (
+              allNotifications.map((n) => (
+                <div
+                  key={n.notification_id}
+                  style={{
+                    backgroundColor: '#333',
+                    padding: '10px',
+                    marginBottom: '8px',
+                    borderRadius: '4px',
+                  }}
+                >
+                  <strong>{n.title}</strong>
+                  <p style={{ fontSize: '12px', color: '#ccc' }}>{n.message}</p>
+                  <button
+                    onClick={() => deleteNotification(n.notification_id)}
+                    style={{
+                      backgroundColor: 'red',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '4px 8px',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      marginTop: '6px',
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Calendar Section */}
       <div
@@ -188,7 +435,16 @@ export default function DashboardPage() {
         }}
       >
         <WeeklyCalendar events={events} onSelectEvent={handleEventClick} loading={loading} />
+
+        <div style={{ marginTop: '32px' }}>
+          <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>
+            Pending User Approvals
+          </h2>
+          <PendingApprovalTable role="member" />
+        </div>
       </div>
+
+      {/* Modals */}
       <ClassCreationModal
         isOpen={isClassModalOpen}
         onClose={() => setIsClassModalOpen(false)}

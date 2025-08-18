@@ -17,15 +17,19 @@
     "@fullcalendar/interaction": "^6.1.17",
     "@fullcalendar/react": "^6.1.17",
     "@fullcalendar/timegrid": "^6.1.17",
+    "@supabase/supabase-js": "^2.54.0",
     "axios": "^1.10.0",
     "chart.js": "^4.5.0",
     "jwt-decode": "^4.0.0",
+    "lucide-react": "^0.539.0",
     "moment": "^2.30.1",
     "next": "15.3.2",
     "next-auth": "^4.24.11",
     "react": "^19.0.0",
     "react-big-calendar": "^1.19.4",
-    "react-dom": "^19.0.0"
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "^19.0.0",
+    "sonner": "^2.0.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

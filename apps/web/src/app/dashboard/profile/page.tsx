@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { UserRole } from '@/types/types';
 import { User, Coach } from '@/types/types';
 import { userRoleService } from '@/app/services/roles';
@@ -58,7 +59,11 @@ export default function AdminProfile() {
     try {
       setLoading(true);
       // Save user details (excluding status, credits, authorisation)
-      let role: UserRole = userRoles.includes('coach') ? 'coach' : userRoles.includes('admin') ? 'admin' : 'member';
+      let role: UserRole = userRoles.includes('admin')
+        ? 'admin'
+        : userRoles.includes('coach')
+          ? 'coach'
+          : 'member';
       const payload: any = {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -69,14 +74,16 @@ export default function AdminProfile() {
       if (role === 'coach') payload.bio = formData.bio;
       // authorisation, credits, status excluded - admin should not edit own membership and permissions
       const token = localStorage.getItem('authToken');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/updateUserById/${user.userId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/updateUserById/${user.userId}`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
         },
-        body: JSON.stringify(payload),
-      });
+      );
       setError(null);
     } catch (err) {
       setError('Failed to update profile');
@@ -158,7 +165,9 @@ export default function AdminProfile() {
                   </div>
                 )}
                 <div className="form-actions">
-                  <button type="submit" className="submit-button" disabled={loading}>Save Changes</button>
+                  <button type="submit" className="submit-button" disabled={loading}>
+                    Save Changes
+                  </button>
                 </div>
               </form>
             </div>

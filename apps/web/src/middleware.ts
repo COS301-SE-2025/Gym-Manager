@@ -18,15 +18,16 @@ export function middleware(request: NextRequest) {
     pathname.endsWith('.webp') ||
     pathname.startsWith('/error') ||
     pathname === '' ||
-    pathname === '/'
+    pathname === '/' ||
+    pathname === '/login' ||
+    pathname === '/landing'
   ) {
     return NextResponse.next();
   }
 
+  // Allow non-protected routes to proceed normally
   if (!protectedRoutes.some((route) => pathname.startsWith(route))) {
-    return NextResponse.redirect(
-      new URL(`/error?error=404&message=${encodeURIComponent('Page not found')}`, request.url),
-    );
+    return NextResponse.next();
   }
 
   if (protectedRoutes.some((route) => pathname.startsWith(route))) {

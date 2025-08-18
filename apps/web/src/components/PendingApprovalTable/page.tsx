@@ -4,7 +4,7 @@ import Link from 'next/link';
 import './styles.css';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { User, UserRole, Admin, Member, Coach } from '@/types/types';
+import { User, UserRole } from '@/types/types';
 import { userRoleService } from '@/app/services/roles';
 
 interface UserTableProps {
@@ -31,35 +31,10 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
     fetchUsers();
   }, [role]);
 
-  const renderUserRow = (user: User) => {
-    switch (role) {
-      case 'member':
-        const member = user as Member;
-        return (
-          <>
-            <td>{member.status}</td>
-            <td>{member.credits}</td>
-          </>
-        );
-      case 'coach':
-        const coach = user as Coach;
-        return (
-          <>
-            <td>{coach.bio}</td>
-          </>
-        );
-      case 'admin':
-        const admin = user as Admin;
-        return (
-          <>
-            <td>{admin.authorisation}</td>
-          </>
-        );
-    }
-  };
-
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
+
+  const pendingMembers = users.filter((user) => (user as any).status === 'pending');
 
   return (
     <div className="user-table-container">
@@ -70,25 +45,45 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
             <th>First Name</th>
             <th>Last Name</th>
             <th>Email</th>
+            <th>Phone</th>
             <th>Actions</th>
-            {/* {role === 'member' && <th>Status</th>}
-            {role === 'member' && <th>Credits</th>}
-            {role === 'coach' && <th>Bio</th>}
-            {role === 'admin' && <th>Auth Level</th>} */}
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => (
+          {pendingMembers.map((user) => (
             <tr key={user.userId}>
               <td>{user.userId}</td>
               <td>{user.firstName}</td>
               <td>{user.lastName}</td>
               <td>{user.email}</td>
-              {/* {renderUserRow(user)} */}
+              <td>{user.phone}</td>
               <td>
-                <Link href={`users/edit/${user.userId}`} className="edit-link">
-                  Manage
-                </Link>
+                <button
+                  className="approve-btn"
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      await axios.patch(
+                        `${process.env.NEXT_PUBLIC_API_URL}/users/updateUserById/${user.userId}`,
+                        { status: 'approved' },
+                        {
+                          headers: {
+                            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+                          },
+                        },
+                      );
+                      //refresh users list
+                      const data = await userRoleService.getUsersByRole(role);
+                      setUsers(data);
+                    } catch (err) {
+                      setError(axios.isAxiosError(err) ? err.message : 'Failed to approve user');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                >
+                  Approve
+                </button>
               </td>
             </tr>
           ))}

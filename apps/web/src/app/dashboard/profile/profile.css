@@ -129,6 +129,21 @@
   font-size: 0.95rem;
 }
 
+.remove-button {
+  background-color: #ff3e3e;
+  color: white;
+  border: none;
+  padding: 0.45rem 0.9rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.remove-button:hover {
+  background-color: #e03535;
+}
+
 .form-group {
   margin-bottom: 1rem;
 }

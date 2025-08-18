@@ -1,3 +1,4 @@
+
 import {
   pgTable,
   unique,
@@ -254,3 +255,4 @@ export const classattendance = pgTable(
     primaryKey({ columns: [table.classId, table.memberId], name: 'classattendance_pkey' }),
   ],
 );
+

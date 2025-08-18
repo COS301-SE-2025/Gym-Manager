@@ -14,14 +14,16 @@ import healthRoutes from './routes/health';
 import { requestTimeout } from './middleware/requestTimeout';
 import { errorHandler } from './middleware/errorHandler';
 import { setupSwagger } from './swagger';
+import './listeners/adminNotificationListener';
 
 const app = express();
 const port = process.env.PORT || 4000;
 
+
 const allowedOrigins = [
   'http://localhost:3000',
   'https://gym-manager-ashen.vercel.app',
-];
+
 
 const corsOptions: CorsOptions = {
   origin(origin, cb) {
@@ -34,6 +36,8 @@ const corsOptions: CorsOptions = {
   optionsSuccessStatus: 200,
 };
 
+
+// CORS must run before any other routes
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 

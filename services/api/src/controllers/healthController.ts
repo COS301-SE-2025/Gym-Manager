@@ -7,11 +7,12 @@ const STARTED_AT = Number(process.env.APP_STARTED_AT ?? Date.now());
 
 export const healthCheck = async (_req: Request, res: Response) => {
   const uptimeSec = Math.round((Date.now() - STARTED_AT) / 1000);
-  const memBytes = process.memoryUsage().rss;
+  const memBytes  = process.memoryUsage().rss;
 
   const ping = Promise.race([
     db.execute(sql`SELECT 1`),
-    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 100)),
+    // 10 second timeout
+    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10_000)),
   ]);
 
   try {

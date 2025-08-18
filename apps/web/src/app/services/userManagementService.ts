@@ -9,11 +9,11 @@ export const userManagementService = {
       { headers: { Authorization: `Bearer ${token}` } },
     );
   },
-  async updateStatus(userId: number, status: string, firstName: string): Promise<void> {
+  async updateStatus(userId: number, status: string): Promise<void> {
     const token = localStorage.getItem('authToken');
     await axios.patch(
       `${process.env.NEXT_PUBLIC_API_URL}/users/updateUserById/${userId}`,
-      { status, role: 'member', firstName },
+      { status, role: 'member' },
       { headers: { Authorization: `Bearer ${token}` } },
     );
   },

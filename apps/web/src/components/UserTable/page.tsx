@@ -75,6 +75,7 @@ export default function UserTable({ role }: UserTableProps) {
             <th>First Name</th>
             <th>Last Name</th>
             <th>Email</th>
+            <th>Phone</th>
             {role === 'member' && <th>Status</th>}
             {role === 'member' && <th>Credits</th>}
             {role === 'coach' && <th>Bio</th>}
@@ -89,6 +90,7 @@ export default function UserTable({ role }: UserTableProps) {
               <td>{user.firstName}</td>
               <td>{user.lastName}</td>
               <td>{user.email}</td>
+              <td>{user.phone}</td>
               {renderUserRow(user)}
               <td>
                 <Link href={`users/edit/${user.userId}`} className="edit-link">

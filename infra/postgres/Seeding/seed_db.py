@@ -33,8 +33,8 @@ else:
     # -------- local database --------
     DB_CFG = dict(
         host=os.getenv("PGHOST", "localhost"),
-        port=os.getenv("PGPORT", 33322),
-        dbname=os.getenv("PGDATABASE", "HIIT_GYM_MANAGER"),
+        port=os.getenv("PGPORT", 5432),
+        dbname=os.getenv("PGDATABASE", "HIIT_GYM"),
         user=os.getenv("PGUSER", "postgres"),
         password=os.getenv("PGPASSWORD", "root"),
     )
@@ -82,7 +82,7 @@ def insert_user(cur, first, last, email, phone, clear_pw, role):
         cur.execute(
             """
             INSERT INTO members (user_id,status,credits_balance)
-            VALUES (%s,'approved',%s);
+            VALUES (%s,'pending',%s);
             """,
             (user_id, random.randint(5, 20)),
         )

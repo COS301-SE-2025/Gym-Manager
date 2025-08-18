@@ -4,6 +4,7 @@ import { hashPassword, verifyPassword, generateJwt } from '../middleware/auth';
 import { eq } from 'drizzle-orm';
 import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { notificationEmitter } from '../events/notificationEmitter';
 
 
 export const register = async (req: Request, res: Response) => {
@@ -39,6 +40,7 @@ export const register = async (req: Request, res: Response) => {
       status: 'pending', // default status
       creditsBalance: 0, // default balance
     });
+    notificationEmitter.emit('user:signup', newUser);
   }
 
   if (roles.includes('coach')) {

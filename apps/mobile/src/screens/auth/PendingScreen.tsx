@@ -1,11 +1,70 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, Dimensions } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  Dimensions,
+  ScrollView,
+  RefreshControl,
+  Alert
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
 import IconLogo from '../../components/common/IconLogo';
+import { getUserStatus } from './Model/userStatus';
+import { getToken } from '../../utils/authStorage';
 
 const { width } = Dimensions.get('window');
 
 export default function PendingScreen() {
+  const [refreshing, setRefreshing] = useState(false);
+  const navigation = useNavigation();
+
+  const checkStatus = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        Alert.alert('Error', 'Authentication token not found. Please login again.');
+        return;
+      }
+
+      const userStatus = await getUserStatus();
+      
+      // If status is no longer pending, navigate to appropriate screen
+      if (userStatus.membershipStatus !== 'pending') {
+        if (userStatus.roles.includes('member') && userStatus.roles.includes('coach')) {
+          navigation.navigate('RoleSelection' as never);
+        } else if (userStatus.roles.includes('member')) {
+          navigation.navigate('Home' as never);
+        } else if (userStatus.roles.includes('coach')) {
+          navigation.navigate('Coach' as never);
+        } else {
+          navigation.navigate('Home' as never);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check status:', error);
+      // Don't show alert on every refresh, just log the error
+    }
+  }, [navigation]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await checkStatus();
+    setRefreshing(false);
+  }, [checkStatus]);
+
+  // Check status every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkStatus();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [checkStatus]);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
@@ -16,7 +75,19 @@ export default function PendingScreen() {
       </View>
 
       {/* Main Content */}
-      <View style={styles.contentContainer}>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#D8FF3E"
+            colors={["#D8FF3E"]}
+          />
+        }
+      >
         {/* Warning Icon with Gradient Circles */}
         <View style={styles.warningContainer}>
           {/* Outer gradient ring */}
@@ -50,9 +121,14 @@ export default function PendingScreen() {
         {/* Description */}
         <Text style={styles.description}>
           Your account status is pending and is waiting for review from the gym manager. We will
-          notify you when you're account has been approved
+          notify you when your account has been approved.
         </Text>
-      </View>
+
+        {/* Pull to refresh hint */}
+        <Text style={styles.refreshHint}>
+          Pull down to check if your account has been approved
+        </Text>
+      </ScrollView>
 
       {/* Footer */}
       <View style={styles.footerContainer}>
@@ -76,11 +152,15 @@ const styles = StyleSheet.create({
     marginTop: 60,
     marginBottom: 40,
   },
-  contentContainer: {
+  scrollContainer: {
     flex: 1,
+  },
+  contentContainer: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
+    paddingBottom: 40,
   },
   warningContainer: {
     alignItems: 'center',
@@ -172,5 +252,12 @@ const styles = StyleSheet.create({
     color: '#888',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  refreshHint: {
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 20,
+    fontStyle: 'italic',
   },
 });

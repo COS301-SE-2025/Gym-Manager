@@ -50,27 +50,27 @@ export default function LandingPage() {
         <div className="container">
           <h2>Plans & pricing</h2>
           <div className="card-grid">
-            <MembershipCard name={'Free Trial'} price="$ 0" benefits={[
+            <MembershipCard name={'Free Trial'} price="R 0" benefits={[
               '14‑day sandbox with full access',
               'Sample data to explore',
               'No credit card required',
             ]} />
-            <MembershipCard name={'Starter'} price="$ 49" benefits={[
+            <MembershipCard name={'Starter'} price="R 49" benefits={[
               'Class scheduling & check‑ins',
               'Up to 150 members',
               'Email support',
             ]} />
-            <MembershipCard name={'Growth'} price="$ 119" benefits={[
+            <MembershipCard name={'Growth'} price="R 119" benefits={[
               'Memberships & payments',
               'Coach portal & roles',
               'Priority support',
             ]} />
-            <MembershipCard name={'Pro (Single location)'} price="$ 165" benefits={[
+            <MembershipCard name={'Pro (Single location)'} price="R 165" benefits={[
               'Unlimited members & classes',
               'Advanced analytics',
               'Phone support',
             ]} />
-            <MembershipCard name={'Pro Plus (Multi‑location)'} price="$ 195" benefits={[
+            <MembershipCard name={'Pro Plus (Multi‑location)'} price="R 195" benefits={[
               'Multi‑location dashboards',
               'Permissions & audit logs',
               'API access',

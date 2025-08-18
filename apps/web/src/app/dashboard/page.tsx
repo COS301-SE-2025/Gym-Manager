@@ -173,7 +173,7 @@ export default function DashboardPage() {
           ) {
             setNotifications((prev) => [{ ...notif, read: false }, ...prev].slice(0, 5));
           }
-        }
+        },
       )
       .subscribe();
   };
@@ -188,9 +188,7 @@ export default function DashboardPage() {
       });
 
       setNotifications((prev) =>
-        prev.map((n) =>
-          n.notification_id === notificationId ? { ...n, read: true } : n
-        )
+        prev.map((n) => (n.notification_id === notificationId ? { ...n, read: true } : n)),
       );
     } catch (error) {
       console.error('Failed to mark notification as read:', error);

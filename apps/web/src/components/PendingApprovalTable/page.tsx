@@ -31,14 +31,10 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
     fetchUsers();
   }, [role]);
 
-
-
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
 
-  const pendingMembers = users.filter(
-    (user) => (user as any).status === 'pending'
-  );
+  const pendingMembers = users.filter((user) => (user as any).status === 'pending');
 
   return (
     <div className="user-table-container">
@@ -74,7 +70,7 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
                           headers: {
                             Authorization: `Bearer ${localStorage.getItem('authToken')}`,
                           },
-                        }
+                        },
                       );
                       //refresh users list
                       const data = await userRoleService.getUsersByRole(role);

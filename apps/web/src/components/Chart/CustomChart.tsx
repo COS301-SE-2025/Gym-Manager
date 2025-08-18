@@ -1,18 +1,18 @@
 'use client';
 
-import { 
-  Chart as ChartJS, 
-  CategoryScale, 
-  LinearScale, 
-  BarElement, 
-  Title, 
-  Tooltip, 
-  Legend, 
-  PointElement, 
-  LineElement, 
-  ArcElement, 
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  PointElement,
+  LineElement,
+  ArcElement,
   RadialLinearScale,
-  ChartOptions
+  ChartOptions,
 } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
 
@@ -27,7 +27,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   ArcElement,
-  RadialLinearScale
+  RadialLinearScale,
 );
 
 type ChartType = 'bar' | 'line' | 'pie' | 'doughnut';
@@ -55,33 +55,33 @@ export function CustomChart({ type, labels, datasets, options }: CustomChartProp
     'rgba(54, 162, 235, 0.7)',
     'rgba(255, 206, 86, 0.7)',
     'rgba(153, 102, 255, 0.7)',
-    'rgba(255, 159, 64, 0.7)'
+    'rgba(255, 159, 64, 0.7)',
   ];
 
-  const processedDatasets = datasets.map(dataset => {
+  const processedDatasets = datasets.map((dataset) => {
     if (type === 'pie' || type === 'doughnut') {
       return {
         ...dataset,
         backgroundColor: dataset.backgroundColor || defaultColors,
         borderColor: dataset.borderColor || '#2e2e2e',
-        borderWidth: dataset.borderWidth || 1
+        borderWidth: dataset.borderWidth || 1,
       };
     }
     return {
       ...dataset,
-      borderWidth: dataset.borderWidth || 1
+      borderWidth: dataset.borderWidth || 1,
     };
   });
 
   const chartData = {
     labels,
-    datasets: processedDatasets
+    datasets: processedDatasets,
   };
 
   const chartOptions: ChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    ...options
+    ...options,
   };
 
   return <Chart type={type} data={chartData} options={chartOptions} />;

@@ -8,8 +8,12 @@ type ChartType = 'bar' | 'line' | 'pie' | 'doughnut';
 
 export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
-  const [userRoleData, setUserRoleData] = useState<{labels: string[], datasets: any[]} | null>(null);
-  const [scheduleData, setScheduleData] = useState<{labels: string[], datasets: any[]} | null>(null);
+  const [userRoleData, setUserRoleData] = useState<{ labels: string[]; datasets: any[] } | null>(
+    null,
+  );
+  const [scheduleData, setScheduleData] = useState<{ labels: string[]; datasets: any[] } | null>(
+    null,
+  );
   const [userRoleChartType, setUserRoleChartType] = useState<ChartType>('pie');
   const [scheduleChartType, setScheduleChartType] = useState<ChartType>('bar');
 
@@ -35,71 +39,88 @@ export default function ReportsPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch user role distribution
         const [admins, coaches, members] = await Promise.all([
           userRoleService.getUsersByRole('admin'),
           userRoleService.getUsersByRole('coach'),
-          userRoleService.getUsersByRole('member')
+          userRoleService.getUsersByRole('member'),
         ]);
 
         setUserRoleData({
           labels: ['Admins', 'Coaches', 'Members'],
-          datasets: [{
-            label: 'User Distribution',
-            data: [admins.length, coaches.length, members.length],
-            backgroundColor: [chartColors[0], chartColors[1], chartColors[2]],
-            borderColor: '#2e2e2e',
-            borderWidth: 1
-          }]
+          datasets: [
+            {
+              label: 'User Distribution',
+              data: [admins.length, coaches.length, members.length],
+              backgroundColor: [chartColors[0], chartColors[1], chartColors[2]],
+              borderColor: '#2e2e2e',
+              borderWidth: 1,
+            },
+          ],
         });
 
         // Fetch and format weekly schedule data
         const weeklySchedule = await userRoleService.getWeeklySchedule();
-        
-        if (weeklySchedule && typeof weeklySchedule === 'object' && !Array.isArray(weeklySchedule)) {
-          const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-          
-          const sessionsPerDay = daysOfWeek.map(day => {
+
+        if (
+          weeklySchedule &&
+          typeof weeklySchedule === 'object' &&
+          !Array.isArray(weeklySchedule)
+        ) {
+          const daysOfWeek = [
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday',
+          ];
+
+          const sessionsPerDay = daysOfWeek.map((day) => {
             const dateKeys = Object.keys(weeklySchedule);
             let count = 0;
-            
-            dateKeys.forEach(dateStr => {
+
+            dateKeys.forEach((dateStr) => {
               const date = new Date(dateStr);
               const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-              
+
               if (dayName === day) {
                 count += weeklySchedule[dateStr].length;
               }
             });
-            
+
             return count;
           });
 
           setScheduleData({
             labels: daysOfWeek,
-            datasets: [{
-              label: 'Weekly Sessions',
-              data: sessionsPerDay,
-              backgroundColor: chartColors[3],
-              borderColor: '#ffffff',
-              borderWidth: 1
-            }]
+            datasets: [
+              {
+                label: 'Weekly Sessions',
+                data: sessionsPerDay,
+                backgroundColor: chartColors[3],
+                borderColor: '#ffffff',
+                borderWidth: 1,
+              },
+            ],
           });
         } else {
           console.warn('Unexpected schedule data format:', weeklySchedule);
           setScheduleData({
             labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [{
-              label: 'Weekly Sessions',
-              data: [0, 0, 0, 0, 0, 0, 0],
-              backgroundColor: chartColors[3],
-              borderColor: '#ffffff',
-              borderWidth: 1
-            }]
+            datasets: [
+              {
+                label: 'Weekly Sessions',
+                data: [0, 0, 0, 0, 0, 0, 0],
+                backgroundColor: chartColors[3],
+                borderColor: '#ffffff',
+                borderWidth: 1,
+              },
+            ],
           });
         }
-
       } catch (error) {
         console.error('Failed to fetch data:', error);
       } finally {
@@ -114,28 +135,28 @@ export default function ReportsPage() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { 
+      legend: {
         position: 'top' as const,
         labels: {
           color: '#ffffff',
           font: {
-            size: 12
+            size: 12,
           },
-          padding: 20
-        }
+          padding: 20,
+        },
       },
-      title: { 
-        display: true, 
+      title: {
+        display: true,
         text: title,
         color: '#ffffff',
         font: {
           size: 16,
-          weight: '500'
+          weight: 500,
         },
         padding: {
           top: 10,
-          bottom: (type === 'pie' || type === 'doughnut') ? 30 : 10
-        }
+          bottom: type === 'pie' || type === 'doughnut' ? 30 : 10,
+        },
       },
       tooltip: {
         backgroundColor: '#2e2e2e',
@@ -145,36 +166,39 @@ export default function ReportsPage() {
         borderWidth: 1,
         padding: 12,
         usePointStyle: true,
-      }
-    },
-    scales: (type === 'bar' || type === 'line') ? {
-      x: {
-        ticks: {
-          color: '#aaaaaa',
-          font: {
-            size: 12
-          }
-        },
-        grid: {
-          color: '#434343',
-          drawBorder: false
-        }
       },
-      y: {
-        ticks: {
-          color: '#aaaaaa',
-          font: {
-            size: 12
-          },
-          precision: 0
-        },
-        grid: {
-          color: '#434343',
-          drawBorder: false
-        },
-        beginAtZero: true
-      }
-    } : undefined,
+    },
+    scales:
+      type === 'bar' || type === 'line'
+        ? {
+            x: {
+              ticks: {
+                color: '#aaaaaa',
+                font: {
+                  size: 12,
+                },
+              },
+              grid: {
+                color: '#434343',
+                drawBorder: false,
+              },
+            },
+            y: {
+              ticks: {
+                color: '#aaaaaa',
+                font: {
+                  size: 12,
+                },
+                precision: 0,
+              },
+              grid: {
+                color: '#434343',
+                drawBorder: false,
+              },
+              beginAtZero: true,
+            },
+          }
+        : undefined,
     elements: {
       bar: {
         borderRadius: 4,
@@ -189,8 +213,8 @@ export default function ReportsPage() {
       point: {
         radius: 5,
         hoverRadius: 7,
-      }
-    }
+      },
+    },
   });
 
   if (loading) {
@@ -234,18 +258,18 @@ export default function ReportsPage() {
               </div>
             </div>
             <div className="card-content">
-              <div 
+              <div
                 className="relative"
-                style={{ 
+                style={{
                   height: `${chartDimensions[userRoleChartType].height}px`,
-                  width: chartDimensions[userRoleChartType].width
+                  width: chartDimensions[userRoleChartType].width,
                 }}
               >
-                <CustomChart 
-                  type={userRoleChartType} 
-                  labels={userRoleData.labels} 
-                  datasets={userRoleData.datasets} 
-                  options={getChartOptions('User Role Distribution', userRoleChartType)} 
+                <CustomChart
+                  type={userRoleChartType}
+                  labels={userRoleData.labels}
+                  datasets={userRoleData.datasets}
+                  options={getChartOptions('User Role Distribution', userRoleChartType)}
                 />
               </div>
             </div>
@@ -270,18 +294,22 @@ export default function ReportsPage() {
               </div>
             </div>
             <div className="card-content">
-              <div 
+              <div
                 className="relative"
-                style={{ 
+                style={{
                   height: `${chartDimensions[scheduleChartType].height}px`,
-                  width: chartDimensions[scheduleChartType].width
+                  width: chartDimensions[scheduleChartType].width,
                 }}
               >
-                <CustomChart 
-                  type={scheduleChartType === 'pie' || scheduleChartType === 'doughnut' ? 'bar' : scheduleChartType} 
-                  labels={scheduleData.labels} 
-                  datasets={scheduleData.datasets} 
-                  options={getChartOptions('Weekly Session Schedule', scheduleChartType)} 
+                <CustomChart
+                  type={
+                    scheduleChartType === 'pie' || scheduleChartType === 'doughnut'
+                      ? 'bar'
+                      : scheduleChartType
+                  }
+                  labels={scheduleData.labels}
+                  datasets={scheduleData.datasets}
+                  options={getChartOptions('Weekly Session Schedule', scheduleChartType)}
                 />
               </div>
             </div>

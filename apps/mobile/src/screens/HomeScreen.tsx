@@ -139,7 +139,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setBookedError(null);
     try {
       const bookedResponse = await axios.get<ApiBookedClass[]>(
-        `${config.BASE_URL}/classes/member/classes`,
+        `${config.BASE_URL}/member/classes`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -189,7 +189,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setUpcomingError(null);
     try {
       const upcomingResponse = await axios.get<ApiUpcomingClass[]>(
-        `${config.BASE_URL}/classes/classes`,
+        `${config.BASE_URL}/classes`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -242,7 +242,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setIsLoadingLiveClass(true);
     setLiveClassError(null);
     try {
-      const response = await axios.get<ApiLiveClassResponse>(`${config.BASE_URL}/live/live/class`, {
+      const response = await axios.get<ApiLiveClassResponse>(`${config.BASE_URL}/live/class`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.data.ongoing && response.data.class) {
@@ -317,7 +317,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       }
 
       const response = await axios.post(
-        `${config.BASE_URL}/classes/book`,
+        `${config.BASE_URL}/book`,
         { classId: classId },
         { headers: { Authorization: `Bearer ${token}` } },
       );

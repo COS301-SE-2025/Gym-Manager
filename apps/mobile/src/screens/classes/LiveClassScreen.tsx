@@ -27,7 +27,7 @@ type Step = {
 async function submitIntervalRepsApi(classId: number, stepIndex: number, reps: number) {
   const token = await getToken();
   await axios.post(
-    `${config.BASE_URL}/live/live/${classId}/interval/score`,
+    `${config.BASE_URL}/live/${classId}/interval/score`,
     { stepIndex, reps },
     { headers: { Authorization: `Bearer ${token}` } }
   );
@@ -66,7 +66,7 @@ export default function LiveClassScreen() {
     const fetchFallback = async () => {
       if (!workoutId || session) return;
       const token = await getToken();
-      const { data } = await axios.get(`${config.BASE_URL}/live/workout/${workoutId}/steps`, {
+      const { data } = await axios.get(`${config.BASE_URL}/workout/${workoutId}/steps`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (data?.steps) setFallbackSteps(data.steps as Step[]);

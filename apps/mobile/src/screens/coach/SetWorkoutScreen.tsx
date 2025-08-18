@@ -117,7 +117,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       }
 
       const response = await axios.get<ClassDetails[]>(
-        `${config.BASE_URL}/classes/coach/assigned`,
+        `${config.BASE_URL}/coach/assigned`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
@@ -375,7 +375,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         console.log(`Creating workout: ${workout.workoutName}`, workoutData);
 
         const createResponse = await axios.post(
-          `${config.BASE_URL}/classes/coach/create-workout`,
+          `${config.BASE_URL}/coach/create-workout`,
           workoutData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -392,7 +392,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         // For now, assign the first workout to the class
         // You might want to modify the API to support multiple workouts per class
         const assignResponse = await axios.post(
-          `${config.BASE_URL}/classes/coach/assign-workout`,
+          `${config.BASE_URL}/coach/assign-workout`,
           {
             classId: classDetails.classId,
             workoutId: createdWorkoutIds[0], // Assign the first workout

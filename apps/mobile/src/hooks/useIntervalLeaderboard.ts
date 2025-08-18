@@ -17,7 +17,7 @@ export function useIntervalLeaderboard(classId: number) {
   const refresh = useCallback(async () => {
     const token = await getToken();
     const { data } = await axios.get<Row[]>(
-      `${config.BASE_URL}/live/live/${classId}/interval/leaderboard`,
+      `${config.BASE_URL}/live/${classId}/interval/leaderboard`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     setRows(data ?? []);

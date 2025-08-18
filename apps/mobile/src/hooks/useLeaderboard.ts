@@ -38,7 +38,7 @@ export function useLeaderboard(classId: number, enabled = true) {
     try {
       const token = await getToken();
       const { data } = await axios.get<LbRow[]>(
-        `${config.BASE_URL}/live/live/${classId}/leaderboard`,
+        `${config.BASE_URL}/live/${classId}/leaderboard`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

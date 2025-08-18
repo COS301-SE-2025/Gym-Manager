@@ -29,7 +29,7 @@ export const getUserSettings = async (): Promise<UserSettings> => {
       throw new Error('No authentication token found');
     }
 
-    const response = await axios.get<UserSettingsResponse>(`${API_BASE_URL}/settings/user/settings`, {
+    const response = await axios.get<UserSettingsResponse>(`${API_BASE_URL}/user/settings`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -57,7 +57,7 @@ export const updateUserVisibility = async (isPublic: boolean): Promise<void> => 
     }
 
     const response = await axios.post<UpdateVisibilityResponse>(
-      `${API_BASE_URL}/settings/user/settings/visibility`,
+      `${API_BASE_URL}/user/settings/visibility`,
       {
         publicVisibility: isPublic,
       },

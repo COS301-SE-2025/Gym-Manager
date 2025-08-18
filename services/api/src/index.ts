@@ -13,6 +13,7 @@ import healthRoutes from './routes/health';
 import { requestTimeout } from './middleware/requestTimeout';
 import { errorHandler } from './middleware/errorHandler';
 import { setupSwagger } from './swagger';
+import notificationRoutes from './routes/notifications';
 import './listeners/adminNotificationListener';
 
 const app = express();
@@ -49,6 +50,7 @@ app.use(adminRoutes);
 app.use(classRoutes);
 app.use(ongoingClassRoutes);
 app.use(userSettingsRoutes);
+app.use(notificationRoutes);
 
 app.use(errorHandler);
 setupSwagger(app);

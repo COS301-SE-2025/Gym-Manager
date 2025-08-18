@@ -65,6 +65,7 @@ export interface ApiLiveClassResponse {
     workoutId: number;
     workoutName: string;
     workoutContent: string;
+    workoutType: 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA';
   };
   participants: {
     userId: number;
@@ -249,8 +250,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       } else {
         setLiveClass(null);
       }
-    } catch (error) {
-      console.error('Failed to fetch live class:', error);
+    } catch (error: any) {
+      // Benign on first load (token race / no live class yet / transient)
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        if (!status || status === 401 || status === 404 || status === 429 || status === 503) {
+          setLiveClass(null);
+          return; // don't log or set user-visible error
+        }
+      }
+      console.error('fetchLiveClass:', error);
       setLiveClassError('Failed to load live class information.');
     } finally {
       setIsLoadingLiveClass(false);
@@ -472,23 +481,21 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <TouchableOpacity
             style={styles.liveClassBanner}
             onPress={() => {
-              // Only navigate to CoachLiveClass if the user is a coach and NOT a member
-              if (
-                Array.isArray(currentUser?.roles) &&
-                currentUser.roles.includes('coach') &&
-                !currentUser.roles.includes('member')
-              ) {
-                navigation.navigate('CoachLiveClass', {
+              const rolesFromApi = Array.isArray(liveClass?.roles) ? liveClass.roles : [];
+              if (rolesFromApi.includes('coach')) {
+                navigation.navigate('CoachLive', {
                   classId: liveClass.class.classId,
                   liveClassData: liveClass,
                 });
               } else {
-                navigation.navigate('LiveClass', {
+                // New member flow starts at the Overview screen
+                navigation.navigate('Overview', {
                   classId: liveClass.class.classId,
                   liveClassData: liveClass,
                 });
               }
             }}
+
           >
             <View style={styles.liveClassLeft}>
               <View style={styles.liveIndicator} />

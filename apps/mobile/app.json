@@ -3,7 +3,7 @@
     "name": "mobile",
     "slug": "mobile",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -24,6 +24,10 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "EXPO_PUBLIC_SUPABASE_URL": "https://uajwqpocubnhrotapire.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhandxcG9jdWJuaHJvdGFwaXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NjI0MzcsImV4cCI6MjA2OTUzODQzN30.BVefkikNJHoPh5JJKTkTEaQu_bAO5eSxx-ZYNiqZZm0"
     }
   }
 }

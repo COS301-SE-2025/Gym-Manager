@@ -1,17 +1,26 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import PendingScreen from '../screens/auth/PendingScreen';
 import RoleSelectionScreen from '../screens/auth/RoleSelectionScreen';
+
 import HomeScreen from '../screens/HomeScreen';
+
 import CoachNavigator from './CoachNavigator';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
-import LiveClassScreen from '../screens/classes/LiveClassScreen';
+
+import ForTimeLive from '../screens/classes/ForTimeLiveScreen';
+import AmrapLive from '../screens/classes/AmrapLiveScreen';
+import Overview from '../screens/classes/OverviewScreen';
+import LiveClassEnd from '../screens/classes/LiveClassEndScreen';
+
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import ResolveAuthScreen from '../screens/auth/ResolveAuthScreen';
-import CoachLiveClassScreen from '../screens/coach/CoachLiveClassScreen';
+import CoachLive from '../screens/coach/CoachLiveClassScreen';
+
 import type { ApiLiveClassResponse } from '../screens/HomeScreen';
 import LeaderboardScreen from '../screens/home/LeaderboardScreen';
+
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import FAQScreen from '../screens/home/FAQScreen';
@@ -19,8 +28,19 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 
 export type AuthStackParamList = {
   MemberTabs: undefined;
-  LiveClass: { classId: number; liveClassData: ApiLiveClassResponse };
-  CoachLiveClass: { classId: number; liveClassData: ApiLiveClassResponse };
+
+  // Member live flow
+  Overview: { classId: number; liveClassData?: ApiLiveClassResponse };
+  ForTimeLive: { classId: number };
+  LiveClassEnd: { classId: number };
+  AmrapLive: { classId: number };
+
+  // Legacy
+  LiveClass?: any;
+
+  // Coach
+  CoachLive: { classId: number; liveClassData: ApiLiveClassResponse };
+
   RoleSelection: undefined;
   Pending: undefined;
   Coach: undefined;
@@ -30,6 +50,7 @@ export type AuthStackParamList = {
   ResolveAuth: undefined;
   FAQ: undefined;
 };
+
 
 const Stack = createStackNavigator<AuthStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -75,25 +96,41 @@ function MemberTabNavigator() {
   );
 }
 
+/**
+ * Alias screen so legacy calls to navigation.navigate('Home') keep working.
+ * It immediately redirects to the MemberTabs → Home tab.
+ */
+function HomeAliasScreen({ navigation }: any) {
+  useEffect(() => {
+    // Use replace to avoid building up an extra layer on the stack
+    navigation.replace('MemberTabs', { screen: 'Home' });
+  }, [navigation]);
+  return null;
+}
+
 export default function AuthNavigator() {
   return (
     <Stack.Navigator
       initialRouteName="ResolveAuth"
-      screenOptions={{
-        headerShown: false,
-      }}
+      screenOptions={{ headerShown: false }}
     >
       <Stack.Screen name="ResolveAuth" component={ResolveAuthScreen} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+
       <Stack.Screen name="MemberTabs" component={MemberTabNavigator} />
-      <Stack.Screen name="LiveClass" component={LiveClassScreen} />
-      <Stack.Screen name="CoachLiveClass" component={CoachLiveClassScreen} />
+      <Stack.Screen name="Home" component={HomeAliasScreen} />
+
+      <Stack.Screen name="Overview" component={Overview} />
+      <Stack.Screen name="ForTimeLive" component={ForTimeLive} />
+      <Stack.Screen name="AmrapLive" component={AmrapLive} />
+      <Stack.Screen name="LiveClassEnd" component={LiveClassEnd} />
+      <Stack.Screen name="CoachLive" component={CoachLive} />
+
       <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
       <Stack.Screen name="Pending" component={PendingScreen} />
       <Stack.Screen name="Coach" component={CoachNavigator} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
-      <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="FAQ" component={FAQScreen} />
     </Stack.Navigator>
   );

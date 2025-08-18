@@ -1,79 +1,115 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
-import { RouteProp, useIsFocused, useRoute } from '@react-navigation/native';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity } from 'react-native';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { useLiveSession } from '../../hooks/useLiveSession';
-import { useLeaderboard } from '../../hooks/useLeaderboard';
-import { coachStart, coachStop } from '../../hooks/useProgressActions';
+import { useSession } from '../../hooks/useSession';
+import { useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
+import axios from 'axios';
+import { getToken } from '../../utils/authStorage';
+import config from '../../config';
 
-type R = RouteProp<AuthStackParamList, 'CoachLiveClass'>;
+type R = RouteProp<AuthStackParamList, 'CoachLive'>;
 
-export default function CoachLiveClassScreen() {
-  const isFocused = useIsFocused();
+async function call(path: string) {
+  const token = await getToken();
+  await axios.post(`${config.BASE_URL}${path}`, {}, { headers: { Authorization: `Bearer ${token}` }});
+}
+
+export default function CoachScreen() {
   const { params } = useRoute<R>();
-  const classId = params?.classId as number;
-  const liveClassData = params?.liveClassData;
-  const session = useLiveSession(classId, isFocused);
-  const { rows: leaderboard } = useLeaderboard(classId, isFocused);
+  const classId = params.classId as number;
 
-  // Try to get workout type from session or passed data
-  const workoutType = (session as any)?.workout_type?.toUpperCase?.() 
-    || liveClassData?.class?.workoutType?.toUpperCase?.();
+  const session = useSession(classId);
+  const lb = useLeaderboardRealtime(classId);
+
+  const allFinished = useMemo(
+    () => lb.length > 0 && lb.every((r:any) => !!r.finished),
+    [lb]
+  );
 
   return (
-    <SafeAreaView style={s.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
+    <SafeAreaView style={s.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#111" />
       <View style={s.pad}>
         <Text style={s.title}>Coach Controls</Text>
         <Text style={s.meta}>Class #{classId}</Text>
         <Text style={s.meta}>Status: {session?.status ?? '—'}</Text>
-        {workoutType ? <Text style={s.meta}>Type: {workoutType}</Text> : null}
+        <Text style={s.meta}>Type: {session?.workout_type ?? '—'}</Text>
 
         <View style={{ height: 12 }} />
-
-        {session?.status !== 'live' ? (
-          <TouchableOpacity style={s.primary} onPress={() => coachStart(classId)}>
-            <Text style={s.primaryText}>Start Workout</Text>
+        {session?.status !== 'live' && session?.status !== 'paused' ? (
+          <TouchableOpacity style={s.btnPrimary} onPress={() => call(`/coach/live/${classId}/start`)}>
+            <Text style={s.btnPrimaryText}>Start Workout</Text>
           </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={s.danger} onPress={() => coachStop(classId)}>
-            <Text style={s.dangerText}>Stop</Text>
-          </TouchableOpacity>
-        )}
+        ) : null}
 
-        <View style={{ height: 24 }} />
-
-        <Text style={s.section}>Leaderboard</Text>
-        {leaderboard.slice(0, 12).map((r, i) => (
-          <View key={`${r.user_id}-${i}`} style={s.row}>
-            <Text style={s.pos}>{i + 1}</Text>
-            <Text style={s.user}>User {r.user_id}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              {typeof r.completed_minutes === 'number' && r.completed_minutes > 0 ? (
-                <Text style={s.badge}>{r.completed_minutes}m ✓</Text>
-              ) : null}
-              <Text style={s.score}>{r.display_score}</Text>
-            </View>
+        {session?.status === 'live' && !allFinished ? (
+          <View style={s.row}>
+            <TouchableOpacity style={s.btn} onPress={() => call(`/coach/live/${classId}/pause`)}>
+              <Text style={s.btnText}>Pause</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.btn, s.btnDanger]} onPress={() => call(`/coach/live/${classId}/stop`)}>
+              <Text style={s.btnTextAlt}>Stop</Text>
+            </TouchableOpacity>
           </View>
-        ))}
+        ) : null}
+
+        {(session?.status === 'paused' || (session?.status === 'live' && allFinished)) ? (
+          <View style={{gap:10}}>
+            {session?.status === 'paused' && (
+              <TouchableOpacity style={s.btnPrimary} onPress={() => call(`/coach/live/${classId}/resume`)}>
+                <Text style={s.btnPrimaryText}>Resume</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={[s.btnPrimary, {backgroundColor:'#ff5c5c'}]} onPress={() => call(`/coach/live/${classId}/stop`)}>
+              <Text style={[s.btnPrimaryText, {color:'#fff'}]}>Finish Workout</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        <View style={{ height: 18 }} />
+        <Text style={s.section}>Leaderboard</Text>
+        <View style={s.lb}>
+          {lb.map((r:any,i:number)=>(
+            <View key={`${r.user_id}-${i}`} style={s.lbRow}>
+              <Text style={s.pos}>{i+1}</Text>
+              <Text style={s.user}>
+                {(r.first_name || r.last_name) ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim() : (r.name ?? `User ${r.user_id}`)}
+              </Text>
+              <Text style={s.score}>
+                {r.finished ? fmt(Number(r.elapsed_seconds ?? 0)) : `${Number(r.total_reps ?? 0)} reps`}
+              </Text>
+            </View>
+          ))}
+        </View>
       </View>
     </SafeAreaView>
   );
 }
 
+function fmt(t: number) {
+  const s = Math.max(0, Math.floor(t));
+  const m = Math.floor(s/60);
+  const ss = s%60;
+  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+}
+
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111' },
-  pad: { flex: 1, padding: 20 },
-  title: { color: '#d8ff3e', fontSize: 24, fontWeight: '800' },
-  meta: { color: '#aaa', marginTop: 4 },
-  section: { color: '#fff', marginTop: 20, marginBottom: 8, fontWeight: '700' },
-  primary: { backgroundColor: '#d8ff3e', padding: 16, borderRadius: 10, alignItems: 'center' },
-  primaryText: { color: '#111', fontWeight: '800' },
-  danger: { backgroundColor: '#ff5c5c', padding: 16, borderRadius: 10, alignItems: 'center' },
-  dangerText: { color: '#fff', fontWeight: '800' },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
-  pos: { width: 24, color: '#d8ff3e', fontWeight: '800' },
-  user: { flex: 1, color: '#ddd' },
-  score: { color: '#fff', fontWeight: '700' },
-  badge: { color: '#d8ff3e', fontWeight: '800' },
+  root:{ flex:1, backgroundColor:'#101010' },
+  pad:{ flex:1, padding:18 },
+  title:{ color:'#d8ff3e', fontSize:24, fontWeight:'900' },
+  meta:{ color:'#9aa', marginTop:4 },
+  section:{ color:'#fff', marginTop:16, fontWeight:'800' },
+  btnPrimary:{ backgroundColor:'#d8ff3e', padding:14, borderRadius:10, alignItems:'center' },
+  btnPrimaryText:{ color:'#111', fontWeight:'900' },
+  row:{ flexDirection:'row', gap:10, marginTop:8 },
+  btn:{ flex:1, backgroundColor:'#2a2a2a', padding:14, borderRadius:10, alignItems:'center' },
+  btnDanger:{ backgroundColor:'#ff5c5c' },
+  btnText:{ color:'#fff', fontWeight:'900' },
+  btnTextAlt:{ color:'#fff', fontWeight:'900' },
+  lb:{ backgroundColor:'#1a1a1a', borderRadius:10, padding:10, marginTop:8 },
+  lbRow:{ flexDirection:'row', alignItems:'center', paddingVertical:4 },
+  pos:{ width:24, color:'#d8ff3e', fontWeight:'900' },
+  user:{ flex:1, color:'#e1e1e1' },
+  score:{ color:'#fff', fontWeight:'800' }
 });

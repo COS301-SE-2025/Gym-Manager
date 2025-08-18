@@ -250,8 +250,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       } else {
         setLiveClass(null);
       }
-    } catch (error) {
-      console.error('Failed to fetch live class:', error);
+    } catch (error: any) {
+      // Benign on first load (token race / no live class yet / transient)
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        if (!status || status === 401 || status === 404 || status === 429 || status === 503) {
+          setLiveClass(null);
+          return; // don't log or set user-visible error
+        }
+      }
+      console.error('fetchLiveClass:', error);
       setLiveClassError('Failed to load live class information.');
     } finally {
       setIsLoadingLiveClass(false);
@@ -475,12 +483,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             onPress={() => {
               const rolesFromApi = Array.isArray(liveClass?.roles) ? liveClass.roles : [];
               if (rolesFromApi.includes('coach')) {
-                navigation.navigate('CoachLiveClass', {
+                navigation.navigate('CoachLive', {
                   classId: liveClass.class.classId,
                   liveClassData: liveClass,
                 });
               } else {
-                navigation.navigate('LiveClass', {
+                // New member flow starts at the Overview screen
+                navigation.navigate('Overview', {
                   classId: liveClass.class.classId,
                   liveClassData: liveClass,
                 });

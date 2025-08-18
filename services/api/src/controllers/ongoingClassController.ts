@@ -12,6 +12,52 @@ import { eq, and, desc, sql } from 'drizzle-orm';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { users } from '../db/schema';
 
+// ===== NEW: GET /live/:classId/session — get class_sessions row if started =====
+export const getLiveSession = async (req: Request, res: Response) => {
+  const classId = Number(req.params.classId);
+  if (!Number.isFinite(classId)) {
+    return res.status(400).json({ error: 'INVALID_CLASS_ID' });
+  }
+
+  // Auto-end when cap reached (pause-aware)
+  await db.execute(sql`
+    update public.class_sessions cs
+    set status = 'ended', ended_at = now()
+    where cs.class_id = ${classId}
+      and cs.status = 'live'
+      and cs.time_cap_seconds > 0
+      and (
+        extract(epoch from (now() - cs.started_at))
+        - coalesce(cs.pause_accum_seconds, 0)
+        - coalesce(extract(epoch from (now() - cs.paused_at)), 0)
+      ) >= cs.time_cap_seconds
+  `);
+
+  const { rows } = await db.execute(sql`
+    select
+      class_id,
+      workout_id,
+      status,
+      time_cap_seconds,
+      started_at,
+      ended_at,
+      paused_at,
+      coalesce(pause_accum_seconds, 0)::bigint as pause_accum_seconds,
+      extract(epoch from started_at)::bigint as started_at_s,
+      extract(epoch from ended_at)::bigint   as ended_at_s,
+      extract(epoch from paused_at)::bigint  as paused_at_s,
+      steps,
+      steps_cum_reps,
+      workout_type
+    from public.class_sessions
+    where class_id = ${classId}
+    limit 1
+  `);
+  if (!rows[0]) return res.status(404).json({ error: 'NO_SESSION' });
+  return res.json(rows[0]);
+};
+
+
 // GET /leaderboard/:classId  — final leaderboard (for completed class sessions)
 export const getLeaderboard = async (req: Request, res: Response) => {
   const { classId } = req.params;
@@ -296,72 +342,69 @@ async function ensureProgressRow(classId: number, userId: number) {
   `);
 }
 
-// POST /coach/live/:classId/start — coach starts the live workout session
+// POST /coach/live/:classId/start — coach starts the live workout session (resets progress)
 export const startLiveClass = async (req: AuthenticatedRequest, res: Response) => {
-  if (!req.user) {
-    return res.status(401).json({ error: 'UNAUTHORIZED' });
+  if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+
+  const classId = Number(req.params.classId);
+  if (!Number.isFinite(classId)) {
+    return res.status(400).json({ error: 'INVALID_CLASS_ID' });
   }
+
   try {
-    const classId = Number(req.params.classId);
-    if (!Number.isFinite(classId)) {
-      return res.status(400).json({ error: 'INVALID_CLASS_ID' });
-    }
-    const cls = await db.execute(sql`
-      select class_id, workout_id, duration_minutes
-      from public.classes
-      where class_id = ${classId}
-    `);
-    const row = cls.rows[0] as any;
-    if (!row) return res.status(404).json({ error: 'CLASS_NOT_FOUND' });
-    if (!row.workout_id) return res.status(400).json({ error: 'WORKOUT_NOT_ASSIGNED' });
+    let out: any = null;
 
-    const workoutId = Number(row.workout_id);
-    const { steps, stepsCumReps } = await flattenWorkoutToSteps(workoutId);
+    await db.transaction(async (tx) => {
+      const cls = await tx.execute(sql`
+        select class_id, workout_id, coalesce(duration_minutes, 0) as duration_minutes
+        from public.classes
+        where class_id = ${classId}
+        limit 1
+      `);
+      const row = cls.rows[0] as any;
+      if (!row) throw new Error('CLASS_NOT_FOUND');
+      if (!row.workout_id) throw new Error('WORKOUT_NOT_ASSIGNED');
 
-    // Insert or update class session record for this class
-    await db.execute(sql`
-      insert into public.class_sessions
-        (class_id, workout_id, status, time_cap_seconds, started_at, ended_at, steps, steps_cum_reps)
-      values (
-        ${classId},
-        ${workoutId},
-        'live',
-        ${Number(row.duration_minutes) * 60},
-        now(),
-        null,
-        ${JSON.stringify(steps)}::jsonb,
-        ${JSON.stringify(stepsCumReps)}::jsonb
-      )
-      on conflict (class_id) do update
-        set status           = 'live',
-            time_cap_seconds = excluded.time_cap_seconds,
-            started_at       = now(),
-            ended_at         = null,
-            steps            = excluded.steps,
-            steps_cum_reps   = excluded.steps_cum_reps
-    `);
+      const workoutId = Number(row.workout_id);
+      const { steps, stepsCumReps } = await flattenWorkoutToSteps(workoutId);
 
-    // Reset any partial reps from previous runs
-    await db.execute(sql`
-      update public.live_progress
-      set dnf_partial_reps = 0
-      where class_id = ${classId}
-    `);
+      await tx.execute(sql`
+        insert into public.class_sessions
+          (class_id, workout_id, status, time_cap_seconds, started_at, ended_at, paused_at, pause_accum_seconds, steps, steps_cum_reps, workout_type)
+        values (
+          ${classId},
+          ${workoutId},
+          'live',
+          ${Number(row.duration_minutes) * 60},
+          now(),
+          null,
+          null,
+          0,
+          ${JSON.stringify(steps)}::jsonb,
+          ${JSON.stringify(stepsCumReps)}::jsonb,
+          (select type from public.workouts where workout_id=${workoutId})
+        )
+        on conflict (class_id) do update
+          set status               = 'live',
+              time_cap_seconds     = excluded.time_cap_seconds,
+              started_at           = now(),
+              ended_at             = null,
+              paused_at            = null,
+              pause_accum_seconds  = 0,
+              steps                = excluded.steps,
+              steps_cum_reps       = excluded.steps_cum_reps,
+              workout_type         = excluded.workout_type
+      `);
 
-    // Ensure every booked participant has a live_progress entry (so leaderboard shows everyone at start)
-    await db.execute(sql`
-      insert into public.live_progress (class_id, user_id)
-      select ${classId}, cb.member_id
-      from public.classbookings cb
-      where cb.class_id = ${classId}
-      on conflict (class_id, user_id) do nothing
-    `);
+      await tx.execute(sql`
+        insert into public.live_progress (class_id, user_id)
+        select ${classId}, cb.member_id
+        from public.classbookings cb
+        where cb.class_id = ${classId}
+        on conflict (class_id, user_id) do nothing
+      `);
 
-    // If restart flag is provided, reset all participants' progress (start fresh)
-    const restartParam = String(req.query.restart ?? '').toLowerCase();
-    const restarted = restartParam === '1' || restartParam === 'true' || restartParam === 'yes';
-    if (restarted) {
-      await db.execute(sql`
+      await tx.execute(sql`
         update public.live_progress
         set current_step = 0,
             rounds_completed = 0,
@@ -370,20 +413,32 @@ export const startLiveClass = async (req: AuthenticatedRequest, res: Response) =
             updated_at = now()
         where class_id = ${classId}
       `);
-    }
 
-    const { rows: sessionRows } = await db.execute(sql`
-      select class_id, workout_id, status, time_cap_seconds, started_at, ended_at, steps
-      from public.class_sessions
-      where class_id = ${classId}
-      limit 1
-    `);
-    return res.json({ ok: true, restarted, session: sessionRows[0] });
-  } catch (err) {
+      const fresh = await tx.execute(sql`
+        select class_id, workout_id, status, time_cap_seconds, started_at, ended_at, paused_at,
+               coalesce(pause_accum_seconds,0)::bigint as pause_accum_seconds,
+               steps, steps_cum_reps, workout_type
+        from public.class_sessions
+        where class_id = ${classId}
+        limit 1
+      `);
+
+      out = fresh.rows[0];
+    });
+
+    return res.json({ ok: true, session: out });
+  } catch (err: any) {
+    if (err?.message === 'CLASS_NOT_FOUND') {
+      return res.status(404).json({ error: 'CLASS_NOT_FOUND' });
+    }
+    if (err?.message === 'WORKOUT_NOT_ASSIGNED') {
+      return res.status(400).json({ error: 'WORKOUT_NOT_ASSIGNED' });
+    }
     console.error('[startLiveClass] error', err);
     return res.status(500).json({ error: 'START_LIVE_FAILED' });
   }
 };
+
 
 // POST /coach/live/:classId/stop — coach stops the live workout session
 export const stopLiveClass = async (req: AuthenticatedRequest, res: Response) => {
@@ -396,9 +451,38 @@ export const stopLiveClass = async (req: AuthenticatedRequest, res: Response) =>
     set status = 'ended', ended_at = now()
     where class_id = ${classId}
   `);
-  // (Phones will detect class_sessions.status via realtime and switch to results view)
   return res.json({ ok: true, classId });
 };
+
+// POST /coach/live/:classId/pause
+export const pauseLiveClass = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+  const classId = Number(req.params.classId);
+  await db.execute(sql`
+    update public.class_sessions
+    set status = 'paused',
+        paused_at = case when paused_at is null then now() else paused_at end
+    where class_id = ${classId}
+  `);
+  return res.json({ ok: true, classId });
+};
+
+
+// POST /coach/live/:classId/resume
+export const resumeLiveClass = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+  const classId = Number(req.params.classId);
+  await db.execute(sql`
+    update public.class_sessions
+    set status = 'live',
+        pause_accum_seconds = coalesce(pause_accum_seconds, 0)
+                              + coalesce(extract(epoch from (now() - paused_at))::bigint, 0),
+        paused_at = null
+    where class_id = ${classId}
+  `);
+  return res.json({ ok: true, classId });
+};
+
 
 // POST /live/:classId/advance — member moves to next/prev step (For Time / AMRAP)
 export const advanceProgress = async (req: AuthenticatedRequest, res: Response) => {
@@ -411,22 +495,54 @@ export const advanceProgress = async (req: AuthenticatedRequest, res: Response) 
 
   await ensureProgressRow(classId, userId);
 
-  // Fetch workout type and step count for this class session
+  // fetch session meta + type + step count
   const { rows: meta } = await db.execute(sql`
-    select w.type as workout_type, coalesce(jsonb_array_length(cs.steps), 0) as step_count
+    select
+      cs.status,
+      cs.time_cap_seconds,
+      cs.started_at,
+      cs.paused_at,
+      coalesce(cs.pause_accum_seconds,0) as pause_accum_seconds,
+      w.type as workout_type,
+      coalesce(jsonb_array_length(cs.steps), 0) as step_count
     from public.class_sessions cs
     join public.workouts w on w.workout_id = cs.workout_id
     where cs.class_id = ${classId}
     limit 1
   `);
-  const workoutType = (meta[0]?.workout_type as string) ?? 'FOR_TIME';
-  const stepCount = Number(meta[0]?.step_count ?? 0);
+  const m = meta[0] as any;
+  if (!m) return res.status(400).json({ error: 'CLASS_SESSION_NOT_STARTED' });
+
+  // must be live
+  if ((m.status || '').toString() !== 'live') {
+    return res.status(409).json({ error: 'NOT_LIVE' });
+  }
+
+  // auto-end if cap reached (pause-aware)
+  const elapsed = await db.execute(sql`
+    select (
+      extract(epoch from (now() - ${m.started_at}))::bigint
+      - ${Number(m.pause_accum_seconds)}
+      - coalesce(extract(epoch from (now() - ${m.paused_at}))::bigint, 0)
+    )::bigint as e
+  `);
+  const eVal = Number((elapsed.rows[0] as any)?.e ?? 0);
+  if (Number(m.time_cap_seconds ?? 0) > 0 && eVal >= Number(m.time_cap_seconds)) {
+    await db.execute(sql`
+      update public.class_sessions
+      set status = 'ended', ended_at = now()
+      where class_id = ${classId}
+    `);
+    return res.status(409).json({ error: 'TIME_UP', ended: true });
+  }
+
+  const workoutType = (m.workout_type as string) ?? 'FOR_TIME';
+  const stepCount = Number(m.step_count ?? 0);
   if (stepCount === 0) {
     return res.status(400).json({ error: 'CLASS_SESSION_NOT_STARTED' });
   }
 
   if (workoutType.toUpperCase() === 'AMRAP') {
-    // AMRAP: wrap around steps and count rounds
     const { rows } = await db.execute(sql`
       with cur as (
         select current_step, rounds_completed
@@ -452,21 +568,17 @@ export const advanceProgress = async (req: AuthenticatedRequest, res: Response) 
               then (select rounds_completed from cur) - 1
             else (select rounds_completed from cur)
           end,
-          dnf_partial_reps = 0,  -- reset any partial count when navigating
+          dnf_partial_reps = 0,
           updated_at = now()
         where lp.class_id = ${classId} and lp.user_id = ${userId}
         returning current_step, rounds_completed
       )
       select * from upd;
     `);
-    return res.json({
-      ok: true,
-      current_step: rows[0]?.current_step ?? 0,
-      finished: false  // AMRAP workouts never finish early (always run until time/cap)
-    });
+    return res.json({ ok: true, current_step: rows[0]?.current_step ?? 0, finished: false });
   }
 
-  // Default: FOR_TIME logic
+  // FOR_TIME
   const { rows } = await db.execute(sql`
     with sc as (
       select coalesce(jsonb_array_length(steps), 0) as step_count
@@ -509,6 +621,8 @@ export const advanceProgress = async (req: AuthenticatedRequest, res: Response) 
   });
 };
 
+
+
 // POST /live/:classId/partial — member submits reps completed at time cap (DNF scenario)
 export const submitPartial = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) {
@@ -518,7 +632,6 @@ export const submitPartial = async (req: AuthenticatedRequest, res: Response) =>
   const userId = Number(req.user.userId);
   const reps = Math.max(0, Number(req.body?.reps ?? 0));
   await ensureProgressRow(classId, userId);
-  // (Optionally verify time cap or class ended, not enforced here)
   await db.execute(sql`
     update public.live_progress
     set dnf_partial_reps = ${reps}, updated_at = now()
@@ -528,6 +641,7 @@ export const submitPartial = async (req: AuthenticatedRequest, res: Response) =>
 };
 
 // GET /live/:classId/leaderboard — realtime leaderboard for an ongoing class
+// GET /live/:classId/leaderboard — realtime leaderboard for an ongoing class
 export const getRealtimeLeaderboard = async (req: Request, res: Response) => {
   const classId = Number(req.params.classId);
   if (!Number.isFinite(classId)) {
@@ -535,7 +649,7 @@ export const getRealtimeLeaderboard = async (req: Request, res: Response) => {
   }
 
   const runQuery = async () => {
-    // Determine workout type for this class
+    // workout type
     const { rows: wrows } = await db.execute(sql`
       select w.type
       from public.classes c
@@ -544,11 +658,9 @@ export const getRealtimeLeaderboard = async (req: Request, res: Response) => {
       limit 1
     `);
     const type = (wrows[0]?.type ?? '').toString().toUpperCase();
-    if (!type) {
-      return { rows: [], status: 404, body: { error: 'WORKOUT_NOT_FOUND_FOR_CLASS' } };
-    }
+    if (!type) return { rows: [], status: 404, body: { error: 'WORKOUT_NOT_FOUND_FOR_CLASS' } };
 
-    // For Interval/Tabata/EMOM: aggregate total reps and completed minutes (if applicable) from interval scores
+    // INTERVAL/TABATA/EMOM (unchanged ordering, include names)
     if (type === 'INTERVAL' || type === 'TABATA' || type === 'EMOM') {
       const { rows } = await db.execute(sql`
         with agg as (
@@ -569,64 +681,129 @@ export const getRealtimeLeaderboard = async (req: Request, res: Response) => {
           group by lis.class_id, lis.user_id
         )
         select
-          class_id,
-          user_id,
+          a.class_id,
+          a.user_id,
+          u.first_name,
+          u.last_name,
           false as finished,
           null::numeric as elapsed_seconds,
-          total_reps,
-          1 as sort_bucket,
-          case when '${type}' = 'EMOM'
-               then row_number() over (order by completed_minutes desc, total_reps desc)::numeric
-               else (- total_reps)::numeric
-          end as sort_key,
-          completed_minutes
-        from agg
-        order by
-          case when '${type}' = 'EMOM' then completed_minutes end desc nulls last,
-          total_reps desc;
+          a.total_reps
+        from agg a
+        join public.users u on u.user_id = a.user_id
+        order by a.completed_minutes desc, a.total_reps desc
       `);
       return { rows, status: 200, body: rows };
     }
 
-    // For FOR_TIME & AMRAP: use precomputed view (assuming triggers keep it updated)
-    const result = await db.execute(sql`
-      select class_id, user_id, finished, elapsed_seconds, total_reps, sort_bucket, sort_key
-      from public.leaderboard
-      where class_id = ${classId}
-      order by sort_key asc
+    // AMRAP: total reps must include completed rounds
+    if (type === 'AMRAP') {
+      const { rows } = await db.execute(sql`
+        with base as (
+          select
+            lp.user_id,
+            lp.current_step,
+            lp.rounds_completed,
+            lp.dnf_partial_reps,
+            cs.class_id,
+            cs.steps_cum_reps
+          from public.live_progress lp
+          join public.class_sessions cs on cs.class_id = lp.class_id
+          where lp.class_id = ${classId}
+        ),
+        calc as (
+          select
+            b.*,
+            -- last cumulative (total reps per round)
+            coalesce(
+              (b.steps_cum_reps ->> greatest(jsonb_array_length(b.steps_cum_reps) - 1, 0))::int,
+              0
+            ) as reps_per_round,
+            case when b.current_step > 0
+              then (b.steps_cum_reps ->> (b.current_step - 1))::int
+              else 0 end as within_round_reps
+          from base b
+        )
+        select
+          c.class_id,
+          c.user_id,
+          u.first_name,
+          u.last_name,
+          false as finished,
+          null::numeric as elapsed_seconds,
+          (c.rounds_completed * c.reps_per_round + c.within_round_reps + coalesce(c.dnf_partial_reps, 0))::int as total_reps
+        from calc c
+        join public.users u on u.user_id = c.user_id
+        order by total_reps desc, u.first_name asc
+      `);
+      return { rows, status: 200, body: rows };
+    }
+
+    // FOR_TIME: finishers first by time, then DNFs by reps (names included)
+    const { rows } = await db.execute(sql`
+      with base as (
+        select
+          lp.user_id,
+          lp.current_step,
+          lp.finished_at,
+          lp.dnf_partial_reps,
+          cs.class_id,
+          cs.started_at,
+          cs.steps_cum_reps
+        from public.live_progress lp
+        join public.class_sessions cs on cs.class_id = lp.class_id
+        where lp.class_id = ${classId}
+      )
+      select
+        b.class_id,
+        b.user_id,
+        u.first_name,
+        u.last_name,
+        (b.finished_at is not null) as finished,
+        case when b.finished_at is not null
+          then extract(epoch from (b.finished_at - b.started_at))::numeric
+          else null::numeric
+        end as elapsed_seconds,
+        (
+          (case when b.current_step > 0
+                then ((b.steps_cum_reps ->> (b.current_step - 1))::int)
+                else 0 end)
+          + coalesce(b.dnf_partial_reps, 0)
+        ) as total_reps
+      from base b
+      join public.users u on u.user_id = b.user_id
+      order by
+        case when b.finished_at is not null then 0 else 1 end,
+        elapsed_seconds asc nulls last,
+        total_reps desc nulls last
     `);
-    return { rows: result.rows, status: 200, body: result.rows };
+    return { rows, status: 200, body: rows };
   };
 
   try {
     const out = await runQuery();
-    if (!res.headersSent) {
-      return res.status(out.status).json(out.body);
-    }
+    if (!res.headersSent) return res.status(out.status).json(out.body);
   } catch (err: any) {
     const isConnReset = err?.code === 'ECONNRESET' || /ECONNRESET|read ECONNRESET/i.test(String(err?.message ?? ''));
     if (isConnReset) {
       try {
         const out = await runQuery();
-        if (!res.headersSent) {
-          return res.status(out.status).json(out.body);
-        }
+        if (!res.headersSent) return res.status(out.status).json(out.body);
       } catch (err2) {
         console.error('[getRealtimeLeaderboard] retry failed:', err2);
-        if (!res.headersSent) {
-          return res.status(503).json({ error: 'DB_CONNECTION_RESET' });
-        }
+        if (!res.headersSent) return res.status(503).json({ error: 'DB_CONNECTION_RESET' });
       }
       return;
     }
     console.error('[getRealtimeLeaderboard] error:', err);
-    if (!res.headersSent) {
-      return res.status(500).json({ error: 'LEADERBOARD_FAILED' });
-    }
+    if (!res.headersSent) return res.status(500).json({ error: 'LEADERBOARD_FAILED' });
   }
 };
 
-// GET /live/:classId/me — get current user's live_progress (convenience endpoint)
+
+
+
+
+// GET /live/:classId/me — get current user's live_progress
 export const getMyProgress = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ error: 'UNAUTHORIZED' });
@@ -634,19 +811,26 @@ export const getMyProgress = async (req: AuthenticatedRequest, res: Response) =>
   const classId = Number(req.params.classId);
   const userId = Number(req.user.userId);
   const { rows } = await db.execute(sql`
-    select current_step, finished_at, dnf_partial_reps, rounds_completed
+    select
+      current_step,
+      finished_at,
+      extract(epoch from finished_at)::bigint as finished_at_s,
+      dnf_partial_reps,
+      rounds_completed
     from public.live_progress
     where class_id = ${classId} and user_id = ${userId}
   `);
   res.json(rows[0] ?? {
     current_step: 0,
     finished_at: null,
+    finished_at_s: null,
     dnf_partial_reps: 0,
     rounds_completed: 0
   });
 };
 
-// POST /live/:classId/interval/score — member submits reps for a completed interval step
+
+// POST /live/:classId/interval/score
 export const postIntervalScore = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ error: 'UNAUTHORIZED' });
@@ -659,7 +843,6 @@ export const postIntervalScore = async (req: AuthenticatedRequest, res: Response
     return res.status(400).json({ error: 'INVALID_STEP_INDEX' });
   }
 
-  // Validate that this is an interval-type workout (Interval/Tabata/EMOM)
   const { rows: sessRows } = await db.execute(sql`
     select cs.steps, w.type
     from public.class_sessions cs
@@ -680,7 +863,6 @@ export const postIntervalScore = async (req: AuthenticatedRequest, res: Response
     return res.status(400).json({ error: 'STEP_INDEX_OUT_OF_RANGE' });
   }
 
-  // Ensure user is booked in class
   const booked = await db
     .select()
     .from(classbookings)
@@ -690,7 +872,6 @@ export const postIntervalScore = async (req: AuthenticatedRequest, res: Response
     return res.status(403).json({ error: 'NOT_BOOKED' });
   }
 
-  // Insert or update the interval score for this user and step
   await db.execute(sql`
     insert into public.live_interval_scores (class_id, user_id, step_index, reps)
     values (${classId}, ${userId}, ${stepIndex}, ${reps})
@@ -700,7 +881,7 @@ export const postIntervalScore = async (req: AuthenticatedRequest, res: Response
   return res.json({ ok: true });
 };
 
-// GET /live/:classId/interval/leaderboard — quick leaderboard of interval totals (for interval-based workouts)
+// GET /live/:classId/interval/leaderboard
 export const getIntervalLeaderboard = async (req: Request, res: Response) => {
   const classId = Number(req.params.classId);
   const { rows } = await db.execute(sql`

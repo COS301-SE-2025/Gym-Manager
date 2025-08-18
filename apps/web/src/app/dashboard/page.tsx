@@ -87,9 +87,9 @@ export default function DashboardPage() {
         message,
         created_at,
         notification_targets!inner(target_role)
-      `
+      `,
       )
-      .eq('notification_targets.target_role', "admin")
+      .eq('notification_targets.target_role', 'admin')
       .order('created_at', { ascending: false });
 
     if (notifError) {
@@ -127,14 +127,10 @@ export default function DashboardPage() {
           const notif = payload.new;
           toast(`${notif.title}: ${notif.message}`, { duration: 5000 });
           // Only show if matches current user's role
-          if (
-            notif.notification_targets?.some(
-              (t: any) => t.target_role === "admin"
-            )
-          ) {
+          if (notif.notification_targets?.some((t: any) => t.target_role === 'admin')) {
             setNotifications((prev) => [{ ...notif, read: false }, ...prev]);
           }
-        }
+        },
       )
       .subscribe();
   };
@@ -149,9 +145,7 @@ export default function DashboardPage() {
       });
 
       setNotifications((prev) =>
-        prev.map((n) =>
-          n.notification_id === notificationId ? { ...n, read: true } : n
-        )
+        prev.map((n) => (n.notification_id === notificationId ? { ...n, read: true } : n)),
       );
     } catch (error) {
       console.error('Failed to mark notification as read:', error);

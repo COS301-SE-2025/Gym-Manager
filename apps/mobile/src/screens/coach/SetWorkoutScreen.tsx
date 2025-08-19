@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Modal,
 } from 'react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -304,11 +305,11 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
     const [hours, minutes, seconds] = currentWorkout.workoutTime.split(':').map(Number);
     setSelectedMinutes(minutes || 0);
     setSelectedSeconds(seconds || 0);
-    timePickerBottomSheetRef.current?.expand();
+    setShowTimePicker(true);
   }, [currentWorkout.workoutTime]);
 
   const handleTimePickerClose = useCallback(() => {
-    timePickerBottomSheetRef.current?.close();
+    setShowTimePicker(false);
   }, []);
 
   const handleSaveWorkout = async () => {
@@ -786,87 +787,125 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         </TouchableOpacity>
       </View>
 
-      {/* Time Picker Bottom Sheet */}
-      <BottomSheet
-        ref={timePickerBottomSheetRef}
-        index={-1}
-        snapPoints={snapPoints}
-        enablePanDownToClose={true}
-        backgroundStyle={styles.bottomSheetBackground}
-        handleIndicatorStyle={styles.bottomSheetIndicator}
+      {/* Premium Time Picker Modal */}
+      <Modal
+        visible={showTimePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={handleTimePickerClose}
       >
-        <View style={styles.timePickerContainer}>
-          <View style={styles.timePickerHeader}>
-            <Text style={styles.timePickerTitle}>Set Duration</Text>
-            <TouchableOpacity onPress={handleTimePickerClose}>
-              <Ionicons name="close" size={24} color="white" />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.timePickerContent}>
-            <View style={styles.timePickerColumn}>
-              <Text style={styles.timePickerLabel}>Minutes</Text>
-              <ScrollView 
-                style={styles.timePickerScrollView}
-                showsVerticalScrollIndicator={false}
-                snapToInterval={50}
+        <View style={styles.timePickerOverlay}>
+          <View style={styles.timePickerModal}>
+            {/* Header */}
+            <View style={styles.timePickerHeader}>
+              <Text style={styles.timePickerTitle}>Set Workout Duration</Text>
+              <TouchableOpacity 
+                style={styles.timePickerCloseButton}
+                onPress={handleTimePickerClose}
               >
-                {Array.from({ length: 60 }, (_, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    style={[
-                      styles.timePickerItem,
-                      selectedMinutes === i && styles.timePickerItemSelected
-                    ]}
-                    onPress={() => handleTimeChange(i, selectedSeconds)}
-                  >
-                    <Text style={[
-                      styles.timePickerItemText,
-                      selectedMinutes === i && styles.timePickerItemTextSelected
-                    ]}>
-                      {i.toString().padStart(2, '0')}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+                <Ionicons name="close" size={24} color="#888" />
+              </TouchableOpacity>
             </View>
-            
-            <View style={styles.timePickerColumn}>
-              <Text style={styles.timePickerLabel}>Seconds</Text>
-              <ScrollView 
-                style={styles.timePickerScrollView}
-                showsVerticalScrollIndicator={false}
-                snapToInterval={50}
-              >
-                {Array.from({ length: 60 }, (_, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    style={[
-                      styles.timePickerItem,
-                      selectedSeconds === i && styles.timePickerItemSelected
-                    ]}
-                    onPress={() => handleTimeChange(selectedMinutes, i)}
+
+            {/* Time Display */}
+            <View style={styles.timeDisplayContainer}>
+              <Text style={styles.timeDisplayLabel}>Duration</Text>
+              <View style={styles.timeDisplay}>
+                <Text style={styles.timeDisplayText}>
+                  {selectedMinutes.toString().padStart(2, '0')}:{selectedSeconds.toString().padStart(2, '0')}
+                </Text>
+              </View>
+            </View>
+
+            {/* Time Picker Content */}
+            <View style={styles.timePickerContent}>
+              {/* Minutes Column */}
+              <View style={styles.timePickerColumn}>
+                <Text style={styles.timePickerLabel}>Minutes</Text>
+                <View style={styles.timePickerScrollContainer}>
+                  <ScrollView 
+                    style={styles.timePickerScrollView}
+                    showsVerticalScrollIndicator={false}
+                    snapToInterval={50}
+                    decelerationRate="fast"
                   >
-                    <Text style={[
-                      styles.timePickerItemText,
-                      selectedSeconds === i && styles.timePickerItemTextSelected
-                    ]}>
-                      {i.toString().padStart(2, '0')}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+                    {Array.from({ length: 60 }, (_, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        style={[
+                          styles.timePickerItem,
+                          selectedMinutes === i && styles.timePickerItemSelected
+                        ]}
+                        onPress={() => handleTimeChange(i, selectedSeconds)}
+                      >
+                        <Text style={[
+                          styles.timePickerItemText,
+                          selectedMinutes === i && styles.timePickerItemTextSelected
+                        ]}>
+                          {i.toString().padStart(2, '0')}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              </View>
+
+              {/* Separator */}
+              <View style={styles.timePickerSeparator}>
+                <Text style={styles.timePickerSeparatorText}>:</Text>
+              </View>
+
+              {/* Seconds Column */}
+              <View style={styles.timePickerColumn}>
+                <Text style={styles.timePickerLabel}>Seconds</Text>
+                <View style={styles.timePickerScrollContainer}>
+                  <ScrollView 
+                    style={styles.timePickerScrollView}
+                    showsVerticalScrollIndicator={false}
+                    snapToInterval={50}
+                    decelerationRate="fast"
+                  >
+                    {Array.from({ length: 60 }, (_, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        style={[
+                          styles.timePickerItem,
+                          selectedSeconds === i && styles.timePickerItemSelected
+                        ]}
+                        onPress={() => handleTimeChange(selectedMinutes, i)}
+                      >
+                        <Text style={[
+                          styles.timePickerItemText,
+                          selectedSeconds === i && styles.timePickerItemTextSelected
+                        ]}>
+                          {i.toString().padStart(2, '0')}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.timePickerActions}>
+              <TouchableOpacity 
+                style={styles.timePickerCancelButton}
+                onPress={handleTimePickerClose}
+              >
+                <Text style={styles.timePickerCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.timePickerDoneButton}
+                onPress={handleTimePickerClose}
+              >
+                <Text style={styles.timePickerDoneButtonText}>Done</Text>
+              </TouchableOpacity>
             </View>
           </View>
-          
-          <TouchableOpacity 
-            style={styles.timePickerDoneButton}
-            onPress={handleTimePickerClose}
-          >
-            <Text style={styles.timePickerDoneButtonText}>Done</Text>
-          </TouchableOpacity>
         </View>
-      </BottomSheet>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1349,5 +1388,234 @@ const styles = StyleSheet.create({
   },
   workoutContent: {
     // Container for the current workout's content
+  },
+
+  // Bottom sheet styles
+  bottomSheetBackground: {
+    backgroundColor: '#2a2a2a',
+  },
+  bottomSheetIndicator: {
+    backgroundColor: '#666',
+  },
+  timePickerContainer: {
+    padding: 20,
+  },
+  timePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  timePickerTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  timePickerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  timePickerColumn: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  timePickerLabel: {
+    color: 'white',
+    fontSize: 14,
+    marginBottom: 12,
+    fontWeight: '500',
+  },
+  timePickerScrollView: {
+    height: 200,
+    width: 120,
+  },
+  timePickerItem: {
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginVertical: 2,
+  },
+  timePickerItemSelected: {
+    backgroundColor: '#D8FF3E',
+  },
+  timePickerItemText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  timePickerItemTextSelected: {
+    color: '#1a1a1a',
+    fontWeight: '600',
+  },
+  timePickerDoneButton: {
+    backgroundColor: '#D8FF3E',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  timePickerDoneButtonText: {
+    color: '#1a1a1a',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  // Premium Time Picker Modal Styles
+  timePickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  timePickerModal: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 20,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  timePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  timePickerTitle: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  timePickerCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timeDisplayContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  timeDisplayLabel: {
+    color: '#888',
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  timeDisplay: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  timeDisplayText: {
+    color: '#D8FF3E',
+    fontSize: 32,
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'ios' ? 'SF Mono' : 'monospace',
+  },
+  timePickerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 32,
+  },
+  timePickerColumn: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  timePickerLabel: {
+    color: '#888',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  timePickerScrollContainer: {
+    height: 200,
+    width: 120,
+    borderRadius: 12,
+    backgroundColor: '#1a1a1a',
+    overflow: 'hidden',
+  },
+  timePickerScrollView: {
+    flex: 1,
+  },
+  timePickerSeparator: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 80,
+    paddingHorizontal: 8,
+  },
+  timePickerSeparatorText: {
+    color: '#D8FF3E',
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  timePickerItem: {
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginVertical: 2,
+    marginHorizontal: 4,
+  },
+  timePickerItemSelected: {
+    backgroundColor: '#D8FF3E',
+  },
+  timePickerItemText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  timePickerItemTextSelected: {
+    color: '#1a1a1a',
+    fontWeight: '700',
+  },
+  timePickerActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  timePickerCancelButton: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#444',
+  },
+  timePickerCancelButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  timePickerDoneButton: {
+    flex: 1,
+    backgroundColor: '#D8FF3E',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  timePickerDoneButtonText: {
+    color: '#1a1a1a',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

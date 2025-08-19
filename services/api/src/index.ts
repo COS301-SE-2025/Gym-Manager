@@ -23,7 +23,7 @@ const port = process.env.PORT || 4000;
 const allowedOrigins = [
   'http://localhost:3000',
   'https://gym-manager-ashen.vercel.app',
-
+]
 
 const corsOptions: CorsOptions = {
   origin(origin, cb) {

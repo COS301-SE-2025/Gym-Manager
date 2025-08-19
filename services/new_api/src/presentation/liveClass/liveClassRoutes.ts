@@ -1,54 +1,57 @@
 import express from 'express';
 import { LiveClassController } from '../../controllers/liveClass/liveClassController';
-import { AuthMiddleware } from '../../infrastructure/middleware/authMiddleware';
+import { AuthMiddleware, AuthenticatedRequest } from '../../infrastructure/middleware/authMiddleware';
 
-/**
- * LiveClassRoutes - Presentation Layer
- * Handles routing and connects HTTP requests to controllers
- */
 export class LiveClassRoutes {
   private router: express.Router;
-  private liveClassController: LiveClassController;
-  private authMiddleware: AuthMiddleware;
+  private controller: LiveClassController;
+  private auth: AuthMiddleware;
 
   constructor() {
     this.router = express.Router();
-    this.liveClassController = new LiveClassController();
-    this.authMiddleware = new AuthMiddleware();
-    this.setupRoutes();
+    this.controller = new LiveClassController();
+    this.auth = new AuthMiddleware();
+    this.setup();
   }
 
-  private setupRoutes(): void {
-    // Leaderboard
-    this.router.get('/leaderboard/:classId', this.liveClassController.getLeaderboard);
+  private coachOnly = (req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) => {
+    const roles = req.user?.roles || [];
+    if (!roles.includes('coach')) return res.status(403).json({ error: 'FORBIDDEN' });
+    next();
+  };
 
-    // Live class management
-    this.router.get('/live/class', this.authMiddleware.isAuthenticated, this.liveClassController.getLiveClass);
-    this.router.get('/workout/:workoutId/steps', this.authMiddleware.isAuthenticated, this.liveClassController.getWorkoutSteps);
-    this.router.post('/submitScore', this.authMiddleware.isAuthenticated, this.liveClassController.submitScore);
+  private setup() {
+    // discovery / overview
+    this.router.get('/live/class', this.auth.isAuthenticated, this.controller.getLiveClass);
+    this.router.get('/live/:classId/session', this.auth.isAuthenticated, this.controller.getLiveSession);
+    this.router.get('/workout/:workoutId/steps', this.auth.isAuthenticated, this.controller.getWorkoutSteps);
 
-    // Coach live class management
-    this.router.post('/coach/live/:classId/start', this.authMiddleware.isAuthenticated, this.liveClassController.startLiveClass);
-    this.router.post('/coach/live/:classId/stop', this.authMiddleware.isAuthenticated, this.liveClassController.stopLiveClass);
+    // leaderboards
+    this.router.get('/leaderboard/:classId', this.auth.isAuthenticated, this.controller.getLeaderboard);
+    this.router.get('/live/:classId/leaderboard', this.auth.isAuthenticated, this.controller.getRealtimeLeaderboard);
 
-    // Member progress
-    this.router.post('/live/:classId/advance', this.authMiddleware.isAuthenticated, this.liveClassController.advanceProgress);
-    this.router.post('/live/:classId/partial', this.authMiddleware.isAuthenticated, this.liveClassController.submitPartial);
-    this.router.get('/live/:classId/leaderboard', this.liveClassController.getRealtimeLeaderboard);
-    this.router.get('/live/:classId/me', this.authMiddleware.isAuthenticated, this.liveClassController.getMyProgress);
+    // auth'd member info
+    this.router.get('/live/:classId/me', this.auth.isAuthenticated, this.controller.getMyProgress);
 
-    // Interval workouts
-    this.router.post('/live/:classId/interval/score', this.authMiddleware.isAuthenticated, this.liveClassController.postIntervalScore);
-    this.router.get('/live/:classId/interval/leaderboard', this.liveClassController.getIntervalLeaderboard);
+    // scoring
+    this.router.post('/submitScore', this.auth.isAuthenticated, this.controller.submitScore);
+
+    // coach controls
+    this.router.post('/coach/live/:classId/start', this.auth.isAuthenticated, this.coachOnly, this.controller.startLiveClass);
+    this.router.post('/coach/live/:classId/stop',  this.auth.isAuthenticated, this.coachOnly, this.controller.stopLiveClass);
+    this.router.post('/coach/live/:classId/pause', this.auth.isAuthenticated, this.coachOnly, this.controller.pauseLiveClass);
+    this.router.post('/coach/live/:classId/resume', this.auth.isAuthenticated, this.coachOnly, this.controller.resumeLiveClass);
+
+    // member actions (FOR_TIME/AMRAP)
+    this.router.post('/live/:classId/advance', this.auth.isAuthenticated, this.controller.advanceProgress);
+    this.router.post('/live/:classId/partial', this.auth.isAuthenticated, this.controller.submitPartial);
+
+    // interval/tabata/emom
+    this.router.post('/live/:classId/interval/score', this.auth.isAuthenticated, this.controller.postIntervalScore);
+    this.router.get('/live/:classId/interval/leaderboard', this.auth.isAuthenticated, this.controller.getIntervalLeaderboard);
   }
 
-  getRouter(): express.Router {
-    return this.router;
-  }
+  getRouter() { return this.router; }
 }
 
-// Export a function to create and configure the router
-export const createLiveClassRoutes = (): express.Router => {
-  const liveClassRoutes = new LiveClassRoutes();
-  return liveClassRoutes.getRouter();
-};
+export const createLiveClassRoutes = () => new LiveClassRoutes().getRouter();

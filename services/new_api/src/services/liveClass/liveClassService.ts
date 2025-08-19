@@ -1,251 +1,194 @@
-import { ILiveClassService, ILiveClassRepository } from '../../domain/interfaces/liveClass.interface';
-import {
-  LiveClassResponse,
-  WorkoutStepsResponse,
-  SubmitScoreRequest,
-  LeaderboardEntry,
-  LiveProgress,
-  AdvanceProgressRequest,
-  SubmitPartialRequest,
-  IntervalScoreRequest,
-  RealtimeLeaderboardEntry,
-  IntervalLeaderboardEntry,
-  StartLiveClassRequest,
-  StartLiveClassResponse
-} from '../../domain/entities/liveClass.entity';
+import { ILiveClassService, ILiveClassRepository, LiveSession, Step } from '../../domain/interfaces/liveClass.interface';
 import { LiveClassRepository } from '../../repositories/liveClass/liveClassRepository';
+import { IUserRepository } from '../../domain/interfaces/auth.interface';
+import { UserRepository } from '../../repositories/auth/userRepository';
 
-/**
- * LiveClassService - Business Layer
- * Contains all business logic for live class operations
- */
 export class LiveClassService implements ILiveClassService {
-  private liveClassRepository: ILiveClassRepository;
+  private repo: ILiveClassRepository;
+  private userRepo: IUserRepository;
 
-  constructor(liveClassRepository?: ILiveClassRepository) {
-    this.liveClassRepository = liveClassRepository || new LiveClassRepository();
+  constructor(repo?: ILiveClassRepository, userRepo?: IUserRepository) {
+    this.repo = repo || new LiveClassRepository();
+    this.userRepo = userRepo || new UserRepository();
   }
 
-  async getLeaderboard(classId: number): Promise<LeaderboardEntry[]> {
-    if (!classId) {
-      throw new Error('classId is required');
-    }
-
-    return this.liveClassRepository.getLeaderboard(classId);
+  // --- Session ---
+  async getLiveSession(classId: number): Promise<LiveSession | null> {
+    if (!Number.isFinite(classId)) throw new Error('INVALID_CLASS_ID');
+    await this.repo.autoEndIfCapReached(classId);
+    return this.repo.getClassSession(classId);
   }
 
-  async getLiveClass(userId: number, roles: string[]): Promise<LiveClassResponse> {
-    // Coach perspective
-    if (roles.includes('coach')) {
-      const currentCoach = await this.liveClassRepository.getLiveClassForCoach(userId);
-      if (currentCoach.length) {
-        const participants = await this.liveClassRepository.getParticipants(currentCoach[0].classId);
-        return {
-          ongoing: true,
-          roles,
-          class: currentCoach[0],
-          participants,
-        };
-      }
+  // --- Final leaderboard ---
+  async getFinalLeaderboard(classId: number) {
+    return this.repo.getFinalLeaderboard(classId);
+  }
+
+  // --- Live class discovery for user ---
+  async getLiveClassForUser(userId: number, roles?: string[]) {
+    let userRoles = roles;
+    if (!userRoles || !userRoles.length) userRoles = await this.userRepo.getRolesByUserId(userId);
+
+    // coach perspective
+    if (userRoles.includes('coach')) {
+      const coach = await this.repo.getLiveClassForCoach(userId);
+      if (coach) return coach;
     }
 
-    // Member perspective
-    if (roles.includes('member')) {
-      const currentMember = await this.liveClassRepository.getLiveClassForMember(userId);
-      if (currentMember.length) {
-        return {
-          ongoing: true,
-          roles,
-          class: currentMember[0],
-        };
-      }
+    // member perspective
+    if (userRoles.includes('member')) {
+      const member = await this.repo.getLiveClassForMember(userId);
+      if (member) return member;
     }
 
     return { ongoing: false };
   }
 
-  async getWorkoutSteps(workoutId: number): Promise<WorkoutStepsResponse> {
-    if (!workoutId) {
-      throw new Error('INVALID_WORKOUT_ID');
+  // --- Workout steps ---
+  async getWorkoutSteps(workoutId: number) {
+    if (!Number.isFinite(workoutId) || workoutId <= 0) throw new Error('INVALID_WORKOUT_ID');
+    const rows = await this.repo.getFlattenRowsForWorkout(workoutId);
+
+    const steps: Step[] = rows.map((row: any, idx: number) => {
+      const isReps = row.quantity_type === 'reps';
+      const isDur = row.quantity_type === 'duration';
+      const reps = isReps ? Number(row.quantity) : undefined;
+      const dur = isDur ? Number(row.quantity) : undefined;
+      const label = isReps ? `${row.quantity}x ${row.name}` : `${row.name} ${row.quantity}s`;
+      return {
+        index: idx,
+        name: label,
+        reps,
+        duration: dur,
+        round: Number(row.round_number),
+        subround: Number(row.subround_number),
+        target_reps: row.target_reps != null ? Number(row.target_reps) : undefined,
+      };
+    });
+
+    const stepsCumReps: number[] = [];
+    let running = 0;
+    for (const s of steps) {
+      if (typeof s.reps === 'number') running += s.reps;
+      stepsCumReps.push(running);
     }
 
-    return this.liveClassRepository.getWorkoutSteps(workoutId);
+    const workoutType = await this.repo.getWorkoutType(workoutId);
+    return { steps, stepsCumReps, workoutType: workoutType ?? 'FOR_TIME' };
   }
 
-  async submitScore(userId: number, roles: string[], request: SubmitScoreRequest): Promise<{ success: boolean; updated?: number }> {
-    const { classId } = request;
+  // --- Submit score (coach batch or member single) ---
+  async submitScore(userId: number, roles: string[] = [], body: any) {
+    const classId = body?.classId;
+    if (!Number.isFinite(classId)) throw new Error('CLASS_ID_REQUIRED');
 
-    if (!classId || typeof classId !== 'number') {
-      throw new Error('CLASS_ID_REQUIRED');
+    if (roles.includes('coach') && Array.isArray(body?.scores)) {
+      await this.repo.assertCoachOwnsClass(classId, userId);
+      const updated = await this.repo.upsertScoresBatch(classId, body.scores);
+      return { success: true, updated };
     }
 
-    // Coach submitting multiple scores for a class
-    if (roles.includes('coach') && Array.isArray(request.scores)) {
-      // Verify this coach is assigned to that class
-      const isClassCoach = await this.liveClassRepository.validateClassCoach(classId, userId);
-      if (!isClassCoach) {
-        throw new Error('NOT_CLASS_COACH');
-      }
-
-      const scores = request.scores as { userId: number; score: number }[];
-      const validScores = scores.filter(row => 
-        typeof row.userId === 'number' && 
-        typeof row.score === 'number' && 
-        row.score >= 0
-      );
-
-      await this.liveClassRepository.submitCoachScores(classId, validScores);
-      return { success: true, updated: validScores.length };
-    }
-
-    // Member submitting own score
-    if (!roles.includes('member')) {
-      throw new Error('ROLE_NOT_ALLOWED');
-    }
-
-    const { score } = request;
-    if (typeof score !== 'number' || score < 0) {
-      throw new Error('SCORE_REQUIRED');
-    }
-
-    // Member must be booked in class
-    const isBooked = await this.liveClassRepository.validateBooking(classId, userId);
-    if (!isBooked) {
-      throw new Error('NOT_BOOKED');
-    }
-
-    // Upsert member's own score
-    await this.liveClassRepository.submitMemberScore(classId, userId, score);
+    if (!roles.includes('member')) throw new Error('ROLE_NOT_ALLOWED');
+    const score = Number(body?.score);
+    if (!Number.isFinite(score) || score < 0) throw new Error('SCORE_REQUIRED');
+    await this.repo.assertMemberBooked(classId, userId);
+    await this.repo.upsertMemberScore(classId, userId, score);
     return { success: true };
   }
 
-  async startLiveClass(classId: number, request: StartLiveClassRequest): Promise<StartLiveClassResponse> {
-    if (!Number.isFinite(classId)) {
-      throw new Error('INVALID_CLASS_ID');
-    }
+  // --- Coach session controls ---
+  async startLiveClass(classId: number) {
+    const cls = await this.repo.getClassMeta(classId);
+    if (!cls) throw new Error('CLASS_NOT_FOUND');
+    if (!cls.workout_id) throw new Error('WORKOUT_NOT_ASSIGNED');
 
-    const classInfo = await this.liveClassRepository.getClassInfo(classId);
-    if (!classInfo) {
-      throw new Error('CLASS_NOT_FOUND');
-    }
+    const workoutId: number = Number(cls.workout_id);
+    const { steps, stepsCumReps, workoutType } = await this.getWorkoutSteps(workoutId);
+    const timeCapSeconds = Number(cls.duration_minutes || 0) * 60;
 
-    if (!classInfo.workout_id) {
-      throw new Error('WORKOUT_NOT_ASSIGNED');
-    }
-
-    const workoutId = Number(classInfo.workout_id);
-    const { steps, stepsCumReps } = await this.liveClassRepository.getWorkoutSteps(workoutId);
-    const timeCapSeconds = Number(classInfo.duration_minutes) * 60;
-    const restart = request.restart || false;
-
-    const session = await this.liveClassRepository.startLiveClass(
-      classId,
-      workoutId,
-      steps,
-      stepsCumReps,
-      timeCapSeconds,
-      restart
-    );
-
-    return {
-      ok: true,
-      restarted: restart,
-      session
-    };
+    await this.repo.upsertClassSession(classId, workoutId, timeCapSeconds, steps, stepsCumReps, workoutType);
+    await this.repo.seedLiveProgressForClass(classId);
+    await this.repo.resetLiveProgressForClass(classId);
+    return this.repo.getClassSession(classId);
   }
 
-  async stopLiveClass(classId: number): Promise<{ ok: boolean; classId: number }> {
-    await this.liveClassRepository.stopLiveClass(classId);
-    return { ok: true, classId };
+  async stopLiveClass(classId: number) {
+    await this.repo.stopSession(classId);
+  }
+  async pauseLiveClass(classId: number) {
+    await this.repo.pauseSession(classId);
+  }
+  async resumeLiveClass(classId: number) {
+    await this.repo.resumeSession(classId);
   }
 
-  async advanceProgress(classId: number, userId: number, request: AdvanceProgressRequest): Promise<{ ok: boolean; current_step: number; finished: boolean }> {
-    const dir = request.direction === 'prev' ? -1 : 1;
+  // --- Member progression (For Time / AMRAP) ---
+  async advanceProgress(classId: number, userId: number, direction: 'next' | 'prev') {
+    await this.repo.ensureProgressRow(classId, userId);
 
-    await this.liveClassRepository.ensureProgressRow(classId, userId);
+    const meta = await this.repo.getAdvanceMeta(classId);
+    if (!meta) throw new Error('CLASS_SESSION_NOT_STARTED');
+    if ((meta.status || '').toString() !== 'live') throw new Error('NOT_LIVE');
 
-    // Fetch workout type and step count for this class session
-    const meta = await this.liveClassRepository.getClassSessionMeta(classId);
-    const workoutType = meta.workout_type ?? 'FOR_TIME';
+    const elapsed = await this.repo.getElapsedSeconds(meta.started_at, meta.paused_at, meta.pause_accum_seconds);
+    if (Number(meta.time_cap_seconds ?? 0) > 0 && elapsed >= Number(meta.time_cap_seconds)) {
+      await this.repo.stopSession(classId);
+      throw new Error('TIME_UP');
+    }
+
     const stepCount = Number(meta.step_count ?? 0);
+    if (stepCount === 0) throw new Error('CLASS_SESSION_NOT_STARTED');
 
-    if (stepCount === 0) {
-      throw new Error('CLASS_SESSION_NOT_STARTED');
+    if ((meta.workout_type || '').toString().toUpperCase() === 'AMRAP') {
+      const row = await this.repo.advanceAmrap(classId, userId, stepCount, direction === 'prev' ? -1 : 1);
+      return { ok: true, current_step: row?.current_step ?? 0, finished: false };
     }
 
-    const result = await this.liveClassRepository.advanceProgress(
-      classId,
-      userId,
-      dir,
-      workoutType,
-      stepCount
-    );
-
-    return {
-      ok: true,
-      current_step: result.current_step ?? 0,
-      finished: !!result.finished_at
-    };
+    const row = await this.repo.advanceForTime(classId, userId, direction === 'prev' ? -1 : 1);
+    return { ok: true, current_step: row?.current_step ?? 0, finished: !!row?.finished_at };
   }
 
-  async submitPartial(classId: number, userId: number, request: SubmitPartialRequest): Promise<{ ok: boolean; reps: number }> {
-    const reps = Math.max(0, Number(request.reps ?? 0));
-    await this.liveClassRepository.ensureProgressRow(classId, userId);
-    await this.liveClassRepository.submitPartial(classId, userId, reps);
-    return { ok: true, reps };
+  // --- Submit partial reps (DNF) ---
+  async submitPartial(classId: number, userId: number, reps: number) {
+    const safe = Math.max(0, Number(reps || 0));
+    await this.repo.ensureProgressRow(classId, userId);
+    await this.repo.setPartialReps(classId, userId, safe);
+    return { ok: true, reps: safe };
   }
 
-  async getRealtimeLeaderboard(classId: number): Promise<RealtimeLeaderboardEntry[]> {
-    if (!Number.isFinite(classId)) {
-      throw new Error('INVALID_CLASS_ID');
-    }
+  // --- Realtime leaderboard ---
+  async getRealtimeLeaderboard(classId: number) {
+    const type = await this.repo.getWorkoutTypeByClass(classId);
+    if (!type) throw new Error('WORKOUT_NOT_FOUND_FOR_CLASS');
 
-    return this.liveClassRepository.getRealtimeLeaderboard(classId);
+    const t = type.toUpperCase();
+    if (t === 'INTERVAL' || t === 'TABATA' || t === 'EMOM') return this.repo.realtimeIntervalLeaderboard(classId);
+    if (t === 'AMRAP') return this.repo.realtimeAmrapLeaderboard(classId);
+    return this.repo.realtimeForTimeLeaderboard(classId);
   }
 
-  async getMyProgress(classId: number, userId: number): Promise<LiveProgress> {
-    const progress = await this.liveClassRepository.getMyProgress(classId, userId);
-    return progress ?? {
-      current_step: 0,
-      finished_at: null,
-      dnf_partial_reps: 0,
-      rounds_completed: 0
-    };
+  // --- My progress ---
+  async getMyProgress(classId: number, userId: number) {
+    return this.repo.getMyProgress(classId, userId);
   }
 
-  async postIntervalScore(classId: number, userId: number, request: IntervalScoreRequest): Promise<{ ok: boolean }> {
-    const stepIndex = Number(request.stepIndex);
-    const reps = Math.max(0, Number(request.reps ?? 0));
+  // --- Interval score ---
+  async postIntervalScore(classId: number, userId: number, stepIndex: number, reps: number) {
+    if (!Number.isFinite(stepIndex) || stepIndex < 0) throw new Error('INVALID_STEP_INDEX');
+    const sess = await this.repo.getSessionTypeAndSteps(classId);
+    if (!sess) throw new Error('SESSION_NOT_FOUND');
 
-    if (!Number.isFinite(stepIndex) || stepIndex < 0) {
-      throw new Error('INVALID_STEP_INDEX');
-    }
+    const type = (sess.type || '').toString().toUpperCase();
+    if (!['TABATA','INTERVAL','EMOM'].includes(type)) throw new Error('NOT_INTERVAL_WORKOUT');
 
-    // Validate that this is an interval-type workout
-    const workoutInfo = await this.liveClassRepository.validateIntervalWorkout(classId);
-    const workoutType = (workoutInfo.type || '').toString().toUpperCase();
-    
-    if (workoutType !== 'TABATA' && workoutType !== 'INTERVAL' && workoutType !== 'EMOM') {
-      throw new Error('NOT_INTERVAL_WORKOUT');
-    }
+    const stepsArr: any[] = Array.isArray(sess.steps) ? sess.steps : [];
+    if (stepIndex >= stepsArr.length) throw new Error('STEP_INDEX_OUT_OF_RANGE');
 
-    const steps = Array.isArray(workoutInfo.steps) ? workoutInfo.steps : [];
-    if (stepIndex >= steps.length) {
-      throw new Error('STEP_INDEX_OUT_OF_RANGE');
-    }
-
-    // Ensure user is booked in class
-    const isBooked = await this.liveClassRepository.validateBooking(classId, userId);
-    if (!isBooked) {
-      throw new Error('NOT_BOOKED');
-    }
-
-    // Insert or update the interval score
-    await this.liveClassRepository.postIntervalScore(classId, userId, stepIndex, reps);
-    return { ok: true };
+    await this.repo.assertMemberBooked(classId, userId);
+    await this.repo.upsertIntervalScore(classId, userId, stepIndex, Math.max(0, Number(reps || 0)));
   }
 
-  async getIntervalLeaderboard(classId: number): Promise<IntervalLeaderboardEntry[]> {
-    return this.liveClassRepository.getIntervalLeaderboard(classId);
+  async getIntervalLeaderboard(classId: number) {
+    return this.repo.intervalLeaderboard(classId);
   }
 }

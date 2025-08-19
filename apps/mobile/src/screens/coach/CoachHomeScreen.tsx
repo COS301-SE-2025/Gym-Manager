@@ -68,7 +68,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
       }
 
       const response = await axios.get<ApiCoachClass[]>(
-        `${config.BASE_URL}/coach/assignedClasses`,
+        `${config.BASE_URL}/coach/assigned`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
 

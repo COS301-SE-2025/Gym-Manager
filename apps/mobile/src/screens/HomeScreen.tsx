@@ -139,7 +139,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setBookedError(null);
     try {
       const bookedResponse = await axios.get<ApiBookedClass[]>(
-        `${config.BASE_URL}/member/getBookedClass`,
+        `${config.BASE_URL}/member/classes`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -189,7 +189,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setUpcomingError(null);
     try {
       const upcomingResponse = await axios.get<ApiUpcomingClass[]>(
-        `${config.BASE_URL}/member/getAllClasses`,
+        `${config.BASE_URL}/classes`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -325,7 +325,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       }
 
       const response = await axios.post(
-        `${config.BASE_URL}/member/bookClass`,
+        `${config.BASE_URL}/book`,
         { classId: classId },
         { headers: { Authorization: `Bearer ${token}` } },
       );

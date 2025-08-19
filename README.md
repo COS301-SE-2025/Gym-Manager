@@ -37,6 +37,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 ---
 ## 👥 Team Members
 
+|  |  |
 |--------|-------------|
 | <img src="Vansh.jpeg" alt="Vansh Sood" width="100" style="border-radius:50%;"> | **Vansh Sood**<br>Architect, Services Engineer, Data Engineer<br>Short description goes here.<br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/vansh-sood-783519352/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> |
 | <img src="Jason.jpeg" alt="Jason Mayo" width="100" style="border-radius:50%;"> | **Jason Mayo**<br>Designer, UI Engineer, Integration Engineer<br>Short description goes here.<br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="http://linkedin.com/in/jason-mayo-7a8063210" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> |

@@ -36,26 +36,13 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 
 ---
 ## 👥 Team Members
-<!-- 
-| Member | Description |
+
 |--------|-------------|
 | <img src="Vansh.jpeg" alt="Vansh Sood" width="100" style="border-radius:50%;"> | **Vansh Sood**<br>Architect, Services Engineer, Data Engineer<br>Short description goes here.<br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/vansh-sood-783519352/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> |
 | <img src="Jason.jpeg" alt="Jason Mayo" width="100" style="border-radius:50%;"> | **Jason Mayo**<br>Designer, UI Engineer, Integration Engineer<br>Short description goes here.<br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="http://linkedin.com/in/jason-mayo-7a8063210" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> |
 | <img src="Denis.jpeg" alt="Denis Woolley" width="100" style="border-radius:50%;"> | **Denis Woolley**<br>DevOps, Services Engineer, Architect<br>Short description goes here.<br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/denis-woolley-981aa6202/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> |
 | <img src="Amadeus.jpg" alt="Amadeus Fidos" width="100" style="border-radius:50%;"> | **Amadeus Fidos**<br>Architect, Designer, UI Engineer<br>Short description goes here.<br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/amadeus-fidos-b22512356/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> |
-| <img src="Jared.jpeg" alt="Jared Hürlimann" width="100" style="border-radius:50%;"> | **Jared Hürlimann**<br>DevOps, Services Engineer, Integration Engineer<br>Short description goes here.<br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> | -->
-
-## 👥 Team Members
-
-| Member | Description |
-|--------|-------------|
-| ![Vansh Sood](Vansh.jpeg) | **Vansh Sood**<br>Architect, Services Engineer, Data Engineer<br>Short description goes here.<br>[![GitHub](https://img.icons8.com/material-outlined/24/github.png)](https://github.com/yourusername) [![LinkedIn](https://www.linkedin.com/in/vansh-sood-783519352/)](https://www.linkedin.com/in/vansh-sood-783519352/) |
-| ![Jason Mayo](Jason.jpeg) | **Jason Mayo**<br>Designer, UI Engineer, Integration Engineer<br>Short description goes here.<br>[![GitHub](https://img.icons8.com/material-outlined/24/github.png)](https://github.com/yourusername) [![LinkedIn](http://linkedin.com/in/jason-mayo-7a8063210)](http://linkedin.com/in/jason-mayo-7a8063210) |
-| ![Denis Woolley](Denis.jpeg) | **Denis Woolley**<br>DevOps, Services Engineer, Architect<br>Short description goes here.<br>[![GitHub](https://img.icons8.com/material-outlined/24/github.png)](https://github.com/yourusername) [![LinkedIn](https://www.linkedin.com/in/denis-woolley-981aa6202/)](https://www.linkedin.com/in/denis-woolley-981aa6202/) |
-| ![Amadeus Fidos](Amadeus.jpg) | **Amadeus Fidos**<br>Architect, Designer, UI Engineer<br>Short description goes here.<br>[![GitHub](https://img.icons8.com/material-outlined/24/github.png)](https://github.com/yourusername) [![LinkedIn](https://www.linkedin.com/in/amadeus-fidos-b22512356/)](https://www.linkedin.com/in/amadeus-fidos-b22512356/) |
-| ![Jared Hürlimann](Jared.jpeg) | **Jared Hürlimann**<br>DevOps, Services Engineer, Integration Engineer<br>Short description goes here.<br>[![GitHub](https://img.icons8.com/material-outlined/24/github.png)](https://github.com/yourusername) [![LinkedIn](https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/)](https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/) |
-
-
+| <img src="Jared.jpeg" alt="Jared Hürlimann" width="100" style="border-radius:50%;"> | **Jared Hürlimann**<br>DevOps, Services Engineer, Integration Engineer<br>Short description goes here.<br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> |
 
 ---
 

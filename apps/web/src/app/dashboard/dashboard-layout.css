@@ -44,7 +44,7 @@ body {
 }
 
 main {
-  width: 100%;
+  width: 100%; 
   flex: 1;
   margin-left: auto;
   overflow-x: hidden;
@@ -135,17 +135,31 @@ main {
 
 .dashboard-content,
 main {
-  width: calc(100% - 280px);
-  flex: 1;
-  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  max-width: 100%;
+  overflow: visible;
   box-sizing: border-box;
 }
 
 .dashboard-content table,
 main table {
-  width: calc(100% - 280px);
+  width: 100%;
+  max-width: 100%;
   table-layout: fixed;
   word-wrap: break-word;
   margin: 0;
   padding: 0;
+}
+
+.user-table-container {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  max-width: 100%;
+  overflow: visible;
+  box-sizing: border-box;
 }

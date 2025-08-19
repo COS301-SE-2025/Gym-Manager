@@ -218,6 +218,7 @@ export default function DashboardPage() {
         display: 'flex',
         flexDirection: 'column',
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+        marginLeft: '280px',
       }}
     >
       {/* Header */}

@@ -1,3 +1,9 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   background-color: #1e1e1e;
   color: whitesmoke;
@@ -7,6 +13,7 @@ body {
     BlinkMacSystemFont,
     sans-serif;
 }
+
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
@@ -14,17 +21,40 @@ body {
 }
 
 .sidebar {
-  width: 300px;
-  background-color: #1e1e1e;
-  border-right: 1px solid #000;
+  width: 280px;
+  background-color: #252525;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+  overflow-y: auto;
 }
 
-.sidebar-title {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid #000;
-  padding-bottom: 0.5rem;
+.dashboard-content {
+  flex: 1;
+  background-color: #1e1e1e;
+  margin-left: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+main {
+  width: 100%; 
+  flex: 1;
+  margin-left: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.logo-holder {
+  padding: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .sidebar-nav {
@@ -32,64 +62,104 @@ body {
   padding: 0;
   margin: 0;
   width: 100%;
-  background-color: #1e1e1e;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.logo-holder {
-  background-color: #1e1e1e;
-}
 .sidebar-nav li {
-  border: #0f0f0f solid 1px;
-  width: 100%;
-  background-color: #434343;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-nav li:hover {
+  transform: translateX(4px);
 }
 
 .sidebar-nav a {
   text-decoration: none;
-  color: white;
-  padding: 8px 12px;
-  display: block;
+  color: #e0e0e0;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1rem;
+  font-weight: 500;
+  background-color: rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
   width: 100%;
-  font-size: larger;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-a:hover {
+.sidebar-nav a:hover {
   background-color: #748c24;
+  color: white;
 }
 
-a:active {
-  background-color: #d8ff3e;
-}
-
-.dashboard-content {
-  flex: 1;
-  background-color: #0f0f0f;
-}
-
-main {
-  width: 100%;
-  flex: 1;
+.sidebar-nav a.active {
+  background-color: #748c24;
+  color: white;
+  font-weight: 600;
 }
 
 .logout-container {
+  margin-top: auto;
   width: 100%;
+  padding-top: 0.5rem;
+  padding-bottom: 1rem;
+  box-sizing: border-box;
 }
 
 .logout {
   text-decoration: none;
-  display: block;
-  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
-  padding: 8px 12px;
-  font-size: larger;
-  border: #0f0f0f solid 1px;
-  background-color: #434343;
-  color: white;
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #e0e0e0;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
 .logout:hover {
-  background-color: #748c24;
-  display: block;
+  background-color: #dc2626;
+  color: white;
+}
+
+.dashboard-content,
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  max-width: 100%;
+  overflow: visible;
   box-sizing: border-box;
+}
+
+.dashboard-content table,
+main table {
   width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  word-wrap: break-word;
+  margin: 0;
+  padding: 0;
+}
+
+.user-table-container {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  max-width: 100%;
+  overflow: visible;
+  box-sizing: border-box;
 }

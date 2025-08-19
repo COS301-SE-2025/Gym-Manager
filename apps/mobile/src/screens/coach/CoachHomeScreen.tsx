@@ -79,7 +79,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
       });
 
       const classesNeedingWorkout: WorkoutItem[] = sortedClasses
-        .filter((c) => c.workoutId === null)
+        .filter((c) => c.workoutId === undefined)
         .map((c) => ({
           id: c.classId.toString(),
           name: 'Setup Workout',

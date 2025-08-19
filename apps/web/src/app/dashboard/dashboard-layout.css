@@ -38,16 +38,15 @@ body {
 .dashboard-content {
   flex: 1;
   background-color: #1e1e1e;
-  margin-left: auto;
   overflow-x: hidden;
   box-sizing: border-box;
 }
 
 main {
-  width: 100%; 
+  width: calc(100% - 280px); /* Adjust width to account for sidebar */
   flex: 1;
   margin-left: auto;
-  overflow-x: hidden;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
   box-sizing: border-box;
 }
 

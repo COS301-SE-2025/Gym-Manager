@@ -1,6 +1,7 @@
 .users-page {
-  max-width: 100%;
+  max-width: calc(100% - 280px); /* Adjust width to account for sidebar */
   margin: 0 auto;
+  margin-left: 280px;
 }
 
 .user-section {
@@ -19,7 +20,7 @@
 .user-table-container {
   width: 100%;
   margin: 0;
-  overflow-x: auto;
+  overflow-x: auto; /* Allow scrolling if content overflows */
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -28,6 +29,7 @@
 
 .user-table {
   width: 100%;
+  table-layout: auto; /* Adjust table layout to fit content */
   border-collapse: collapse;
 }
 
@@ -81,6 +83,10 @@
   .user-table td {
     padding: 8px 10px;
     font-size: 14px;
+  }
+
+  .users-page {
+    margin-left: 0; /* Adjust margin for smaller screens */
   }
 }
 

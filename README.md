@@ -1,6 +1,8 @@
-# Rome was built in a day – Gym‑Manager
+<p align="center">
+  <img src="banner.png" alt="Gym-Manager Banner">
+</p>
 
-![Gym-Manager Banner](banner.png)
+# TRAINWISE: The HIIT Gym‑Manager
 
 > Gym manager is a specialized management software solution purpose-built for HIIT (HighIntensity Interval Training) gyms. Unlike other fitness management platforms, this system is
 designed around the unique workflows, community focus, and performance tracking needs of

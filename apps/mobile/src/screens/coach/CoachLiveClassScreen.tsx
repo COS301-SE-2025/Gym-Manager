@@ -1,187 +1,115 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { useNavigation, RouteProp, useRoute } from '@react-navigation/native';
-import type { CoachStackParamList } from '../../navigation/CoachNavigator';
-import type { ApiLiveClassResponse } from '../HomeScreen';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity } from 'react-native';
+import { RouteProp, useRoute } from '@react-navigation/native';
+import type { AuthStackParamList } from '../../navigation/AuthNavigator';
+import { useSession } from '../../hooks/useSession';
+import { useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
 
-interface Participant {
-  userId: number;
-  firstName: string;
-  lastName: string;
-  score?: number;
+type R = RouteProp<AuthStackParamList, 'CoachLive'>;
+
+async function call(path: string) {
+  const token = await getToken();
+  await axios.post(`${config.BASE_URL}${path}`, {}, { headers: { Authorization: `Bearer ${token}` }});
 }
 
-const CoachLiveClassScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute<RouteProp<CoachStackParamList, 'CoachLiveClass'>>();
-  const { liveClassData } = route.params;
-  const [scores, setScores] = useState<{ [userId: number]: string }>(() =>
-    Object.fromEntries(
-      (liveClassData.participants as Participant[])?.map((p: Participant) => [
-        p.userId,
-        p.score?.toString() || '',
-      ]) || [],
-    ),
+export default function CoachScreen() {
+  const { params } = useRoute<R>();
+  const classId = params.classId as number;
+
+  const session = useSession(classId);
+  const lb = useLeaderboardRealtime(classId);
+
+  const allFinished = useMemo(
+    () => lb.length > 0 && lb.every((r:any) => !!r.finished),
+    [lb]
   );
-  const [loading, setLoading] = useState(false);
-
-  const handleScoreChange = (userId: number, value: string) => {
-    setScores((prev) => ({ ...prev, [userId]: value }));
-  };
-
-  const handleSubmitScores = async () => {
-    setLoading(true);
-    try {
-      const token = await getToken();
-      const payload = {
-        classId: liveClassData.class.classId,
-        scores: Object.entries(scores)
-          .filter(([_, val]) => val !== '' && !isNaN(Number(val)))
-          .map(([userId, val]) => ({
-            userId: Number(userId),
-            score: Number(val),
-          })),
-      };
-      await axios.post(`${config.BASE_URL}/submitScore`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      Alert.alert('Success', 'Scores submitted!');
-    } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.error || 'Failed to submit scores.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
-      </View>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.liveClassBanner}>
-          <View style={styles.liveClassLeft}>
-            <View style={styles.liveIndicator} />
-            <View>
-              <Text style={styles.liveLabel}>LIVE CLASS</Text>
-              <Text style={styles.liveClassName}>{liveClassData.class.workoutName}</Text>
+    <SafeAreaView style={s.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#111" />
+      <View style={s.pad}>
+        <Text style={s.title}>Coach Controls</Text>
+        <Text style={s.meta}>Class #{classId}</Text>
+        <Text style={s.meta}>Status: {session?.status ?? '—'}</Text>
+        <Text style={s.meta}>Type: {session?.workout_type ?? '—'}</Text>
+
+        <View style={{ height: 12 }} />
+        {session?.status !== 'live' && session?.status !== 'paused' ? (
+          <TouchableOpacity style={s.btnPrimary} onPress={() => call(`/coach/live/${classId}/start`)}>
+            <Text style={s.btnPrimaryText}>Start Workout</Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {session?.status === 'live' && !allFinished ? (
+          <View style={s.row}>
+            <TouchableOpacity style={s.btn} onPress={() => call(`/coach/live/${classId}/pause`)}>
+              <Text style={s.btnText}>Pause</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.btn, s.btnDanger]} onPress={() => call(`/coach/live/${classId}/stop`)}>
+              <Text style={s.btnTextAlt}>Stop</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {(session?.status === 'paused' || (session?.status === 'live' && allFinished)) ? (
+          <View style={{gap:10}}>
+            {session?.status === 'paused' && (
+              <TouchableOpacity style={s.btnPrimary} onPress={() => call(`/coach/live/${classId}/resume`)}>
+                <Text style={s.btnPrimaryText}>Resume</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={[s.btnPrimary, {backgroundColor:'#ff5c5c'}]} onPress={() => call(`/coach/live/${classId}/stop`)}>
+              <Text style={[s.btnPrimaryText, {color:'#fff'}]}>Finish Workout</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        <View style={{ height: 18 }} />
+        <Text style={s.section}>Leaderboard</Text>
+        <View style={s.lb}>
+          {lb.map((r:any,i:number)=>(
+            <View key={`${r.user_id}-${i}`} style={s.lbRow}>
+              <Text style={s.pos}>{i+1}</Text>
+              <Text style={s.user}>
+                {(r.first_name || r.last_name) ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim() : (r.name ?? `User ${r.user_id}`)}
+              </Text>
+              <Text style={s.score}>
+                {r.finished ? fmt(Number(r.elapsed_seconds ?? 0)) : `${Number(r.total_reps ?? 0)} reps`}
+              </Text>
             </View>
-          </View>
-          <View style={styles.liveClassRight}>
-            <Text style={styles.liveInstructor}>Coach</Text>
-            <Text style={styles.liveCapacity}>
-              {(liveClassData.participants as Participant[])?.length ?? 0}/30
-            </Text>
-          </View>
+          ))}
         </View>
-        {(liveClassData.participants as Participant[])?.map((p: Participant, idx: number) => (
-          <View key={p.userId} style={styles.participantRow}>
-            <Text style={styles.participantName}>
-              {p.firstName} {p.lastName}:
-            </Text>
-            <TextInput
-              style={styles.scoreInput}
-              value={scores[p.userId]}
-              onChangeText={(val) => handleScoreChange(p.userId, val)}
-              placeholder="input time"
-            />
-          </View>
-        ))}
-        <TouchableOpacity
-          style={styles.submitButton}
-          onPress={handleSubmitScores}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#1a1a1a" />
-          ) : (
-            <Text style={styles.submitButtonText}>Submit Scores</Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
-};
+}
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a1a1a' },
-  header: { paddingHorizontal: 20, paddingTop: 10, width: '100%' },
-  backButton: {
-    backgroundColor: '#2a2a2a',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollContainer: { padding: 20, paddingBottom: 40 },
-  liveClassBanner: {
-    backgroundColor: '#D8FF3E',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  liveClassLeft: { flexDirection: 'row', alignItems: 'center' },
-  liveIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#20C934',
-    marginRight: 12,
-  },
-  liveLabel: {
-    color: '#1a1a1a',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  liveClassName: { color: '#1a1a1a', fontSize: 18, fontWeight: '700' },
-  liveClassRight: { alignItems: 'flex-end' },
-  liveInstructor: { color: '#1a1a1a', fontSize: 12, fontWeight: '500' },
-  liveCapacity: { color: '#1a1a1a', fontSize: 10, fontWeight: '700', marginTop: 2 },
-  participantRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  participantName: { color: 'white', fontSize: 16, flex: 1 },
-  scoreInput: {
-    backgroundColor: '#222',
-    color: 'white',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    minWidth: 100,
-    textAlign: 'center',
-    fontSize: 16,
-  },
-  submitButton: {
-    backgroundColor: '#D8FF3E',
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: 'center',
-    marginTop: 40,
-  },
-  submitButtonText: { color: '#1a1a1a', fontSize: 20, fontWeight: 'bold' },
+function fmt(t: number) {
+  const s = Math.max(0, Math.floor(t));
+  const m = Math.floor(s/60);
+  const ss = s%60;
+  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+}
+
+const s = StyleSheet.create({
+  root:{ flex:1, backgroundColor:'#101010' },
+  pad:{ flex:1, padding:18 },
+  title:{ color:'#d8ff3e', fontSize:24, fontWeight:'900' },
+  meta:{ color:'#9aa', marginTop:4 },
+  section:{ color:'#fff', marginTop:16, fontWeight:'800' },
+  btnPrimary:{ backgroundColor:'#d8ff3e', padding:14, borderRadius:10, alignItems:'center' },
+  btnPrimaryText:{ color:'#111', fontWeight:'900' },
+  row:{ flexDirection:'row', gap:10, marginTop:8 },
+  btn:{ flex:1, backgroundColor:'#2a2a2a', padding:14, borderRadius:10, alignItems:'center' },
+  btnDanger:{ backgroundColor:'#ff5c5c' },
+  btnText:{ color:'#fff', fontWeight:'900' },
+  btnTextAlt:{ color:'#fff', fontWeight:'900' },
+  lb:{ backgroundColor:'#1a1a1a', borderRadius:10, padding:10, marginTop:8 },
+  lbRow:{ flexDirection:'row', alignItems:'center', paddingVertical:4 },
+  pos:{ width:24, color:'#d8ff3e', fontWeight:'900' },
+  user:{ flex:1, color:'#e1e1e1' },
+  score:{ color:'#fff', fontWeight:'800' }
 });
-
-export default CoachLiveClassScreen;

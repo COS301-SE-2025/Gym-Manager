@@ -3,6 +3,7 @@
 </p>
 
 <div align="center">
+
   # TRAINWISE: The HIIT Gym‑Manager
 
   ![Build](https://img.shields.io/github/actions/workflow/status/COS301-SE-2025/Gym-Manager/ci.yml?label=Build&logo=github)
@@ -14,6 +15,7 @@
 ---
 
 <div align="center">
+
   > Gym manager is a specialized management software solution purpose-built for HIIT (HighIntensity Interval Training) gyms. Unlike other fitness management platforms, this system is
   designed around the unique workflows, community focus, and performance tracking needs of
   HIIT environments

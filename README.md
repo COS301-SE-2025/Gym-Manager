@@ -16,18 +16,15 @@ HIIT environments
 
 <img src="jumping_jack.gif" alt="Animated GIF" width="200">
 
-</div>
-
 ---
 
+  ## 📑 Documentation
 
-## 📑 Documentation
-
-SRS → **[Gym‑Manager SRS (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v2/SRSv2.pdf)**
-
-Architectural Requirements → **[Gym‑Manager Architectural Requirements (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v2/ArchitecturalRequirementsDocument.pdf)**
-
-User Manual → **[Gym‑Manager User Manual (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v2/TRAINWISE%20User%20MANUAL%20(1).pdf)**
+  | Document Type             | Link |
+  |---------------------------|------|
+  | SRS                       | [Gym‑Manager SRS (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v2/SRSv2.pdf) |
+  | Architectural Requirements| [Gym‑Manager Architectural Requirements (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v2/ArchitecturalRequirementsDocument.pdf) |
+  | User Manual               | [Gym‑Manager User Manual (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v2/TRAINWISE%20User%20MANUAL%20(1).pdf) |
 
 ---
 
@@ -75,18 +72,8 @@ Gym-Manager/
   * `main` = production‑ready code.
   * `dev` = integration branch.
   * `feature/` branches for day‑to‑day work.
-
----
-<!-- 
-## 🏗️ CI / CD & Quality Gates
-
-| Badge | Purpose | Live Status |
-|-------|---------|-------------|
-| ![Build](https://img.shields.io/github/actions/workflow/status/COS301-SE-2025/Gym-Manager/ci.yml?label=Build&logo=github) | **Build** & unit‑test pipeline (GitHub Actions) | `ci.yml` checks lint → test → build on every push & PR |
-| [![Coverage](https://codecov.io/gh/COS301-SE-2025/Gym-Manager/branch/main/graph/badge.svg)](https://codecov.io/gh/COS301-SE-2025/Gym-Manager) | Jest **code coverage** via Codecov | Target ≥ 80 % |
-| ![Requirements](https://img.shields.io/badge/requirements-track--passed-brightgreen) | **Requirements** checklist completeness | Linked to SRS table |
-| ![Open Issues](https://img.shields.io/github/issues/COS301-SE-2025/Gym-Manager?logo=github) | Active **GitHub Issues** | Auto‑updates |
-| ![Uptime](https://img.shields.io/uptimerobot/ratio/m793620257-fa7567f6c9f1e2282d9efa97?label=API%20Uptime) | **Monitoring** (UptimeRobot) for `/api/health` | 30‑day ratio | -->
+  
+</div>
 
 
 > © 2025 Rome was built in a day — University of Pretoria COS 301 Capstone Project

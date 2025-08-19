@@ -35,21 +35,26 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 🔗 **[View the Board](https://github.com/orgs/COS301-SE-2025/projects/218/views/2)**
 
 ---
-
 ## 👥 Team Members
 
-| Name               | Role                | LinkedIn                                                                 |
-| - | - | - |
-| **Vansh Sood**  | Architect, Services Engineer, Data Engineer | [linkedin.com/in/vansh-sood](https://www.linkedin.com/in/vansh-sood-783519352/)   |
-| **Jason Mayo**  | Designer, UI Engineer, Integration Engineer | [linkedin.com/in/jason-mayo](http://linkedin.com/in/jason-mayo-7a8063210)   |
-| **Denis Woolley**  | DevOps, Services Engineer, Architect | [linkedin.com/in/denis‑woolley](https://www.linkedin.com/in/denis-woolley-981aa6202/)   |
-| **Amadeus Fidos**  | Architect, Designer, UI Engineer | [linkedin.com/in/amadeus-fidos](https://www.linkedin.com/in/amadeus-fidos-b22512356/)   |
-| **Jared Hürlimann**  | DevOps, Services Engineer, Integration Engineer | [linkedin.com/in/jared-hurlimann](https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/)  |
+| Member | Description |
+|--------|-------------|
+| <img src="Vansh.jpeg" alt="Vansh Sood" width="100" style="border-radius:50%;"> | **Vansh Sood**<br>Architect, Services Engineer, Data Engineer<br>Short description goes here.<br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/vansh-sood-783519352/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> |
+| <img src="Jason.jpeg" alt="Jason Mayo" width="100" style="border-radius:50%;"> | **Jason Mayo**<br>Designer, UI Engineer, Integration Engineer<br>Short description goes here.<br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="http://linkedin.com/in/jason-mayo-7a8063210" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> |
+| <img src="Denis.jpeg" alt="Denis Woolley" width="100" style="border-radius:50%;"> | **Denis Woolley**<br>DevOps, Services Engineer, Architect<br>Short description goes here.<br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/denis-woolley-981aa6202/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> |
+| <img src="Amadeus.jpg" alt="Amadeus Fidos" width="100" style="border-radius:50%;"> | **Amadeus Fidos**<br>Architect, Designer, UI Engineer<br>Short description goes here.<br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/amadeus-fidos-b22512356/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> |
+| <img src="Jared.jpeg" alt="Jared Hürlimann" width="100" style="border-radius:50%;"> | **Jared Hürlimann**<br>DevOps, Services Engineer, Integration Engineer<br>Short description goes here.<br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> |
+
+---
 
 
 ---
 
 ## 🗂️ Repository Structure & Branching
+
+</div>
+
+
 
 ```
 Gym-Manager/
@@ -72,8 +77,6 @@ Gym-Manager/
   * `main` = production‑ready code.
   * `dev` = integration branch.
   * `feature/` branches for day‑to‑day work.
-  
-</div>
 
 
 > © 2025 Rome was built in a day — University of Pretoria COS 301 Capstone Project

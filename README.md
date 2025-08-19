@@ -3,26 +3,27 @@
 </p>
 
 <div align="center">
+  # TRAINWISE: The HIIT Gym‑Manager
 
-# TRAINWISE: The HIIT Gym‑Manager
-
-![Build](https://img.shields.io/github/actions/workflow/status/COS301-SE-2025/Gym-Manager/ci.yml?label=Build&logo=github)
-[![Coverage](https://codecov.io/gh/COS301-SE-2025/Gym-Manager/branch/main/graph/badge.svg)](https://codecov.io/gh/COS301-SE-2025/Gym-Manager)
-![Open Issues](https://img.shields.io/github/issues/COS301-SE-2025/Gym-Manager?logo=github)
-![Uptime](https://img.shields.io/uptimerobot/ratio/m793620257-fa7567f6c9f1e2282d9efa97?label=API%20Uptime)
-
-> Gym manager is a specialized management software solution purpose-built for HIIT (HighIntensity Interval Training) gyms. Unlike other fitness management platforms, this system is
-designed around the unique workflows, community focus, and performance tracking needs of
-HIIT environments
-
-<img src="jumping_jack.gif" alt="Animated GIF" width="300">
-
+  ![Build](https://img.shields.io/github/actions/workflow/status/COS301-SE-2025/Gym-Manager/ci.yml?label=Build&logo=github)
+  [![Coverage](https://codecov.io/gh/COS301-SE-2025/Gym-Manager/branch/main/graph/badge.svg)](https://codecov.io/gh/COS301-SE-2025/Gym-Manager)
+  ![Open Issues](https://img.shields.io/github/issues/COS301-SE-2025/Gym-Manager?logo=github)
+  ![Uptime](https://img.shields.io/uptimerobot/ratio/m793620257-fa7567f6c9f1e2282d9efa97?label=API%20Uptime)
 </div>
 
 ---
 
+<div align="center">
+  > Gym manager is a specialized management software solution purpose-built for HIIT (HighIntensity Interval Training) gyms. Unlike other fitness management platforms, this system is
+  designed around the unique workflows, community focus, and performance tracking needs of
+  HIIT environments
+
+  <img src="jumping_jack.gif" alt="Animated GIF" width="200">
+  
+</div>
 
 ---
+
 
 ## 📑 Documentation
 

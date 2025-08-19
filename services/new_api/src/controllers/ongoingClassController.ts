@@ -9,7 +9,7 @@ import {
   classattendance,
 } from '../db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest } from '../infrastructure/middleware/authMiddleware';
 import { users } from '../db/schema';
 
 // GET /leaderboard/:classId  — final leaderboard (for completed class sessions)

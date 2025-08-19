@@ -1,7 +1,7 @@
 // src/controllers/userSettings.controller.ts
 import { Response } from 'express';
 import UserRepository from '../repositories/user.repository';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest } from '../infrastructure/middleware/authMiddleware';
 
 const userRepo = new UserRepository();
 

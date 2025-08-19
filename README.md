@@ -1,12 +1,26 @@
 <p align="center">
-  <img src="banner.png" alt="Gym-Manager Banner">
+  <img src="banner.png" alt="Gym-Manager Banner" width="300">
 </p>
 
+<div align="center">
+
 # TRAINWISE: The HIIT Gym‑Manager
+
+![Build](https://img.shields.io/github/actions/workflow/status/COS301-SE-2025/Gym-Manager/ci.yml?label=Build&logo=github)
+[![Coverage](https://codecov.io/gh/COS301-SE-2025/Gym-Manager/branch/main/graph/badge.svg)](https://codecov.io/gh/COS301-SE-2025/Gym-Manager)
+![Open Issues](https://img.shields.io/github/issues/COS301-SE-2025/Gym-Manager?logo=github)
+![Uptime](https://img.shields.io/uptimerobot/ratio/m793620257-fa7567f6c9f1e2282d9efa97?label=API%20Uptime)
 
 > Gym manager is a specialized management software solution purpose-built for HIIT (HighIntensity Interval Training) gyms. Unlike other fitness management platforms, this system is
 designed around the unique workflows, community focus, and performance tracking needs of
 HIIT environments
+
+<img src="jumping_jack.gif" alt="Animated GIF" width="300">
+
+</div>
+
+---
+
 
 ---
 
@@ -66,7 +80,7 @@ Gym-Manager/
   * `feature/` branches for day‑to‑day work.
 
 ---
-
+<!-- 
 ## 🏗️ CI / CD & Quality Gates
 
 | Badge | Purpose | Live Status |
@@ -75,7 +89,9 @@ Gym-Manager/
 | [![Coverage](https://codecov.io/gh/COS301-SE-2025/Gym-Manager/branch/main/graph/badge.svg)](https://codecov.io/gh/COS301-SE-2025/Gym-Manager) | Jest **code coverage** via Codecov | Target ≥ 80 % |
 | ![Requirements](https://img.shields.io/badge/requirements-track--passed-brightgreen) | **Requirements** checklist completeness | Linked to SRS table |
 | ![Open Issues](https://img.shields.io/github/issues/COS301-SE-2025/Gym-Manager?logo=github) | Active **GitHub Issues** | Auto‑updates |
-| ![Uptime](https://img.shields.io/uptimerobot/ratio/m793620257-fa7567f6c9f1e2282d9efa97?label=API%20Uptime) | **Monitoring** (UptimeRobot) for `/api/health` | 30‑day ratio |
+| ![Uptime](https://img.shields.io/uptimerobot/ratio/m793620257-fa7567f6c9f1e2282d9efa97?label=API%20Uptime) | **Monitoring** (UptimeRobot) for `/api/health` | 30‑day ratio | -->
 
 
 > © 2025 Rome was built in a day — University of Pretoria COS 301 Capstone Project
+
+

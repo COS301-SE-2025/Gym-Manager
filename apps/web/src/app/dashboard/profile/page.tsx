@@ -59,7 +59,11 @@ export default function AdminProfile() {
     try {
       setLoading(true);
       // Save user details (excluding status, credits, authorisation)
-      let role: UserRole = userRoles.includes('admin') ? 'admin' : userRoles.includes('coach') ? 'coach' : 'member';
+      let role: UserRole = userRoles.includes('admin')
+        ? 'admin'
+        : userRoles.includes('coach')
+          ? 'coach'
+          : 'member';
       const payload: any = {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -78,7 +82,7 @@ export default function AdminProfile() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       setError(null);
     } catch (err) {
@@ -161,7 +165,9 @@ export default function AdminProfile() {
                   </div>
                 )}
                 <div className="form-actions">
-                  <button type="submit" className="submit-button" disabled={loading}>Save Changes</button>
+                  <button type="submit" className="submit-button" disabled={loading}>
+                    Save Changes
+                  </button>
                 </div>
               </form>
             </div>

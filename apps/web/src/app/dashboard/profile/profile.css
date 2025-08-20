@@ -1,3 +1,6 @@
+.page-container {
+  margin-left: 280px;
+}
 .profile-cards-row {
   display: flex;
   gap: 1rem;

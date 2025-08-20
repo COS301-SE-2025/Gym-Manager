@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { CustomChart } from '@/components/Chart/CustomChart';
 import { userRoleService } from '@/app/services/roles';
-
+import './reports.css';
 export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [userRoleData, setUserRoleData] = useState<{ labels: string[]; datasets: any[] } | null>(

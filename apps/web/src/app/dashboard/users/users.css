@@ -1,12 +1,12 @@
-/* styles/users.css */
 .users-page {
-  padding: 20px;
-  max-width: 1200px;
+  max-width: calc(100% - 280px); /* Adjust width to account for sidebar */
   margin: 0 auto;
+  margin-left: 280px;
 }
 
 .user-section {
   margin-bottom: 40px;
+  padding-left: 0;
 }
 
 .user-section h2 {
@@ -18,14 +18,18 @@
 }
 
 .user-table-container {
-  overflow-x: auto;
+  width: 100%;
+  margin: 0;
+  overflow-x: auto; /* Allow scrolling if content overflows */
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 0;
 }
 
 .user-table {
   width: 100%;
+  table-layout: auto; /* Adjust table layout to fit content */
   border-collapse: collapse;
 }
 
@@ -79,6 +83,10 @@
   .user-table td {
     padding: 8px 10px;
     font-size: 14px;
+  }
+
+  .users-page {
+    margin-left: 0; /* Adjust margin for smaller screens */
   }
 }
 

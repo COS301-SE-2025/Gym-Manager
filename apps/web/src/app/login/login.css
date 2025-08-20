@@ -21,11 +21,17 @@ body {
 
 .login-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 10px;
 }
 
 .login-header h1 {
   font-size: 24px;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.login-header h3 {
+  font-size: 18px;
   color: white;
   margin-bottom: 8px;
 }

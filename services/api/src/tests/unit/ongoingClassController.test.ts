@@ -2,7 +2,7 @@
  * ongoingClassController.test.ts
  * Unit tests for getLeaderboard, getLiveClass, submitScore
  */
-import * as ctrl from '../../controllers/ongoingClassController';
+import * as ctrl from '../../controllers/liveClass/liveClassController';
 import { db } from '../../db/client';
 import { Request, Response } from 'express';
 import { builder } from '../builder';

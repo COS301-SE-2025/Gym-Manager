@@ -74,12 +74,16 @@ Gym-Manager/
 └── README.md
 ```
 
-* **Mono‑repo** managed with Git workspaces.
-* **Main ↔ dev ↔ feature/** branching model.
+* **Mono-repo** managed with Git workspaces.
+* **Main ↔ dev ↔ sub-dev ↔ feature/** branching model.
 
-  * `main` = production‑ready code.
-  * `dev` = integration branch.
-  * `feature/` branches for day‑to‑day work.
+  * `main` = production-ready code.
+  * `dev` = integration branch for general development.
+  * `sub-dev/*` branches = specialized development streams, e.g.:
+    * `dev-api` = backend/API development
+    * `dev-mobile` = mobile app development
+    * `dev-web` = web frontend development
+  * `feature/` branches = day-to-day task-specific work, usually branched off the relevant sub-dev branch.
 
 
 > © 2025 Rome was built in a day — University of Pretoria COS 301 Capstone Project

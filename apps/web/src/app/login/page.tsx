@@ -9,10 +9,12 @@ export default function LoginPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true); 
     try {
       const response = await axios.post(`${API_URL}/login`, { email, password }, {
         headers: { 'Content-Type': 'application/json' },
@@ -22,6 +24,8 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -44,7 +48,9 @@ export default function LoginPage() {
             <label htmlFor="password">Password</label>
             <input type="password" id="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
           </div>
-          <button type="submit" className="login-button">Login</button>
+          <button type="submit" className="login-button" disabled={isLoading}>
+            {isLoading ? 'Loading...' : 'Login'}
+          </button>
         </form>
       </div>
     </div>

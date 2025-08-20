@@ -35,6 +35,8 @@ import { HealthController } from '../../controllers/health/healthController';
 import { HealthService } from '../../services/health/healthService';
 import { HealthRepository } from '../../repositories/health/healthRepository';
 import { HealthRoutes } from '../../presentation/health/healthRoutes';
+import { NotificationService } from '../../services/notifications/notificationService';
+import { NotificationRepository } from '../../repositories/notifications/notificationRepository';
 
 /**
  * Dependency Container - Infrastructure Layer
@@ -68,12 +70,14 @@ export class DependencyContainer {
     this.services.set('liveClassRepository', new LiveClassRepository());
     this.services.set('userSettingsRepository', new UserSettingsRepository());
     this.services.set('healthRepository', new HealthRepository());
+    this.services.set('notificationRepository', new NotificationRepository());
 
     // Service layer
     this.services.set('authService', new AuthService(
       this.services.get('userRepository'),
       this.services.get('jwtService'),
-      this.services.get('passwordService')
+      this.services.get('passwordService'),
+      this.services.get('notificationService')
     ));
 
     this.services.set('classService', new ClassService(
@@ -95,6 +99,10 @@ export class DependencyContainer {
 
     this.services.set('healthService', new HealthService(
       this.services.get('healthRepository')
+    ));
+
+    this.services.set('notificationService', new NotificationService(
+      this.services.get('notificationRepository')
     ));
 
     // Controller layer

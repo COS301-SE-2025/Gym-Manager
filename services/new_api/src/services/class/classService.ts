@@ -9,10 +9,7 @@ import {
   CheckInRequest,
   AssignCoachRequest,
   AssignWorkoutRequest,
-  WeeklyScheduleRequest
 } from '../../domain/entities/class.entity';
-import { ClassRepository } from '../../repositories/class/classRepository';
-import { UserRepository } from '../../repositories/auth/userRepository';
 
 /**
  * ClassService - Business Layer
@@ -20,11 +17,11 @@ import { UserRepository } from '../../repositories/auth/userRepository';
  */
 export class ClassService implements IClassService {
   private classRepository: IClassRepository;
-  private userRepository: UserRepository;
+  private userRepository: any;
 
-  constructor(classRepository?: IClassRepository, userRepository?: UserRepository) {
-    this.classRepository = classRepository || new ClassRepository();
-    this.userRepository = userRepository || new UserRepository();
+  constructor(classRepository: IClassRepository, userRepository: any) {
+    this.classRepository = classRepository;
+    this.userRepository = userRepository;
   }
 
   async getCoachAssignedClasses(coachId: number): Promise<Class[]> {
@@ -91,7 +88,7 @@ export class ClassService implements IClassService {
       // Reject past classes
       const now = new Date();
       const classEnd = new Date(`${cls.scheduledDate}T${cls.scheduledTime}`);
-      classEnd.setMinutes(classEnd.getMinutes() + Number(cls.durationMinutes ?? cls.duration));
+      classEnd.setMinutes(classEnd.getMinutes() + Number(cls.durationMinutes));
 
       if (now >= classEnd) {
         throw new Error('Class has already ended');

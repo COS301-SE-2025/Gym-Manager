@@ -3,6 +3,7 @@ import { UserRegistrationData, UserLoginData, AuthResult, UserWithRoles } from '
 import { UserRepository } from '../../repositories/auth/userRepository';
 import { JwtService } from '../../infrastructure/auth/jwtService';
 import { PasswordService } from '../../infrastructure/auth/passwordService';
+import { NotificationService } from '../notifications/notificationService';
 
 /**
  * AuthService - Business Layer
@@ -12,15 +13,18 @@ export class AuthService implements IAuthService {
   private userRepository: IUserRepository;
   private jwtService: IJwtService;
   private passwordService: IPasswordService;
+  private notificationService: NotificationService;
 
   constructor(
     userRepository?: IUserRepository,
     jwtService?: IJwtService,
-    passwordService?: IPasswordService
+    passwordService?: IPasswordService,
+    notificationService?: NotificationService,
   ) {
     this.userRepository = userRepository || new UserRepository();
     this.jwtService = jwtService || new JwtService();
     this.passwordService = passwordService || new PasswordService();
+    this.notificationService = notificationService || new NotificationService();
   }
 
   async register(userData: UserRegistrationData): Promise<AuthResult> {
@@ -50,6 +54,9 @@ export class AuthService implements IAuthService {
       },
       roles
     );
+
+    // Emit admin notification for approval
+    await this.notificationService.createUserSignupNotification(createdUser);
 
     // Get roles for token generation
     const assignedRoles = await this.userRepository.getRolesByUserId(createdUser.userId);

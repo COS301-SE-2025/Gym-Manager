@@ -1,7 +1,7 @@
 // src/controllers/admin.controller.ts
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../middleware/auth';
-import AdminRepository, { WeeklyScheduleInput } from '../repositories/admin.repository';
+import { AuthenticatedRequest } from '../infrastructure/middleware/authMiddleware';
+import AdminRepository, { WeeklyScheduleInput } from '../repositories/admin/adminRepository';
 
 const adminRepo = new AdminRepository();
 

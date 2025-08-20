@@ -3,7 +3,7 @@
  */
 import { register, login } from '../../controllers/authController';
 import { db } from '../../db/client';
-import * as authUtils from '../../middleware/auth';
+import * as authUtils from '../../infrastructure/middleware/authMiddleware';
 import { Request, Response } from 'express';
 import { builder } from '../builder';
 

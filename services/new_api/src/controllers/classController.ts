@@ -9,8 +9,8 @@ import {
   userroles,
 } from '../db/schema';
 import { eq, and, gt, gte, or, sql } from 'drizzle-orm';
-import { AuthenticatedRequest } from '../middleware/auth';
-import ClassRepository from '../repositories/class.repository';
+import { AuthenticatedRequest } from '../infrastructure/middleware/authMiddleware';
+import { ClassRepository } from '../repositories/class/classRepository';
 import UserRepository from '../repositories/user.repository';
 
 const classRepo = new ClassRepository();

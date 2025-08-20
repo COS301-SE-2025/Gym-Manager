@@ -1,7 +1,11 @@
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest } from '../infrastructure/middleware/authMiddleware';
 import UserRepository from '../repositories/user.repository';
-import { hashPassword, verifyPassword, generateJwt } from '../middleware/auth';
+import {
+  hashPassword,
+  verifyPassword,
+  generateJwt,
+} from '../infrastructure/middleware/authMiddleware';
 
 const userRepo = new UserRepository();
 
@@ -47,7 +51,6 @@ export const register = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Failed to register user' });
   }
 };
-
 
 /**
  * POST /login

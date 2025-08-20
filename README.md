@@ -24,7 +24,7 @@ HIIT environments
   |---------------------------|------|
   | SRS                       | [Gym‑Manager SRS (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v3/SRSv3.pdf) |
   | Architectural Requirements| [Gym‑Manager Architectural Requirements (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v3/ArchitecturalRequirementsAndDesign.pdf) |
-  | User Manual               | [Gym‑Manager User Manual (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v2/TRAINWISE_USER_MANUAL.pdf) |
+  | User Manual               | [Gym‑Manager User Manual (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v3/TRAINWISE_USER_MANUAL.pdf) |
   | Coding Standards             | [Gym‑Manager Coding Standards (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v3/CodingStandardsDocument.pdf) |
   | Service Contracts            | [Gym‑Manager Service Contracts (MD)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v3/ServiceContracts.md) |
   | Technical Installation Manual| [Gym‑Manager Technical Installation Manual (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v3/TechnicalInstallationManual.pdf) |

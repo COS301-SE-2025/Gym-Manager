@@ -42,19 +42,19 @@ export class AdminRepository implements IAdminRepository {
   async createWeeklySchedule(
     startDate: string,
     createdBy: number,
-    weeklySchedule: WeeklyScheduleInput,
+    weeklySchedule: any,
     tx?: Executor,
   ): Promise<any[]> {
     const baseDate = dateFnsParseISO(startDate);
     const inserted: (typeof classes.$inferSelect)[] = [];
 
-    for (const dayBlock of weeklySchedule) {
+    for (const dayBlock of (weeklySchedule || [])) {
       const offset = dayToOffset[dayBlock.day];
       if (offset === undefined) continue;
 
       const scheduledDate = addDays(baseDate, offset);
 
-      for (const cls of dayBlock.classes) {
+      for (const cls of (dayBlock.classes || [])) {
         const payload = {
           scheduledDate: format(scheduledDate, 'yyyy-MM-dd'),
           scheduledTime: cls.time,

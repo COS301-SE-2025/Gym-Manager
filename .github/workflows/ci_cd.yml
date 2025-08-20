@@ -31,7 +31,7 @@ jobs:
 
       - name: Install NPM dependencies for api
         run: npm install
-        working-directory: ./services/api
+        working-directory: ./services/new_api
 
       - name: Install NPM dependencies for mobile interface
         run: npm install
@@ -53,11 +53,11 @@ jobs:
 
       - name: Install API dependencies
         run: npm install
-        working-directory: ./services/api
+        working-directory: ./services/new_api
       
       - name: Lint API
         run: npm run lint
-        working-directory: ./services/api
+        working-directory: ./services/new_api
 
   test:
     name: Run Unit
@@ -72,11 +72,11 @@ jobs:
 
       - name: Install API test deps
         run: npm install
-        working-directory: ./services/api
+        working-directory: ./services/new_api
 
       - name: Run API Tests
         run: npm run test:unit
-        working-directory: ./services/api
+        working-directory: ./services/new_api
 
   deploy:
     name: Deploy to Production

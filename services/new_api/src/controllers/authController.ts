@@ -1,9 +1,12 @@
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest } from '../infrastructure/middleware/authMiddleware';
 import UserRepository from '../repositories/user.repository';
-import { hashPassword, verifyPassword, generateJwt } from '../middleware/auth';
+import { PasswordService } from '../infrastructure/auth/passwordService';
+import { JwtService } from '../infrastructure/auth/jwtService';
 
 const userRepo = new UserRepository();
+const passwordService = new PasswordService();
+const jwtService = new JwtService();
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -20,7 +23,7 @@ export const register = async (req: Request, res: Response) => {
     }
 
     // Hash password
-    const passwordHash = await hashPassword(password);
+    const passwordHash = await passwordService.hashPassword(password);
 
     // Create user + role rows transactionally (repository helper)
     const created = await userRepo.createUserWithRoles(
@@ -38,7 +41,7 @@ export const register = async (req: Request, res: Response) => {
     const assignedRoles = await userRepo.getRolesByUserId(created.userId);
 
     // Generate token
-    const token = generateJwt({ userId: created.userId, roles: assignedRoles });
+    const token = jwtService.generateToken({ userId: created.userId, roles: assignedRoles });
 
     // Return token (keeps same minimal response shape you used before)
     return res.status(201).json({ token });
@@ -48,10 +51,6 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-
-/**
- * POST /login
- */
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -60,13 +59,13 @@ export const login = async (req: Request, res: Response) => {
     const user = await userRepo.findByEmail(email);
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const passwordValid = await verifyPassword(password, user.passwordHash as string);
+    const passwordValid = await passwordService.verifyPassword(password, user.passwordHash as string);
     if (!passwordValid) return res.status(401).json({ error: 'Invalid credentials' });
 
     // Fetch roles using repository
     const roles = await userRepo.getRolesByUserId(user.userId);
 
-    const token = generateJwt({ userId: user.userId, roles });
+    const token = jwtService.generateToken({ userId: user.userId, roles });
 
     return res.json({
       token,
@@ -84,9 +83,6 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * GET /status
- */
 export const getStatus = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });

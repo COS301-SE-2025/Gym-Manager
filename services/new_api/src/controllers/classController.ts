@@ -9,8 +9,8 @@ import {
   userroles,
 } from '../db/schema';
 import { eq, and, gt, gte, or, sql } from 'drizzle-orm';
-import { AuthenticatedRequest } from '../middleware/auth';
-import ClassRepository from '../repositories/class.repository';
+import { AuthenticatedRequest } from '../infrastructure/middleware/authMiddleware';
+import { ClassRepository } from '../repositories/class/classRepository';
 import UserRepository from '../repositories/user.repository';
 
 const classRepo = new ClassRepository();
@@ -222,7 +222,7 @@ export const getAllClasses = async (req: AuthenticatedRequest, res: Response) =>
       and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time)),
     );
 
-    const classesList = await classRepo.getUpcomingClassesForMembers(notPastCondition);
+    const classesList = await classRepo.getUpcomingClassesForMembers({ today, time });
     return res.json(classesList);
   } catch (err) {
     console.error('getAllClasses error:', err);
@@ -256,7 +256,7 @@ export const getMemberClasses = async (req: AuthenticatedRequest, res: Response)
       ),
     );
 
-    const bookedClasses = await classRepo.getBookedClassesForMember(memberId, notPastCondition);
+    const bookedClasses = await classRepo.getBookedClassesForMember(memberId, { today, time });
     return res.json(bookedClasses);
   } catch (err) {
     console.error('getMemberClasses error:', err);
@@ -285,7 +285,7 @@ export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
       // Reject past classes
       const now = new Date();
       const classEnd = new Date(`${cls.scheduledDate}T${cls.scheduledTime}`);
-      classEnd.setMinutes(classEnd.getMinutes() + Number(cls.durationMinutes ?? cls.duration));
+      classEnd.setMinutes(classEnd.getMinutes() + Number(cls.durationMinutes));
 
       if (now >= classEnd) throw { code: 400, msg: 'Class has already ended' };
 

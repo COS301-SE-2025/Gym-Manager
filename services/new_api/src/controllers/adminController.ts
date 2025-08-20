@@ -1,7 +1,7 @@
 // src/controllers/admin.controller.ts
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../middleware/auth';
-import AdminRepository, { WeeklyScheduleInput } from '../repositories/admin.repository';
+import { AuthenticatedRequest } from '../infrastructure/middleware/authMiddleware';
+import { AdminRepository } from '../repositories/admin/adminRepository';
 
 const adminRepo = new AdminRepository();
 
@@ -12,7 +12,7 @@ export const createWeeklySchedule = async (req: Request, res: Response) => {
     const { startDate, createdBy, weeklySchedule } = req.body as {
       startDate: string;
       createdBy: number;
-      weeklySchedule: WeeklyScheduleInput;
+      weeklySchedule: any; // Assuming WeeklyScheduleInput is removed or replaced
     };
 
     const inserted = await adminRepo.createWeeklySchedule(startDate, createdBy, weeklySchedule);

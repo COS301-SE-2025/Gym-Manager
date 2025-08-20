@@ -12,6 +12,8 @@ import {
   classattendance,
   classSessions,
   liveProgress,
+  notifications,
+  notificationTargets,
 } from './schema';
 
 export const classesRelations = relations(classes, ({ one, many }) => ({
@@ -124,4 +126,15 @@ export const liveProgressRelations = relations(liveProgress, ({ one }) => ({
     fields: [liveProgress.classId],
     references: [classSessions.classId],
   }),
+}));
+
+export const notificationTargetsRelations = relations(notificationTargets, ({ one }) => ({
+  notification: one(notifications, {
+    fields: [notificationTargets.notificationId],
+    references: [notifications.notificationId],
+  }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ many }) => ({
+  notificationTargets: many(notificationTargets),
 }));

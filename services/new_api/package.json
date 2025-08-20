@@ -13,6 +13,7 @@
     "format:fix": "prettier --write 'src/**/*.{ts,tsx,json,css,md}'",
     "prepare": "husky install",
     "test": "jest",
+    "test:services": "jest --runTestsByPath src/tests/unit/authService.test.ts src/tests/unit/notificationService.test.ts src/tests/unit/adminService.test.ts src/tests/unit/classService.test.ts src/tests/unit/healthService.test.ts src/tests/unit/liveClassService.test.ts",
     "test:coverage": "jest --coverage",
     "test:unit": "jest --coverage --testPathPattern=tests/unit"
   },

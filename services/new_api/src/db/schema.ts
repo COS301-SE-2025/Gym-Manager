@@ -307,3 +307,27 @@ export const liveProgress = pgTable(
     primaryKey({ columns: [table.classId, table.userId], name: 'live_progress_pkey' }),
   ],
 );
+
+// -------------- NOTIFICATIONS --------------
+export const notifications = pgTable('notifications', {
+  notificationId: serial('notification_id').primaryKey().notNull(),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  createdAt: timestamp('created_at', { mode: 'string' }).defaultNow(),
+});
+
+export const notificationTargets = pgTable(
+  'notification_targets',
+  {
+    targetId: serial('target_id').primaryKey().notNull(),
+    notificationId: integer('notification_id').notNull(),
+    targetRole: userRole('target_role').notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.notificationId],
+      foreignColumns: [notifications.notificationId],
+      name: 'notification_targets_notification_id_fkey',
+    }).onDelete('cascade'),
+  ],
+);

@@ -37,6 +37,7 @@ export class HealthService implements IHealthService {
       return {
         ok: false,
         uptime: uptimeSec,
+        memory: memBytes,
         db: 'DOWN',
         error: errorMessage,
       };

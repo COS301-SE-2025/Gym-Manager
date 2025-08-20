@@ -1,7 +1,7 @@
 /**
  * authControllers.test.ts – unit tests for register() & login()
  */
-import { register, login } from '../../controllers/authController';
+import { AuthController } from '../../controllers/auth/authController';
 import { db } from '../../db/client';
 import * as authUtils from '../../infrastructure/middleware/authMiddleware';
 import { Request, Response } from 'express';
@@ -53,7 +53,7 @@ describe('register()', () => {
     } as Request;
 
     const res = mockRes();
-    await register(req, res);
+    await AuthController.register(req, res);
 
     expect(db.insert).toHaveBeenCalled();
     expect(authUtils.generateJwt).toHaveBeenCalledWith(
@@ -68,7 +68,7 @@ describe('register()', () => {
     const req = { body: { email: 'dup', password: 'pw' } } as Request;
     const res = mockRes();
 
-    await register(req, res);
+    await AuthController.register(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 });
@@ -94,7 +94,7 @@ describe('login()', () => {
     const req = { body: { email: 'ada@x', password: 'pw' } } as Request;
     const res = mockRes();
 
-    await login(req, res);
+    await AuthController.login(req, res);
 
     expect(res.json).toHaveBeenCalledWith({
       token: 'fake.jwt',
@@ -119,7 +119,7 @@ describe('login()', () => {
     const req = { body: { email: 'x', password: 'bad' } } as Request;
     const res = mockRes();
 
-    await login(req, res);
+    await AuthController.login(req, res);
     expect(res.status).toHaveBeenCalledWith(401);
   });
 });

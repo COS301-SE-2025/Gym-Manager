@@ -1,7 +1,7 @@
 /**
- * userSettingsController.test.ts – unit tests for editSettings
+ * userSettingsController.test.ts – unit tests for UserSettingsController
  */
-import { editSettings } from '../../controllers/userSettingsController';
+import { UserSettingsController } from '../../controllers/userSettings/userSettingsController';
 import { db }            from '../../db/client';
 import { Request, Response } from 'express';
 import { builder }       from '../builder';
@@ -34,12 +34,12 @@ beforeAll(() => {
 afterEach(jest.clearAllMocks);
 
 // ─── tests ──────────────────────────────────────────────────
-describe('editSettings', () => {
+describe('UserSettingsController', () => {
   it('400 when publicVisibility is not boolean', async () => {
     const req = mockReq('yes');               // ← wrong type
     const res = mockRes();
 
-    await editSettings(req, res);
+    await new UserSettingsController(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({
@@ -55,7 +55,7 @@ describe('editSettings', () => {
     const req = mockReq(false);
     const res = mockRes();
 
-    await editSettings(req, res);
+    await userSettingsController(req, res);
 
     expect(db.update).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(404);
@@ -68,7 +68,7 @@ describe('editSettings', () => {
     const req = mockReq(true);
     const res = mockRes();
 
-    await editSettings(req, res);
+    await new UserSettingsController(req, res);
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({
@@ -84,7 +84,7 @@ describe('editSettings', () => {
     const req = mockReq(true);
     const res = mockRes();
 
-    await editSettings(req, res);
+    await new UserSettingsController(req, res);
 
     expect(db.update).toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith({

@@ -40,6 +40,70 @@ describe('ClassService', () => {
     // restore
     ;(clientModule as any).db = originalDb;
   });
+
+  it('getClassesForCoach validates inputs and calls repository', async () => {
+    const mockRepo = {
+      findAssignedClassesByCoach: jest.fn().mockResolvedValue([{ classId: 1 }]),
+    } as any;
+    const svc = new ClassService(mockRepo as any, {} as any);
+    const res = await svc.getCoachAssignedClasses(1);
+    expect(res).toEqual([{ classId: 1 }]);
+  });
+
+  it('getClassesForMember validates inputs and calls repository', async () => {
+    const mockRepo = {
+      getBookedClassesForMember: jest.fn().mockResolvedValue([{ classId: 1 }]),
+    } as any;
+    const svc = new ClassService(mockRepo as any, {} as any);
+    const res = await svc.getMemberClasses(1);
+    expect(res).toEqual([{ classId: 1 }]);
+  });
+
+  it('getCoachClassesWithWorkouts validates inputs and calls repository', async () => {
+    const mockRepo = {
+      findAssignedClassesWithWorkoutsByCoach: jest.fn().mockResolvedValue([{ classId: 1 }]),
+    } as any;
+    const svc = new ClassService(mockRepo as any, {} as any);
+    const res = await svc.getCoachClassesWithWorkouts(1);
+    expect(res).toEqual([{ classId: 1 }]);
+  });
+
+  it('createWorkout validates inputs and calls repository', async () => { 
+    const mockRepo = {
+      createWorkout: jest.fn().mockResolvedValue(1),
+    } as any;
+    const svc = new ClassService(mockRepo as any, {} as any);
+    const res = await svc.createWorkout({ workoutName: 'Test Workout', type: 'FOR_TIME', metadata: {}, rounds: [{ roundNumber: 1, subrounds: [{ subroundNumber: 1, exercises: [{ exerciseName: 'Test Exercise', position: 1, quantityType: 'reps', quantity: 10 }] }] }] });
+    expect(res).toEqual(1);
+  });
+
+  it('getAllClasses validates inputs and calls repository', async () => {
+    const mockRepo = {
+      getUpcomingClassesForMembers: jest.fn().mockResolvedValue([{ classId: 1 }]),
+    } as any;
+    const svc = new ClassService(mockRepo as any, {} as any);
+    const res = await svc.getAllClasses(1);
+    expect(res).toEqual([{ classId: 1 }]);
+  });
+
+  it('checkInToClass validates inputs and calls repository', async () => {
+    const mockRepo = {
+      insertAttendance: jest.fn().mockResolvedValue({ classId: 1 }),
+    } as any;
+    const svc = new ClassService(mockRepo as any, {} as any);
+    const res = await svc.checkInToClass(1, 1);
+    expect(res).toEqual({ classId: 1 });
+  });
+
+  it('cancelBooking validates inputs and calls repository', async () => {
+    const mockRepo = {
+      deleteBooking: jest.fn().mockResolvedValue(undefined),
+    } as any;
+    const svc = new ClassService(mockRepo as any, {} as any);
+    await svc.cancelBooking(1, 1);
+    expect(mockRepo.deleteBooking).toHaveBeenCalledWith(1, 1);
+  });
+
 });
 
 

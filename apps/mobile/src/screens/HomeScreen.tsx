@@ -31,6 +31,7 @@ interface ClassItem {
   date: string;
   capacity: string;
   instructor: string;
+  duration?: number;
   isBooked?: boolean;
 }
 
@@ -49,6 +50,7 @@ interface ApiUpcomingClass {
   scheduledTime: string;
   workoutName?: string;
   bookedCount?: number;
+  durationMinutes?: number;
   coachFirstName?: string;
   coachLastName?: string;
 }
@@ -220,7 +222,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             capacity: `${apiClass.bookedCount ?? 0}/${apiClass.capacity}`,
             instructor:
               `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
+              duration: apiClass.durationMinutes || 60,
             isBooked: false,
+            
           });
           return acc;
         }, {});

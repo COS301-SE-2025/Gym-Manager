@@ -10,6 +10,9 @@ import {
   AssignCoachRequest,
   AssignWorkoutRequest,
 } from '../../domain/entities/class.entity';
+import { ClassRepository } from '../../repositories/class/classRepository';
+import { UserRepository } from '../../repositories/auth/userRepository';
+import { IUserRepository } from '../../domain/interfaces/auth.interface';
 
 /**
  * ClassService - Business Layer
@@ -17,11 +20,11 @@ import {
  */
 export class ClassService implements IClassService {
   private classRepository: IClassRepository;
-  private userRepository: any;
+  private userRepository: UserRepository;
 
-  constructor(classRepository: IClassRepository, userRepository: any) {
-    this.classRepository = classRepository;
-    this.userRepository = userRepository;
+  constructor(classRepository?: IClassRepository, userRepository?: UserRepository) {
+    this.classRepository = classRepository || new ClassRepository();
+    this.userRepository = userRepository || new UserRepository();
   }
 
   async getCoachAssignedClasses(coachId: number): Promise<Class[]> {

@@ -75,7 +75,7 @@ export default function AdminProfile() {
       // authorisation, credits, status excluded - admin should not edit own membership and permissions
       const token = localStorage.getItem('authToken');
       await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/updateUserById/${user.userId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/users/${user.userId}`,
         payload,
         {
           headers: {

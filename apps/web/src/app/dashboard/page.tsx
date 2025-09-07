@@ -68,7 +68,7 @@ export default function DashboardPage() {
 
     try {
       const token = localStorage.getItem('authToken');
-      await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/allUsers`, {
+      await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch (err) {

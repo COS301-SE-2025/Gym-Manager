@@ -4,6 +4,7 @@ import {
   CreateClassRequest,
   WeeklyScheduleInput
 } from '../../domain/entities/class.entity';
+import { AdminRepository } from '../../repositories/admin/adminRepository';
 
 /**
  * AdminService - Business Layer
@@ -12,8 +13,8 @@ import {
 export class AdminService implements IAdminService {
   private adminRepository: IAdminRepository;
 
-  constructor(adminRepository: IAdminRepository) {
-    this.adminRepository = adminRepository;
+  constructor(adminRepository?: IAdminRepository) {
+    this.adminRepository = adminRepository || new AdminRepository();
   }
 
   async createWeeklySchedule(request: { startDate: string; createdBy: number; weeklySchedule: WeeklyScheduleInput }): Promise<any[]> {

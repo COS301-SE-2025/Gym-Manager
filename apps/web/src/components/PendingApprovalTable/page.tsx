@@ -64,7 +64,7 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
                     try {
                       setLoading(true);
                       await axios.patch(
-                        `${process.env.NEXT_PUBLIC_API_URL}/users/updateUserById/${user.userId}`,
+                        `${process.env.NEXT_PUBLIC_API_URL}/users/${user.userId}`,
                         { status: 'approved' },
                         {
                           headers: {

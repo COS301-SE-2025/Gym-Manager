@@ -293,6 +293,18 @@ export const bookClass = async (req: AuthenticatedRequest, res: Response) => {
       const already = await classRepo.alreadyBooked(classId, memberId, tx);
       if (already) throw { code: 400, msg: 'Already booked' };
 
+      // Overlapping booking?
+      const overlaps = await classRepo.hasOverlappingBooking(
+        memberId,
+        {
+          scheduledDate: cls.scheduledDate,
+          scheduledTime: cls.scheduledTime,
+          durationMinutes: Number(cls.durationMinutes),
+        },
+        tx,
+      );
+      if (overlaps) throw { code: 400, msg: 'Overlapping booking' };
+
       // Seats left?
       const count = await classRepo.countBookingsForClass(classId, tx);
       if (count >= cls.capacity) throw { code: 400, msg: 'Class full' };

@@ -499,22 +499,33 @@ export class LiveClassRepository implements ILiveClassRepository {
   async getMyProgress(classId: number, userId: number) {
     const { rows } = await globalDb.execute(sql`
       select
-        current_step,
-        finished_at,
-        extract(epoch from finished_at)::bigint as finished_at_s,
-        dnf_partial_reps,
-        rounds_completed
-      from public.live_progress
-      where class_id = ${classId} and user_id = ${userId}
+        lp.current_step,
+        lp.finished_at,
+        extract(epoch from lp.finished_at)::bigint as finished_at_s,
+        lp.dnf_partial_reps,
+        lp.rounds_completed,
+        /* Canonical elapsed_seconds (matches leaderboard) */
+        case
+          when lp.finished_at is not null
+            then extract(epoch from (lp.finished_at - cs.started_at))::bigint
+          else null::bigint
+        end as elapsed_seconds
+      from public.live_progress lp
+      join public.class_sessions cs on cs.class_id = lp.class_id
+      where lp.class_id = ${classId} and lp.user_id = ${userId}
+      limit 1
     `);
+
     return rows[0] ?? {
       current_step: 0,
       finished_at: null,
       finished_at_s: null,
       dnf_partial_reps: 0,
-      rounds_completed: 0
+      rounds_completed: 0,
+      elapsed_seconds: null
     };
   }
+
 
   // --- Interval scores ---
   async getSessionTypeAndSteps(classId: number) {

@@ -27,8 +27,15 @@ export default function LiveClassEndScreen() {
   const prog = useMyProgress(classId);
   const lb = useLeaderboardRealtime(classId);
 
-  const myScore = useMemo(() => {
-    if (!session) return '';
+  // inside LiveClassEndScreen.tsx
+const type = (session?.workout_type ?? '').toUpperCase();
+
+const myScore = useMemo(() => {
+  if (!session) return '';
+
+    // canonical server time if available (keeps end screen == leaderboard)
+    const serverElapsed = prog?.elapsed_seconds != null ? Number(prog.elapsed_seconds) : null;
+
     const startedSec =
       Number((session as any)?.started_at_s ?? 0) ||
       (session.started_at ? Math.floor(toMillis(session.started_at) / 1000) : 0);
@@ -37,15 +44,33 @@ export default function LiveClassEndScreen() {
       Number((prog as any)?.finished_at_s ?? 0) ||
       (prog.finished_at ? Math.floor(toMillis(prog.finished_at) / 1000) : 0);
 
-    if (finishedSec && startedSec) {
-      return `Time: ${fmt(Math.max(0, finishedSec - startedSec))}`;
+    // FOR_TIME shows time
+    if (type === 'FOR_TIME' && (finishedSec || serverElapsed != null)) {
+      const elapsed = serverElapsed ?? Math.max(0, finishedSec - startedSec);
+      return `Time: ${fmt(elapsed)}`;
     }
 
-    const cum = (session.steps_cum_reps as number[]) ?? [];
-    const within = (prog.current_step ?? 0) > 0 ? (cum[(prog.current_step ?? 1) - 1] ?? 0) : 0;
-    const reps = within + (prog.dnf_partial_reps ?? 0);
+    // AMRAP (and default reps fallback)
+    const cum: number[] = (session.steps_cum_reps as number[]) ?? [];
+    const within = (prog.current_step ?? 0) > 0 ? (cum[(prog.current_step! - 1)] ?? 0) : 0;
+
+    if (type === 'AMRAP') {
+      const repsPerRound = cum.length ? cum[cum.length - 1] : 0;
+      const serverTotal = (prog as any)?.total_reps as number | undefined;
+      const total = serverTotal ?? (
+        (Number(prog.rounds_completed ?? 0) * repsPerRound) +
+        within +
+        Number(prog.dnf_partial_reps ?? 0)
+      );
+      return `${total} reps`;
+    }
+
+    // Non-FOR_TIME fallback
+    const reps = within + Number(prog.dnf_partial_reps ?? 0);
     return `${reps} reps`;
   }, [session, prog]);
+
+
 
   return (
     <SafeAreaView style={s.root}>

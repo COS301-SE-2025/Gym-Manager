@@ -84,8 +84,14 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
         return dateTimeA.getTime() - dateTimeB.getTime();
       });
 
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
       const classesNeedingWorkout: WorkoutItem[] = sortedClasses
-        .filter((c) => c.workoutId === undefined)
+        .filter((c) => {
+          const classDate = new Date(`${c.scheduledDate}T00:00:00`);
+          return classDate >= today && c.workoutId == null; // only today/future and no workout
+        })
         .map((c) => ({
           id: c.classId.toString(),
           name: 'Setup Workout',
@@ -236,18 +242,10 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
       <View style={styles.header}>
         <IconLogo width={50} height={46} />
         <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>Hey, Coach {user?.firstName} 👋</Text>
-          <TouchableOpacity
-            style={styles.switchButton}
-            onPress={() => navigation.getParent()?.navigate('RoleSelection')}
-          >
-            <View style={styles.switchIcon}>
-              <View style={styles.switchTrack}>
-                <View style={styles.switchThumb} />
-              </View>
-            </View>
-            <Text style={styles.switchText}>Switch Profile</Text>
-          </TouchableOpacity>
+          <Text style={styles.welcomeText}>Hey, {user?.firstName || 'Coach'} 👋</Text>
+          <Text style={styles.subtitleText}>
+            {setWorkoutsData.length} class{setWorkoutsData.length === 1 ? '' : 'es'} need a workout set
+          </Text>
         </View>
       </View>
 
@@ -335,7 +333,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#1a1a1a' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 30 },
   welcomeContainer: { flex: 1, marginLeft: 12 },
-  welcomeText: { color: 'white', fontSize: 18, fontWeight: '600', marginBottom: 8 },
+  welcomeText: { color: 'white', fontSize: 18, fontWeight: '600', marginBottom: 4 },
   switchButton: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#2a2a2a', borderRadius: 24,
     paddingHorizontal: 16, paddingVertical: 10, gap: 8, shadowColor: '#000',
@@ -357,6 +355,7 @@ const styles = StyleSheet.create({
   workoutDate: { color: '#D8FF3E', fontSize: 12, fontWeight: '500' },
   workoutTime: { color: '#D8FF3E', fontSize: 12, fontWeight: '500', marginTop: 2 },
   workoutContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  subtitleText: { color: '#888', fontSize: 14, fontWeight: '500'},
   workoutDetails: { flex: 1 },
   instructorName: { color: '#888', fontSize: 12, marginBottom: 4 },
   workoutName: { color: 'white', fontSize: 16, fontWeight: '600' },

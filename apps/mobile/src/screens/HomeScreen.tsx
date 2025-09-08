@@ -36,11 +36,16 @@ interface ClassItem {
 }
 
 interface ApiBookedClass {
-  bookingId: string;
-  classId: string;
+  bookingId: number | string;
+  classId: number | string;
   scheduledDate: string;
   scheduledTime: string;
   workoutName: string;
+  capacity: number;
+  bookingsCount: number;
+  coachFirstName?: string;
+  coachLastName?: string;
+  durationMinutes: number;
 }
 
 interface ApiUpcomingClass {
@@ -149,7 +154,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       );
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-
+      console.log("BRAW RESPONSE DATA BOOKED:", bookedResponse.data);
       const formattedBookedClasses: ClassItem[] = bookedResponse.data
         .filter((apiClass) => {
           const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
@@ -161,17 +166,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           return dateTimeA.getTime() - dateTimeB.getTime();
         })
         .map((apiClass) => ({
-          id: apiClass.bookingId, // This is bookingId, for cancellation
-          name: apiClass.workoutName || ' ',
+          id: String(apiClass.classId),
+          name: apiClass.workoutName || 'Workout',
           time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
           date: apiClass.scheduledDate
-            ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })
+            ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
             : 'N/A',
-          capacity: ' ',
-          instructor: ' ',
+          capacity: `${apiClass.bookingsCount ?? 0}/${apiClass.capacity}`,
+          instructor: `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
+          duration: apiClass.durationMinutes ?? 0,
           isBooked: true,
         }));
       setBookedClasses(formattedBookedClasses);
@@ -192,7 +195,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setUpcomingError(null);
     try {
       const upcomingResponse = await axios.get<ApiUpcomingClass[]>(
-        `${config.BASE_URL}/classes`,
+        `${config.BASE_URL}/member/unbookedclasses`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -408,7 +411,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <Text style={styles.classTime}>{classItem.time}</Text>
         </View>
 
-        {/* <Text style={styles.classCapacity}>{classItem.capacity}</Text> */}
+        <Text style={styles.classCapacity}>{classItem.capacity}</Text>
       </View>
       <View style={styles.classContent}>
         <View style={styles.classInfo}>

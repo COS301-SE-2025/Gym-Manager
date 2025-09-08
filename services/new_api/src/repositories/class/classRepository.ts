@@ -57,7 +57,7 @@ export class ClassRepository implements IClassRepository {
       .from(classes)
       .where(eq(classes.coachId, coachId));
 
-    return rows.map(row => this.mapToClass(row));
+    return rows.map((row: any) => this.mapToClass(row));
   }
 
   async findAssignedClassesWithWorkoutsByCoach(coachId: number, tx?: Executor): Promise<ClassWithWorkout[]> {
@@ -80,7 +80,7 @@ export class ClassRepository implements IClassRepository {
       .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
       .where(eq(classes.coachId, coachId));
 
-    return rows.map(row => this.mapToClassWithWorkout(row));
+    return rows.map((row: any) => this.mapToClassWithWorkout(row));
   }
 
   async findClassByIdForUpdate(classId: number, tx?: Executor): Promise<Class | null> {
@@ -265,7 +265,7 @@ export class ClassRepository implements IClassRepository {
         ),
       );
 
-    return rows.map(row => this.mapToClassWithWorkout(row));
+    return rows.map((row: any) => this.mapToClassWithWorkout(row));
   }
 
   async getBookedClassesForMember(
@@ -274,6 +274,16 @@ export class ClassRepository implements IClassRepository {
     tx?: Executor,
   ): Promise<ClassWithWorkout[]> {
     const { today, time } = window;
+    // Subquery: count bookings per class
+    const bookingsCount = this.exec(tx)
+      .select({
+        classId: classbookings.classId,
+        bookingsCount: sql<number>`COUNT(${classbookings.bookingId})`.as('bookingsCount'),
+      })
+      .from(classbookings)
+      .groupBy(classbookings.classId)
+      .as('bookingsCount');
+
     const rows = await this.exec(tx)
       .select({
         bookingId: classbookings.bookingId,
@@ -289,10 +299,15 @@ export class ClassRepository implements IClassRepository {
         workoutName: workouts.workoutName,
         workoutType: workouts.type,
         workoutMetadata: workouts.metadata,
+        coachFirstName: users.firstName,
+        coachLastName: users.lastName,
+        bookingsCount: bookingsCount.bookingsCount,
       })
       .from(classbookings)
       .innerJoin(classes, eq(classbookings.classId, classes.classId))
       .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
+      .leftJoin(users, eq(classes.coachId, users.userId))
+      .leftJoin(bookingsCount, eq(classes.classId, bookingsCount.classId))
       .where(
         and(
           eq(classbookings.memberId, memberId),
@@ -303,7 +318,7 @@ export class ClassRepository implements IClassRepository {
         ),
       );
 
-    return rows.map(row => this.mapToClassWithWorkout(row));
+    return rows.map((row: any) => this.mapToClassWithWorkout(row));
   }
 
   async getUnbookedClassesForMember(
@@ -362,12 +377,12 @@ export class ClassRepository implements IClassRepository {
             and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time))
           ),
           // keep only where there is no matching booking row for this member
-          sql`"memberBookings"."classId" IS NULL`
+          sql`"memberBookings"."class_id" IS NULL`
         )
       )
       .orderBy(asc(classes.scheduledDate), asc(classes.scheduledTime));
 
-    return rows.map(row => this.mapToClassWithWorkout(row));
+    return rows.map((row: any) => this.mapToClassWithWorkout(row));
   }
 
   // Booking helpers used within transactions
@@ -441,8 +456,8 @@ export class ClassRepository implements IClassRepository {
     return {
       classId: row.classId,
       memberId: row.memberId,
-      markedAt: row.markedAt,
-      score: row.score,
+      markedAt: (row.markedAt ?? undefined) as unknown as Date | undefined,
+      score: row.score ?? undefined,
     };
   }
 }

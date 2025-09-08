@@ -11,18 +11,23 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { StackScreenProps } from '@react-navigation/stack';
-import { useFocusEffect } from '@react-navigation/native';
+import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { useFocusEffect, CompositeNavigationProp } from '@react-navigation/native';
 import IconLogo from '../../components/common/IconLogo';
-import { CoachStackParamList } from '../../navigation/CoachNavigator';
+import { CoachTabParamList } from '../../navigation/CoachNavigator';
 import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
+import { getToken, getUser, User } from '../../utils/authStorage';
 import type { ApiLiveClassResponse } from '../HomeScreen';
 import config from '../../config';
+import { CoachStackParamList } from '../../navigation/CoachNavigator';
 
 const { width } = Dimensions.get('window');
-
-type CoachHomeScreenProps = StackScreenProps<CoachStackParamList, 'CoachHome'>;
+type CoachHomeNav = CompositeNavigationProp<
+  BottomTabScreenProps<CoachTabParamList, 'CoachHome'>['navigation'],
+  StackNavigationProp<CoachStackParamList>
+  >;
+type CoachHomeScreenProps = {navigation: CoachHomeNav}
 
 interface WorkoutItem {
   id: string;
@@ -54,6 +59,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
   const [liveClass, setLiveClass] = useState<ApiLiveClassResponse | null>(null);
   const [isLoadingLiveClass, setIsLoadingLiveClass] = useState(true);
   const [liveClassError, setLiveClassError] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   const fetchCoachClasses = async () => {
     setIsLoadingSetWorkouts(true);
@@ -150,20 +156,20 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
   // Initial load
   useEffect(() => {
     (async () => {
+      const user = await getUser();
+      setUser(user);
       await Promise.all([fetchLiveClass(), fetchCoachClasses()]);
     })();
   }, []);
 
-  // Refresh when screen gains focus + start a short poll while focused
   useFocusEffect(
     React.useCallback(() => {
-      let interval: NodeJS.Timer | undefined;
-
+      let interval: ReturnType<typeof setInterval> | undefined;
+  
       // run immediately
       fetchLiveClass();
-
-      // light polling so the banner appears as soon as the class goes live
-      interval = setInterval(fetchLiveClass, 10000); // 10s
+  
+      interval = setInterval(fetchLiveClass, 10000);
       return () => {
         if (interval) clearInterval(interval);
       };
@@ -208,7 +214,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
   const renderYourClassCard = (workout: WorkoutItem) => (
     <View key={workout.id} style={styles.yourClassCard}>
       <View style={styles.classHeader}>
-        <View className="classDateInfo">
+        <View>
           <Text style={styles.classDate}>{workout.date}</Text>
           <Text style={styles.classTime}>{workout.time}</Text>
         </View>
@@ -230,7 +236,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
       <View style={styles.header}>
         <IconLogo width={50} height={46} />
         <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>Hey, Coach 👋</Text>
+          <Text style={styles.welcomeText}>Hey, Coach {user?.firstName} 👋</Text>
           <TouchableOpacity
             style={styles.switchButton}
             onPress={() => navigation.getParent()?.navigate('RoleSelection')}

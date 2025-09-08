@@ -181,6 +181,10 @@ export class ClassController {
         return res.status(400).json({ error: 'Already booked' });
       }
       
+      if (error.message === 'Overlapping booking') {
+        return res.status(400).json({ error: 'Overlapping booking' });
+      }
+      
       if (error.message === 'Class full') {
         return res.status(400).json({ error: 'Class full' });
       }

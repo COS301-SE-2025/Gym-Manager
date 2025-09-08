@@ -384,9 +384,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const handleConfirmCancellation = async (classId: string) => {
     try {
-      const token = await getToken();
       const user = await getUser();
-      if (!token || !user?.id) {
+      if (!user?.id) {
         Alert.alert('Authentication Error', 'Please log in again to cancel your booking.');
         return;
       }
@@ -394,7 +393,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       const response = await axios.post(
         `${config.BASE_URL}/cancel`,
         { classId: parseInt(classId, 10), memberId: user.id },
-        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       if (response.data?.success) {

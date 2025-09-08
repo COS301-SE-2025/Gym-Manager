@@ -327,10 +327,9 @@ export class ClassRepository implements IClassRepository {
           eq(classbookings.memberId, memberId),
           eq(classes.scheduledDate, scheduledDate),
           // existingStart < newEnd
-          sql`${classes.scheduledTime}::time < (${scheduledTime}::time + (${durationMinutes}::int || ' minutes')::interval)
-               AND 
-               // existingEnd > newStart
-               (${classes.scheduledTime}::time + (${classes.durationMinutes}::int || ' minutes')::interval) > ${scheduledTime}::time`,
+          sql`${classes.scheduledTime}::time < (${scheduledTime}::time + (${durationMinutes}::int || ' minutes')::interval)`,
+          // existingEnd > newStart
+          sql`(${classes.scheduledTime}::time + (${classes.durationMinutes}::int || ' minutes')::interval) > ${scheduledTime}::time`,
         ),
       );
 

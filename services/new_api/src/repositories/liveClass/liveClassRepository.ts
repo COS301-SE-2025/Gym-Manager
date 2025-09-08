@@ -476,8 +476,8 @@ export class LiveClassRepository implements ILiveClassRepository {
         u.last_name,
         (b.finished_at is not null) as finished,
         case when b.finished_at is not null
-          then extract(epoch from (b.finished_at - b.started_at))::numeric
-          else null::numeric
+          then extract(epoch from (b.finished_at - b.started_at))::bigint
+          else null::bigint
         end as elapsed_seconds,
         (
           (case when b.current_step > 0
@@ -496,6 +496,7 @@ export class LiveClassRepository implements ILiveClassRepository {
   }
 
   // --- My progress ---
+  // repositories/liveClass/liveClassRepository.ts
   async getMyProgress(classId: number, userId: number) {
     const { rows } = await globalDb.execute(sql`
       select
@@ -504,16 +505,31 @@ export class LiveClassRepository implements ILiveClassRepository {
         extract(epoch from lp.finished_at)::bigint as finished_at_s,
         lp.dnf_partial_reps,
         lp.rounds_completed,
-        /* Canonical elapsed_seconds (matches leaderboard) */
-        case
-          when lp.finished_at is not null
-            then extract(epoch from (lp.finished_at - cs.started_at))::bigint
-          else null::bigint
-        end as elapsed_seconds
+        case when lp.finished_at is not null
+          then extract(epoch from (lp.finished_at - cs.started_at))::bigint
+          else null
+        end as elapsed_seconds,
+        case when w.type = 'AMRAP' then
+          (
+            (lp.rounds_completed
+              * coalesce((cs.steps_cum_reps ->> greatest(jsonb_array_length(cs.steps_cum_reps)-1,0))::int,0))
+            + (case when lp.current_step > 0
+                  then (cs.steps_cum_reps ->> (lp.current_step-1))::int
+                  else 0 end)
+            + coalesce(lp.dnf_partial_reps, 0)
+          )::int
+        else
+          (
+            (case when lp.current_step > 0
+                  then (cs.steps_cum_reps ->> (lp.current_step-1))::int
+                  else 0 end)
+            + coalesce(lp.dnf_partial_reps, 0)
+          )::int
+        end as total_reps
       from public.live_progress lp
       join public.class_sessions cs on cs.class_id = lp.class_id
+      join public.workouts w on w.workout_id = cs.workout_id
       where lp.class_id = ${classId} and lp.user_id = ${userId}
-      limit 1
     `);
 
     return rows[0] ?? {
@@ -522,7 +538,8 @@ export class LiveClassRepository implements ILiveClassRepository {
       finished_at_s: null,
       dnf_partial_reps: 0,
       rounds_completed: 0,
-      elapsed_seconds: null
+      elapsed_seconds: null,
+      total_reps: 0,
     };
   }
 

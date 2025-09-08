@@ -8,6 +8,7 @@ import {
   rounds,
   subrounds,
   subroundExercises,
+  users
 } from '../../db/schema';
 import { eq, and, gt, gte, or, sql, inArray, asc } from 'drizzle-orm';
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
@@ -218,6 +219,17 @@ export class ClassRepository implements IClassRepository {
     tx?: Executor,
   ): Promise<ClassWithWorkout[]> {
     const { today, time } = window;
+
+    // Subquery: count bookings per class
+    const bookingsCount = this.exec(tx)
+      .select({
+        classId: classbookings.classId,
+        bookingsCount: sql<number>`COUNT(${classbookings.bookingId})`.as('bookingsCount'),
+      })
+      .from(classbookings)
+      .groupBy(classbookings.classId)
+      .as('bookingsCount');
+
     const rows = await this.exec(tx)
       .select({
         classId: classes.classId,
@@ -229,12 +241,23 @@ export class ClassRepository implements IClassRepository {
         durationMinutes: classes.durationMinutes,
         createdBy: classes.createdBy,
         createdAt: classes.createdAt,
+
+        // workout fields
         workoutName: workouts.workoutName,
         workoutType: workouts.type,
         workoutMetadata: workouts.metadata,
+
+        // coach fields (from users)
+        coachFirstName: users.firstName,
+        coachLastName: users.lastName,
+
+        // bookings
+        bookingsCount: bookingsCount.bookingsCount,
       })
       .from(classes)
       .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
+      .leftJoin(users, eq(classes.coachId, users.userId))
+      .leftJoin(bookingsCount, eq(classes.classId, bookingsCount.classId))
       .where(
         or(
           gt(classes.scheduledDate, today),
@@ -279,6 +302,70 @@ export class ClassRepository implements IClassRepository {
           )
         ),
       );
+
+    return rows.map(row => this.mapToClassWithWorkout(row));
+  }
+
+  async getUnbookedClassesForMember(
+    memberId: number,
+    window: { today: string; time: string },
+    tx?: Executor,
+  ): Promise<ClassWithWorkout[]> {
+    const { today, time } = window;
+
+    // Subquery: bookings for this member
+    const memberBookings = this.exec(tx)
+      .select({ classId: classbookings.classId })
+      .from(classbookings)
+      .where(eq(classbookings.memberId, memberId))
+      .as('memberBookings');
+
+    // Subquery: count bookings per class
+    const bookingsCount = this.exec(tx)
+      .select({
+        classId: classbookings.classId,
+        bookingsCount: sql<number>`COUNT(${classbookings.bookingId})`.as('bookingsCount'),
+      })
+      .from(classbookings)
+      .groupBy(classbookings.classId)
+      .as('bookingsCount');
+
+    const rows = await this.exec(tx)
+      .select({
+        classId: classes.classId,
+        scheduledDate: classes.scheduledDate,
+        scheduledTime: classes.scheduledTime,
+        capacity: classes.capacity,
+        coachId: classes.coachId,
+        workoutId: classes.workoutId,
+        durationMinutes: classes.durationMinutes,
+        createdBy: classes.createdBy,
+        createdAt: classes.createdAt,
+        workoutName: workouts.workoutName,
+        workoutType: workouts.type,
+        workoutMetadata: workouts.metadata,
+        coachFirstName: users.firstName,
+        coachLastName: users.lastName,
+        bookingsCount: bookingsCount.bookingsCount,
+      })
+      .from(classes)
+      .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
+      .leftJoin(users, eq(classes.coachId, users.userId))
+      .leftJoin(bookingsCount, eq(classes.classId, bookingsCount.classId))
+      // Anti-join with member's bookings to exclude already booked classes
+      .leftJoin(memberBookings, eq(classes.classId, memberBookings.classId))
+      .where(
+        and(
+          // upcoming window
+          or(
+            gt(classes.scheduledDate, today),
+            and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time))
+          ),
+          // keep only where there is no matching booking row for this member
+          sql`"memberBookings"."classId" IS NULL`
+        )
+      )
+      .orderBy(asc(classes.scheduledDate), asc(classes.scheduledTime));
 
     return rows.map(row => this.mapToClassWithWorkout(row));
   }
@@ -340,14 +427,15 @@ export class ClassRepository implements IClassRepository {
   private mapToClassWithWorkout(row: any): ClassWithWorkout {
     return {
       ...this.mapToClass(row),
-      workout: row.workoutId ? {
-        workoutId: row.workoutId,
-        workoutName: row.workoutName,
-        type: row.workoutType,
-        metadata: row.workoutMetadata,
-      } : undefined,
+      workoutName: row.workoutName,
+      workoutType: row.workoutType,
+      workoutMetadata: row.workoutMetadata,
+      coachFirstName: row.coachFirstName,
+      coachLastName: row.coachLastName,
+      bookingsCount: row.bookingsCount ?? 0,
     };
   }
+
 
   private mapToClassAttendance(row: AttendanceRow): ClassAttendance {
     return {

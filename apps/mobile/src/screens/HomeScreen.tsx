@@ -31,6 +31,7 @@ interface ClassItem {
   date: string;
   capacity: string;
   instructor: string;
+  duration: number;
   isBooked?: boolean;
 }
 
@@ -51,6 +52,8 @@ interface ApiUpcomingClass {
   bookedCount?: number;
   coachFirstName?: string;
   coachLastName?: string;
+  bookingsCount: number;
+  durationMinutes: number;
 }
 
 export interface ApiLiveClassResponse {
@@ -194,6 +197,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
+      console.log("RAW RESPONSE DATA:", upcomingResponse.data);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
@@ -214,13 +218,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           }
           acc[dateKey].push({
             id: apiClass.classId.toString(),
-            name: apiClass.workoutName || 'Fitness Class',
+            name: apiClass.workoutName || 'Workout',
             time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
             date: formatDateForCard(apiClass.scheduledDate),
-            capacity: `${apiClass.bookedCount ?? 0}/${apiClass.capacity}`,
+            capacity: `${apiClass.bookingsCount ?? 0}/${apiClass.capacity}`,
             instructor:
               `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
+            duration: apiClass.durationMinutes ?? 0,   
             isBooked: false,
+
           });
           return acc;
         }, {});
@@ -395,7 +401,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   };
 
   const renderBookedClass = (classItem: ClassItem) => (
-    <View key={classItem.id} style={styles.bookedClassCard}>
+    <View style={styles.bookedClassCard}>
       <View style={styles.classHeader}>
         <View style={styles.classInfo}>
           <Text style={styles.classDate}>{classItem.date}</Text>
@@ -420,7 +426,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   );
 
   const renderUpcomingClass = (classItem: ClassItem) => (
-    <View key={classItem.id} style={styles.upcomingClassCard}>
+    <View style={styles.upcomingClassCard}>
       <View style={styles.upcomingClassHeader}>
         <View style={styles.upcomingClassInfo}>
           <View style={styles.upcomingClassDetails}>
@@ -530,7 +536,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               contentContainerStyle={styles.bookedClassesContainer}
               style={styles.bookedClassesScrollView}
             >
-              {bookedClasses.map(renderBookedClass)}
+              {/* {bookedClasses.map(renderBookedClass)} */}
+
+              {bookedClasses.map((classItem) => (
+                // set the key here on the immediate child returned from map
+                <React.Fragment key={`booked-${classItem.id}`}>{renderBookedClass(classItem)}</React.Fragment>
+              ))}
+
             </ScrollView>
           ) : (
             <View style={styles.emptyStateContainer}>
@@ -586,7 +598,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                       <View style={styles.timelineBar} />
                     </View>
                     <View style={styles.classesForDay}>
-                      {upcomingClasses[date].map(renderUpcomingClass)}
+                      {/* {upcomingClasses[date].map(renderUpcomingClass)} */}
+
+                      {upcomingClasses[date].map((classItem) => (
+                        // unique key per date+classId to make sure it's stable and unique
+                        <React.Fragment key={`${date}-${classItem.id}`}>
+                          {renderUpcomingClass(classItem)}
+                        </React.Fragment>
+                      ))}
+
                     </View>
                   </View>
                 );

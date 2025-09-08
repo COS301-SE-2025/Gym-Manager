@@ -28,6 +28,7 @@ export class ClassRoutes {
     // Member routes (require authentication)
     this.router.get('/classes', this.authMiddleware.isAuthenticated, this.classController.getAllClasses);
     this.router.get('/member/classes', this.authMiddleware.isAuthenticated, this.classController.getMemberClasses);
+    this.router.get('/member/unbookedclasses', this.authMiddleware.isAuthenticated, this.classController.getMemberUnbookedClasses);
     this.router.post('/book', this.authMiddleware.isAuthenticated, this.classController.bookClass);
 
     // General routes (no authentication required)

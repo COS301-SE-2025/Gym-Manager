@@ -20,6 +20,8 @@ interface ClassItem {
   date: string;
   capacity: string;
   instructor: string;
+  duration: number;
+  isBooked?: boolean;
 }
 
 interface BookingSheetProps {
@@ -131,9 +133,9 @@ export default function BookingSheet({ visible, classItem, onBook, onClose }: Bo
                 </View>
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Duration</Text>
-                  <Text style={styles.detailValue}>60 min</Text>
+                  <Text style={styles.detailValue}>{classItem.duration} min</Text>
                 </View>
-              </View>
+              </View> 
             </View>
 
             {/* Description */}

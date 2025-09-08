@@ -57,15 +57,21 @@ export default function LiveClassEndScreen() {
 
         <View style={s.lb}>
           <Text style={s.lbTitle}>Leaderboard</Text>
-          {lb.map((r: any, i: number) => (
-            <View key={`${r.user_id}-${i}`} style={s.row}>
-              <Text style={s.pos}>{i+1}</Text>
-              <Text style={s.user}>User {r.user_id}</Text>
-              <Text style={s.score}>
-                {r.finished ? fmt(Number(r.elapsed_seconds ?? 0)) : `${Number(r.total_reps ?? 0)} reps`}
-              </Text>
-            </View>
-          ))}
+          {lb.map((r: any, i: number) => {
+            const displayName =
+              (r.first_name || r.last_name)
+                ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
+                : (r.name ?? `User ${r.user_id}`);
+            return (
+              <View key={`${r.user_id}-${i}`} style={s.row}>
+                <Text style={s.pos}>{i + 1}</Text>
+                <Text style={s.user}>{displayName}</Text>
+                <Text style={s.score}>
+                  {r.finished ? fmt(Number(r.elapsed_seconds ?? 0)) : `${Number(r.total_reps ?? 0)} reps`}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       </View>
     </SafeAreaView>
@@ -74,8 +80,8 @@ export default function LiveClassEndScreen() {
 
 function fmt(t: number) {
   const s = Math.max(0, Math.floor(t));
-  const m = Math.floor(s/60);
-  const ss = s%60;
+  const m = Math.floor(s / 60);
+  const ss = s % 60;
   return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
 }
 

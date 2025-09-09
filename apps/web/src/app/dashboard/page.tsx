@@ -210,7 +210,7 @@ export default function DashboardPage() {
     currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'User';
 
   return (
-    <div
+    <div className='dashboard-page'
       style={{
         backgroundColor: '#1E1E1E',
         minHeight: '100vh',

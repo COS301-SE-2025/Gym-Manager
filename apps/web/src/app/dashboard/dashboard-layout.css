@@ -36,6 +36,7 @@ body {
 }
 
 .dashboard-content {
+  margin-left: 280px;
   flex: 1;
   background-color: #1e1e1e;
   overflow-x: hidden;
@@ -46,7 +47,7 @@ main {
   width: calc(100% - 280px); /* Adjust width to account for sidebar */
   flex: 1;
   margin-left: auto;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
+  overflow-x: visible; /* Prevent horizontal scrolling */
   box-sizing: border-box;
 }
 
@@ -138,11 +139,15 @@ main {
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  max-width: 100%;
-  overflow: visible;
   box-sizing: border-box;
 }
 
+.dashboard-page {
+  max-width: calc(100% - 280px); /* same as users-page */
+  margin: 0 auto;
+  margin-left: 280px;
+  overflow-x: visible;
+}
 .dashboard-content table,
 main table {
   width: 100%;

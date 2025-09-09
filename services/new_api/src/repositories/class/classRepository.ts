@@ -305,6 +305,37 @@ export class ClassRepository implements IClassRepository {
     await this.exec(tx).insert(classbookings).values({ classId, memberId });
   }
 
+  /**
+   * Check if a member has any existing booking that overlaps the provided class window on the same date.
+   * Overlap condition: existingStart < newEnd AND existingEnd > newStart
+   */
+  async hasOverlappingBooking(
+    memberId: number,
+    window: { scheduledDate: string; scheduledTime: string; durationMinutes: number },
+    tx?: Executor,
+  ): Promise<boolean> {
+    const executor = this.exec(tx);
+
+    const { scheduledDate, scheduledTime, durationMinutes } = window;
+
+    const [row] = await executor
+      .select({ count: sql<number>`count(*)` })
+      .from(classbookings)
+      .innerJoin(classes, eq(classbookings.classId, classes.classId))
+      .where(
+        and(
+          eq(classbookings.memberId, memberId),
+          eq(classes.scheduledDate, scheduledDate),
+          // existingStart < newEnd
+          sql`${classes.scheduledTime}::time < (${scheduledTime}::time + (${durationMinutes}::int || ' minutes')::interval)`,
+          // existingEnd > newStart
+          sql`(${classes.scheduledTime}::time + (${classes.durationMinutes}::int || ' minutes')::interval) > ${scheduledTime}::time`,
+        ),
+      );
+
+    return Number(row?.count ?? 0) > 0;
+  }
+
   async insertAttendance(classId: number, memberId: number, tx?: Executor): Promise<ClassAttendance | null> {
     const executor = this.exec(tx);
     const [attendance] = await executor

@@ -32,7 +32,9 @@ export class ClassRoutes {
 
     // General routes (no authentication required)
     this.router.post('/checkin', this.classController.checkInToClass);
-    this.router.post('/cancel', this.classController.cancelBooking);
+
+    // Require authentication for cancellation so we can infer memberId from token
+    this.router.post('/cancel', this.authMiddleware.isAuthenticated, this.classController.cancelBooking);
   }
 
   getRouter(): express.Router {

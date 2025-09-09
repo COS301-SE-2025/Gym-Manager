@@ -181,6 +181,10 @@ export class ClassController {
         return res.status(400).json({ error: 'Already booked' });
       }
       
+      if (error.message === 'Overlapping booking') {
+        return res.status(400).json({ error: 'Overlapping booking' });
+      }
+      
       if (error.message === 'Class full') {
         return res.status(400).json({ error: 'Class full' });
       }
@@ -211,11 +215,16 @@ export class ClassController {
     }
   };
 
-  cancelBooking = async (req: Request, res: Response) => {
-    const { classId, memberId } = req.body;
+  cancelBooking = async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-    if (!classId || !memberId) {
-      return res.status(400).json({ error: 'classId and memberId are required' });
+    const { classId } = req.body;
+    const memberId = req.user.userId;
+
+    if (!classId) {
+      return res.status(400).json({ error: 'classId is required' });
     }
 
     try {

@@ -26,7 +26,7 @@ export function useLeaderboardRealtime(classId: number) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'live_interval_scores', filter: `class_id=eq.${classId}`}, refresh)
       .subscribe();
 
-    const poll = setInterval(refresh, 15000);
+    const poll = setInterval(refresh, 2500);
     return () => { supabase.removeChannel(ch); clearInterval(poll); };
   }, [classId, refresh]);
 

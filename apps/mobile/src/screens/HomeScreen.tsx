@@ -31,7 +31,7 @@ interface ClassItem {
   date: string;
   capacity: string;
   instructor: string;
-  duration: number;
+  duration?: number;
   isBooked?: boolean;
 }
 
@@ -55,6 +55,7 @@ interface ApiUpcomingClass {
   scheduledTime: string;
   workoutName?: string;
   bookedCount?: number;
+  durationMinutes?: number;
   coachFirstName?: string;
   coachLastName?: string;
   bookingsCount: number;
@@ -227,9 +228,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             capacity: `${apiClass.bookingsCount ?? 0}/${apiClass.capacity}`,
             instructor:
               `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
-            duration: apiClass.durationMinutes ?? 0,   
+              duration: apiClass.durationMinutes || 60,
             isBooked: false,
-
+            
           });
           return acc;
         }, {});
@@ -391,8 +392,49 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     }
   };
 
-  const handleConfirmCancellation = (classId: string) => {
-    console.log('Cancellation confirmed for class:', classId);
+  const handleConfirmCancellation = async (classId: string) => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        Alert.alert('Authentication Error', 'No session token found. Please log in again.');
+        return;
+      }
+
+      const response = await axios.post(
+        `${config.BASE_URL}/cancel`,
+        { classId: parseInt(classId, 10) },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      if (response.data?.success) {
+        Alert.alert('Cancelled', 'Your booking has been cancelled.');
+
+        // Remove from booked list
+        setBookedClasses((prev) => prev.filter((c) => c.id !== classId));
+
+        // Optionally refresh upcoming to re-show class availability
+        const currentToken = await getToken();
+        if (currentToken) {
+          await fetchUpcomingClasses(currentToken);
+        }
+      } else {
+        Alert.alert('Cancellation Failed', response.data?.error || 'Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Cancellation request failed:', error);
+      let errorMessage = 'An unexpected error occurred during cancellation.';
+      if (axios.isAxiosError(error) && error.response) {
+        errorMessage =
+          error.response.data?.error ||
+          `Cancellation failed: ${error.response.statusText} (Status: ${error.response.status})`;
+        if (error.response.status === 401) {
+          errorMessage = 'Session expired. Please log in again.';
+        } else if (error.response.status === 404) {
+          errorMessage = 'Booking not found or already cancelled.';
+        }
+      }
+      Alert.alert('Cancellation Error', errorMessage);
+    }
   };
 
   const handleCloseSheet = () => {

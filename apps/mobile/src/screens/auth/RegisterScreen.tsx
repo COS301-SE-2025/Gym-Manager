@@ -18,6 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import TrainwiseLogo from '../../components/common/TrainwiseLogo';
 import axios from 'axios';
 import config from '../../config';
+import {storeToken, storeUser } from '../../utils/authStorage';
 
 const { width } = Dimensions.get('window');
 
@@ -207,6 +208,14 @@ export default function RegisterScreen() {
         password,
       });
 
+      if (response.data?.token) {
+        await storeToken(response.data.token);
+      }
+
+      if (response.data?.user) {
+        await storeUser(response.data.user);
+      }
+
       console.log('Register response:', response.data);
 
       Alert.alert(
@@ -215,7 +224,7 @@ export default function RegisterScreen() {
         [
           {
             text: 'Continue',
-            onPress: () => navigation.navigate('RoleSelection' as never),
+            onPress: () => navigation.navigate('Pending' as never),
           },
         ],
       );

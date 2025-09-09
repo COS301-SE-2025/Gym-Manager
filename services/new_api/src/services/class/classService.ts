@@ -118,6 +118,20 @@ export class ClassService implements IClassService {
         throw new Error('Class full');
       }
 
+      // Overlapping booking?
+      const overlaps = await this.classRepository.hasOverlappingBooking(
+        memberId,
+        {
+          scheduledDate: cls.scheduledDate,
+          scheduledTime: cls.scheduledTime,
+          durationMinutes: Number(cls.durationMinutes),
+        },
+        tx,
+      );
+      if (overlaps) {
+        throw new Error('Overlapping booking');
+      }
+
       // Insert booking
       await this.classRepository.insertBooking(classId, memberId, tx);
     });

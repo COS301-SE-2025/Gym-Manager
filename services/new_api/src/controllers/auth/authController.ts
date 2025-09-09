@@ -85,4 +85,19 @@ export class AuthController {
       return res.status(500).json({ error: 'Failed to fetch status' });
     }
   };
+
+
+  getMe = async (req: AuthenticatedRequest, res: Response) => {
+       try {
+         if (!req.user) {
+           return res.status(401).json({ error: 'Unauthorized' });
+         }
+       const userId = req.user.userId as number;
+         const me = await this.authService.getMe(userId);
+         return res.json(me);
+       } catch (error: any) {
+         console.error('Get me error:', error);
+         return res.status(500).json({ error: 'Failed to fetch user' });
+       }
+    };
 }

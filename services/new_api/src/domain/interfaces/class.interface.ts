@@ -41,6 +41,11 @@ export interface IClassRepository {
   insertBooking(classId: number, memberId: number, tx?: any): Promise<void>;
   insertAttendance(classId: number, memberId: number): Promise<ClassAttendance | null>;
   deleteBooking(classId: number, memberId: number): Promise<any>;
+  hasOverlappingBooking(
+    memberId: number,
+    window: { scheduledDate: string; scheduledTime: string; durationMinutes: number },
+    tx?: any,
+  ): Promise<boolean>;
 }
 
 export interface IAdminService {

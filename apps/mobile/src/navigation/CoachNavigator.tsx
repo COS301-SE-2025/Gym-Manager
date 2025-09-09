@@ -4,17 +4,25 @@ import CoachHomeScreen from '../screens/coach/CoachHomeScreen';
 import SetWorkoutScreen from '../screens/coach/SetWorkoutScreen';
 import EditWorkoutScreen from '../screens/coach/EditWorkoutScreen';
 import CoachLive from '../screens/coach/CoachLiveClassScreen';
+import ProfileScreen from '../screens/profile/ProfileScreen';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+
+export type CoachTabParamList = {
+  CoachHome: undefined;
+  Profile: undefined;
+};
 
 export type CoachStackParamList = {
-  CoachHome: undefined;
+  CoachTabs: undefined;
   SetWorkout: { classId: number };
   EditWorkout: { workoutId: number };
   CoachLiveClass: { classId: number; liveClassData: any };
-
   Home: undefined;
 };
 
 const Stack = createStackNavigator<CoachStackParamList>();
+const Tab = createBottomTabNavigator<CoachTabParamList>();
 
 function HomeAliasFromCoach({ navigation }: any) {
   useEffect(() => {
@@ -23,18 +31,42 @@ function HomeAliasFromCoach({ navigation }: any) {
   return null;
 }
 
+function CoachTabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { backgroundColor: '#1a1a1a', borderTopColor: '#232323' },
+        tabBarActiveTintColor: '#D8FF3E',
+        tabBarInactiveTintColor: '#888',
+      }}
+    >
+      <Tab.Screen
+        name="CoachHome"
+        component={CoachHomeScreen}
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={size} />,
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
+
 const CoachNavigator = () => {
   return (
-    <Stack.Navigator
-      initialRouteName="CoachHome"
-      screenOptions={{ headerShown: false }}
-    >
-      <Stack.Screen name="CoachHome" component={CoachHomeScreen} />
+    <Stack.Navigator initialRouteName="CoachTabs" screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="CoachTabs" component={CoachTabNavigator} />
       <Stack.Screen name="SetWorkout" component={SetWorkoutScreen} />
       <Stack.Screen name="EditWorkout" component={EditWorkoutScreen} />
       <Stack.Screen name="CoachLiveClass" component={CoachLive} />
-
-      {/* alias so navigation.navigate('Home') works even inside the coach stack */}
       <Stack.Screen name="Home" component={HomeAliasFromCoach} />
     </Stack.Navigator>
   );

@@ -27,6 +27,9 @@ export class AuthRoutes {
 
     // Status route (requires authentication)
     this.router.get('/status', this.authMiddleware.isAuthenticated, this.authController.getStatus);
+
+    // ME route
+    this.router.get('/me', this.authMiddleware.isAuthenticated, this.authController.getMe);
   }
 
   getRouter(): express.Router {

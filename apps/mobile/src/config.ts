@@ -1,6 +1,7 @@
 // src/config.ts
 
-const BASE_URL = 'http://127.0.0.1:4000';
+// const BASE_URL = 'http://127.0.0.1:4000'; // MAC + APPLE
+const BASE_URL = 'http://10.0.2.2:4000'; // WINDOWS + ANDROID
 
 const config = {
   BASE_URL,

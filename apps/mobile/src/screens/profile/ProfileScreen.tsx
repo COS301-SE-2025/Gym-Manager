@@ -18,6 +18,7 @@ import { getUser, User, removeToken, removeUser } from '../../utils/authStorage'
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { getUserSettings, updateUserVisibility } from '../../services/userSettings';
+import { supabase } from '../../lib/supabase';
 
 type ProfileScreenNavigationProp = StackNavigationProp<AuthStackParamList>;
 
@@ -89,6 +90,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     try {
       await removeToken();
       await removeUser();
+      await supabase.auth.signOut();
 
       navigation.navigate('Login');
     } catch (error) {

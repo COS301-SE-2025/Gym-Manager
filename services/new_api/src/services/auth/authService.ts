@@ -127,4 +127,13 @@ export class AuthService implements IAuthService {
 
     return { userId, roles, membershipStatus };
   }
+
+
+  async getMe(userId: number) {
+       const user = await this.userRepository.findById(userId);
+        if (!user) throw new Error('User not found');
+        const roles = await this.userRepository.getRolesByUserId(userId);
+        const { passwordHash: _omit, ...userSafe } = user as any;
+        return { ...userSafe, roles };
+      }
 }

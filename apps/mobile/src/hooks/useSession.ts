@@ -30,7 +30,7 @@ export function useSession(classId?: number) {
       .subscribe();
 
     // very light fallback poll (every 5s) in case realtime lags
-    const poll = setInterval(initial, 5000);
+    const poll = setInterval(initial, 3000);
 
     initial();
     return () => { canceled = true; supabase.removeChannel(ch); clearInterval(poll); };

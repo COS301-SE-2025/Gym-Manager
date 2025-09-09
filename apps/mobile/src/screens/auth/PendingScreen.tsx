@@ -65,6 +65,10 @@ export default function PendingScreen() {
     return () => clearInterval(interval);
   }, [checkStatus]);
 
+  useEffect(() => {
+    checkStatus();
+  }, [checkStatus]);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />

@@ -153,6 +153,22 @@ export class ClassController {
     }
   };
 
+  getMemberUnbookedClasses = async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const memberId = req.user.userId;
+
+    try {
+      const unbooked = await this.classService.getMemberUnbookedClasses(memberId);
+      return res.json(unbooked);
+    } catch (error: any) {
+      console.error('getMemberUnbookedClasses error:', error);
+      return res.status(500).json({ error: 'Failed to fetch member unbooked classes' });
+    }
+  };
+
   bookClass = async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Unauthorized' });

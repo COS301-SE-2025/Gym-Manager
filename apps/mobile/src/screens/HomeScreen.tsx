@@ -36,11 +36,16 @@ interface ClassItem {
 }
 
 interface ApiBookedClass {
-  bookingId: string;
-  classId: string;
+  bookingId: number | string;
+  classId: number | string;
   scheduledDate: string;
   scheduledTime: string;
   workoutName: string;
+  capacity: number;
+  bookingsCount: number;
+  coachFirstName?: string;
+  coachLastName?: string;
+  durationMinutes: number;
 }
 
 interface ApiUpcomingClass {
@@ -53,6 +58,8 @@ interface ApiUpcomingClass {
   durationMinutes?: number;
   coachFirstName?: string;
   coachLastName?: string;
+  bookingsCount: number;
+  durationMinutes: number;
 }
 
 export interface ApiLiveClassResponse {
@@ -148,7 +155,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       );
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-
+      console.log("BRAW RESPONSE DATA BOOKED:", bookedResponse.data);
       const formattedBookedClasses: ClassItem[] = bookedResponse.data
         .filter((apiClass) => {
           const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
@@ -160,17 +167,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           return dateTimeA.getTime() - dateTimeB.getTime();
         })
         .map((apiClass) => ({
-          id: apiClass.classId.toString(), // Use classId so we can cancel with API
-          name: apiClass.workoutName || ' ',
+          id: String(apiClass.classId),
+          name: apiClass.workoutName || 'Workout',
           time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
           date: apiClass.scheduledDate
-            ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })
+            ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
             : 'N/A',
-          capacity: ' ',
-          instructor: ' ',
+          capacity: `${apiClass.bookingsCount ?? 0}/${apiClass.capacity}`,
+          instructor: `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
+          duration: apiClass.durationMinutes ?? 0,
           isBooked: true,
         }));
       setBookedClasses(formattedBookedClasses);
@@ -191,11 +196,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setUpcomingError(null);
     try {
       const upcomingResponse = await axios.get<ApiUpcomingClass[]>(
-        `${config.BASE_URL}/classes`,
+        `${config.BASE_URL}/member/unbookedclasses`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
+      console.log("RAW RESPONSE DATA:", upcomingResponse.data);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
@@ -216,10 +222,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           }
           acc[dateKey].push({
             id: apiClass.classId.toString(),
-            name: apiClass.workoutName || 'Fitness Class',
+            name: apiClass.workoutName || 'Workout',
             time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
             date: formatDateForCard(apiClass.scheduledDate),
-            capacity: `${apiClass.bookedCount ?? 0}/${apiClass.capacity}`,
+            capacity: `${apiClass.bookingsCount ?? 0}/${apiClass.capacity}`,
             instructor:
               `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
               duration: apiClass.durationMinutes || 60,
@@ -440,14 +446,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   };
 
   const renderBookedClass = (classItem: ClassItem) => (
-    <View key={classItem.id} style={styles.bookedClassCard}>
+    <View style={styles.bookedClassCard}>
       <View style={styles.classHeader}>
         <View style={styles.classInfo}>
           <Text style={styles.classDate}>{classItem.date}</Text>
           <Text style={styles.classTime}>{classItem.time}</Text>
         </View>
 
-        {/* <Text style={styles.classCapacity}>{classItem.capacity}</Text> */}
+        <Text style={styles.classCapacity}>{classItem.capacity}</Text>
       </View>
       <View style={styles.classContent}>
         <View style={styles.classInfo}>
@@ -465,7 +471,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   );
 
   const renderUpcomingClass = (classItem: ClassItem) => (
-    <View key={classItem.id} style={styles.upcomingClassCard}>
+    <View style={styles.upcomingClassCard}>
       <View style={styles.upcomingClassHeader}>
         <View style={styles.upcomingClassInfo}>
           <View style={styles.upcomingClassDetails}>
@@ -575,7 +581,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               contentContainerStyle={styles.bookedClassesContainer}
               style={styles.bookedClassesScrollView}
             >
-              {bookedClasses.map(renderBookedClass)}
+              {/* {bookedClasses.map(renderBookedClass)} */}
+
+              {bookedClasses.map((classItem) => (
+                // set the key here on the immediate child returned from map
+                <React.Fragment key={`booked-${classItem.id}`}>{renderBookedClass(classItem)}</React.Fragment>
+              ))}
+
             </ScrollView>
           ) : (
             <View style={styles.emptyStateContainer}>
@@ -631,7 +643,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                       <View style={styles.timelineBar} />
                     </View>
                     <View style={styles.classesForDay}>
-                      {upcomingClasses[date].map(renderUpcomingClass)}
+                      {/* {upcomingClasses[date].map(renderUpcomingClass)} */}
+
+                      {upcomingClasses[date].map((classItem) => (
+                        // unique key per date+classId to make sure it's stable and unique
+                        <React.Fragment key={`${date}-${classItem.id}`}>
+                          {renderUpcomingClass(classItem)}
+                        </React.Fragment>
+                      ))}
+
                     </View>
                   </View>
                 );

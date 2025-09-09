@@ -73,6 +73,15 @@ export class ClassService implements IClassService {
     return this.classRepository.getBookedClassesForMember(memberId, { today, time });
   }
 
+  async getMemberUnbookedClasses(memberId: number): Promise<ClassWithWorkout[]> {
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+    const time = now.toTimeString().slice(0, 8);
+
+    // Ask repository for upcoming classes excluding those the member has booked
+    return this.classRepository.getUnbookedClassesForMember(memberId, { today, time });
+  }
+
   async bookClass(memberId: number, classId: number): Promise<void> {
     // Validate class ID
     if (!Number.isInteger(classId) || classId <= 0) {

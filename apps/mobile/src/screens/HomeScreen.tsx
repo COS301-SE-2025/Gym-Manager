@@ -59,7 +59,6 @@ interface ApiUpcomingClass {
   coachFirstName?: string;
   coachLastName?: string;
   bookingsCount: number;
-  durationMinutes: number;
 }
 
 export interface ApiLiveClassResponse {

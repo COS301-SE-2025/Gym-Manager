@@ -316,18 +316,32 @@ export const notifications = pgTable('notifications', {
   createdAt: timestamp('created_at', { mode: 'string' }).defaultNow(),
 });
 
-export const notificationTargets = pgTable(
-  'notification_targets',
-  {
-    targetId: serial('target_id').primaryKey().notNull(),
-    notificationId: integer('notification_id').notNull(),
-    targetRole: userRole('target_role').notNull(),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.notificationId],
-      foreignColumns: [notifications.notificationId],
-      name: 'notification_targets_notification_id_fkey',
-    }).onDelete('cascade'),
-  ],
-);
+export const notificationTargets = pgTable("notification_targets", {
+	notificationId: bigint("notification_id", { mode: "number" }).notNull(),
+	targetRole: userRole("target_role").notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.notificationId],
+			foreignColumns: [notifications.notificationId],
+			name: "notification_targets_notification_id_fkey"
+		}).onDelete("cascade"),
+	primaryKey({ columns: [table.notificationId, table.targetRole], name: "notification_targets_pkey"}),
+]);
+
+export const notificationReads = pgTable("notification_reads", {
+	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
+	notificationId: bigint("notification_id", { mode: "number" }).notNull(),
+	userId: integer("user_id").notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.notificationId],
+			foreignColumns: [notifications.notificationId],
+			name: "notification_reads_notification_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.userId],
+			name: "notification_reads_user_id_fkey"
+		}).onDelete("cascade"),
+	primaryKey({ columns: [table.notificationId, table.userId], name: "notification_reads_pkey"}),
+]);

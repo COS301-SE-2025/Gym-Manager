@@ -7,9 +7,11 @@ import CoachLive from '../screens/coach/CoachLiveClassScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import WorkoutHistoryScreen from '../screens/coach/WorkoutHistoryScreen';
 
 export type CoachTabParamList = {
   CoachHome: undefined;
+  History: undefined;
   Profile: undefined;
 };
 
@@ -49,6 +51,14 @@ function CoachTabNavigator() {
           tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
         }}
       />
+      <Tab.Screen
+        name="History"
+        component={WorkoutHistoryScreen}
+        options={{
+          title: 'History',
+          tabBarIcon: ({ color, size }) => <Ionicons name="time-outline" color={color} size={size} />,
+        }}
+        />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}

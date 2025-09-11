@@ -1,7 +1,5 @@
 import * as React from 'react';
-import axios from 'axios';
-import config from '../config';
-import { getToken, getRefreshToken, storeToken, storeRefreshToken, removeToken, removeRefreshToken } from '../utils/authStorage';
+import apiClient from '../utils/apiClient';
 import { supabase } from '../lib/supabase';
 
 export function useSession(classId?: number) {
@@ -13,33 +11,10 @@ export function useSession(classId?: number) {
 
     const initial = async () => {
       try {
-        const token = await getToken();
-        if (!token) return;
-        const r = await axios.get(`${config.BASE_URL}/live/${classId}/session`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const r = await apiClient.get(`/live/${classId}/session`);
         if (!canceled) setSess(r.data);
       } catch (err: any) {
-        if (axios.isAxiosError(err) && err.response?.status === 401) {
-          try {
-            const refreshToken = await getRefreshToken();
-            if (!refreshToken) return;
-            const ref = await axios.post(`${config.BASE_URL}/refresh`, { refreshToken }, {
-              headers: { Authorization: `Bearer ${token || ''}` }
-            });
-            if (ref.data?.token) {
-              await storeToken(ref.data.token);
-              if (ref.data?.refreshToken) await storeRefreshToken(ref.data.refreshToken);
-              const retry = await axios.get(`${config.BASE_URL}/live/${classId}/session`, {
-                headers: { Authorization: `Bearer ${ref.data.token}` }
-              });
-              if (!canceled) setSess(retry.data);
-            }
-          } catch (e) {
-            await removeToken();
-            await removeRefreshToken();
-          }
-        }
+        console.error('Failed to fetch session:', err);
       }
     };
 

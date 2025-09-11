@@ -1,7 +1,6 @@
 import * as React from 'react';
-import axios from 'axios';
-import config from '../config';
-import { getToken, getUser, getRefreshToken, storeToken, storeRefreshToken, removeToken, removeRefreshToken } from '../utils/authStorage';
+import apiClient from '../utils/apiClient';
+import { getUser } from '../utils/authStorage';
 import { supabase } from '../lib/supabase';
 
 type Progress = {
@@ -31,33 +30,10 @@ export function useMyProgress(classId?: number, refreshSignal: number = 0) {
 
     const fetchOnce = async () => {
       try {
-        const token = await getToken();
-        if (!token) return;
-        const r = await axios.get(`${config.BASE_URL}/live/${classId}/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!stop) setProg(prev => ({ ...prev, ...r.data })); // 👈 merge, don’t replace
+        const r = await apiClient.get(`/live/${classId}/me`);
+        if (!stop) setProg(prev => ({ ...prev, ...r.data })); // 👈 merge, don't replace
       } catch (err: any) {
-        if (axios.isAxiosError(err) && err.response?.status === 401) {
-          try {
-            const refreshToken = await getRefreshToken();
-            if (!refreshToken) return;
-            const ref = await axios.post(`${config.BASE_URL}/refresh`, { refreshToken }, {
-              headers: { Authorization: `Bearer ${await getToken() || ''}` }
-            });
-            if (ref.data?.token) {
-              await storeToken(ref.data.token);
-              if (ref.data?.refreshToken) await storeRefreshToken(ref.data.refreshToken);
-              const retry = await axios.get(`${config.BASE_URL}/live/${classId}/me`, {
-                headers: { Authorization: `Bearer ${ref.data.token}` }
-              });
-              if (!stop) setProg(prev => ({ ...prev, ...retry.data }));
-            }
-          } catch (e) {
-            await removeToken();
-            await removeRefreshToken();
-          }
-        }
+        console.error('Failed to fetch progress:', err);
       }
     };
 

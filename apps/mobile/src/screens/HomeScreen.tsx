@@ -15,7 +15,7 @@ import {
 import IconLogo from '../components/common/IconLogo';
 import BookingSheet from '../components/BookingSheet';
 import CancelSheet from '../components/CancelSheet';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { getToken, getUser, User } from '../utils/authStorage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
@@ -142,16 +142,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [refreshing, setRefreshing] = useState(false);
 
   // Extracted fetch logic to be reusable
-  const fetchBookedClasses = async (token: string) => {
+  const fetchBookedClasses = async () => {
     setIsLoadingBooked(true);
     setBookedError(null);
     try {
-      const bookedResponse = await axios.get<ApiBookedClass[]>(
-        `${config.BASE_URL}/member/classes`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const bookedResponse = await apiClient.get<ApiBookedClass[]>('/member/classes');
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       console.log("BRAW RESPONSE DATA BOOKED:", bookedResponse.data);
@@ -180,7 +175,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       setBookedClasses(formattedBookedClasses);
     } catch (error: any) {
       console.error('Failed to fetch booked classes:', error);
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
+      if (error.response?.status === 401) {
         setBookedError('Session expired. Please login again.');
       } else {
         setBookedError('Failed to load your booked classes.');
@@ -190,16 +185,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     }
   };
 
-  const fetchUpcomingClasses = async (token: string) => {
+  const fetchUpcomingClasses = async () => {
     setIsLoadingUpcoming(true);
     setUpcomingError(null);
     try {
-      const upcomingResponse = await axios.get<ApiUpcomingClass[]>(
-        `${config.BASE_URL}/member/unbookedclasses`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const upcomingResponse = await apiClient.get<ApiUpcomingClass[]>('/member/unbookedclasses');
       console.log("RAW RESPONSE DATA:", upcomingResponse.data);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -237,7 +227,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       setUpcomingClasses(groupedClasses);
     } catch (error: any) {
       console.error('Failed to fetch upcoming classes:', error);
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
+      if (error.response?.status === 401) {
         setUpcomingError('Session expired. Please login again.');
       } else {
         setUpcomingError('Failed to load upcoming classes.');
@@ -247,13 +237,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     }
   };
 
-  const fetchLiveClass = async (token: string) => {
+  const fetchLiveClass = async () => {
     setIsLoadingLiveClass(true);
     setLiveClassError(null);
     try {
-      const response = await axios.get<ApiLiveClassResponse>(`${config.BASE_URL}/live/class`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiClient.get<ApiLiveClassResponse>('/live/class');
       if (response.data.ongoing && response.data.class) {
         setLiveClass(response.data);
       } else {
@@ -261,7 +249,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       }
     } catch (error: any) {
       // Benign on first load (token race / no live class yet / transient)
-      if (axios.isAxiosError(error)) {
+      if (error.response) {
         const status = error.response?.status;
         if (!status || status === 401 || status === 404 || status === 429 || status === 503) {
           setLiveClass(null);
@@ -277,12 +265,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    const token = await getToken();
-    if (token) {
-      await fetchLiveClass(token);
-      await fetchBookedClasses(token);
-      await fetchUpcomingClasses(token);
-    }
+    await fetchLiveClass();
+    await fetchBookedClasses();
+    await fetchUpcomingClasses();
     setRefreshing(false);
   }, []);
 
@@ -290,18 +275,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     const fetchInitialData = async () => {
       const user = await getUser();
       setCurrentUser(user);
-      const token = await getToken();
-
-      if (!token) {
-        setBookedError('Authentication token not found. Please login again.');
-        setIsLoadingBooked(false);
-        setUpcomingError('Authentication token not found. Please login again.');
-        setIsLoadingUpcoming(false);
-        return;
-      }
-      await fetchLiveClass(token);
-      await fetchBookedClasses(token);
-      await fetchUpcomingClasses(token);
+      await fetchLiveClass();
+      await fetchBookedClasses();
+      await fetchUpcomingClasses();
     };
 
     fetchInitialData();
@@ -327,17 +303,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     console.log('Attempting to book class:', classId);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        Alert.alert('Authentication Error', 'No session token found. Please log in again.');
-        return false;
-      }
-
-      const response = await axios.post(
-        `${config.BASE_URL}/book`,
-        { classId: classId },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const response = await apiClient.post('/book', { classId: classId });
 
       if (response.data.success) {
         Alert.alert('Success!', 'Class booked successfully.');
@@ -358,10 +324,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         });
 
         // Refresh booked classes to show the new one
-        const currentToken = await getToken();
-        if (currentToken) {
-          await fetchBookedClasses(currentToken);
-        }
+        await fetchBookedClasses();
         return true;
       } else {
         Alert.alert(
@@ -373,7 +336,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     } catch (error: any) {
       console.error('Booking request failed:', error);
       let errorMessage = 'An unexpected error occurred during booking.';
-      if (axios.isAxiosError(error) && error.response) {
+      if (error.response) {
         errorMessage =
           error.response.data.error ||
           `Booking failed: ${error.response.statusText} (Status: ${error.response.status})`;
@@ -393,17 +356,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const handleConfirmCancellation = async (classId: string) => {
     try {
-      const token = await getToken();
-      if (!token) {
-        Alert.alert('Authentication Error', 'No session token found. Please log in again.');
-        return;
-      }
-
-      const response = await axios.post(
-        `${config.BASE_URL}/cancel`,
-        { classId: parseInt(classId, 10) },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const response = await apiClient.post('/cancel', { classId: parseInt(classId, 10) });
 
       if (response.data?.success) {
         Alert.alert('Cancelled', 'Your booking has been cancelled.');
@@ -412,17 +365,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         setBookedClasses((prev) => prev.filter((c) => c.id !== classId));
 
         // Optionally refresh upcoming to re-show class availability
-        const currentToken = await getToken();
-        if (currentToken) {
-          await fetchUpcomingClasses(currentToken);
-        }
+        await fetchUpcomingClasses();
       } else {
         Alert.alert('Cancellation Failed', response.data?.error || 'Please try again.');
       }
     } catch (error: any) {
       console.error('Cancellation request failed:', error);
       let errorMessage = 'An unexpected error occurred during cancellation.';
-      if (axios.isAxiosError(error) && error.response) {
+      if (error.response) {
         errorMessage =
           error.response.data?.error ||
           `Cancellation failed: ${error.response.statusText} (Status: ${error.response.status})`;

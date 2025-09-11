@@ -1,6 +1,4 @@
-import axios from 'axios';
-import { getToken } from '../../../utils/authStorage';
-import config from '../../../config';
+import apiClient from '../../../utils/apiClient';
 
 export interface UserStatus {
   userId: number;
@@ -10,17 +8,7 @@ export interface UserStatus {
 
 export const getUserStatus = async (): Promise<UserStatus> => {
   try {
-    const token = await getToken();
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
-    const response = await axios.get<UserStatus>(`${config.BASE_URL}/status`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
+    const response = await apiClient.get<UserStatus>('/status');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch user status:', error);

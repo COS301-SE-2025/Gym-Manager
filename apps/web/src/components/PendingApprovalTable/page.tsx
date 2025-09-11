@@ -39,14 +39,7 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
   return (
     <div className="user-table-container">
       <table className="user-table">
-        <colgroup>
-        <col style={{ width: '80px' }} />    {/* User ID */}
-        <col style={{ width: '120px' }} />   {/* First Name */}
-        <col style={{ width: '120px' }} />   {/* Last Name */}
-        <col style={{ width: '220px' }} />   {/* Email */}
-        <col style={{ width: '150px' }} />   {/* Phone */}
-        <col style={{ width: '100px' }} />   {/* Actions */}
-      </colgroup>
+        <colgroup><col style={{ width: '80px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '220px' }} /><col style={{ width: '150px' }} /><col style={{ width: '100px' }} /></colgroup>
         <thead>
           <tr>
             <th>User ID</th>

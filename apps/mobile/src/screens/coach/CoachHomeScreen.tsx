@@ -84,39 +84,41 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
         return dateTimeA.getTime() - dateTimeB.getTime();
       });
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+const now = new Date();
 
-      const classesNeedingWorkout: WorkoutItem[] = sortedClasses
-        .filter((c) => {
-          const classDate = new Date(`${c.scheduledDate}T00:00:00`);
-          return classDate >= today && c.workoutId == null; // only today/future and no workout
-        })
-        .map((c) => ({
-          id: c.classId.toString(),
-          name: 'Setup Workout',
-          time: c.scheduledTime.slice(0, 5),
-          date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          }),
-          capacity: `0/${c.capacity}`,
-          instructor: 'You',
-        }));
+const classesNeedingWorkout: WorkoutItem[] = sortedClasses
+  .filter((c) => {
+    const classDateTime = new Date(`${c.scheduledDate}T${c.scheduledTime}`);
+    return classDateTime >= now && c.workoutId == null;
+  })
+  .map((c) => ({
+    id: c.classId.toString(),
+    name: 'Setup Workout',
+    time: c.scheduledTime.slice(0, 5),
+    date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    }),
+    capacity: `0/${c.capacity}`,
+    instructor: 'You',
+  }));
 
-      const classesWithWorkout: WorkoutItem[] = sortedClasses
-        .filter((c) => c.workoutId !== null)
-        .map((c) => ({
-          id: c.classId.toString(),
-          name: c.workoutName || 'Workout Assigned',
-          time: c.scheduledTime.slice(0, 5),
-          date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          }),
-          capacity: `0/${c.capacity}`,
-          instructor: 'You',
-        }));
+const classesWithWorkout: WorkoutItem[] = sortedClasses
+  .filter((c) => {
+    const classDateTime = new Date(`${c.scheduledDate}T${c.scheduledTime}`);
+    return classDateTime >= now && c.workoutId !== null;
+  })
+  .map((c) => ({
+    id: c.classId.toString(),
+    name: c.workoutName || 'Workout Assigned',
+    time: c.scheduledTime.slice(0, 5),
+    date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    }),
+    capacity: `0/${c.capacity}`,
+    instructor: 'You',
+  }));
 
       setSetWorkoutsData(classesNeedingWorkout);
       setYourClassesData(classesWithWorkout);
@@ -311,7 +313,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
 
         {/* Your Classes Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Classes</Text>
+          <Text style={styles.sectionTitle}>Your Upcomming Classes</Text>
           {isLoadingYourClasses ? (
             <ActivityIndicator size="large" color="#D8FF3E" style={{ marginTop: 20 }} />
           ) : yourClassesError ? (

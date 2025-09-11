@@ -32,11 +32,33 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const isCoach = !!currentUser?.roles?.includes('coach');
+  const isMember = !!currentUser?.roles?.includes('member');
+  const showLeaderboardSettings = isMember; 
+
   useEffect(() => {
-    const loadUserData = async () => {
+    const load = async () => {
       try {
         const user = await getUser();
         setCurrentUser(user);
+
+        // Only load settings for members (coaches don't need scoreboard settings)
+        const roles = user?.roles ?? [];
+        const isMember = roles.includes('member');
+
+        if (isMember) {
+          try {
+            const settings = await getUserSettings();
+            setIsLeaderboardPublic(settings.publicVisibility);
+          } catch (error) {
+            console.error('Failed to load user settings:', error);
+            // Default safely if settings endpoint is unavailable
+            setIsLeaderboardPublic(true);
+          }
+        } else {
+          // Hide switch and avoid calling settings routes for coach-only users
+          setIsLeaderboardPublic(null);
+        }
       } catch (error) {
         console.error('Failed to load user data:', error);
       } finally {
@@ -44,19 +66,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       }
     };
 
-    const loadUserSettings = async () => {
-      try {
-        const settings = await getUserSettings();
-        setIsLeaderboardPublic(settings.publicVisibility);
-      } catch (error) {
-        console.error('Failed to load user settings:', error);
-        // Default to true if we can't fetch settings
-        setIsLeaderboardPublic(true);
-      }
-    };
-
-    loadUserData();
-    loadUserSettings();
+    load();
   }, []);
 
   const toggleLeaderboardVisibility = async () => {
@@ -201,34 +211,36 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           </View>
         </View>
 
-        {/* Settings Section */}
-        <View style={styles.section}>
+                {/* Settings Section */}
+                <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
 
-          {/* Leaderboard Privacy */}
-          <View style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <Ionicons name="trophy-outline" size={24} color="#D8FF3E" />
-              <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Public Leaderboard</Text>
-                <Text style={styles.settingDescription}>
-                  Show your scores on public leaderboards
-                </Text>
+          {/* Leaderboard Privacy — only for members */}
+          {showLeaderboardSettings && (
+            <View style={styles.settingItem}>
+              <View style={styles.settingLeft}>
+                <Ionicons name="trophy-outline" size={24} color="#D8FF3E" />
+                <View style={styles.settingText}>
+                  <Text style={styles.settingTitle}>Public Leaderboard</Text>
+                  <Text style={styles.settingDescription}>
+                    Show your scores on public leaderboards
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.switchContainer}>
+                {isUpdatingVisibility && (
+                  <ActivityIndicator size="small" color="#D8FF3E" style={styles.switchLoader} />
+                )}
+                <Switch
+                  value={isLeaderboardPublic ?? true}
+                  onValueChange={toggleLeaderboardVisibility}
+                  trackColor={{ false: '#333', true: '#D8FF3E' }}
+                  thumbColor={isLeaderboardPublic ? '#1a1a1a' : '#888'}
+                  disabled={isLeaderboardPublic === null || isUpdatingVisibility}
+                />
               </View>
             </View>
-            <View style={styles.switchContainer}>
-              {isUpdatingVisibility && (
-                <ActivityIndicator size="small" color="#D8FF3E" style={styles.switchLoader} />
-              )}
-              <Switch
-                value={isLeaderboardPublic ?? true}
-                onValueChange={toggleLeaderboardVisibility}
-                trackColor={{ false: '#333', true: '#D8FF3E' }}
-                thumbColor={isLeaderboardPublic ? '#1a1a1a' : '#888'}
-                disabled={isLeaderboardPublic === null || isUpdatingVisibility}
-              />
-            </View>
-          </View>
+          )}
 
           {/* Role Swap - Only show if user has multiple roles */}
           {currentUser?.roles && currentUser.roles.length > 1 && (

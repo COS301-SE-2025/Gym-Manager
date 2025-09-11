@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { db } from '../../db/client';
-import app from '../../app';
+import { app } from '../../index';
 import { notifications, notificationTargets } from '../../db/schema';
 import { and, eq } from 'drizzle-orm';
 

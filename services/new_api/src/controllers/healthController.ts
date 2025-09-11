@@ -1,6 +1,6 @@
 // src/controllers/healthController.ts
 import { Request, Response } from 'express';
-import healthRepo from '../repositories/health.repository';
+import { HealthRepository } from '../repositories/health/healthRepository';
 
 const STARTED_AT = Number(process.env.APP_STARTED_AT ?? Date.now());
 
@@ -10,6 +10,7 @@ export const healthCheck = async (_req: Request, res: Response) => {
 
   try {
     // call repo which will throw on timeout or DB failure
+    const healthRepo = new HealthRepository();
     await healthRepo.ping(100);
     return res.json({
       ok: true,

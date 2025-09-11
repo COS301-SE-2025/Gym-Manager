@@ -3,11 +3,11 @@ import { AuthenticatedRequest } from '../../infrastructure/middleware/authMiddle
 import { AdminService } from '../../services/admin/adminService';
 import {
   WeeklyScheduleRequest,
-  CreateClassRequest,
   AssignRoleRequest,
   RemoveRoleRequest,
   UpdateUserRequest
 } from '../../domain/entities/admin.entity';
+import { CreateClassRequest } from '../../domain/entities/class.entity';
 
 /**
  * AdminController - Controller Layer

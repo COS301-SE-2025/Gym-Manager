@@ -59,8 +59,6 @@ export class UserSettingsRepository implements IUserSettingsRepository {
   private mapToUserSettings(row: MemberRow): UserSettings {
     return {
       userId: row.userId,
-      status: row.status,
-      creditsBalance: row.creditsBalance,
       publicVisibility: row.publicVisibility,
     };
   }

@@ -49,7 +49,7 @@ export class AdminRepository implements IAdminRepository {
     const inserted: (typeof classes.$inferSelect)[] = [];
 
     for (const dayBlock of (weeklySchedule || [])) {
-      const offset = dayToOffset[dayBlock.day];
+      const offset = dayToOffset[dayBlock.day as keyof typeof dayToOffset];
       if (offset === undefined) continue;
 
       const scheduledDate = addDays(baseDate, offset);

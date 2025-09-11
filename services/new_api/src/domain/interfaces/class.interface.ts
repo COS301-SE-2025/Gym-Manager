@@ -10,9 +10,9 @@ import {
   CheckInRequest,
   AssignCoachRequest,
   AssignWorkoutRequest,
-  WeeklyScheduleRequest,
   WeeklyScheduleInput
 } from '../entities/class.entity';
+import { WeeklyScheduleRequest } from '../entities/admin.entity';
 
 export interface IClassService {
   getCoachAssignedClasses(coachId: number): Promise<Class[]>;

@@ -18,7 +18,7 @@ import { app } from '../../index';
 
 // Test database setup
 describe('Class Booking Integration Tests', () => {
-  let testApp: Express;
+  let testApp: any;
   let coachAuthToken: string;
   let memberAuthToken: string;
   let testCoachUserId: number;

@@ -18,7 +18,7 @@ import { app } from '../../index';
 
 // Test database setup
 describe('Integration Tests', () => {
-  let testApp: Express;
+  let testApp: any;
   let authToken: string;
   let testUserId: number;
   let testCoachId: number;

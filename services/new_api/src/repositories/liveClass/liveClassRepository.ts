@@ -38,7 +38,7 @@ export class LiveClassRepository implements ILiveClassRepository {
       where class_id = ${classId}
       limit 1
     `);
-    return rows[0] || null;
+    return (rows[0] as unknown as LiveSession) || null;
   }
 
   // --- Final leaderboard ---
@@ -157,7 +157,7 @@ export class LiveClassRepository implements ILiveClassRepository {
 
   async getWorkoutType(workoutId: number): Promise<string | null> {
     const { rows } = await globalDb.execute(sql`select type from public.workouts where workout_id=${workoutId} limit 1`);
-    return rows[0]?.type ?? null;
+    return (rows[0] as { type: string })?.type ?? null;
   }
 
   // --- Coach controls ---
@@ -376,7 +376,7 @@ export class LiveClassRepository implements ILiveClassRepository {
       where c.class_id = ${classId}
       limit 1
     `);
-    return rows[0]?.type ?? null;
+    return (rows[0] as { type: string })?.type ?? null;
   }
 
   async realtimeIntervalLeaderboard(classId: number) {
@@ -594,7 +594,7 @@ export class LiveClassRepository implements ILiveClassRepository {
 
   // --- Scores ---
   async assertCoachOwnsClass(classId: number, coachId: number) {
-    const { rows } = await globalDb.select({ coachId: classes.coachId })
+    const rows = await globalDb.select({ coachId: classes.coachId })
       .from(classes).where(eq(classes.classId, classId)).limit(1);
     const cls = rows[0];
     if (!cls || Number(cls.coachId) !== Number(coachId)) throw new Error('NOT_CLASS_COACH');

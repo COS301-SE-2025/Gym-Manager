@@ -6,7 +6,7 @@ export const userRoleService = {
     try {
       const token = localStorage.getItem('authToken');
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/roles/getUsersByRole/${role}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/users/role/${role}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -21,7 +21,7 @@ export const userRoleService = {
     try {
       const token = localStorage.getItem('authToken');
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/roles/getRolesByUserId/${userId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/users/${userId}/roles`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -37,7 +37,7 @@ export const userRoleService = {
     try {
       const token = localStorage.getItem('authToken');
       await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/roles/assign`,
+        `${process.env.NEXT_PUBLIC_API_URL}/assign-role`,
         { userId, role },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -54,16 +54,16 @@ export const userRoleService = {
 
       switch (role) {
         case 'admin':
-          endpoint = '/roles/removeAdminRole';
+          endpoint = '/remove-admin-role';
           break;
         case 'coach':
-          endpoint = '/roles/removeCoachRole';
+          endpoint = '/remove-coach-role';
           break;
         case 'member':
-          endpoint = '/roles/removeMemberRole';
+          endpoint = '/remove-member-role';
           break;
         case 'manager':
-          endpoint = '/roles/removeManagerRole';
+          endpoint = '/remove-manager-role';
           break;
         default:
           throw new Error('Invalid role');
@@ -84,7 +84,7 @@ export const userRoleService = {
     try {
       const token = localStorage.getItem('authToken');
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/schedule/getWeeklySchedule`,
+        `${process.env.NEXT_PUBLIC_API_URL}/schedule/weekly`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -108,7 +108,7 @@ export const userRoleService = {
       const userId = payload.userId;
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/getUserById/${userId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -124,7 +124,7 @@ export const userRoleService = {
     try {
       const token = localStorage.getItem('authToken');
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/getUserById/${userId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },

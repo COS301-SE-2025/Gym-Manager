@@ -7,9 +7,9 @@ export class LiveClassService implements ILiveClassService {
   private repo: ILiveClassRepository;
   private userRepo: IUserRepository;
 
-  constructor(repo: ILiveClassRepository, userRepo: IUserRepository) {
-    this.repo = repo;
-    this.userRepo = userRepo;
+  constructor(repo?: ILiveClassRepository, userRepo?: IUserRepository) {
+    this.repo = repo || new LiveClassRepository();
+    this.userRepo = userRepo || new UserRepository();
   }
 
   // --- Session ---

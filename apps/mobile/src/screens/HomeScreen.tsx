@@ -15,7 +15,7 @@ import {
 import IconLogo from '../components/common/IconLogo';
 import BookingSheet from '../components/BookingSheet';
 import CancelSheet from '../components/CancelSheet';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { getToken, getUser, User } from '../utils/authStorage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
@@ -31,15 +31,21 @@ interface ClassItem {
   date: string;
   capacity: string;
   instructor: string;
+  duration?: number;
   isBooked?: boolean;
 }
 
 interface ApiBookedClass {
-  bookingId: string;
-  classId: string;
+  bookingId: number | string;
+  classId: number | string;
   scheduledDate: string;
   scheduledTime: string;
   workoutName: string;
+  capacity: number;
+  bookingsCount: number;
+  coachFirstName?: string;
+  coachLastName?: string;
+  durationMinutes: number;
 }
 
 interface ApiUpcomingClass {
@@ -49,8 +55,10 @@ interface ApiUpcomingClass {
   scheduledTime: string;
   workoutName?: string;
   bookedCount?: number;
+  durationMinutes?: number;
   coachFirstName?: string;
   coachLastName?: string;
+  bookingsCount: number;
 }
 
 export interface ApiLiveClassResponse {
@@ -134,19 +142,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [refreshing, setRefreshing] = useState(false);
 
   // Extracted fetch logic to be reusable
-  const fetchBookedClasses = async (token: string) => {
+  const fetchBookedClasses = async () => {
     setIsLoadingBooked(true);
     setBookedError(null);
     try {
-      const bookedResponse = await axios.get<ApiBookedClass[]>(
-        `${config.BASE_URL}/member/classes`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const bookedResponse = await apiClient.get<ApiBookedClass[]>('/member/classes');
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-
+      console.log("BRAW RESPONSE DATA BOOKED:", bookedResponse.data);
       const formattedBookedClasses: ClassItem[] = bookedResponse.data
         .filter((apiClass) => {
           const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
@@ -158,23 +161,21 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           return dateTimeA.getTime() - dateTimeB.getTime();
         })
         .map((apiClass) => ({
-          id: apiClass.bookingId, // This is bookingId, for cancellation
-          name: apiClass.workoutName || ' ',
+          id: String(apiClass.classId),
+          name: apiClass.workoutName || 'Workout',
           time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
           date: apiClass.scheduledDate
-            ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })
+            ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
             : 'N/A',
-          capacity: ' ',
-          instructor: ' ',
+          capacity: `${apiClass.bookingsCount ?? 0}/${apiClass.capacity}`,
+          instructor: `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
+          duration: apiClass.durationMinutes ?? 0,
           isBooked: true,
         }));
       setBookedClasses(formattedBookedClasses);
     } catch (error: any) {
       console.error('Failed to fetch booked classes:', error);
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
+      if (error.response?.status === 401) {
         setBookedError('Session expired. Please login again.');
       } else {
         setBookedError('Failed to load your booked classes.');
@@ -184,16 +185,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     }
   };
 
-  const fetchUpcomingClasses = async (token: string) => {
+  const fetchUpcomingClasses = async () => {
     setIsLoadingUpcoming(true);
     setUpcomingError(null);
     try {
-      const upcomingResponse = await axios.get<ApiUpcomingClass[]>(
-        `${config.BASE_URL}/classes`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const upcomingResponse = await apiClient.get<ApiUpcomingClass[]>('/member/unbookedclasses');
+      console.log("RAW RESPONSE DATA:", upcomingResponse.data);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
@@ -214,13 +211,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           }
           acc[dateKey].push({
             id: apiClass.classId.toString(),
-            name: apiClass.workoutName || 'Fitness Class',
+            name: apiClass.workoutName || 'Workout',
             time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
             date: formatDateForCard(apiClass.scheduledDate),
-            capacity: `${apiClass.bookedCount ?? 0}/${apiClass.capacity}`,
+            capacity: `${apiClass.bookingsCount ?? 0}/${apiClass.capacity}`,
             instructor:
               `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
+              duration: apiClass.durationMinutes || 60,
             isBooked: false,
+            
           });
           return acc;
         }, {});
@@ -228,7 +227,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       setUpcomingClasses(groupedClasses);
     } catch (error: any) {
       console.error('Failed to fetch upcoming classes:', error);
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
+      if (error.response?.status === 401) {
         setUpcomingError('Session expired. Please login again.');
       } else {
         setUpcomingError('Failed to load upcoming classes.');
@@ -238,13 +237,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     }
   };
 
-  const fetchLiveClass = async (token: string) => {
+  const fetchLiveClass = async () => {
     setIsLoadingLiveClass(true);
     setLiveClassError(null);
     try {
-      const response = await axios.get<ApiLiveClassResponse>(`${config.BASE_URL}/live/class`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiClient.get<ApiLiveClassResponse>('/live/class');
       if (response.data.ongoing && response.data.class) {
         setLiveClass(response.data);
       } else {
@@ -252,7 +249,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       }
     } catch (error: any) {
       // Benign on first load (token race / no live class yet / transient)
-      if (axios.isAxiosError(error)) {
+      if (error.response) {
         const status = error.response?.status;
         if (!status || status === 401 || status === 404 || status === 429 || status === 503) {
           setLiveClass(null);
@@ -268,12 +265,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    const token = await getToken();
-    if (token) {
-      await fetchLiveClass(token);
-      await fetchBookedClasses(token);
-      await fetchUpcomingClasses(token);
-    }
+    await fetchLiveClass();
+    await fetchBookedClasses();
+    await fetchUpcomingClasses();
     setRefreshing(false);
   }, []);
 
@@ -281,18 +275,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     const fetchInitialData = async () => {
       const user = await getUser();
       setCurrentUser(user);
-      const token = await getToken();
-
-      if (!token) {
-        setBookedError('Authentication token not found. Please login again.');
-        setIsLoadingBooked(false);
-        setUpcomingError('Authentication token not found. Please login again.');
-        setIsLoadingUpcoming(false);
-        return;
-      }
-      await fetchLiveClass(token);
-      await fetchBookedClasses(token);
-      await fetchUpcomingClasses(token);
+      await fetchLiveClass();
+      await fetchBookedClasses();
+      await fetchUpcomingClasses();
     };
 
     fetchInitialData();
@@ -318,17 +303,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     console.log('Attempting to book class:', classId);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        Alert.alert('Authentication Error', 'No session token found. Please log in again.');
-        return false;
-      }
-
-      const response = await axios.post(
-        `${config.BASE_URL}/book`,
-        { classId: classId },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const response = await apiClient.post('/book', { classId: classId });
 
       if (response.data.success) {
         Alert.alert('Success!', 'Class booked successfully.');
@@ -349,10 +324,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         });
 
         // Refresh booked classes to show the new one
-        const currentToken = await getToken();
-        if (currentToken) {
-          await fetchBookedClasses(currentToken);
-        }
+        await fetchBookedClasses();
         return true;
       } else {
         Alert.alert(
@@ -364,7 +336,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     } catch (error: any) {
       console.error('Booking request failed:', error);
       let errorMessage = 'An unexpected error occurred during booking.';
-      if (axios.isAxiosError(error) && error.response) {
+      if (error.response) {
         errorMessage =
           error.response.data.error ||
           `Booking failed: ${error.response.statusText} (Status: ${error.response.status})`;
@@ -382,8 +354,36 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     }
   };
 
-  const handleConfirmCancellation = (classId: string) => {
-    console.log('Cancellation confirmed for class:', classId);
+  const handleConfirmCancellation = async (classId: string) => {
+    try {
+      const response = await apiClient.post('/cancel', { classId: parseInt(classId, 10) });
+
+      if (response.data?.success) {
+        Alert.alert('Cancelled', 'Your booking has been cancelled.');
+
+        // Remove from booked list
+        setBookedClasses((prev) => prev.filter((c) => c.id !== classId));
+
+        // Optionally refresh upcoming to re-show class availability
+        await fetchUpcomingClasses();
+      } else {
+        Alert.alert('Cancellation Failed', response.data?.error || 'Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Cancellation request failed:', error);
+      let errorMessage = 'An unexpected error occurred during cancellation.';
+      if (error.response) {
+        errorMessage =
+          error.response.data?.error ||
+          `Cancellation failed: ${error.response.statusText} (Status: ${error.response.status})`;
+        if (error.response.status === 401) {
+          errorMessage = 'Session expired. Please log in again.';
+        } else if (error.response.status === 404) {
+          errorMessage = 'Booking not found or already cancelled.';
+        }
+      }
+      Alert.alert('Cancellation Error', errorMessage);
+    }
   };
 
   const handleCloseSheet = () => {
@@ -395,14 +395,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   };
 
   const renderBookedClass = (classItem: ClassItem) => (
-    <View key={classItem.id} style={styles.bookedClassCard}>
+    <View style={styles.bookedClassCard}>
       <View style={styles.classHeader}>
         <View style={styles.classInfo}>
           <Text style={styles.classDate}>{classItem.date}</Text>
           <Text style={styles.classTime}>{classItem.time}</Text>
         </View>
 
-        {/* <Text style={styles.classCapacity}>{classItem.capacity}</Text> */}
+        <Text style={styles.classCapacity}>{classItem.capacity}</Text>
       </View>
       <View style={styles.classContent}>
         <View style={styles.classInfo}>
@@ -420,7 +420,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   );
 
   const renderUpcomingClass = (classItem: ClassItem) => (
-    <View key={classItem.id} style={styles.upcomingClassCard}>
+    <View style={styles.upcomingClassCard}>
       <View style={styles.upcomingClassHeader}>
         <View style={styles.upcomingClassInfo}>
           <View style={styles.upcomingClassDetails}>
@@ -530,7 +530,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               contentContainerStyle={styles.bookedClassesContainer}
               style={styles.bookedClassesScrollView}
             >
-              {bookedClasses.map(renderBookedClass)}
+              {/* {bookedClasses.map(renderBookedClass)} */}
+
+              {bookedClasses.map((classItem) => (
+                // set the key here on the immediate child returned from map
+                <React.Fragment key={`booked-${classItem.id}`}>{renderBookedClass(classItem)}</React.Fragment>
+              ))}
+
             </ScrollView>
           ) : (
             <View style={styles.emptyStateContainer}>
@@ -586,7 +592,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                       <View style={styles.timelineBar} />
                     </View>
                     <View style={styles.classesForDay}>
-                      {upcomingClasses[date].map(renderUpcomingClass)}
+                      {/* {upcomingClasses[date].map(renderUpcomingClass)} */}
+
+                      {upcomingClasses[date].map((classItem) => (
+                        // unique key per date+classId to make sure it's stable and unique
+                        <React.Fragment key={`${date}-${classItem.id}`}>
+                          {renderUpcomingClass(classItem)}
+                        </React.Fragment>
+                      ))}
+
                     </View>
                   </View>
                 );

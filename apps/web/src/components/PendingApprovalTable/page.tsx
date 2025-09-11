@@ -39,6 +39,7 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
   return (
     <div className="user-table-container">
       <table className="user-table">
+        <colgroup><col style={{ width: '80px' }} /><col style={{ width: '120px' }} /><col style={{ width: '120px' }} /><col style={{ width: '220px' }} /><col style={{ width: '150px' }} /><col style={{ width: '100px' }} /></colgroup>
         <thead>
           <tr>
             <th>User ID</th>
@@ -64,7 +65,7 @@ export default function PendingApprovalTable({ role }: UserTableProps) {
                     try {
                       setLoading(true);
                       await axios.patch(
-                        `${process.env.NEXT_PUBLIC_API_URL}/users/updateUserById/${user.userId}`,
+                        `${process.env.NEXT_PUBLIC_API_URL}/users/${user.userId}`,
                         { status: 'approved' },
                         {
                           headers: {

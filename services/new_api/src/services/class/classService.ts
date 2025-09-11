@@ -10,6 +10,9 @@ import {
   AssignCoachRequest,
   AssignWorkoutRequest,
 } from '../../domain/entities/class.entity';
+import { ClassRepository } from '../../repositories/class/classRepository';
+import { UserRepository } from '../../repositories/auth/userRepository';
+import { IUserRepository } from '../../domain/interfaces/auth.interface';
 
 /**
  * ClassService - Business Layer
@@ -17,11 +20,11 @@ import {
  */
 export class ClassService implements IClassService {
   private classRepository: IClassRepository;
-  private userRepository: any;
+  private userRepository: UserRepository;
 
-  constructor(classRepository: IClassRepository, userRepository: any) {
-    this.classRepository = classRepository;
-    this.userRepository = userRepository;
+  constructor(classRepository?: IClassRepository, userRepository?: UserRepository) {
+    this.classRepository = classRepository || new ClassRepository();
+    this.userRepository = userRepository || new UserRepository();
   }
 
   async getCoachAssignedClasses(coachId: number): Promise<Class[]> {
@@ -70,6 +73,15 @@ export class ClassService implements IClassService {
     return this.classRepository.getBookedClassesForMember(memberId, { today, time });
   }
 
+  async getMemberUnbookedClasses(memberId: number): Promise<ClassWithWorkout[]> {
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+    const time = now.toTimeString().slice(0, 8);
+
+    // Ask repository for upcoming classes excluding those the member has booked
+    return this.classRepository.getUnbookedClassesForMember(memberId, { today, time });
+  }
+
   async bookClass(memberId: number, classId: number): Promise<void> {
     // Validate class ID
     if (!Number.isInteger(classId) || classId <= 0) {
@@ -104,6 +116,20 @@ export class ClassService implements IClassService {
       const count = await this.classRepository.countBookingsForClass(classId, tx);
       if (count >= cls.capacity) {
         throw new Error('Class full');
+      }
+
+      // Overlapping booking?
+      const overlaps = await this.classRepository.hasOverlappingBooking(
+        memberId,
+        {
+          scheduledDate: cls.scheduledDate,
+          scheduledTime: cls.scheduledTime,
+          durationMinutes: Number(cls.durationMinutes),
+        },
+        tx,
+      );
+      if (overlaps) {
+        throw new Error('Overlapping booking');
       }
 
       // Insert booking

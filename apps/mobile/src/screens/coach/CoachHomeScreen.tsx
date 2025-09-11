@@ -11,18 +11,23 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { StackScreenProps } from '@react-navigation/stack';
-import { useFocusEffect } from '@react-navigation/native';
+import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { useFocusEffect, CompositeNavigationProp } from '@react-navigation/native';
 import IconLogo from '../../components/common/IconLogo';
-import { CoachStackParamList } from '../../navigation/CoachNavigator';
+import { CoachTabParamList } from '../../navigation/CoachNavigator';
 import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
+import { getToken, getUser, User } from '../../utils/authStorage';
 import type { ApiLiveClassResponse } from '../HomeScreen';
 import config from '../../config';
+import { CoachStackParamList } from '../../navigation/CoachNavigator';
 
 const { width } = Dimensions.get('window');
-
-type CoachHomeScreenProps = StackScreenProps<CoachStackParamList, 'CoachHome'>;
+type CoachHomeNav = CompositeNavigationProp<
+  BottomTabScreenProps<CoachTabParamList, 'CoachHome'>['navigation'],
+  StackNavigationProp<CoachStackParamList>
+  >;
+type CoachHomeScreenProps = {navigation: CoachHomeNav}
 
 interface WorkoutItem {
   id: string;
@@ -54,6 +59,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
   const [liveClass, setLiveClass] = useState<ApiLiveClassResponse | null>(null);
   const [isLoadingLiveClass, setIsLoadingLiveClass] = useState(true);
   const [liveClassError, setLiveClassError] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   const fetchCoachClasses = async () => {
     setIsLoadingSetWorkouts(true);
@@ -78,33 +84,41 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
         return dateTimeA.getTime() - dateTimeB.getTime();
       });
 
-      const classesNeedingWorkout: WorkoutItem[] = sortedClasses
-        .filter((c) => c.workoutId === undefined)
-        .map((c) => ({
-          id: c.classId.toString(),
-          name: 'Setup Workout',
-          time: c.scheduledTime.slice(0, 5),
-          date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          }),
-          capacity: `0/${c.capacity}`,
-          instructor: 'You',
-        }));
+const now = new Date();
 
-      const classesWithWorkout: WorkoutItem[] = sortedClasses
-        .filter((c) => c.workoutId !== null)
-        .map((c) => ({
-          id: c.classId.toString(),
-          name: c.workoutName || 'Workout Assigned',
-          time: c.scheduledTime.slice(0, 5),
-          date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          }),
-          capacity: `0/${c.capacity}`,
-          instructor: 'You',
-        }));
+const classesNeedingWorkout: WorkoutItem[] = sortedClasses
+  .filter((c) => {
+    const classDateTime = new Date(`${c.scheduledDate}T${c.scheduledTime}`);
+    return classDateTime >= now && c.workoutId == null;
+  })
+  .map((c) => ({
+    id: c.classId.toString(),
+    name: 'Setup Workout',
+    time: c.scheduledTime.slice(0, 5),
+    date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    }),
+    capacity: `0/${c.capacity}`,
+    instructor: 'You',
+  }));
+
+const classesWithWorkout: WorkoutItem[] = sortedClasses
+  .filter((c) => {
+    const classDateTime = new Date(`${c.scheduledDate}T${c.scheduledTime}`);
+    return classDateTime >= now && c.workoutId !== null;
+  })
+  .map((c) => ({
+    id: c.classId.toString(),
+    name: c.workoutName || 'Workout Assigned',
+    time: c.scheduledTime.slice(0, 5),
+    date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    }),
+    capacity: `0/${c.capacity}`,
+    instructor: 'You',
+  }));
 
       setSetWorkoutsData(classesNeedingWorkout);
       setYourClassesData(classesWithWorkout);
@@ -150,20 +164,20 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
   // Initial load
   useEffect(() => {
     (async () => {
+      const user = await getUser();
+      setUser(user);
       await Promise.all([fetchLiveClass(), fetchCoachClasses()]);
     })();
   }, []);
 
-  // Refresh when screen gains focus + start a short poll while focused
   useFocusEffect(
     React.useCallback(() => {
-      let interval: NodeJS.Timer | undefined;
-
+      let interval: ReturnType<typeof setInterval> | undefined;
+  
       // run immediately
       fetchLiveClass();
-
-      // light polling so the banner appears as soon as the class goes live
-      interval = setInterval(fetchLiveClass, 10000); // 10s
+  
+      interval = setInterval(fetchLiveClass, 10000);
       return () => {
         if (interval) clearInterval(interval);
       };
@@ -208,7 +222,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
   const renderYourClassCard = (workout: WorkoutItem) => (
     <View key={workout.id} style={styles.yourClassCard}>
       <View style={styles.classHeader}>
-        <View className="classDateInfo">
+        <View>
           <Text style={styles.classDate}>{workout.date}</Text>
           <Text style={styles.classTime}>{workout.time}</Text>
         </View>
@@ -230,18 +244,10 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
       <View style={styles.header}>
         <IconLogo width={50} height={46} />
         <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>Hey, Coach 👋</Text>
-          <TouchableOpacity
-            style={styles.switchButton}
-            onPress={() => navigation.getParent()?.navigate('RoleSelection')}
-          >
-            <View style={styles.switchIcon}>
-              <View style={styles.switchTrack}>
-                <View style={styles.switchThumb} />
-              </View>
-            </View>
-            <Text style={styles.switchText}>Switch Profile</Text>
-          </TouchableOpacity>
+          <Text style={styles.welcomeText}>Hey, {user?.firstName || 'Coach'} 👋</Text>
+          <Text style={styles.subtitleText}>
+            {setWorkoutsData.length} class{setWorkoutsData.length === 1 ? '' : 'es'} need a workout set
+          </Text>
         </View>
       </View>
 
@@ -307,7 +313,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
 
         {/* Your Classes Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Classes</Text>
+          <Text style={styles.sectionTitle}>Your Upcomming Classes</Text>
           {isLoadingYourClasses ? (
             <ActivityIndicator size="large" color="#D8FF3E" style={{ marginTop: 20 }} />
           ) : yourClassesError ? (
@@ -329,7 +335,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#1a1a1a' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 30 },
   welcomeContainer: { flex: 1, marginLeft: 12 },
-  welcomeText: { color: 'white', fontSize: 18, fontWeight: '600', marginBottom: 8 },
+  welcomeText: { color: 'white', fontSize: 18, fontWeight: '600', marginBottom: 4 },
   switchButton: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#2a2a2a', borderRadius: 24,
     paddingHorizontal: 16, paddingVertical: 10, gap: 8, shadowColor: '#000',
@@ -351,6 +357,7 @@ const styles = StyleSheet.create({
   workoutDate: { color: '#D8FF3E', fontSize: 12, fontWeight: '500' },
   workoutTime: { color: '#D8FF3E', fontSize: 12, fontWeight: '500', marginTop: 2 },
   workoutContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  subtitleText: { color: '#888', fontSize: 14, fontWeight: '500'},
   workoutDetails: { flex: 1 },
   instructorName: { color: '#888', fontSize: 12, marginBottom: 4 },
   workoutName: { color: 'white', fontSize: 16, fontWeight: '600' },

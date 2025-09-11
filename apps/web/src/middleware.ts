@@ -6,6 +6,7 @@ const protectedRoutes = ['/dashboard'];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('authToken')?.value;
+  const refreshToken = request.cookies.get('refreshToken')?.value;
 
   if (
     pathname.startsWith('/_next') ||
@@ -45,6 +46,10 @@ export function middleware(request: NextRequest) {
       const isExpired = payload.exp && payload.exp < Date.now() / 1000;
 
       if (isExpired) {
+        if (refreshToken) {
+          // Allow through; the client will refresh on first request
+          return NextResponse.next();
+        }
         const response = NextResponse.redirect(
           new URL(
             `/error?error=session&message=${encodeURIComponent('Session expired')}`,

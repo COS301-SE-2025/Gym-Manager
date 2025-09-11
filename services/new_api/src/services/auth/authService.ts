@@ -61,13 +61,14 @@ export class AuthService implements IAuthService {
     // Get roles for token generation
     const assignedRoles = await this.userRepository.getRolesByUserId(createdUser.userId);
 
-    // Generate token
+    // Generate tokens
     const token = this.jwtService.generateToken({ 
       userId: createdUser.userId, 
       roles: assignedRoles 
     });
+    const refreshToken = this.jwtService.generateRefreshToken({ userId: createdUser.userId });
 
-    return { token };
+    return { token, refreshToken };
   }
 
   async login(loginData: UserLoginData): Promise<AuthResult> {
@@ -95,11 +96,12 @@ export class AuthService implements IAuthService {
     // Get user roles
     const roles = await this.userRepository.getRolesByUserId(user.userId);
 
-    // Generate token
+    // Generate tokens
     const token = this.jwtService.generateToken({ 
       userId: user.userId, 
       roles 
     });
+    const refreshToken = this.jwtService.generateRefreshToken({ userId: user.userId });
 
     // Create user with roles for response (sanitize passwordHash)
     const { passwordHash: _omit, ...userSafe } = user;
@@ -110,8 +112,22 @@ export class AuthService implements IAuthService {
 
     return {
       token,
+      refreshToken,
       user: userWithRoles,
     };
+  }
+
+  async refresh(accessToken: string | null, refreshToken: string): Promise<AuthResult> {
+    // Validate refresh token
+    const decoded = this.jwtService.verifyRefreshToken(refreshToken) as { userId: number };
+    const userId = decoded.userId;
+
+    // Optional: check if access token is close to expiry or invalid; we simply issue a new one
+    const roles = await this.userRepository.getRolesByUserId(userId);
+    const newAccessToken = this.jwtService.generateToken({ userId, roles });
+    const newRefreshToken = this.jwtService.generateRefreshToken({ userId });
+
+    return { token: newAccessToken, refreshToken: newRefreshToken };
   }
 
   async getUserStatus(userId: number): Promise<{ userId: number; roles: string[]; membershipStatus: string }> {
@@ -127,4 +143,13 @@ export class AuthService implements IAuthService {
 
     return { userId, roles, membershipStatus };
   }
+
+
+  async getMe(userId: number) {
+       const user = await this.userRepository.findById(userId);
+        if (!user) throw new Error('User not found');
+        const roles = await this.userRepository.getRolesByUserId(userId);
+        const { passwordHash: _omit, ...userSafe } = user as any;
+        return { ...userSafe, roles };
+      }
 }

@@ -30,6 +30,40 @@ export default function DashboardPage() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (res) => res,
+      async (error) => {
+        const originalRequest = error.config || {};
+        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+          originalRequest._retry = true;
+          const refreshToken = localStorage.getItem('refreshToken');
+          if (refreshToken) {
+            try {
+              const r = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/refresh`, { refreshToken }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
+              });
+              const newToken = r.data.token;
+              const newRefresh = r.data.refreshToken || refreshToken;
+              localStorage.setItem('authToken', newToken);
+              localStorage.setItem('refreshToken', newRefresh);
+              document.cookie = `authToken=${newToken}; path=/; max-age=3600; secure; samesite=strict`;
+              document.cookie = `refreshToken=${newRefresh}; path=/; max-age=${60 * 60 * 24 * 30}; secure; samesite=strict`;
+              originalRequest.headers = originalRequest.headers || {};
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              return axios(originalRequest);
+            } catch (e) {
+              localStorage.removeItem('authToken');
+              localStorage.removeItem('refreshToken');
+            }
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(interceptor);
+  }, []);
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -68,7 +102,7 @@ export default function DashboardPage() {
 
     try {
       const token = localStorage.getItem('authToken');
-      await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/allUsers`, {
+      await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch (err) {
@@ -210,11 +244,11 @@ export default function DashboardPage() {
     currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'User';
 
   return (
-    <div
+    <div className='dashboard-page'
       style={{
         backgroundColor: '#1E1E1E',
         minHeight: '100vh',
-        width: '100%',
+        width: 'calc(100% - 280px)',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
@@ -230,6 +264,7 @@ export default function DashboardPage() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexShrink: 0, // Prevent header from shrinking
         }}
       >
         <div>
@@ -383,7 +418,6 @@ export default function DashboardPage() {
               padding: '20px',
               width: '500px',
               maxHeight: '80%',
-              overflowY: 'auto',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -425,19 +459,22 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Calendar Section */}
+      {/* Calendar and Table Section - FIXED */}
       <div
         style={{
           flex: 1,
-          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
           backgroundColor: '#1e1e1e',
-          padding: '0',
-          minHeight: '700px',
+          padding: '0 20px 20px',
+          overflow: 'auto',
         }}
       >
-        <WeeklyCalendar events={events} onSelectEvent={handleEventClick} loading={loading} />
+        <div style={{ flexShrink: 0 }}>
+          <WeeklyCalendar events={events} onSelectEvent={handleEventClick} loading={loading} />
+        </div>
 
-        <div style={{ marginTop: '32px' }}>
+        <div style={{ marginTop: '16px', flexShrink: 0 }}>
           <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>
             Pending User Approvals
           </h2>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,45 +8,63 @@ import {
   Dimensions,
   ScrollView,
   RefreshControl,
-  Alert
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import IconLogo from '../../components/common/IconLogo';
 import { getUserStatus } from './Model/userStatus';
 import { getToken } from '../../utils/authStorage';
+import { getUser, storeUser } from '../../utils/authStorage'
+import axios from 'axios';
+import config from '../../config';
 
 const { width } = Dimensions.get('window');
 
 export default function PendingScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
+  const hasRedirectedRef = useRef(false);
 
   const checkStatus = useCallback(async () => {
     try {
       const token = await getToken();
       if (!token) {
-        Alert.alert('Error', 'Authentication token not found. Please login again.');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Login' as never }],
+        } as never);
         return;
       }
 
       const userStatus = await getUserStatus();
       
-      // If status is no longer pending, navigate to appropriate screen
+
+      // If status is no longer pending, fetch full user and then navigate
       if (userStatus.membershipStatus !== 'pending') {
+        try {
+          const me = await axios.get(`${config.BASE_URL}/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          await storeUser(me.data);
+        } catch (e) {
+          console.warn('Failed to fetch/store user after approval:', e);
+          // fallback: at least store roles from status
+          const existing = await getUser();
+         await storeUser({ ...(existing || {}), roles: userStatus.roles });
+        }
         if (userStatus.roles.includes('member') && userStatus.roles.includes('coach')) {
-          navigation.navigate('RoleSelection' as never);
+          navigation.reset({ index: 0, routes: [{ name: 'RoleSelection' as never }] } as never);
         } else if (userStatus.roles.includes('member')) {
-          navigation.navigate('Home' as never);
+          navigation.reset({ index: 0, routes: [{ name: 'MemberTabs' as never, params: { screen: 'Home' } as never }] } as never);
         } else if (userStatus.roles.includes('coach')) {
-          navigation.navigate('Coach' as never);
+          navigation.reset({ index: 0, routes: [{ name: 'Coach' as never }] } as never);
         } else {
-          navigation.navigate('Home' as never);
+          navigation.reset({ index: 0, routes: [{ name: 'MemberTabs' as never, params: { screen: 'Home' } as never }] } as never);
         }
       }
     } catch (error) {
       console.error('Failed to check status:', error);
-      // Don't show alert on every refresh, just log the error
     }
   }, [navigation]);
 
@@ -56,14 +74,22 @@ export default function PendingScreen() {
     setRefreshing(false);
   }, [checkStatus]);
 
-  // Check status every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      checkStatus();
-    }, 30000); // 30 seconds
 
-    return () => clearInterval(interval);
-  }, [checkStatus]);
+  useFocusEffect(
+     useCallback(() => {
+          let isActive = true;
+
+          checkStatus();
+       
+          const interval = setInterval(() => {
+            if (isActive) checkStatus();
+          }, 30000);
+          return () => {
+            isActive = false;
+           clearInterval(interval);
+         };
+       }, [checkStatus])
+      );
 
   return (
     <SafeAreaView style={styles.container}>

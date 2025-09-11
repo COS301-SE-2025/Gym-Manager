@@ -16,11 +16,16 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true); 
     try {
+      console.log(API_URL);
       const response = await axios.post(`${API_URL}/login`, { email, password }, {
         headers: { 'Content-Type': 'application/json' },
       });
       localStorage.setItem('authToken', response.data.token);
-      document.cookie = `authToken=${response.data.token}; path=/; max-age=86400; secure; samesite=strict`;
+      if (response.data.refreshToken) {
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+        document.cookie = `refreshToken=${response.data.refreshToken}; path=/; max-age=${60 * 60 * 24 * 30}; secure; samesite=strict`;
+      }
+      document.cookie = `authToken=${response.data.token}; path=/; max-age=3600; secure; samesite=strict`;
       router.push('/dashboard');
     } catch (err) {
       console.error('Login error:', err);

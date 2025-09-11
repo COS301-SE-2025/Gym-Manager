@@ -1,7 +1,5 @@
 import * as React from 'react';
-import axios from 'axios';
-import config from '../config';
-import { getToken } from '../utils/authStorage';
+import apiClient from '../utils/apiClient';
 import { supabase } from '../lib/supabase';
 
 export function useSession(classId?: number) {
@@ -13,13 +11,11 @@ export function useSession(classId?: number) {
 
     const initial = async () => {
       try {
-        const token = await getToken();
-        if (!token) return;
-        const r = await axios.get(`${config.BASE_URL}/live/${classId}/session`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const r = await apiClient.get(`/live/${classId}/session`);
         if (!canceled) setSess(r.data);
-      } catch {}
+      } catch (err: any) {
+        console.error('Failed to fetch session:', err);
+      }
     };
 
     // realtime updates from Postgres
@@ -30,7 +26,7 @@ export function useSession(classId?: number) {
       .subscribe();
 
     // very light fallback poll (every 5s) in case realtime lags
-    const poll = setInterval(initial, 5000);
+    const poll = setInterval(initial, 3000);
 
     initial();
     return () => { canceled = true; supabase.removeChannel(ch); clearInterval(poll); };

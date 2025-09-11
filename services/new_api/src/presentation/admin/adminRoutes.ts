@@ -31,7 +31,7 @@ export class AdminRoutes {
     this.router.get('/users/role/:role', this.adminController.getUsersByRole);
     this.router.get('/users', this.adminController.getAllUsers);
     this.router.get('/users/:userId', this.adminController.getUserById);
-    this.router.put('/users/:userId', this.adminController.updateUserById);
+    this.router.patch('/users/:userId', this.adminController.updateUserById);
     this.router.get('/users/:userId/roles', this.adminController.getRolesByUserId);
 
     // Role removal

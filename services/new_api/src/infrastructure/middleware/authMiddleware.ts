@@ -30,7 +30,7 @@ export class AuthMiddleware {
       return next();
     } catch (err) {
       console.error('JWT verification failed:', err);
-      return res.status(403).json({ error: 'Invalid token' });
+      return res.status(401).json({ error: 'Invalid or expired token' });
     }
   };
 }

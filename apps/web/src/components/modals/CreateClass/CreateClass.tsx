@@ -55,7 +55,7 @@ export default function ClassCreationModal({
       const userJWT = jwtDecode<JwtPayload>(token);
       const adminID = userJWT.userId;
       await axios.post(
-        `${API_URL}/schedule/createClass`,
+        `${API_URL}/class`,
         { ...form, createdBy: adminID },
         { headers: { Authorization: `Bearer ${token}` } },
       );

@@ -21,6 +21,7 @@ export interface IClassService {
   createWorkout(workoutData: CreateWorkoutRequest): Promise<number>;
   getAllClasses(userId: number): Promise<ClassWithWorkout[]>;
   getMemberClasses(memberId: number): Promise<ClassWithWorkout[]>;
+  getMemberUnbookedClasses(memberId: number): Promise<ClassWithWorkout[]>;
   bookClass(memberId: number, classId: number): Promise<void>;
   checkInToClass(classId: number, memberId: number): Promise<ClassAttendance>;
   cancelBooking(classId: number, memberId: number): Promise<void>;
@@ -33,12 +34,18 @@ export interface IClassRepository {
   createWorkout(workoutData: Omit<Workout, 'workoutId'>, rounds: any[]): Promise<number>;
   getUpcomingClassesForMembers(condition: any): Promise<ClassWithWorkout[]>;
   getBookedClassesForMember(memberId: number, condition: any): Promise<ClassWithWorkout[]>;
+  getUnbookedClassesForMember(memberId: number, condition: any): Promise<ClassWithWorkout[]>;
   findClassByIdForUpdate(classId: number, tx?: any): Promise<Class | null>;
   alreadyBooked(classId: number, memberId: number, tx?: any): Promise<boolean>;
   countBookingsForClass(classId: number, tx?: any): Promise<number>;
   insertBooking(classId: number, memberId: number, tx?: any): Promise<void>;
   insertAttendance(classId: number, memberId: number): Promise<ClassAttendance | null>;
   deleteBooking(classId: number, memberId: number): Promise<any>;
+  hasOverlappingBooking(
+    memberId: number,
+    window: { scheduledDate: string; scheduledTime: string; durationMinutes: number },
+    tx?: any,
+  ): Promise<boolean>;
 }
 
 export interface IAdminService {

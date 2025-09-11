@@ -27,8 +27,15 @@ export default function LiveClassEndScreen() {
   const prog = useMyProgress(classId);
   const lb = useLeaderboardRealtime(classId);
 
-  const myScore = useMemo(() => {
-    if (!session) return '';
+  // inside LiveClassEndScreen.tsx
+const type = (session?.workout_type ?? '').toUpperCase();
+
+const myScore = useMemo(() => {
+  if (!session) return '';
+
+    // canonical server time if available (keeps end screen == leaderboard)
+    const serverElapsed = prog?.elapsed_seconds != null ? Number(prog.elapsed_seconds) : null;
+
     const startedSec =
       Number((session as any)?.started_at_s ?? 0) ||
       (session.started_at ? Math.floor(toMillis(session.started_at) / 1000) : 0);
@@ -37,15 +44,33 @@ export default function LiveClassEndScreen() {
       Number((prog as any)?.finished_at_s ?? 0) ||
       (prog.finished_at ? Math.floor(toMillis(prog.finished_at) / 1000) : 0);
 
-    if (finishedSec && startedSec) {
-      return `Time: ${fmt(Math.max(0, finishedSec - startedSec))}`;
+    // FOR_TIME shows time
+    if (type === 'FOR_TIME' && (finishedSec || serverElapsed != null)) {
+      const elapsed = serverElapsed ?? Math.max(0, finishedSec - startedSec);
+      return `Time: ${fmt(elapsed)}`;
     }
 
-    const cum = (session.steps_cum_reps as number[]) ?? [];
-    const within = (prog.current_step ?? 0) > 0 ? (cum[(prog.current_step ?? 1) - 1] ?? 0) : 0;
-    const reps = within + (prog.dnf_partial_reps ?? 0);
+    // AMRAP (and default reps fallback)
+    const cum: number[] = (session.steps_cum_reps as number[]) ?? [];
+    const within = (prog.current_step ?? 0) > 0 ? (cum[(prog.current_step! - 1)] ?? 0) : 0;
+
+    if (type === 'AMRAP') {
+      const repsPerRound = cum.length ? cum[cum.length - 1] : 0;
+      const serverTotal = (prog as any)?.total_reps as number | undefined;
+      const total = serverTotal ?? (
+        (Number(prog.rounds_completed ?? 0) * repsPerRound) +
+        within +
+        Number(prog.dnf_partial_reps ?? 0)
+      );
+      return `${total} reps`;
+    }
+
+    // Non-FOR_TIME fallback
+    const reps = within + Number(prog.dnf_partial_reps ?? 0);
     return `${reps} reps`;
   }, [session, prog]);
+
+
 
   return (
     <SafeAreaView style={s.root}>
@@ -57,15 +82,21 @@ export default function LiveClassEndScreen() {
 
         <View style={s.lb}>
           <Text style={s.lbTitle}>Leaderboard</Text>
-          {lb.map((r: any, i: number) => (
-            <View key={`${r.user_id}-${i}`} style={s.row}>
-              <Text style={s.pos}>{i+1}</Text>
-              <Text style={s.user}>User {r.user_id}</Text>
-              <Text style={s.score}>
-                {r.finished ? fmt(Number(r.elapsed_seconds ?? 0)) : `${Number(r.total_reps ?? 0)} reps`}
-              </Text>
-            </View>
-          ))}
+          {lb.map((r: any, i: number) => {
+            const displayName =
+              (r.first_name || r.last_name)
+                ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
+                : (r.name ?? `User ${r.user_id}`);
+            return (
+              <View key={`${r.user_id}-${i}`} style={s.row}>
+                <Text style={s.pos}>{i + 1}</Text>
+                <Text style={s.user}>{displayName}</Text>
+                <Text style={s.score}>
+                  {r.finished ? fmt(Number(r.elapsed_seconds ?? 0)) : `${Number(r.total_reps ?? 0)} reps`}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       </View>
     </SafeAreaView>
@@ -74,8 +105,8 @@ export default function LiveClassEndScreen() {
 
 function fmt(t: number) {
   const s = Math.max(0, Math.floor(t));
-  const m = Math.floor(s/60);
-  const ss = s%60;
+  const m = Math.floor(s / 60);
+  const ss = s % 60;
   return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
 }
 

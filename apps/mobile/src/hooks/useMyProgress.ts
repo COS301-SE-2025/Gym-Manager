@@ -1,7 +1,7 @@
 import * as React from 'react';
 import axios from 'axios';
 import config from '../config';
-import { getToken, getUser } from '../utils/authStorage';
+import { getToken, getUser, getRefreshToken, storeToken, storeRefreshToken, removeToken, removeRefreshToken } from '../utils/authStorage';
 import { supabase } from '../lib/supabase';
 
 type Progress = {
@@ -37,7 +37,28 @@ export function useMyProgress(classId?: number, refreshSignal: number = 0) {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!stop) setProg(prev => ({ ...prev, ...r.data })); // 👈 merge, don’t replace
-      } catch {}
+      } catch (err: any) {
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+          try {
+            const refreshToken = await getRefreshToken();
+            if (!refreshToken) return;
+            const ref = await axios.post(`${config.BASE_URL}/refresh`, { refreshToken }, {
+              headers: { Authorization: `Bearer ${await getToken() || ''}` }
+            });
+            if (ref.data?.token) {
+              await storeToken(ref.data.token);
+              if (ref.data?.refreshToken) await storeRefreshToken(ref.data.refreshToken);
+              const retry = await axios.get(`${config.BASE_URL}/live/${classId}/me`, {
+                headers: { Authorization: `Bearer ${ref.data.token}` }
+              });
+              if (!stop) setProg(prev => ({ ...prev, ...retry.data }));
+            }
+          } catch (e) {
+            await removeToken();
+            await removeRefreshToken();
+          }
+        }
+      }
     };
 
     const subRealtime = async () => {

@@ -30,5 +30,6 @@ export interface UserLoginData {
 
 export interface AuthResult {
   token: string;
+  refreshToken?: string;
   user?: UserWithRoles;
 }

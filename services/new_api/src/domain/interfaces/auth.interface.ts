@@ -3,6 +3,7 @@ import { User, UserWithRoles, UserRegistrationData, UserLoginData, AuthResult } 
 export interface IAuthService {
   register(userData: UserRegistrationData): Promise<AuthResult>;
   login(loginData: UserLoginData): Promise<AuthResult>;
+  refresh(accessToken: string | null, refreshToken: string): Promise<AuthResult>;
   getUserStatus(userId: number): Promise<{ userId: number; roles: string[]; membershipStatus: string }>;
 }
 
@@ -18,6 +19,8 @@ export interface IUserRepository {
 export interface IJwtService {
   generateToken(payload: object): string;
   verifyToken(token: string): any;
+  generateRefreshToken(payload: object): string;
+  verifyRefreshToken(token: string): any;
 }
 
 export interface IPasswordService {

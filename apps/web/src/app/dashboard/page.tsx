@@ -210,11 +210,11 @@ export default function DashboardPage() {
     currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'User';
 
   return (
-    <div
+    <div className='dashboard-page'
       style={{
         backgroundColor: '#1E1E1E',
         minHeight: '100vh',
-        width: '100%',
+        width: 'calc(100% - 280px)',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
@@ -230,6 +230,7 @@ export default function DashboardPage() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexShrink: 0, // Prevent header from shrinking
         }}
       >
         <div>
@@ -383,7 +384,6 @@ export default function DashboardPage() {
               padding: '20px',
               width: '500px',
               maxHeight: '80%',
-              overflowY: 'auto',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -425,19 +425,22 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Calendar Section */}
+      {/* Calendar and Table Section - FIXED */}
       <div
         style={{
           flex: 1,
-          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
           backgroundColor: '#1e1e1e',
-          padding: '0',
-          minHeight: '700px',
+          padding: '0 20px 20px',
+          overflow: 'auto',
         }}
       >
-        <WeeklyCalendar events={events} onSelectEvent={handleEventClick} loading={loading} />
+        <div style={{ flexShrink: 0 }}>
+          <WeeklyCalendar events={events} onSelectEvent={handleEventClick} loading={loading} />
+        </div>
 
-        <div style={{ marginTop: '32px' }}>
+        <div style={{ marginTop: '16px', flexShrink: 0 }}>
           <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>
             Pending User Approvals
           </h2>

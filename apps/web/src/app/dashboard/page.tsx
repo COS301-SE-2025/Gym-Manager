@@ -30,6 +30,40 @@ export default function DashboardPage() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (res) => res,
+      async (error) => {
+        const originalRequest = error.config || {};
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          const refreshToken = localStorage.getItem('refreshToken');
+          if (refreshToken) {
+            try {
+              const r = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/refresh`, { refreshToken }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
+              });
+              const newToken = r.data.token;
+              const newRefresh = r.data.refreshToken || refreshToken;
+              localStorage.setItem('authToken', newToken);
+              localStorage.setItem('refreshToken', newRefresh);
+              document.cookie = `authToken=${newToken}; path=/; max-age=3600; secure; samesite=strict`;
+              document.cookie = `refreshToken=${newRefresh}; path=/; max-age=${60 * 60 * 24 * 30}; secure; samesite=strict`;
+              originalRequest.headers = originalRequest.headers || {};
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              return axios(originalRequest);
+            } catch (e) {
+              localStorage.removeItem('authToken');
+              localStorage.removeItem('refreshToken');
+            }
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(interceptor);
+  }, []);
+
+  useEffect(() => {
     fetchData();
   }, []);
 

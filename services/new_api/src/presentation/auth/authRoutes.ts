@@ -25,6 +25,9 @@ export class AuthRoutes {
     // Login route
     this.router.post('/login', this.authController.login);
 
+    // Refresh route
+    this.router.post('/refresh', this.authController.refresh);
+
     // Status route (requires authentication)
     this.router.get('/status', this.authMiddleware.isAuthenticated, this.authController.getStatus);
 

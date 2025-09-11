@@ -14,7 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import TrainwiseLogo from '../../components/common/TrainwiseLogo';
 import axios from 'axios';
-import { storeToken, storeUser } from '../../utils/authStorage';
+import { storeToken, storeUser, storeRefreshToken } from '../../utils/authStorage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import config from '../../config';
 import { getUserStatus } from './Model/userStatus';
@@ -121,6 +121,10 @@ export default function LoginScreen() {
         console.error('Login response does not contain a token.');
         Alert.alert('Login Error', 'Invalid response from server. Please try again.');
         return;
+      }
+
+      if (response.data && response.data.refreshToken) {
+        await storeRefreshToken(response.data.refreshToken);
       }
 
       if (response.data && response.data.user) {

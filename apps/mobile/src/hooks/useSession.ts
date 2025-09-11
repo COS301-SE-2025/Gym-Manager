@@ -1,7 +1,7 @@
 import * as React from 'react';
 import axios from 'axios';
 import config from '../config';
-import { getToken } from '../utils/authStorage';
+import { getToken, getRefreshToken, storeToken, storeRefreshToken, removeToken, removeRefreshToken } from '../utils/authStorage';
 import { supabase } from '../lib/supabase';
 
 export function useSession(classId?: number) {
@@ -19,7 +19,28 @@ export function useSession(classId?: number) {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!canceled) setSess(r.data);
-      } catch {}
+      } catch (err: any) {
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+          try {
+            const refreshToken = await getRefreshToken();
+            if (!refreshToken) return;
+            const ref = await axios.post(`${config.BASE_URL}/refresh`, { refreshToken }, {
+              headers: { Authorization: `Bearer ${token || ''}` }
+            });
+            if (ref.data?.token) {
+              await storeToken(ref.data.token);
+              if (ref.data?.refreshToken) await storeRefreshToken(ref.data.refreshToken);
+              const retry = await axios.get(`${config.BASE_URL}/live/${classId}/session`, {
+                headers: { Authorization: `Bearer ${ref.data.token}` }
+              });
+              if (!canceled) setSess(retry.data);
+            }
+          } catch (e) {
+            await removeToken();
+            await removeRefreshToken();
+          }
+        }
+      }
     };
 
     // realtime updates from Postgres

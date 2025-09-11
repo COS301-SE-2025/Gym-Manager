@@ -70,6 +70,24 @@ export class AuthController {
     }
   };
 
+  refresh = async (req: Request, res: Response) => {
+    try {
+      const { refreshToken } = req.body as { refreshToken?: string };
+      const authHeader = req.headers.authorization;
+      const accessToken = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+      if (!refreshToken) {
+        return res.status(400).json({ error: 'Missing refresh token' });
+      }
+
+      const result = await this.authService.refresh(accessToken, refreshToken);
+      return res.json(result);
+    } catch (error: any) {
+      console.error('Refresh error:', error);
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+  };
+
   getStatus = async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user) {

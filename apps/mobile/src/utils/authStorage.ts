@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TOKEN_KEY = 'authToken';
 const USER_KEY = 'authUser';
+const REFRESH_KEY = 'refreshToken';
 
 export interface User {
   firstName?: string;
@@ -33,6 +34,31 @@ export const removeToken = async (): Promise<void> => {
     await AsyncStorage.removeItem(TOKEN_KEY);
   } catch (e) {
     console.error('Failed to remove token', e);
+  }
+};
+
+export const storeRefreshToken = async (token: string): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(REFRESH_KEY, token);
+  } catch (e) {
+    console.error('Failed to save refresh token', e);
+  }
+};
+
+export const getRefreshToken = async (): Promise<string | null> => {
+  try {
+    return await AsyncStorage.getItem(REFRESH_KEY);
+  } catch (e) {
+    console.error('Failed to fetch refresh token', e);
+    return null;
+  }
+};
+
+export const removeRefreshToken = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(REFRESH_KEY);
+  } catch (e) {
+    console.error('Failed to remove refresh token', e);
   }
 };
 

@@ -2,6 +2,9 @@ import express from 'express';
 import cors, { CorsOptions } from 'cors';
 import helmet from 'helmet';
 import { DependencyContainer } from './infrastructure/container/dependencyContainer';
+import { requestTimeout } from './middleware/requestTimeout';
+import { errorHandler } from './middleware/errorHandler';
+import { setupSwagger } from './swagger';
 
 /**
  * Main Application - Entry Point
@@ -45,6 +48,9 @@ export class App {
     // Body parsing middleware
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
+    
+    // Request timeout middleware (20 seconds like the old version)
+    this.app.use(requestTimeout(20_000));
   }
 
   private setupRoutes(): void {
@@ -75,6 +81,17 @@ export class App {
     this.app.get('/health', (req, res) => {
       res.json({ status: 'OK', timestamp: new Date().toISOString() });
     });
+    
+    // Setup Swagger documentation
+    setupSwagger(this.app as any);
+    
+    // 404 handler - must be after all routes
+    this.app.use((req, res) => {
+      res.status(404).json({ error: 'Route not found' });
+    });
+    
+    // Error handler - must be last
+    this.app.use(errorHandler);
   }
 
   getApp(): express.Application {

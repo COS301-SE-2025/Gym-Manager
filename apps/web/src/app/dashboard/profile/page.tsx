@@ -74,16 +74,12 @@ export default function AdminProfile() {
       if (role === 'coach') payload.bio = formData.bio;
       // authorisation, credits, status excluded - admin should not edit own membership and permissions
       const token = localStorage.getItem('authToken');
-      await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/${user.userId}`,
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+      await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/users/${user.userId}`, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
       setError(null);
     } catch (err) {
       setError('Failed to update profile');

@@ -14,12 +14,16 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true); 
+    setIsLoading(true);
     try {
       console.log(API_URL);
-      const response = await axios.post(`${API_URL}/login`, { email, password }, {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const response = await axios.post(
+        `${API_URL}/login`,
+        { email, password },
+        {
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
       localStorage.setItem('authToken', response.data.token);
       if (response.data.refreshToken) {
         localStorage.setItem('refreshToken', response.data.refreshToken);
@@ -47,11 +51,23 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="email">Email</label>
-            <input type="email" id="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
           </div>
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input type="password" id="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
           </div>
           <button type="submit" className="login-button" disabled={isLoading}>
             {isLoading ? 'Loading...' : 'Login'}
@@ -61,5 +77,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-

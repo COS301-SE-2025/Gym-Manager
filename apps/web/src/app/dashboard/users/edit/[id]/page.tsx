@@ -130,7 +130,8 @@ export default function EditUser() {
   const handleStatusUpdate = async () => {
     try {
       setStatusLoading(true);
-      await userManagementService.updateStatus(userId, status);
+      const firstName = (editDetails.firstName?.trim() || user?.firstName || '').trim();
+      await userManagementService.updateStatus(userId, status, firstName);
       setError(null);
     } catch (err) {
       setError('Failed to update status');

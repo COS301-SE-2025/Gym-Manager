@@ -34,14 +34,21 @@ export default function DashboardPage() {
       (res) => res,
       async (error) => {
         const originalRequest = error.config || {};
-        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+        if (
+          (error.response?.status === 401 || error.response?.status === 403) &&
+          !originalRequest._retry
+        ) {
           originalRequest._retry = true;
           const refreshToken = localStorage.getItem('refreshToken');
           if (refreshToken) {
             try {
-              const r = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/refresh`, { refreshToken }, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
-              });
+              const r = await axios.post(
+                `${process.env.NEXT_PUBLIC_API_URL}/refresh`,
+                { refreshToken },
+                {
+                  headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
+                },
+              );
               const newToken = r.data.token;
               const newRefresh = r.data.refreshToken || refreshToken;
               localStorage.setItem('authToken', newToken);
@@ -58,7 +65,7 @@ export default function DashboardPage() {
           }
         }
         return Promise.reject(error);
-      }
+      },
     );
     return () => axios.interceptors.response.eject(interceptor);
   }, []);
@@ -115,13 +122,15 @@ export default function DashboardPage() {
 
     const { data: notifs, error: notifError } = await supabase
       .from('notifications')
-      .select(`
+      .select(
+        `
         notification_id,
         title,
         message,
         created_at,
         notification_targets!inner(target_role)
-      `)
+      `,
+      )
       .eq('notification_targets.target_role', 'admin')
       .order('created_at', { ascending: false })
       .limit(5);
@@ -155,12 +164,14 @@ export default function DashboardPage() {
 
     const { data: notifs, error } = await supabase
       .from('notifications')
-      .select(`
+      .select(
+        `
         notification_id,
         title,
         message,
         created_at
-      `)
+      `,
+      )
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -200,11 +211,7 @@ export default function DashboardPage() {
           const notif = payload.new;
           toast(`${notif.title}: ${notif.message}`, { duration: 5000 });
 
-          if (
-            notif.notification_targets?.some(
-              (t: any) => t.target_role === 'admin'
-            )
-          ) {
+          if (notif.notification_targets?.some((t: any) => t.target_role === 'admin')) {
             setNotifications((prev) => [{ ...notif, read: false }, ...prev].slice(0, 5));
           }
         },
@@ -244,7 +251,8 @@ export default function DashboardPage() {
     currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'User';
 
   return (
-    <div className='dashboard-page'
+    <div
+      className="dashboard-page"
       style={{
         backgroundColor: '#1E1E1E',
         minHeight: '100vh',

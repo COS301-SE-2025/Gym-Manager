@@ -5,12 +5,9 @@ export const userRoleService = {
   async getUsersByRole(role: UserRole) {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/role/${role}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/role/${role}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       console.log(response.data);
       return response.data;
     } catch (error) {
@@ -20,12 +17,9 @@ export const userRoleService = {
   async RolesByUser(userId: number): Promise<UserRole[]> {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/${userId}/roles`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}/roles`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return response.data;
     } catch (error) {
       console.error('Could not get roles by user:', error);
@@ -83,12 +77,9 @@ export const userRoleService = {
   async getWeeklySchedule() {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/schedule/weekly`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/schedule/weekly`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return response.data;
     } catch (error) {
       console.error('Failed to fetch weekly schedule:', error);
@@ -107,12 +98,9 @@ export const userRoleService = {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const userId = payload.userId;
 
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return response.data;
     } catch (error) {
       console.error('Failed to get current user:', error);
@@ -123,12 +111,9 @@ export const userRoleService = {
   async getUserById(userId: number): Promise<User> {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const userData = response.data;
       const rolesResponse = await this.RolesByUser(userId);
       const roles: UserRole[] = rolesResponse;

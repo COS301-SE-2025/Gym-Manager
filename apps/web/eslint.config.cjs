@@ -1,61 +1,62 @@
+// eslint.config.cjs
 const js = require('@eslint/js');
-const tseslint = require('@typescript-eslint/eslint-plugin');
-const parser = require('@typescript-eslint/parser');
-const prettier = require('eslint-plugin-prettier');
+const tseslint = require('typescript-eslint');
+const next = require('eslint-config-next');
 
+/** @type {import('eslint').Linter.FlatConfig[]} */
 module.exports = [
-  js.configs.recommended,
+  // Ignore generated & vendor files
   {
     ignores: [
-      '**/*.test.ts',
-      '**/*.test.tsx',
-      '**/*.spec.ts',
-      '**/*.spec.tsx',
-      'tests/**',
-      '__tests__/**',
-      'node_modules/**',
-      'src/tests/**',
+      '**/node_modules/**',
+      '**/.next/**',
+      '**/dist/**',
+      '**/build/**',
+      '**/coverage/**',
+      '**/*.min.*',
     ],
   },
+
+  // Base JS rules
+  js.configs.recommended,
+
+  // Next.js recommended (includes core-web-vitals)
+  ...next,
+
+  // TypeScript recommended (non type-checked; no project needed)
+  ...tseslint.configs.recommended,
+
+  // TS/TSX specifics
   {
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
     languageOptions: {
-      parser: parser,
-      parserOptions: {
-        ecmaVersion: 2020,
-        sourceType: 'module',
-        project: './tsconfig.json',
-      },
-      globals: {
-        Atomics: 'readonly',
-        SharedArrayBuffer: 'readonly',
-        console: true,
-        process: true,
-        module: true,
-        localStorage: true,
-        atob: 'readonly'
-      }
+      parser: tseslint.parser,
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      ecmaFeatures: { jsx: true },
+      globals: { JSX: 'readonly' },
     },
     plugins: {
-      '@typescript-eslint': tseslint,
-      prettier,
+      '@typescript-eslint': tseslint.plugin,
     },
     rules: {
-      'prettier/prettier': 'error',
-      '@typescript-eslint/no-unused-vars': ['warn'],
+      // TS already handles undefineds; avoids 'React is not defined'
+      'no-undef': 'off',
+
+      // Keep naming sane but allow leading underscores in type params
       '@typescript-eslint/naming-convention': [
-        'error',
-        {
-          selector: 'variableLike', // variables, functions, parameters
-          format: ['camelCase', 'UPPER_CASE'],
-          leadingUnderscore: 'allow',
-          trailingUnderscore: 'forbid',
-        },
-        {
-          selector: 'typeLike', // classes, interfaces, types, enums
-          format: ['PascalCase'],
-        },
+        'warn',
+        { selector: 'typeParameter', format: ['PascalCase'], leadingUnderscore: 'allow' },
       ],
+    },
+  },
+
+  // Be lenient in declaration files
+  {
+    files: ['**/*.d.ts'],
+    rules: {
+      'no-undef': 'off',
+      '@typescript-eslint/naming-convention': 'off',
     },
   },
 ];

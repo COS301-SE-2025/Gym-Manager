@@ -8,7 +8,8 @@ const plusJakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: 'Trainwise — HIIT Gym Management Software',
-  description: 'Trainwise is an all‑in‑one platform for HIIT studios: schedules, bookings, memberships, payments and analytics.',
+  description:
+    'Trainwise is an all‑in‑one platform for HIIT studios: schedules, bookings, memberships, payments and analytics.',
 };
 
 export default function RootLayout({

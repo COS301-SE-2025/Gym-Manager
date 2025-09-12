@@ -2,7 +2,7 @@
   "expo": {
     "name": "mobile",
     "slug": "mobile",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -32,6 +32,9 @@
       "eas": {
         "projectId": "f5a02d9b-da6f-413f-bbbd-f48e31deb025"
       }
-    }
+    },
+    "plugins": [
+      "expo-asset"
+    ]
   }
 }

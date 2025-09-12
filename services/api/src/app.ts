@@ -1,5 +1,5 @@
 import express from 'express';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import helmet from 'helmet';
 import { DependencyContainer } from './infrastructure/container/dependencyContainer';
 
@@ -21,7 +21,26 @@ export class App {
   private setupMiddleware(): void {
     // Security middleware
     this.app.use(helmet());
-    this.app.use(cors());
+    // CORS configuration to match previous Vercel-compatible setup
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://gym-manager-ashen.vercel.app',
+    ];
+
+    const corsOptions: CorsOptions = {
+      origin(origin, callback) {
+        if (!origin) return callback(null, true);
+        callback(null, allowedOrigins.includes(origin));
+      },
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      optionsSuccessStatus: 200,
+    };
+
+    // CORS must run before any other routes
+    this.app.use(cors(corsOptions));
+    this.app.options('*', cors(corsOptions));
     
     // Body parsing middleware
     this.app.use(express.json());

@@ -28,8 +28,7 @@ export class App {
     const allowedOrigins = [
       'http://localhost:3000',
       'https://gym-manager-ashen.vercel.app',
-      'https://gym-manager-web.vercel.app/',
-      'https://gym-manager-1m941m40n-denis-woolleys-projects.vercel.app',
+      'https://gym-manager-web.vercel.app',
     ];
 
     const corsOptions: CorsOptions = {

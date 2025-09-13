@@ -25,8 +25,9 @@ export function useSession(classId?: number) {
       })
       .subscribe();
 
-    // very light fallback poll (every 5s) in case realtime lags
-    const poll = setInterval(initial, 3000);
+    // very light fallback poll in case realtime lags
+    // (we have 2 seconds here which can be a bit aggressive, might have to lower for rates)
+    const poll = setInterval(initial, 2000);
 
     initial();
     return () => { canceled = true; supabase.removeChannel(ch); clearInterval(poll); };

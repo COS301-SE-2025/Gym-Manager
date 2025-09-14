@@ -6,15 +6,30 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "supabase-url-here",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "supabase-anon-key-here",
+        "EXPO_PUBLIC_BASE_URL": "https://api-link-here.vercel.app"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "supabase-url-here",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "supabase-anon-key-here",
+        "EXPO_PUBLIC_BASE_URL": "https://api-link-here.vercel.app"
+      }
     },
     "production": {
       "autoIncrement": true,
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "supabase-url-here",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "supabase-anon-key-here",
+        "EXPO_PUBLIC_BASE_URL": "https://api-link-here.vercel.app"
       }
     }
   },

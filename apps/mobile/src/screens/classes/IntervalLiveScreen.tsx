@@ -89,6 +89,9 @@ export default function IntervalLiveScreen() {
   const [submitted, setSubmitted] = useState<Record<number, boolean>>({});
 
   const setInput = (i: number, v: string) => setInputs(prev => ({ ...prev, [i]: v }));
+  
+  // Check if current exercise is rest.
+  const isRestStep = (step: any) => /\brest\b/i.test(String(step?.name ?? ''));
 
   const submit = useCallback(async (stepIndex: number) => {
     const reps = Math.max(0, Number(inputs[stepIndex] ?? 0) || 0);
@@ -161,22 +164,36 @@ export default function IntervalLiveScreen() {
                     {exs.map((e: any) => {
                       const i = Number(e.index);
                       const isLive = i === liveIdx;
+                      const rest = isRestStep(e);
+
                       return (
                         <View key={`step-${i}`} style={[s.row, isLive && s.rowLive]}>
                           <View style={{ flex: 1 }}>
                             <Text style={[s.exName, isLive && s.exNameLive]}>{e.name}</Text>
                           </View>
-                          <TextInput
-                            value={inputs[i] ?? ''}
-                            onChangeText={v => setInput(i, v.replace(/[^0-9]/g, ''))}
-                            keyboardType="numeric"
-                            placeholder="0"
-                            placeholderTextColor="#777"
-                            style={[s.input, submitted[i] && s.inputSaved]}
-                          />
-                          <TouchableOpacity style={[s.tick, submitted[i] && s.tickSaved]} onPress={() => submit(i)}>
-                            <Text style={[s.tickText, submitted[i] && s.tickTextSaved]}>✓</Text>
-                          </TouchableOpacity>
+
+                          {rest ? (
+                            <View style={s.restPill}>
+                              <Text style={s.restPillText}>REST</Text>
+                            </View>
+                          ) : (
+                            <>
+                              <TextInput
+                                value={inputs[i] ?? ''}
+                                onChangeText={v => setInput(i, v.replace(/[^0-9]/g, ''))}
+                                keyboardType="numeric"
+                                placeholder="0"
+                                placeholderTextColor="#777"
+                                style={[s.input, submitted[i] && s.inputSaved]}
+                              />
+                              <TouchableOpacity
+                                style={[s.tick, submitted[i] && s.tickSaved]}
+                                onPress={() => submit(i)}
+                              >
+                                <Text style={[s.tickText, submitted[i] && s.tickTextSaved]}>✓</Text>
+                              </TouchableOpacity>
+                            </>
+                          )}
                         </View>
                       );
                     })}
@@ -186,6 +203,7 @@ export default function IntervalLiveScreen() {
             </View>
           );
         })}
+
 
         {/* Leaderboard */}
         <View style={s.lb}>
@@ -220,6 +238,9 @@ const s = StyleSheet.create({
 
   roundBox:  { backgroundColor:'#161616', borderRadius:16, padding:12, marginTop:12 },
   subBox:    { borderWidth:1.5, borderColor:'#EAE2C6', borderRadius:12, padding:10, marginBottom:10 },
+
+  restPill: { paddingHorizontal:10, paddingVertical:6, borderRadius:999, backgroundColor:'#232323', borderWidth:1, borderColor:'#2a2a2a' },
+  restPillText: { color:'#9aa', fontWeight:'800' },
 
   row: { flexDirection:'row', alignItems:'center', gap:10, paddingVertical:6 },
   rowLive: { backgroundColor:'#1c1f12', borderRadius:10, paddingHorizontal:8 },

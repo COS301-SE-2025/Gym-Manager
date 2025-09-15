@@ -47,6 +47,10 @@ interface ApiCoachClass {
   workoutId: number | null;
   coachId: number;
   workoutName?: string;
+  durationMinutes?: number;
+  coachFirstName?: string;
+  coachLastName?: string;
+  bookingsCount?: number;
 }
 
 const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
@@ -70,7 +74,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
 
     try {
       const response = await apiClient.get<ApiCoachClass[]>(
-        `/coach/assigned`,
+        `/coach/classes-with-workouts`,
       );
 
       const sortedClasses = response.data.sort((a, b) => {
@@ -94,7 +98,7 @@ const classesNeedingWorkout: WorkoutItem[] = sortedClasses
       month: 'short',
       day: 'numeric',
     }),
-    capacity: `0/${c.capacity}`,
+    capacity: `${c.bookingsCount ?? 0}/${c.capacity}`,
     instructor: 'You',
   }));
 
@@ -111,7 +115,7 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
       month: 'short',
       day: 'numeric',
     }),
-    capacity: `0/${c.capacity}`,
+    capacity: `${c.bookingsCount ?? 0}/${c.capacity}`,
     instructor: 'You',
   }));
 
@@ -194,6 +198,9 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
           <Text style={styles.workoutDate}>{workout.date}</Text>
           <Text style={styles.workoutTime}>{workout.time}</Text>
         </View>
+        <View style={styles.workoutProgressSection}>
+          <Text style={styles.workoutProgress}>{workout.capacity}</Text>
+        </View>
       </View>
 
       <View style={styles.workoutContent}>
@@ -214,14 +221,18 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
   const renderYourClassCard = (workout: WorkoutItem) => (
     <View key={workout.id} style={styles.yourClassCard}>
       <View style={styles.classHeader}>
-        <View>
+        <View style={styles.classDateSection}>
           <Text style={styles.classDate}>{workout.date}</Text>
           <Text style={styles.classTime}>{workout.time}</Text>
+        </View>
+        <View style={styles.classProgressSection}>
+          <Text style={styles.classProgress}>{workout.capacity}</Text>
         </View>
       </View>
 
       <View style={styles.classContent}>
         <View style={styles.classDetails}>
+          <Text style={styles.classInstructor}>{workout.instructor}</Text>
           <Text style={styles.className}>{workout.name}</Text>
         </View>
       </View>
@@ -348,6 +359,8 @@ const styles = StyleSheet.create({
   workoutDateInfo: { flex: 1 },
   workoutDate: { color: '#D8FF3E', fontSize: 12, fontWeight: '500' },
   workoutTime: { color: '#D8FF3E', fontSize: 12, fontWeight: '500', marginTop: 2 },
+  workoutProgressSection: { alignItems: 'flex-end' },
+  workoutProgress: { color: '#D8FF3E', fontSize: 12, fontWeight: '500' },
   workoutContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   subtitleText: { color: '#888', fontSize: 14, fontWeight: '500'},
   workoutDetails: { flex: 1 },
@@ -358,10 +371,14 @@ const styles = StyleSheet.create({
   yourClassesContainer: { gap: 12 },
   yourClassCard: { backgroundColor: '#2a2a2a', borderRadius: 12, padding: 16 },
   classHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  classDate: { color: '#888', fontSize: 12 },
-  classTime: { color: '#888', fontSize: 12, marginTop: 2 },
+  classDateSection: { flex: 1 },
+  classDate: { color: '#D8FF3E', fontSize: 12, fontWeight: '500' },
+  classTime: { color: '#D8FF3E', fontSize: 12, fontWeight: '500', marginTop: 2 },
+  classProgressSection: { alignItems: 'flex-end' },
+  classProgress: { color: '#D8FF3E', fontSize: 12, fontWeight: '500' },
   classContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   classDetails: { flex: 1 },
+  classInstructor: { color: '#888', fontSize: 12, marginBottom: 4 },
   className: { color: 'white', fontSize: 16, fontWeight: '600' },
   errorText: { color: '#FF6B6B', fontSize: 16, textAlign: 'center', paddingHorizontal: 20, paddingVertical: 10 },
   emptyText: { color: '#888', fontSize: 14, textAlign: 'center', paddingVertical: 20 },

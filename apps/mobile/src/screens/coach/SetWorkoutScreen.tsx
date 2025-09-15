@@ -23,6 +23,7 @@ import axios from 'axios';
 import config from '../../config';
 import apiClient from '../../utils/apiClient';
 import { getUser, User } from '../../utils/authStorage';
+import WorkoutSelectSheet from '../../components/WorkoutSelectSheet';
 
 const { width } = Dimensions.get('window');
 
@@ -102,6 +103,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedMinutes, setSelectedMinutes] = useState(0);
   const [selectedSeconds, setSelectedSeconds] = useState(0);
+  const [showWorkoutSelectSheet, setShowWorkoutSelectSheet] = useState(false);
   
   // Bottom sheet refs
   const timePickerBottomSheetRef = useRef<BottomSheet>(null);
@@ -294,6 +296,84 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
   const handleTimePickerClose = useCallback(() => {
     setShowTimePicker(false);
   }, []);
+
+  const handleLoadWorkout = async (workoutId: number, workoutName: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Fetch workout details
+      const response = await apiClient.get(`/workout/${workoutId}/steps`);
+      const workoutData = response.data;
+
+      // Parse the workout data and populate the form
+      if (workoutData && workoutData.steps) {
+        const steps = workoutData.steps;
+        
+        // Group steps by round and subround
+        const roundsMap = new Map<number, Map<number, any[]>>();
+        
+        steps.forEach((step: any) => {
+          const roundNum = step.round || step.roundNumber || 1;
+          const subroundNum = step.subround || step.subroundNumber || 1;
+          
+          if (!roundsMap.has(roundNum)) {
+            roundsMap.set(roundNum, new Map());
+          }
+          
+          const subroundsMap = roundsMap.get(roundNum)!;
+          if (!subroundsMap.has(subroundNum)) {
+            subroundsMap.set(subroundNum, []);
+          }
+          
+          // Extract clean exercise name by removing reps information
+          const rawName = step.name || step.title || step.exerciseName || 'Exercise';
+          const cleanName = rawName.replace(/^\d+\s*x\s*/i, '').trim();
+          
+          subroundsMap.get(subroundNum)!.push({
+            id: Date.now().toString() + Math.random(),
+            name: cleanName,
+            reps: (step.reps || step.quantity || step.duration || 0).toString(),
+            quantityType: step.quantityType || (step.reps ? 'reps' : 'duration'),
+            notes: step.notes || '',
+          });
+        });
+
+        // Convert to workout structure
+        const subRounds: SubRound[] = [];
+        let subroundCounter = 1;
+
+        roundsMap.forEach((subroundsMap, roundNum) => {
+          subroundsMap.forEach((exercises, subroundNum) => {
+            subRounds.push({
+              id: subroundCounter.toString(),
+              name: `Sub Round ${subroundCounter}`,
+              exercises: exercises,
+              isExpanded: false,
+              subroundNumber: subroundCounter,
+            });
+            subroundCounter++;
+          });
+        });
+
+        // Update the workout
+        setCurrentWorkout({
+          workoutName: workoutName,
+          workoutType: 'FOR_TIME', // Default, can be updated
+          workoutTime: '00:15:00', // Default, can be updated
+          numberOfRounds: '1', // Default, can be updated
+          subRounds: subRounds,
+        });
+
+        Alert.alert('Success!', `Loaded workout "${workoutName}" with ${subRounds.length} sub-rounds.`);
+      }
+    } catch (error: any) {
+      console.error('Failed to load workout:', error);
+      setError('Failed to load workout details. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSaveWorkout = async () => {
     setIsSaving(true);
@@ -714,19 +794,29 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         </View>
       </ScrollView>
 
-      {/* Set Workout Button */}
+      {/* Bottom Buttons */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity
-          style={[styles.setWorkoutButton, isSaving && styles.disabledButton]}
-          onPress={handleSaveWorkout}
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <ActivityIndicator size="small" color="#1a1a1a" />
-          ) : (
-            <Text style={styles.setWorkoutButtonText}>Set {workouts.length} Workout(s)</Text>
-          )}
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[styles.loadWorkoutButton, isSaving && styles.disabledButton]}
+            onPress={() => setShowWorkoutSelectSheet(true)}
+            disabled={isSaving}
+          >
+            <Text style={styles.loadWorkoutButtonText}>Load Workout</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.setWorkoutButton, isSaving && styles.disabledButton]}
+            onPress={handleSaveWorkout}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#1a1a1a" />
+            ) : (
+              <Text style={styles.setWorkoutButtonText}>Set {workouts.length} Workout(s)</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Premium Time Picker Modal */}
@@ -848,6 +938,13 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           </View>
         </View>
       </Modal>
+
+      {/* Workout Select Sheet */}
+      <WorkoutSelectSheet
+        visible={showWorkoutSelectSheet}
+        onClose={() => setShowWorkoutSelectSheet(false)}
+        onSelectWorkout={handleLoadWorkout}
+      />
     </SafeAreaView>
   );
 }
@@ -1143,11 +1240,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
   },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  loadWorkoutButton: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#D8FF3E',
+    flex: 1,
+  },
+  loadWorkoutButtonText: {
+    color: '#D8FF3E',
+    fontSize: 16,
+    fontWeight: '700',
+  },
   setWorkoutButton: {
     backgroundColor: '#D8FF3E',
     borderRadius: 12,
     paddingVertical: 16,
+    paddingHorizontal: 20,
     alignItems: 'center',
+    flex: 2,
   },
   setWorkoutButtonText: {
     color: '#1a1a1a',

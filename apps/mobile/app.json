@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
-    "version": "1.0.0",
+    "name": "Trainwise",
+    "slug": "gym-manager",
+    "version": "1.0.1",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,7 +13,12 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.trainwise.gymmanager",
+      "deploymentTarget": "17.0",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,7 +33,10 @@
     },
     "extra": {
       "EXPO_PUBLIC_SUPABASE_URL": "https://uajwqpocubnhrotapire.supabase.co",
-      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhandxcG9jdWJuaHJvdGFwaXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NjI0MzcsImV4cCI6MjA2OTUzODQzN30.BVefkikNJHoPh5JJKTkTEaQu_bAO5eSxx-ZYNiqZZm0"
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhandxcG9jdWJuaHJvdGFwaXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NjI0MzcsImV4cCI6MjA2OTUzODQzN30.BVefkikNJHoPh5JJKTkTEaQu_bAO5eSxx-ZYNiqZZm0",
+      "eas": {
+        "projectId": "ffab9579-dee8-49ef-929a-4bad81952ed6"
+      }
     }
   }
 }

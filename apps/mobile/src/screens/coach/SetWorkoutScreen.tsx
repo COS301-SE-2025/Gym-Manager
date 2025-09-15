@@ -20,8 +20,8 @@ import BottomSheet from '@gorhom/bottom-sheet';
 import IconLogo from '../../components/common/IconLogo';
 import { CoachStackParamList } from '../../navigation/CoachNavigator';
 import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
 import config from '../../config';
+import apiClient from '../../utils/apiClient';
 
 const { width } = Dimensions.get('window');
 
@@ -37,6 +37,10 @@ interface ClassDetails {
   workoutId: number | null;
   coachId: number;
   workoutName?: string;
+  durationMinutes?: number;
+  coachFirstName?: string;
+  coachLastName?: string;
+  bookingsCount?: number;
 }
 
 interface Exercise {
@@ -112,14 +116,9 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
     setError(null);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await axios.get<ClassDetails[]>(
-        `${config.BASE_URL}/coach/assigned`,
-        { headers: { Authorization: `Bearer ${token}` } },
+      // Use classes-with-workouts to get capacity, bookingsCount, coach names, and duration
+      const response = await apiClient.get<ClassDetails[]>(
+        `/coach/classes-with-workouts`,
       );
 
       const classData = response.data.find((c) => c.classId === classId);
@@ -317,11 +316,6 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
     setError(null);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
       // Validate all workouts
       for (let i = 0; i < workouts.length; i++) {
         const workout = workouts[i];
@@ -375,10 +369,9 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
         console.log(`Creating workout: ${workout.workoutName}`, workoutData);
 
-        const createResponse = await axios.post(
-          `${config.BASE_URL}/coach/create-workout`,
+        const createResponse = await apiClient.post(
+          `/coach/create-workout`,
           workoutData,
-          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (createResponse.data.success) {
@@ -392,13 +385,12 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       if (classDetails && createdWorkoutIds.length > 0) {
         // For now, assign the first workout to the class
         // You might want to modify the API to support multiple workouts per class
-        const assignResponse = await axios.post(
-          `${config.BASE_URL}/coach/assign-workout`,
+        const assignResponse = await apiClient.post(
+          `/coach/assign-workout`,
           {
             classId: classDetails.classId,
             workoutId: createdWorkoutIds[0], // Assign the first workout
           },
-          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (assignResponse.data.success) {
@@ -508,11 +500,16 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
               <Text style={styles.infoTime}>{formatTime(classDetails.scheduledTime)}</Text>
             </View>
             <View style={styles.infoProgressSection}>
-              <Text style={styles.infoProgress}>8/12</Text>
+              <Text style={styles.infoProgress}>
+                {`${(classDetails as any).bookingsCount ?? 0}/${classDetails.capacity}`}
+              </Text>
             </View>
           </View>
           <View style={styles.infoDetails}>
-            <Text style={styles.infoInstructor}>Vansh Sood</Text>
+            <Text style={styles.infoInstructor}>
+              {`${classDetails.coachFirstName ?? ''} ${classDetails.coachLastName ?? ''}`.trim() || 'Coach'}
+              {typeof classDetails.durationMinutes === 'number' ? ` • ${classDetails.durationMinutes} min` : ''}
+            </Text>
             <Text style={styles.infoWorkoutName}>{currentWorkout.workoutName}</Text>
           </View>
         </View>

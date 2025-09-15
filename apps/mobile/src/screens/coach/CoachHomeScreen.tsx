@@ -17,10 +17,11 @@ import { useFocusEffect, CompositeNavigationProp } from '@react-navigation/nativ
 import IconLogo from '../../components/common/IconLogo';
 import { CoachTabParamList } from '../../navigation/CoachNavigator';
 import axios from 'axios';
-import { getToken, getUser, User } from '../../utils/authStorage';
+import { getUser, User } from '../../utils/authStorage';
 import type { ApiLiveClassResponse } from '../HomeScreen';
 import config from '../../config';
 import { CoachStackParamList } from '../../navigation/CoachNavigator';
+import apiClient from '../../utils/apiClient';
 
 const { width } = Dimensions.get('window');
 type CoachHomeNav = CompositeNavigationProp<
@@ -68,14 +69,8 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
     setYourClassesError(null);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await axios.get<ApiCoachClass[]>(
-        `${config.BASE_URL}/coach/assigned`,
-        { headers: { Authorization: `Bearer ${token}` } },
+      const response = await apiClient.get<ApiCoachClass[]>(
+        `/coach/assigned`,
       );
 
       const sortedClasses = response.data.sort((a, b) => {
@@ -141,11 +136,8 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
     setIsLoadingLiveClass(true);
     setLiveClassError(null);
     try {
-      const token = await getToken();
-      if (!token) throw new Error('Missing token');
-      const response = await axios.get<ApiLiveClassResponse>(
-        `${config.BASE_URL}/live/class`,
-        { headers: { Authorization: `Bearer ${token}` } },
+      const response = await apiClient.get<ApiLiveClassResponse>(
+        `/live/class`,
       );
       if (response.data?.ongoing && response.data?.class) {
         setLiveClass(response.data);

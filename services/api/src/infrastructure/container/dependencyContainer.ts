@@ -77,6 +77,7 @@ export class DependencyContainer {
     this.services.set('userSettingsRepository', new UserSettingsRepository());
     this.services.set('healthRepository', new HealthRepository());
     this.services.set('notificationRepository', new NotificationRepository());
+    this.services.set('memberRepository', new MemberRepository());
 
     // Service layer
     this.services.set('authService', new AuthService(
@@ -111,6 +112,8 @@ export class DependencyContainer {
       this.services.get('notificationRepository')
     ));
 
+    this.services.set('memberService', new MemberService());
+
     // Controller layer
     this.services.set('authController', new AuthController(
       this.services.get('authService')
@@ -136,6 +139,8 @@ export class DependencyContainer {
       this.services.get('healthService')
     ));
 
+    this.services.set('memberController', new MemberController());
+
     // Presentation layer
     this.services.set('authRoutes', new AuthRoutes());
     this.services.set('classRoutes', new ClassRoutes());
@@ -143,6 +148,7 @@ export class DependencyContainer {
     this.services.set('liveClassRoutes', new LiveClassRoutes());
     this.services.set('userSettingsRoutes', new UserSettingsRoutes());
     this.services.set('healthRoutes', new HealthRoutes());
+    this.services.set('memberRoutes', new MemberRoutes());
   }
 
   get<T>(serviceName: string): T {
@@ -176,6 +182,10 @@ export class DependencyContainer {
 
   getHealthRoutes(): HealthRoutes {
     return this.get<HealthRoutes>('healthRoutes');
+  }
+
+  getMemberRoutes(): MemberRoutes {
+    return this.get<MemberRoutes>('memberRoutes');
   }
 
   getAuthController(): AuthController {
@@ -228,5 +238,13 @@ export class DependencyContainer {
 
   getAuthMiddleware(): AuthMiddleware {
     return this.get<AuthMiddleware>('authMiddleware');
+  }
+
+  getMemberService(): MemberService {
+    return this.get<MemberService>('memberService');
+  }
+
+  getMemberRepository(): MemberRepository {
+    return this.get<MemberRepository>('memberRepository');
   }
 }

@@ -55,6 +55,8 @@ export class App {
   }
 
   private setupRoutes(): void {
+
+    
     // Get routes from dependency container
     const authRoutes = this.container.getAuthRoutes();
     const classRoutes = this.container.getClassRoutes();
@@ -62,23 +64,22 @@ export class App {
     const liveClassRoutes = this.container.getLiveClassRoutes();
     const userSettingsRoutes = this.container.getUserSettingsRoutes();
     const healthRoutes = this.container.getHealthRoutes();
+    
+
     const dailyLeaderboardRoutes = this.container.getDailyLeaderboardRoutes();
+
     
     // Mount routes
-    // this.app.use('/auth', authRoutes.getRouter());
-    // this.app.use('/classes', classRoutes.getRouter());
-    // this.app.use('/admin', adminRoutes.getRouter());
-    // this.app.use('/live', liveClassRoutes.getRouter());
-    // this.app.use('/settings', userSettingsRoutes.getRouter());
-    // this.app.use('/', healthRoutes.getRouter());
-
-    this.app.use( authRoutes.getRouter());
+    this.app.use(authRoutes.getRouter());
     this.app.use(classRoutes.getRouter());
-    this.app.use( adminRoutes.getRouter());
+    this.app.use(adminRoutes.getRouter());
     this.app.use(liveClassRoutes.getRouter());
-    this.app.use( userSettingsRoutes.getRouter());
-    this.app.use( healthRoutes.getRouter());
-    this.app.use( dailyLeaderboardRoutes.getRouter());
+    this.app.use(userSettingsRoutes.getRouter());
+    this.app.use(healthRoutes.getRouter());
+    
+
+    this.app.use(dailyLeaderboardRoutes.getRouter());
+
     
     // Health check
     this.app.get('/health', (req, res) => {

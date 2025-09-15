@@ -1,4 +1,4 @@
-import { IDailyLeaderboardRepository, DailyLeaderboardEntry } from '../../repositories/dailyLeaderboard/dailyLeaderboardRespository';
+import { IDailyLeaderboardRepository, DailyLeaderboardEntry } from '../../repositories/dailyLeaderboard/dailyLeaderboardRepository';
 
 export interface IDailyLeaderboardService {
   getDailyLeaderboard(date?: string): Promise<DailyLeaderboardEntry[]>;

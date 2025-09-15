@@ -41,7 +41,7 @@ import { NotificationRepository } from '../../repositories/notifications/notific
 // Daily Leaderboard-related imports
 import { DailyLeaderboardController } from '../../controllers/dailyLeaderboard/dailyLeaderboardController';
 import { DailyLeaderboardService } from '../../services/dailyLeaderboard/dailyLeaderboardService';
-import { DailyLeaderboardRepository } from '../../repositories/dailyLeaderboard/dailyLeaderboardRespository';
+import { DailyLeaderboardRepository } from '../../repositories/dailyLeaderboard/dailyLeaderboardRepository';
 import { DailyLeaderboardRoutes } from '../../presentation/dailyLeaderboard/dailyLeaderboardRoutes';
 
 /**

@@ -38,6 +38,12 @@ import { HealthRoutes } from '../../presentation/health/healthRoutes';
 import { NotificationService } from '../../services/notifications/notificationService';
 import { NotificationRepository } from '../../repositories/notifications/notificationRepository';
 
+// Member-related imports
+import { MemberController } from '../../controllers/member/memberController';
+import { MemberService } from '../../services/member/memberService';
+import { MemberRepository } from '../../repositories/member/memberRepository';
+import { MemberRoutes } from '../../presentation/member/memberRoutes';
+
 /**
  * Dependency Container - Infrastructure Layer
  * Manages dependency injection and object creation

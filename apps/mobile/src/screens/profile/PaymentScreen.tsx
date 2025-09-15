@@ -35,20 +35,20 @@ const CREDIT_PACKAGES: CreditPackage[] = [
   {
     id: 'small',
     credits: 5,
-    price: 10,
+    price: 150,
     description: 'Perfect for trying out classes',
   },
   {
     id: 'medium',
     credits: 12,
-    price: 20,
+    price: 300,
     description: 'Great value for regular members',
     popular: true,
   },
   {
     id: 'large',
     credits: 25,
-    price: 35,
+    price: 550,
     description: 'Best value for frequent attendees',
   },
 ];
@@ -120,7 +120,7 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
         setCurrentCredits(response.data.newBalance);
         Alert.alert(
           'Payment Successful!',
-          `You've successfully purchased ${selectedPackage.credits} credits for $${selectedPackage.price}. Your new balance is ${response.data.newBalance} credits.`,
+          `You've successfully purchased ${selectedPackage.credits} credits for R${selectedPackage.price}. Your new balance is ${response.data.newBalance} credits.`,
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       } else {
@@ -139,7 +139,7 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
   };
 
   const formatPrice = (price: number) => {
-    return `$${price.toFixed(2)}`;
+    return `R${price.toFixed(0)}`;
   };
 
   if (isLoading) {
@@ -214,7 +214,7 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
               
               <View style={styles.packageFooter}>
                 <Text style={styles.packageValue}>
-                  ${(pkg.price / pkg.credits).toFixed(2)} per credit
+                  R{(pkg.price / pkg.credits).toFixed(0)} per credit
                 </Text>
                 {isProcessing ? (
                   <ActivityIndicator size="small" color="#D8FF3E" />
@@ -235,6 +235,7 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
               <Text style={styles.infoDescription}>
                 This is a demonstration payment system. No real money will be charged. 
                 Credits will be added to your account immediately after "payment".
+                Prices are in South African Rands (ZAR).
               </Text>
             </View>
           </View>

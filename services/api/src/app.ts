@@ -62,6 +62,7 @@ export class App {
     const liveClassRoutes = this.container.getLiveClassRoutes();
     const userSettingsRoutes = this.container.getUserSettingsRoutes();
     const healthRoutes = this.container.getHealthRoutes();
+    const dailyLeaderboardRoutes = this.container.getDailyLeaderboardRoutes();
     
     // Mount routes
     // this.app.use('/auth', authRoutes.getRouter());
@@ -77,6 +78,7 @@ export class App {
     this.app.use(liveClassRoutes.getRouter());
     this.app.use( userSettingsRoutes.getRouter());
     this.app.use( healthRoutes.getRouter());
+    this.app.use( dailyLeaderboardRoutes.getRouter());
     
     // Health check
     this.app.get('/health', (req, res) => {

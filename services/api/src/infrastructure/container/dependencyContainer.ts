@@ -38,6 +38,12 @@ import { HealthRoutes } from '../../presentation/health/healthRoutes';
 import { NotificationService } from '../../services/notifications/notificationService';
 import { NotificationRepository } from '../../repositories/notifications/notificationRepository';
 
+// Daily Leaderboard-related imports
+import { DailyLeaderboardController } from '../../controllers/dailyLeaderboard/dailyLeaderboardController';
+import { DailyLeaderboardService } from '../../services/dailyLeaderboard/dailyLeaderboardService';
+import { DailyLeaderboardRepository } from '../../repositories/dailyLeaderboard/dailyLeaderboardRespository';
+import { DailyLeaderboardRoutes } from '../../presentation/dailyLeaderboard/dailyLeaderboardRoutes';
+
 /**
  * Dependency Container - Infrastructure Layer
  * Manages dependency injection and object creation
@@ -71,6 +77,7 @@ export class DependencyContainer {
     this.services.set('userSettingsRepository', new UserSettingsRepository());
     this.services.set('healthRepository', new HealthRepository());
     this.services.set('notificationRepository', new NotificationRepository());
+    this.services.set('dailyLeaderboardRepository', new DailyLeaderboardRepository());
 
     // Service layer
     this.services.set('authService', new AuthService(
@@ -105,6 +112,10 @@ export class DependencyContainer {
       this.services.get('notificationRepository')
     ));
 
+    this.services.set('dailyLeaderboardService', new DailyLeaderboardService(
+      this.services.get('dailyLeaderboardRepository')
+    ));
+
     // Controller layer
     this.services.set('authController', new AuthController(
       this.services.get('authService')
@@ -130,6 +141,10 @@ export class DependencyContainer {
       this.services.get('healthService')
     ));
 
+    this.services.set('dailyLeaderboardController', new DailyLeaderboardController(
+      this.services.get('dailyLeaderboardService')
+    ));
+
     // Presentation layer
     this.services.set('authRoutes', new AuthRoutes());
     this.services.set('classRoutes', new ClassRoutes());
@@ -137,6 +152,7 @@ export class DependencyContainer {
     this.services.set('liveClassRoutes', new LiveClassRoutes());
     this.services.set('userSettingsRoutes', new UserSettingsRoutes());
     this.services.set('healthRoutes', new HealthRoutes());
+    this.services.set('dailyLeaderboardRoutes', new DailyLeaderboardRoutes());
   }
 
   get<T>(serviceName: string): T {
@@ -222,5 +238,9 @@ export class DependencyContainer {
 
   getAuthMiddleware(): AuthMiddleware {
     return this.get<AuthMiddleware>('authMiddleware');
+  }
+
+  getDailyLeaderboardRoutes(): DailyLeaderboardRoutes {
+    return this.get<DailyLeaderboardRoutes>('dailyLeaderboardRoutes');
   }
 }

@@ -112,8 +112,7 @@ export default function GymSignupPage() {
               </Link>
             </div>
             <nav className="nav-links">
-              <Link href="/#membership">Pricing</Link>
-              <Link href="/#about">About</Link>
+              <Link href="/">About</Link>
               <Link href="/login">Login</Link>
             </nav>
           </div>

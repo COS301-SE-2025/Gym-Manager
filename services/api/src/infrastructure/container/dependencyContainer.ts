@@ -112,7 +112,9 @@ export class DependencyContainer {
       this.services.get('notificationRepository')
     ));
 
-    this.services.set('memberService', new MemberService());
+    this.services.set('memberService', new MemberService(
+      this.services.get('memberRepository')
+    ));
 
     // Controller layer
     this.services.set('authController', new AuthController(
@@ -139,7 +141,9 @@ export class DependencyContainer {
       this.services.get('healthService')
     ));
 
-    this.services.set('memberController', new MemberController());
+    this.services.set('memberController', new MemberController(
+      this.services.get('memberService')
+    ));
 
     // Presentation layer
     this.services.set('authRoutes', new AuthRoutes());
@@ -148,7 +152,9 @@ export class DependencyContainer {
     this.services.set('liveClassRoutes', new LiveClassRoutes());
     this.services.set('userSettingsRoutes', new UserSettingsRoutes());
     this.services.set('healthRoutes', new HealthRoutes());
-    this.services.set('memberRoutes', new MemberRoutes());
+    this.services.set('memberRoutes', new MemberRoutes(
+      this.services.get('memberController')
+    ));
   }
 
   get<T>(serviceName: string): T {

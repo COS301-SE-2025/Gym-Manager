@@ -1,5 +1,4 @@
 import { MemberRepository } from '../../repositories/member/memberRepository';
-import { DependencyContainer } from '../../infrastructure/container/dependencyContainer';
 
 export interface CreditPurchaseResult {
   newBalance: number;
@@ -20,9 +19,8 @@ export interface MemberProfile {
 export class MemberService {
   private memberRepository: MemberRepository;
 
-  constructor() {
-    const container = DependencyContainer.getInstance();
-    this.memberRepository = container.getMemberRepository();
+  constructor(memberRepository: MemberRepository) {
+    this.memberRepository = memberRepository;
   }
 
   /**

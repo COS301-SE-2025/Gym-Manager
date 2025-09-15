@@ -1,13 +1,11 @@
 import { Request, Response } from 'express';
 import { MemberService } from '../../services/member/memberService';
-import { DependencyContainer } from '../../infrastructure/container/dependencyContainer';
 
 export class MemberController {
   private memberService: MemberService;
 
-  constructor() {
-    const container = DependencyContainer.getInstance();
-    this.memberService = container.getMemberService();
+  constructor(memberService: MemberService) {
+    this.memberService = memberService;
   }
 
   /**

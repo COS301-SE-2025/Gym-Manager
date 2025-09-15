@@ -7,9 +7,9 @@ export class MemberRoutes {
   private memberController: MemberController;
   private authMiddleware: AuthMiddleware;
 
-  constructor() {
+  constructor(memberController: MemberController) {
     this.router = Router();
-    this.memberController = new MemberController();
+    this.memberController = memberController;
     this.authMiddleware = new AuthMiddleware();
     this.setupRoutes();
   }

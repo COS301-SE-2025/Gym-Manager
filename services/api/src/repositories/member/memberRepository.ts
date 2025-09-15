@@ -7,7 +7,7 @@ export class MemberRepository {
    * Get member's current credit balance
    */
   async getCreditsBalance(userId: number): Promise<number> {
-    console.log('Repository: Getting credits balance for user ID:', userId);
+    //console.log('Repository: Getting credits balance for user ID:', userId);
     
     const result = await db
       .select({ creditsBalance: members.creditsBalance })
@@ -15,14 +15,14 @@ export class MemberRepository {
       .where(eq(members.userId, userId))
       .limit(1);
 
-    console.log('Repository: Query result:', result);
+    //console.log('Repository: Query result:', result);
 
     if (result.length === 0) {
-      console.log('Repository: No member found for user ID:', userId);
+      //console.log('Repository: No member found for user ID:', userId);
       throw new Error('Member not found');
     }
 
-    console.log('Repository: Found member with credits:', result[0].creditsBalance);
+    //console.log('Repository: Found member with credits:', result[0].creditsBalance);
     return result[0].creditsBalance;
   }
 

@@ -8,6 +8,7 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import WorkoutHistoryScreen from '../screens/coach/WorkoutHistoryScreen';
+import ExerciseSelectScreen from '../screens/coach/ExerciseSelectScreen';
 
 export type CoachTabParamList = {
   CoachHome: undefined;
@@ -21,6 +22,7 @@ export type CoachStackParamList = {
   EditWorkout: { workoutId: number };
   CoachLiveClass: { classId: number; liveClassData: any };
   Home: undefined;
+  ExerciseSelect: { onSelect?: (name: string) => void; query?: string };
 };
 
 const Stack = createStackNavigator<CoachStackParamList>();
@@ -77,6 +79,7 @@ const CoachNavigator = () => {
       <Stack.Screen name="SetWorkout" component={SetWorkoutScreen} />
       <Stack.Screen name="EditWorkout" component={EditWorkoutScreen} />
       <Stack.Screen name="CoachLiveClass" component={CoachLive} />
+      <Stack.Screen name="ExerciseSelect" component={ExerciseSelectScreen} />
       <Stack.Screen name="Home" component={HomeAliasFromCoach} />
     </Stack.Navigator>
   );

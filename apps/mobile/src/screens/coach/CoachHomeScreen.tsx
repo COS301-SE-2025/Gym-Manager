@@ -305,7 +305,7 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
 
         {/* Your Classes Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Upcomming Classes</Text>
+          <Text style={styles.sectionTitle}>Your Upcoming Classes</Text>
           {isLoadingYourClasses ? (
             <ActivityIndicator size="large" color="#D8FF3E" style={{ marginTop: 20 }} />
           ) : yourClassesError ? (

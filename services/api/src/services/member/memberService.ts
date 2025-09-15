@@ -53,16 +53,16 @@ export class MemberService {
     const newBalance = await this.memberRepository.addCredits(userId, credits);
 
     // Log the transaction (in a real system, this would be stored in a transactions table)
-    console.log(`Mock Payment Transaction:`, {
-      userId,
-      credits,
-      amount,
-      paymentMethod,
-      transactionId,
-      previousBalance: currentBalance,
-      newBalance,
-      timestamp: new Date().toISOString()
-    });
+    // console.log(`Mock Payment Transaction:`, {
+    //   userId,
+    //   credits,
+    //   amount,
+    //   paymentMethod,
+    //   transactionId,
+    //   previousBalance: currentBalance,
+    //   newBalance,
+    //   timestamp: new Date().toISOString()
+    // });
 
     return {
       newBalance,

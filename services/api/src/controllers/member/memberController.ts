@@ -14,18 +14,25 @@ export class MemberController {
   getCredits = async (req: Request, res: Response): Promise<void> => {
     try {
       const { userId } = req.params;
+      console.log('Getting credits for user ID:', userId);
       const userIdNum = parseInt(userId, 10);
 
       if (isNaN(userIdNum)) {
+        console.log('Invalid user ID:', userId);
         res.status(400).json({ error: 'Invalid user ID' });
         return;
       }
 
       const credits = await this.memberService.getCreditsBalance(userIdNum);
+      console.log('Retrieved credits:', credits);
       res.json({ creditsBalance: credits });
     } catch (error) {
       console.error('Error getting credits:', error);
-      res.status(500).json({ error: 'Failed to get credits balance' });
+      if (error.message === 'Member not found') {
+        res.status(404).json({ error: 'Member not found' });
+      } else {
+        res.status(500).json({ error: 'Failed to get credits balance' });
+      }
     }
   };
 

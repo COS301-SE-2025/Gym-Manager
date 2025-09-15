@@ -15,17 +15,33 @@ export class MemberRoutes {
   }
 
   private setupRoutes(): void {
-    // All member routes require authentication
-    this.router.use(this.authMiddleware.isAuthenticated);
-
+    console.log('Setting up member routes...');
+    
+    // Test route to verify member routes are working
+    this.router.get('/test', (req, res) => {
+      console.log('GET /test route hit');
+      res.json({ message: 'Member routes are working!' });
+    });
+    
     // Get member's credit balance
-    this.router.get('/:userId/credits', this.memberController.getCredits);
+    this.router.get('/:userId/credits', this.authMiddleware.isAuthenticated, (req, res) => {
+      console.log('GET /:userId/credits route hit');
+      this.memberController.getCredits(req, res);
+    });
 
     // Purchase credits (mock payment)
-    this.router.post('/:userId/credits/purchase', this.memberController.purchaseCredits);
+    this.router.post('/:userId/credits/purchase', this.authMiddleware.isAuthenticated, (req, res) => {
+      console.log('POST /:userId/credits/purchase route hit');
+      this.memberController.purchaseCredits(req, res);
+    });
 
     // Get member profile
-    this.router.get('/:userId/profile', this.memberController.getMemberProfile);
+    this.router.get('/:userId/profile', this.authMiddleware.isAuthenticated, (req, res) => {
+      console.log('GET /:userId/profile route hit');
+      this.memberController.getMemberProfile(req, res);
+    });
+    
+    console.log('Member routes setup complete');
   }
 
   getRouter(): Router {

@@ -89,7 +89,8 @@ export class DependencyContainer {
 
     this.services.set('classService', new ClassService(
       this.services.get('classRepository'),
-      this.services.get('userRepository')
+      this.services.get('userRepository'),
+      this.services.get('memberService')
     ));
 
     this.services.set('adminService', new AdminService(

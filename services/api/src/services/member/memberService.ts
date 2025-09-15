@@ -90,4 +90,11 @@ export class MemberService {
 
     return await this.memberRepository.deductCredits(userId, credits);
   }
+
+  /**
+   * Add credits (used when canceling classes or purchasing)
+   */
+  async addCredits(userId: number, credits: number): Promise<number> {
+    return await this.memberRepository.addCredits(userId, credits);
+  }
 }

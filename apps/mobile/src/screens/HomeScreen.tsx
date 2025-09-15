@@ -141,6 +141,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [liveClassError, setLiveClassError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Credit balance state
+  const [creditBalance, setCreditBalance] = useState<number>(0);
+  const [isLoadingCredits, setIsLoadingCredits] = useState<boolean>(true);
+
   // Extracted fetch logic to be reusable
   const fetchBookedClasses = async () => {
     setIsLoadingBooked(true);

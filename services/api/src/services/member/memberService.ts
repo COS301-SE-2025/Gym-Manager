@@ -49,7 +49,7 @@ export class MemberService {
     // Get current balance
     const currentBalance = await this.memberRepository.getCreditsBalance(userId);
 
-    // Add credits to the account
+    // Add credits to the account (no transaction needed for purchase as it's a single operation)
     const newBalance = await this.memberRepository.addCredits(userId, credits);
 
     // Log the transaction (in a real system, this would be stored in a transactions table)
@@ -81,20 +81,20 @@ export class MemberService {
   /**
    * Deduct credits (used when booking classes)
    */
-  async deductCredits(userId: number, credits: number): Promise<number> {
+  async deductCredits(userId: number, credits: number, tx?: any): Promise<number> {
     const currentBalance = await this.memberRepository.getCreditsBalance(userId);
     
     if (currentBalance < credits) {
       throw new Error('Insufficient credits');
     }
 
-    return await this.memberRepository.deductCredits(userId, credits);
+    return await this.memberRepository.deductCredits(userId, credits, tx);
   }
 
   /**
    * Add credits (used when canceling classes or purchasing)
    */
-  async addCredits(userId: number, credits: number): Promise<number> {
-    return await this.memberRepository.addCredits(userId, credits);
+  async addCredits(userId: number, credits: number, tx?: any): Promise<number> {
+    return await this.memberRepository.addCredits(userId, credits, tx);
   }
 }

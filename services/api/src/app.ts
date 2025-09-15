@@ -79,9 +79,7 @@ export class App {
     this.app.use( userSettingsRoutes.getRouter());
     this.app.use( healthRoutes.getRouter());
     
-    console.log('Mounting member routes at /members');
     this.app.use('/members', memberRoutes.getRouter());
-    console.log('Member routes mounted successfully');
     
     // Health check
     this.app.get('/health', (req, res) => {

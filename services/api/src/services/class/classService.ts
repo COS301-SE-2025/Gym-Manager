@@ -14,6 +14,7 @@ import { ClassRepository } from '../../repositories/class/classRepository';
 import { UserRepository } from '../../repositories/auth/userRepository';
 import { IUserRepository } from '../../domain/interfaces/auth.interface';
 import { MemberService } from '../member/memberService';
+import { MemberRepository } from '../../repositories/member/memberRepository';
 
 /**
  * ClassService - Business Layer
@@ -27,7 +28,7 @@ export class ClassService implements IClassService {
   constructor(classRepository?: IClassRepository, userRepository?: UserRepository, memberService?: MemberService) {
     this.classRepository = classRepository || new ClassRepository();
     this.userRepository = userRepository || new UserRepository();
-    this.memberService = memberService || new MemberService();
+    this.memberService = memberService || new MemberService(new MemberRepository());
   }
 
   async getCoachAssignedClasses(coachId: number): Promise<Class[]> {
@@ -141,8 +142,8 @@ export class ClassService implements IClassService {
         throw new Error('Insufficient credits');
       }
 
-      // Deduct 1 credit from member's account
-      await this.memberService.deductCredits(memberId, 1);
+      // Deduct 1 credit from member's account (within transaction)
+      await this.memberService.deductCredits(memberId, 1, tx);
 
       // Insert booking
       await this.classRepository.insertBooking(classId, memberId, tx);
@@ -158,21 +159,25 @@ export class ClassService implements IClassService {
   }
 
   async cancelBooking(classId: number, memberId: number): Promise<void> {
-    // Check if booking exists before canceling
-    const bookingExists = await this.classRepository.alreadyBooked(classId, memberId);
-    if (!bookingExists) {
-      throw new Error('Booking not found');
-    }
+    // Use transaction for cancellation
+    const { db } = await import('../../db/client');
+    await db.transaction(async (tx) => {
+      // Check if booking exists before canceling
+      const bookingExists = await this.classRepository.alreadyBooked(classId, memberId, tx);
+      if (!bookingExists) {
+        throw new Error('Booking not found');
+      }
 
-    // Delete the booking
-    const result = await this.classRepository.deleteBooking(classId, memberId);
-    const rowCount = result?.rowCount ?? (Array.isArray(result) ? result.length : undefined);
-    if (rowCount === 0) {
-      throw new Error('Booking not found');
-    }
+      // Delete the booking
+      const result = await this.classRepository.deleteBooking(classId, memberId, tx);
+      const rowCount = result?.rowCount ?? (Array.isArray(result) ? result.length : undefined);
+      if (rowCount === 0) {
+        throw new Error('Booking not found');
+      }
 
-    // Refund 1 credit to member's account
-    await this.memberService.addCredits(memberId, 1);
+      // Refund 1 credit to member's account (within transaction)
+      await this.memberService.addCredits(memberId, 1, tx);
+    });
   }
 
   private validateWorkoutData(workoutData: CreateWorkoutRequest): void {

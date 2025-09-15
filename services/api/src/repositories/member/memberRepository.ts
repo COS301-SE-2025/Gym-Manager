@@ -42,9 +42,11 @@ export class MemberRepository {
   /**
    * Add credits to member's account
    */
-  async addCredits(userId: number, credits: number): Promise<number> {
+  async addCredits(userId: number, credits: number, tx?: any): Promise<number> {
+    const dbInstance = tx || db;
+    
     // Get current balance
-    const currentResult = await db
+    const currentResult = await dbInstance
       .select({ creditsBalance: members.creditsBalance })
       .from(members)
       .where(eq(members.userId, userId))
@@ -58,7 +60,7 @@ export class MemberRepository {
     const newBalance = currentBalance + credits;
 
     // Update the balance
-    await db
+    await dbInstance
       .update(members)
       .set({ creditsBalance: newBalance })
       .where(eq(members.userId, userId));
@@ -69,9 +71,11 @@ export class MemberRepository {
   /**
    * Deduct credits from member's account
    */
-  async deductCredits(userId: number, credits: number): Promise<number> {
+  async deductCredits(userId: number, credits: number, tx?: any): Promise<number> {
+    const dbInstance = tx || db;
+    
     // Get current balance
-    const currentResult = await db
+    const currentResult = await dbInstance
       .select({ creditsBalance: members.creditsBalance })
       .from(members)
       .where(eq(members.userId, userId))
@@ -90,7 +94,7 @@ export class MemberRepository {
     const newBalance = currentBalance - credits;
 
     // Update the balance
-    await db
+    await dbInstance
       .update(members)
       .set({ creditsBalance: newBalance })
       .where(eq(members.userId, userId));

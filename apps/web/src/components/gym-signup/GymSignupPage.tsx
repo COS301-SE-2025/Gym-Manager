@@ -20,57 +20,74 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: 'starter',
     name: 'Starter',
-    price: 299,
+    price: 49,
     period: 'month',
     description: 'Perfect for small gyms getting started',
     features: [
-      'Up to 50 members',
-      'Basic class scheduling',
-      'Member management',
-      'Email support',
-      'Mobile app access'
+      'Class scheduling & check-ins',
+      'Up to 150 members',
+      'Email support'
     ]
   },
   {
-    id: 'professional',
-    name: 'Professional',
-    price: 599,
+    id: 'growth',
+    name: 'Growth',
+    price: 119,
     period: 'month',
     description: 'Ideal for growing gyms',
     features: [
-      'Up to 200 members',
-      'Advanced scheduling',
-      'Member management',
-      'Payment processing',
-      'Analytics dashboard',
-      'Priority support',
-      'Custom branding'
+      'Memberships & payments',
+      'Coach portal & roles',
+      'Priority support'
     ],
     popular: true
   },
   {
+    id: 'pro-single',
+    name: 'Pro (Single location)',
+    price: 165,
+    period: 'month',
+    description: 'For established single-location gyms',
+    features: [
+      'Unlimited members & classes',
+      'Advanced analytics',
+      'Phone support'
+    ]
+  },
+  {
+    id: 'pro-plus',
+    name: 'Pro Plus (Multi-location)',
+    price: 195,
+    period: 'month',
+    description: 'For gym chains with multiple locations',
+    features: [
+      'Multi-location dashboards',
+      'Permissions & audit logs',
+      'API access'
+    ]
+  },
+  {
     id: 'enterprise',
     name: 'Enterprise',
-    price: 999,
-    period: 'month',
-    description: 'For large gym chains',
+    price: 0,
+    period: 'contact',
+    description: 'Custom solutions for large organizations',
     features: [
-      'Unlimited members',
-      'Multi-location support',
-      'Advanced analytics',
-      'API access',
-      'White-label solution',
-      'Dedicated support',
-      'Custom integrations'
+      'Custom SLAs & onboarding',
+      'Dedicated CSM',
+      'Security review & SSO'
     ]
   }
 ];
 
 export default function GymSignupPage() {
-  const [selectedPlan, setSelectedPlan] = useState<string>('professional');
+  const [selectedPlan, setSelectedPlan] = useState<string>('growth');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number, period: string) => {
+    if (period === 'contact') {
+      return 'Contact us';
+    }
     return `R${price.toLocaleString()}`;
   };
 
@@ -95,6 +112,8 @@ export default function GymSignupPage() {
               </Link>
             </div>
             <nav className="nav-links">
+              <Link href="/#membership">Pricing</Link>
+              <Link href="/#about">About</Link>
               <Link href="/login">Login</Link>
             </nav>
           </div>
@@ -128,8 +147,8 @@ export default function GymSignupPage() {
                 <div className="plan-header">
                   <h3>{plan.name}</h3>
                   <div className="price">
-                    <span className="amount">{formatPrice(plan.price)}</span>
-                    <span className="period">/{plan.period}</span>
+                    <span className="amount">{formatPrice(plan.price, plan.period)}</span>
+                    {plan.period !== 'contact' && <span className="period">/{plan.period}</span>}
                   </div>
                   <p className="description">{plan.description}</p>
                 </div>
@@ -179,59 +198,81 @@ export default function GymSignupPage() {
               </div>
               <div className="summary-row">
                 <span>Price</span>
-                <span>{formatPrice(SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.price || 0)}/month</span>
+                <span>
+                  {SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.period === 'contact' 
+                    ? 'Contact us for pricing'
+                    : `${formatPrice(SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.price || 0, 'month')}/month`
+                  }
+                </span>
               </div>
               <div className="summary-row total">
                 <span>Total</span>
-                <span>{formatPrice(SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.price || 0)}/month</span>
+                <span>
+                  {SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.period === 'contact' 
+                    ? 'Contact us for pricing'
+                    : `${formatPrice(SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.price || 0, 'month')}/month`
+                  }
+                </span>
               </div>
             </div>
 
-            <div className="payment-methods">
-              <h3>Payment Method</h3>
-              <div className="payment-options">
-                <div className="payment-option selected">
-                  <div className="card-icon">💳</div>
-                  <span>Credit Card</span>
+            {SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.period !== 'contact' && (
+              <>
+                <div className="payment-methods">
+                  <h3>Payment Method</h3>
+                  <div className="payment-options">
+                    <div className="payment-option selected">
+                      <div className="card-icon">💳</div>
+                      <span>Credit Card</span>
+                    </div>
+                    <div className="payment-option">
+                      <div className="card-icon">🏦</div>
+                      <span>Bank Transfer</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="payment-option">
-                  <div className="card-icon">🏦</div>
-                  <span>Bank Transfer</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="mock-payment-form">
-              <div className="form-group">
-                <label>Card Number</label>
-                <input type="text" placeholder="1234 5678 9012 3456" />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Expiry Date</label>
-                  <input type="text" placeholder="MM/YY" />
+                <div className="mock-payment-form">
+                  <div className="form-group">
+                    <label>Card Number</label>
+                    <input type="text" placeholder="1234 5678 9012 3456" />
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Expiry Date</label>
+                      <input type="text" placeholder="MM/YY" />
+                    </div>
+                    <div className="form-group">
+                      <label>CVV</label>
+                      <input type="text" placeholder="123" />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Cardholder Name</label>
+                    <input type="text" placeholder="John Doe" />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>CVV</label>
-                  <input type="text" placeholder="123" />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Cardholder Name</label>
-                <input type="text" placeholder="John Doe" />
-              </div>
-            </div>
+              </>
+            )}
 
             <button
               className="pay-now-btn"
               onClick={handlePayment}
               disabled={isProcessing}
             >
-              {isProcessing ? 'Processing...' : `Start Free Trial - ${formatPrice(SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.price || 0)}/month`}
+              {isProcessing 
+                ? 'Processing...' 
+                : SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.period === 'contact'
+                  ? 'Contact Sales Team'
+                  : `Start Free Trial - ${formatPrice(SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.price || 0, 'month')}/month`
+              }
             </button>
 
             <p className="trial-info">
-              Start with a 14-day free trial. Cancel anytime.
+              {SUBSCRIPTION_PLANS.find(p => p.id === selectedPlan)?.period === 'contact' 
+                ? 'Our sales team will contact you within 24 hours to discuss your needs.'
+                : 'Start with a 14-day free trial. Cancel anytime.'
+              }
             </p>
           </div>
         </div>

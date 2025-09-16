@@ -15,7 +15,7 @@ import { CoachStackParamList } from '../../navigation/CoachNavigator';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
-import { CoachAnalytics, WorkoutPopularity } from '../../types';
+import { CoachAnalytics, WorkoutEffectiveness } from '../../types';
 import IconLogo from '../../components/common/IconLogo';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -73,7 +73,7 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
     </View>
   );
 
-  const renderWorkoutPopularityItem = (workout: WorkoutPopularity, index: number) => (
+  const renderWorkoutEffectivenessItem = (workout: WorkoutEffectiveness, index: number) => (
     <View key={workout.workoutId} style={styles.workoutItem}>
       <View style={styles.workoutRank}>
         <Text style={styles.workoutRankText}>#{index + 1}</Text>
@@ -82,12 +82,14 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
         <Text style={styles.workoutName}>{workout.workoutName}</Text>
         <Text style={styles.workoutDetails}>
           {workout.classCount} class{workout.classCount === 1 ? '' : 'es'} • 
-          Avg {workout.averageAttendance.toFixed(1)} attendees
+          {workout.completionRate.toFixed(0)}% completion
         </Text>
       </View>
-      <View style={styles.workoutAttendance}>
-        <Text style={styles.attendanceNumber}>{workout.averageAttendance.toFixed(1)}</Text>
-        <Text style={styles.attendanceLabel}>avg</Text>
+      <View style={styles.workoutStats}>
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>{workout.averageFillRate.toFixed(0)}%</Text>
+          <Text style={styles.statLabel}>fill rate</Text>
+        </View>
       </View>
     </View>
   );
@@ -166,6 +168,13 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
               'Total Classes',
               analytics?.totalClasses || 0,
               'taught'
+            )}
+          </View>
+          <View style={styles.statsContainer}>
+            {renderStatCard(
+              'Average Fill Rate',
+              `${analytics?.averageFillRate.toFixed(1) || '0'}%`,
+              'capacity utilization'
             )}
           </View>
         </View>

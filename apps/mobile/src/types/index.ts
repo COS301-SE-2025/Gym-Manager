@@ -19,14 +19,16 @@ export interface GymClass {
 export interface CoachAnalytics {
   averageAttendance: number;
   totalClasses: number;
-  workoutPopularity: WorkoutPopularity[];
+  averageFillRate: number;
+  workoutEffectiveness: WorkoutEffectiveness[];
 }
 
-export interface WorkoutPopularity {
+export interface WorkoutEffectiveness {
   workoutId: number;
   workoutName: string;
   classCount: number;
-  averageAttendance: number;
+  averageFillRate: number;
+  completionRate: number;
 }
 
 export interface MemberAnalytics {

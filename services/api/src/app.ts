@@ -123,6 +123,7 @@ export class App {
       console.log('- /members/* - Member management endpoints');
       console.log('- /analytics/* - Analytics endpoints');
       console.log('- /health - Health check endpoint');
+      console.log('- /analytics/* - Analytics endpoints');
     });
   }
 }

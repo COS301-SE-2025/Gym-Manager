@@ -13,11 +13,13 @@ import { eq, and, sql, desc, avg, count } from 'drizzle-orm';
 export interface CoachAnalytics {
   averageAttendance: number;
   totalClasses: number;
-  workoutPopularity: Array<{
+  averageFillRate: number;
+  workoutEffectiveness: Array<{
     workoutId: number;
     workoutName: string;
     classCount: number;
-    averageAttendance: number;
+    averageFillRate: number;
+    completionRate: number;
   }>;
 }
 
@@ -56,7 +58,8 @@ export class AnalyticsService {
       return {
         averageAttendance: 0,
         totalClasses: 0,
-        workoutPopularity: [],
+        averageFillRate: 0,
+        workoutEffectiveness: [],
       };
     }
 
@@ -78,38 +81,55 @@ export class AnalyticsService {
     const totalAttendance = attendanceData.reduce((sum, data) => sum + data.attendanceCount, 0);
     const averageAttendance = coachClasses.length > 0 ? totalAttendance / coachClasses.length : 0;
 
-    // Calculate workout popularity
-    const workoutStats = new Map<number, { name: string; classCount: number; totalAttendance: number }>();
+    // Calculate average fill rate
+    const totalCapacity = coachClasses.reduce((sum, classData) => sum + classData.capacity, 0);
+    const averageFillRate = totalCapacity > 0 ? (totalAttendance / totalCapacity) * 100 : 0;
+
+    // Calculate workout effectiveness
+    const workoutStats = new Map<number, { 
+      name: string; 
+      classCount: number; 
+      totalAttendance: number; 
+      totalCapacity: number;
+      completedClasses: number;
+    }>();
     
     for (const classData of coachClasses) {
       if (classData.workoutId) {
         const attendance = attendanceData.find(a => a.classId === classData.classId)?.attendanceCount || 0;
+        const isCompleted = attendance > 0; // Class is considered completed if at least one person attended
         
         if (workoutStats.has(classData.workoutId)) {
           const stats = workoutStats.get(classData.workoutId)!;
           stats.classCount += 1;
           stats.totalAttendance += attendance;
+          stats.totalCapacity += classData.capacity;
+          if (isCompleted) stats.completedClasses += 1;
         } else {
           workoutStats.set(classData.workoutId, {
             name: classData.workoutName || 'Unknown Workout',
             classCount: 1,
             totalAttendance: attendance,
+            totalCapacity: classData.capacity,
+            completedClasses: isCompleted ? 1 : 0,
           });
         }
       }
     }
 
-    const workoutPopularity = Array.from(workoutStats.entries()).map(([workoutId, stats]) => ({
+    const workoutEffectiveness = Array.from(workoutStats.entries()).map(([workoutId, stats]) => ({
       workoutId,
       workoutName: stats.name,
       classCount: stats.classCount,
-      averageAttendance: stats.classCount > 0 ? stats.totalAttendance / stats.classCount : 0,
-    })).sort((a, b) => b.averageAttendance - a.averageAttendance);
+      averageFillRate: stats.totalCapacity > 0 ? (stats.totalAttendance / stats.totalCapacity) * 100 : 0,
+      completionRate: stats.classCount > 0 ? (stats.completedClasses / stats.classCount) * 100 : 0,
+    })).sort((a, b) => b.averageFillRate - a.averageFillRate);
 
     return {
       averageAttendance: Math.round(averageAttendance * 100) / 100,
       totalClasses: coachClasses.length,
-      workoutPopularity,
+      averageFillRate: Math.round(averageFillRate * 100) / 100,
+      workoutEffectiveness,
     };
   }
 

@@ -63,6 +63,7 @@ export class App {
     const userSettingsRoutes = this.container.getUserSettingsRoutes();
     const healthRoutes = this.container.getHealthRoutes();
     const memberRoutes = this.container.getMemberRoutes();
+    const analyticsRoutes = this.container.getAnalyticsRoutes();
     
     // Mount routes
     // this.app.use('/auth', authRoutes.getRouter());
@@ -80,6 +81,7 @@ export class App {
     this.app.use( healthRoutes.getRouter());
     
     this.app.use('/members', memberRoutes.getRouter());
+    this.app.use('/analytics', analyticsRoutes.getRouter());
     
     // Health check
     this.app.get('/health', (req, res) => {
@@ -119,6 +121,7 @@ export class App {
       console.log('- /live/* - Live class endpoints');
       console.log('- /settings/* - User settings endpoints');
       console.log('- /members/* - Member management endpoints');
+      console.log('- /analytics/* - Analytics endpoints');
       console.log('- /health - Health check endpoint');
     });
   }

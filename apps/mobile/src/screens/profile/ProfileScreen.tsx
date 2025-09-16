@@ -259,6 +259,29 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             </TouchableOpacity>
           )}
 
+          {/* Analytics - Show for both members and coaches */}
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => {
+              if (isMember) {
+                navigation.navigate('MemberAnalytics');
+              } else if (isCoach) {
+                navigation.navigate('CoachAnalytics');
+              }
+            }}
+          >
+            <View style={styles.settingLeft}>
+              <Ionicons name="analytics-outline" size={24} color="#D8FF3E" />
+              <View style={styles.settingText}>
+                <Text style={styles.settingTitle}>Analytics</Text>
+                <Text style={styles.settingDescription}>
+                  {isMember ? 'View your performance data' : 'View your coaching analytics'}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#888" />
+          </TouchableOpacity>
+
           {/* Role Swap - Only show if user has multiple roles */}
           {currentUser?.roles && currentUser.roles.length > 1 && (
             <TouchableOpacity

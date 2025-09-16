@@ -21,6 +21,7 @@ export type CoachStackParamList = {
   SetWorkout: { classId: number };
   EditWorkout: { workoutId: number };
   CoachLiveClass: { classId: number; liveClassData: any };
+  CoachAnalytics: undefined;
   Home: undefined;
 };
 
@@ -78,6 +79,7 @@ const CoachNavigator = () => {
       <Stack.Screen name="SetWorkout" component={SetWorkoutScreen} />
       <Stack.Screen name="EditWorkout" component={EditWorkoutScreen} />
       <Stack.Screen name="CoachLiveClass" component={CoachLive} />
+      <Stack.Screen name="CoachAnalytics" component={CoachAnalyticsScreen} />
       <Stack.Screen name="Home" component={HomeAliasFromCoach} />
     </Stack.Navigator>
   );

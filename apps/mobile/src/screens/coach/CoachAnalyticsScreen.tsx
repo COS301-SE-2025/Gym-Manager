@@ -179,20 +179,20 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
           </View>
         </View>
 
-        {/* Workout Popularity */}
+        {/* Workout Effectiveness */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Workout Popularity</Text>
-          {analytics?.workoutPopularity && analytics.workoutPopularity.length > 0 ? (
+          <Text style={styles.sectionTitle}>Workout Effectiveness</Text>
+          {analytics?.workoutEffectiveness && analytics.workoutEffectiveness.length > 0 ? (
             <View style={styles.workoutList}>
-              {analytics.workoutPopularity.map((workout, index) =>
-                renderWorkoutPopularityItem(workout, index)
+              {analytics.workoutEffectiveness.map((workout, index) =>
+                renderWorkoutEffectivenessItem(workout, index)
               )}
             </View>
           ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No workout data available</Text>
               <Text style={styles.emptySubtext}>
-                Start teaching classes to see workout popularity analytics
+                Start teaching classes to see workout effectiveness analytics
               </Text>
             </View>
           )}
@@ -240,6 +240,7 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 12,
   },
   statCard: {
     flex: 1,
@@ -302,15 +303,18 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 12,
   },
-  workoutAttendance: {
+  workoutStats: {
     alignItems: 'center',
   },
-  attendanceNumber: {
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
     color: '#D8FF3E',
     fontSize: 18,
     fontWeight: '700',
   },
-  attendanceLabel: {
+  statLabel: {
     color: '#888',
     fontSize: 10,
     marginTop: 2,

@@ -8,6 +8,7 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import WorkoutHistoryScreen from '../screens/coach/WorkoutHistoryScreen';
+import CoachAnalyticsScreen from '../screens/coach/CoachAnalyticsScreen';
 
 export type CoachTabParamList = {
   CoachHome: undefined;

@@ -73,7 +73,7 @@ interface Workout {
 type SetWorkoutScreenProps = StackScreenProps<CoachStackParamList, 'SetWorkout'>;
 
 export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreenProps) {
-  const { classId } = route.params;
+  const { classId, editMode = false } = route.params;
 
   const [classDetails, setClassDetails] = useState<ClassDetails | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -116,6 +116,13 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       await fetchClassDetails();
     })();
   }, [classId]);
+
+  // Separate useEffect to handle loading existing workout when classDetails is available
+  useEffect(() => {
+    if (editMode && classDetails?.workoutId) {
+      loadExistingWorkout(classDetails.workoutId);
+    }
+  }, [classDetails, editMode]);
 
   const fetchClassDetails = async () => {
     setIsLoading(true);
@@ -375,6 +382,82 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
     }
   };
 
+  const loadExistingWorkout = async (workoutId: number) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Fetch workout details
+      const response = await apiClient.get(`/workout/${workoutId}/steps`);
+      const workoutData = response.data;
+
+      // Parse the workout data and populate the form
+      if (workoutData && workoutData.steps) {
+        const steps = workoutData.steps;
+        
+        // Group steps by round and subround
+        const roundsMap = new Map<number, Map<number, any[]>>();
+        
+        steps.forEach((step: any) => {
+          const roundNum = step.round || step.roundNumber || 1;
+          const subroundNum = step.subround || step.subroundNumber || 1;
+          
+          if (!roundsMap.has(roundNum)) {
+            roundsMap.set(roundNum, new Map());
+          }
+          
+          const subroundsMap = roundsMap.get(roundNum)!;
+          if (!subroundsMap.has(subroundNum)) {
+            subroundsMap.set(subroundNum, []);
+          }
+          
+          // Extract clean exercise name by removing reps information
+          const rawName = step.name || step.title || step.exerciseName || 'Exercise';
+          const cleanName = rawName.replace(/^\d+\s*x\s*/i, '').trim();
+          
+          subroundsMap.get(subroundNum)!.push({
+            id: Date.now().toString() + Math.random(),
+            name: cleanName,
+            reps: (step.reps || step.quantity || step.duration || 0).toString(),
+            quantityType: step.quantityType || (step.reps ? 'reps' : 'duration'),
+            notes: step.notes || '',
+          });
+        });
+
+        // Convert to workout structure
+        const subRounds: SubRound[] = [];
+        let subroundCounter = 1;
+
+        roundsMap.forEach((subroundsMap, roundNum) => {
+          subroundsMap.forEach((exercises, subroundNum) => {
+            subRounds.push({
+              id: subroundCounter.toString(),
+              name: `Sub Round ${subroundCounter}`,
+              exercises: exercises,
+              isExpanded: false,
+              subroundNumber: subroundCounter,
+            });
+            subroundCounter++;
+          });
+        });
+
+        // Update the workout with existing data
+        setCurrentWorkout({
+          workoutName: classDetails?.workoutName || 'Workout',
+          workoutType: 'FOR_TIME', // Default, can be updated
+          workoutTime: '00:15:00', // Default, can be updated
+          numberOfRounds: '1', // Default, can be updated
+          subRounds: subRounds,
+        });
+      }
+    } catch (error: any) {
+      console.error('Failed to load existing workout:', error);
+      setError('Failed to load existing workout details. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSaveWorkout = async () => {
     setIsSaving(true);
     setError(null);
@@ -551,7 +634,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Set Workout</Text>
+        <Text style={styles.headerTitle}>{editMode ? 'Edit Workout' : 'Set Workout'}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -813,7 +896,9 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             {isSaving ? (
               <ActivityIndicator size="small" color="#1a1a1a" />
             ) : (
-              <Text style={styles.setWorkoutButtonText}>Set {workouts.length} Workout(s)</Text>
+              <Text style={styles.setWorkoutButtonText}>
+                {editMode ? 'Update Workout' : `Set ${workouts.length} Workout(s)`}
+              </Text>
             )}
           </TouchableOpacity>
         </View>

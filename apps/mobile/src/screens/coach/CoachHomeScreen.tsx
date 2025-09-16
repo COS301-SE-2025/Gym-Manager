@@ -192,6 +192,17 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
     }
   };
 
+  const handleEditWorkout = (workoutId: string) => {
+    const workout = yourClassesData.find((w) => w.id === workoutId);
+    if (workout) {
+      // Navigate to SetWorkout screen in edit mode
+      navigation.navigate('SetWorkout', { 
+        classId: parseInt(workout.id, 10),
+        editMode: true 
+      });
+    }
+  };
+
   const renderSetWorkoutCard = (workout: WorkoutItem) => (
     <View key={workout.id} style={styles.setWorkoutCard}>
       <View style={styles.workoutHeader}>
@@ -220,7 +231,11 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
   );
 
   const renderYourClassCard = (workout: WorkoutItem) => (
-    <View key={workout.id} style={styles.yourClassCard}>
+    <TouchableOpacity 
+      key={workout.id} 
+      style={styles.yourClassCard}
+      onPress={() => handleEditWorkout(workout.id)}
+    >
       <View style={styles.classHeader}>
         <View style={styles.classDateSection}>
           <Text style={styles.classDate}>{workout.date}</Text>
@@ -236,8 +251,11 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
           <Text style={styles.classInstructor}>{workout.instructor}</Text>
           <Text style={styles.className}>{workout.name}</Text>
         </View>
+        <View style={styles.editIndicator}>
+          <Text style={styles.editText}>Tap to edit</Text>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -381,6 +399,8 @@ const styles = StyleSheet.create({
   classDetails: { flex: 1 },
   classInstructor: { color: '#888', fontSize: 12, marginBottom: 4 },
   className: { color: 'white', fontSize: 16, fontWeight: '600' },
+  editIndicator: { alignItems: 'flex-end' },
+  editText: { color: '#D8FF3E', fontSize: 12, fontWeight: '500' },
   errorText: { color: '#FF6B6B', fontSize: 16, textAlign: 'center', paddingHorizontal: 20, paddingVertical: 10 },
   emptyText: { color: '#888', fontSize: 14, textAlign: 'center', paddingVertical: 20 },
   liveClassBanner: {

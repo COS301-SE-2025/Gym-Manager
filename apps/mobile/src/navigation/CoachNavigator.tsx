@@ -18,7 +18,7 @@ export type CoachTabParamList = {
 
 export type CoachStackParamList = {
   CoachTabs: undefined;
-  SetWorkout: { classId: number };
+  SetWorkout: { classId: number; editMode?: boolean };
   EditWorkout: { workoutId: number };
   CoachLiveClass: { classId: number; liveClassData: any };
   Home: undefined;

@@ -44,6 +44,11 @@ import { MemberService } from '../../services/member/memberService';
 import { MemberRepository } from '../../repositories/member/memberRepository';
 import { MemberRoutes } from '../../presentation/member/memberRoutes';
 
+// Analytics-related imports
+import { AnalyticsController } from '../../controllers/analytics/analyticsController';
+import { AnalyticsService } from '../../services/analytics/analyticsService';
+import { AnalyticsRoutes } from '../../presentation/analytics/analyticsRoutes';
+
 /**
  * Dependency Container - Infrastructure Layer
  * Manages dependency injection and object creation
@@ -117,6 +122,8 @@ export class DependencyContainer {
       this.services.get('memberRepository')
     ));
 
+    this.services.set('analyticsService', new AnalyticsService());
+
     // Controller layer
     this.services.set('authController', new AuthController(
       this.services.get('authService')
@@ -146,6 +153,10 @@ export class DependencyContainer {
       this.services.get('memberService')
     ));
 
+    this.services.set('analyticsController', new AnalyticsController(
+      this.services.get('analyticsService')
+    ));
+
     // Presentation layer
     this.services.set('authRoutes', new AuthRoutes());
     this.services.set('classRoutes', new ClassRoutes());
@@ -156,6 +167,8 @@ export class DependencyContainer {
     this.services.set('memberRoutes', new MemberRoutes(
       this.services.get('memberController')
     ));
+
+    this.services.set('analyticsRoutes', new AnalyticsRoutes());
   }
 
   get<T>(serviceName: string): T {
@@ -253,5 +266,9 @@ export class DependencyContainer {
 
   getMemberRepository(): MemberRepository {
     return this.get<MemberRepository>('memberRepository');
+  }
+
+  getAnalyticsRoutes(): AnalyticsRoutes {
+    return this.get<AnalyticsRoutes>('analyticsRoutes');
   }
 }

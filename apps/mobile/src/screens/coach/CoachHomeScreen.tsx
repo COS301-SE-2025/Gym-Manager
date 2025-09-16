@@ -170,8 +170,9 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
     React.useCallback(() => {
       let interval: ReturnType<typeof setInterval> | undefined;
   
-      // run immediately
+      // run immediately - refresh both live class and coach classes
       fetchLiveClass();
+      fetchCoachClasses();
   
       interval = setInterval(fetchLiveClass, 10000);
       return () => {

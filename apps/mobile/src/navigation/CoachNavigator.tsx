@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import CoachHomeScreen from '../screens/coach/CoachHomeScreen';
 import SetWorkoutScreen from '../screens/coach/SetWorkoutScreen';
-import EditWorkoutScreen from '../screens/coach/EditWorkoutScreen';
+// import EditWorkoutScreen from '../screens/coach/EditWorkoutScreen';
 import CoachLive from '../screens/coach/CoachLiveClassScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -77,7 +77,7 @@ const CoachNavigator = () => {
     <Stack.Navigator initialRouteName="CoachTabs" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="CoachTabs" component={CoachTabNavigator} />
       <Stack.Screen name="SetWorkout" component={SetWorkoutScreen} />
-      <Stack.Screen name="EditWorkout" component={EditWorkoutScreen} />
+      {/* <Stack.Screen name="EditWorkout" component={EditWorkoutScreen} /> */}
       <Stack.Screen name="CoachLiveClass" component={CoachLive} />
       <Stack.Screen name="ExerciseSelect" component={ExerciseSelectScreen} />
       <Stack.Screen name="Home" component={HomeAliasFromCoach} />

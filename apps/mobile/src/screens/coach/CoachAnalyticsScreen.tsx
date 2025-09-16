@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { CoachStackParamList } from '../../navigation/CoachNavigator';
@@ -16,6 +17,7 @@ import { getToken } from '../../utils/authStorage';
 import config from '../../config';
 import { CoachAnalytics, WorkoutPopularity } from '../../types';
 import IconLogo from '../../components/common/IconLogo';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -94,6 +96,12 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#D8FF3E" />
+          </TouchableOpacity>
           <IconLogo width={50} height={46} />
           <Text style={styles.headerTitle}>Analytics</Text>
         </View>
@@ -109,6 +117,12 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#D8FF3E" />
+          </TouchableOpacity>
           <IconLogo width={50} height={46} />
           <Text style={styles.headerTitle}>Analytics</Text>
         </View>
@@ -122,6 +136,12 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#D8FF3E" />
+        </TouchableOpacity>
         <IconLogo width={50} height={46} />
         <Text style={styles.headerTitle}>Analytics</Text>
       </View>
@@ -184,6 +204,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 20,
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
   },
   headerTitle: {
     color: 'white',

@@ -37,9 +37,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const isMember = !!currentUser?.roles?.includes('member');
   const showLeaderboardSettings = isMember;
 
-  // Debug logging
-  console.log('ProfileScreen - currentUser:', currentUser);
-  console.log('ProfileScreen - isCoach:', isCoach, 'isMember:', isMember); 
 
   useEffect(() => {
     const load = async () => {
@@ -265,11 +262,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           )}
 
           {/* Analytics - Show for both members and coaches */}
-          {console.log('Rendering analytics button - isMember:', isMember, 'isCoach:', isCoach)}
           <TouchableOpacity
             style={styles.settingItem}
             onPress={() => {
-              console.log('Analytics button pressed - isMember:', isMember, 'isCoach:', isCoach);
               if (isMember) {
                 navigation.navigate('MemberAnalytics');
               } else if (isCoach) {
@@ -289,28 +284,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <Ionicons name="chevron-forward" size={24} color="#888" />
           </TouchableOpacity>
 
-          {/* Debug: Test Analytics Navigation - Always visible for testing */}
-          <TouchableOpacity
-            style={[styles.settingItem, { backgroundColor: '#333' }]}
-            onPress={() => {
-              console.log('Test analytics button pressed');
-              try {
-                navigation.navigate('MemberAnalytics');
-              } catch (error) {
-                console.error('Navigation error:', error);
-                Alert.alert('Navigation Error', `Failed to navigate: ${error}`);
-              }
-            }}
-          >
-            <View style={styles.settingLeft}>
-              <Ionicons name="bug-outline" size={24} color="#FF6B6B" />
-              <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Test Analytics (Debug)</Text>
-                <Text style={styles.settingDescription}>Test navigation to analytics</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#888" />
-          </TouchableOpacity>
 
           {/* Role Swap - Only show if user has multiple roles */}
           {currentUser?.roles && currentUser.roles.length > 1 && (

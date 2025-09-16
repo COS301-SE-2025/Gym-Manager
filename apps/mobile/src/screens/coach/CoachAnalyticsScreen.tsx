@@ -15,7 +15,7 @@ import { CoachStackParamList } from '../../navigation/CoachNavigator';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
-import { CoachAnalytics, WorkoutEffectiveness } from '../../types';
+import { CoachAnalytics, AttendanceTrend } from '../../types';
 import IconLogo from '../../components/common/IconLogo';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -73,26 +73,32 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
     </View>
   );
 
-  const renderWorkoutEffectivenessItem = (workout: WorkoutEffectiveness, index: number) => (
-    <View key={workout.workoutId} style={styles.workoutItem}>
-      <View style={styles.workoutRank}>
-        <Text style={styles.workoutRankText}>#{index + 1}</Text>
-      </View>
-      <View style={styles.workoutInfo}>
-        <Text style={styles.workoutName}>{workout.workoutName}</Text>
-        <Text style={styles.workoutDetails}>
-          {workout.classCount} class{workout.classCount === 1 ? '' : 'es'} • 
-          {workout.completionRate.toFixed(0)}% completion
-        </Text>
-      </View>
-      <View style={styles.workoutStats}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{workout.averageFillRate.toFixed(0)}%</Text>
-          <Text style={styles.statLabel}>fill rate</Text>
+  const renderAttendanceTrendItem = (trend: AttendanceTrend, index: number) => {
+    const date = new Date(trend.date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+    
+    return (
+      <View key={index} style={styles.trendItem}>
+        <View style={styles.trendDate}>
+          <Text style={styles.trendDateText}>{date}</Text>
+        </View>
+        <View style={styles.trendInfo}>
+          <Text style={styles.trendAttendance}>{trend.attendance}/{trend.capacity}</Text>
+          <Text style={styles.trendFillRate}>{trend.fillRate.toFixed(0)}% filled</Text>
+        </View>
+        <View style={styles.trendBar}>
+          <View 
+            style={[
+              styles.trendBarFill, 
+              { width: `${Math.min(trend.fillRate, 100)}%` }
+            ]} 
+          />
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -179,20 +185,20 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
           </View>
         </View>
 
-        {/* Workout Effectiveness */}
+        {/* Attendance Trends */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Workout Effectiveness</Text>
-          {analytics?.workoutEffectiveness && analytics.workoutEffectiveness.length > 0 ? (
-            <View style={styles.workoutList}>
-              {analytics.workoutEffectiveness.map((workout, index) =>
-                renderWorkoutEffectivenessItem(workout, index)
+          <Text style={styles.sectionTitle}>Attendance Trends (Last 30 Days)</Text>
+          {analytics?.attendanceTrends && analytics.attendanceTrends.length > 0 ? (
+            <View style={styles.trendsList}>
+              {analytics.attendanceTrends.map((trend, index) =>
+                renderAttendanceTrendItem(trend, index)
               )}
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No workout data available</Text>
+              <Text style={styles.emptyText}>No recent class data available</Text>
               <Text style={styles.emptySubtext}>
-                Start teaching classes to see workout effectiveness analytics
+                Start teaching classes to see attendance trends
               </Text>
             </View>
           )}
@@ -266,58 +272,50 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  workoutList: {
+  trendsList: {
     gap: 12,
   },
-  workoutItem: {
+  trendItem: {
     backgroundColor: '#2a2a2a',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  workoutRank: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#D8FF3E',
-    justifyContent: 'center',
+  trendDate: {
+    width: 50,
     alignItems: 'center',
     marginRight: 12,
   },
-  workoutRankText: {
-    color: '#1a1a1a',
-    fontSize: 14,
-    fontWeight: '700',
+  trendDateText: {
+    color: '#D8FF3E',
+    fontSize: 12,
+    fontWeight: '600',
   },
-  workoutInfo: {
+  trendInfo: {
     flex: 1,
   },
-  workoutName: {
+  trendAttendance: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
   },
-  workoutDetails: {
+  trendFillRate: {
     color: '#888',
     fontSize: 12,
   },
-  workoutStats: {
-    alignItems: 'center',
+  trendBar: {
+    width: 60,
+    height: 8,
+    backgroundColor: '#333',
+    borderRadius: 4,
+    overflow: 'hidden',
   },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    color: '#D8FF3E',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  statLabel: {
-    color: '#888',
-    fontSize: 10,
-    marginTop: 2,
+  trendBarFill: {
+    height: '100%',
+    backgroundColor: '#D8FF3E',
+    borderRadius: 4,
   },
   loadingContainer: {
     flex: 1,

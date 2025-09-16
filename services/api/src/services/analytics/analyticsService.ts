@@ -14,12 +14,11 @@ export interface CoachAnalytics {
   averageAttendance: number;
   totalClasses: number;
   averageFillRate: number;
-  workoutEffectiveness: Array<{
-    workoutId: number;
-    workoutName: string;
-    classCount: number;
-    averageFillRate: number;
-    completionRate: number;
+  attendanceTrends: Array<{
+    date: string;
+    attendance: number;
+    capacity: number;
+    fillRate: number;
   }>;
 }
 
@@ -59,7 +58,7 @@ export class AnalyticsService {
         averageAttendance: 0,
         totalClasses: 0,
         averageFillRate: 0,
-        workoutEffectiveness: [],
+        attendanceTrends: [],
       };
     }
 
@@ -85,51 +84,31 @@ export class AnalyticsService {
     const totalCapacity = coachClasses.reduce((sum, classData) => sum + classData.capacity, 0);
     const averageFillRate = totalCapacity > 0 ? (totalAttendance / totalCapacity) * 100 : 0;
 
-    // Calculate workout effectiveness
-    const workoutStats = new Map<number, { 
-      name: string; 
-      classCount: number; 
-      totalAttendance: number; 
-      totalCapacity: number;
-      completedClasses: number;
-    }>();
+    // Calculate attendance trends (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    for (const classData of coachClasses) {
-      if (classData.workoutId) {
-        const attendance = attendanceData.find(a => a.classId === classData.classId)?.attendanceCount || 0;
-        const isCompleted = attendance > 0; // Class is considered completed if at least one person attended
-        
-        if (workoutStats.has(classData.workoutId)) {
-          const stats = workoutStats.get(classData.workoutId)!;
-          stats.classCount += 1;
-          stats.totalAttendance += attendance;
-          stats.totalCapacity += classData.capacity;
-          if (isCompleted) stats.completedClasses += 1;
-        } else {
-          workoutStats.set(classData.workoutId, {
-            name: classData.workoutName || 'Unknown Workout',
-            classCount: 1,
-            totalAttendance: attendance,
-            totalCapacity: classData.capacity,
-            completedClasses: isCompleted ? 1 : 0,
-          });
-        }
-      }
-    }
+    const recentClasses = coachClasses.filter(classData => 
+      new Date(classData.scheduledDate) >= thirtyDaysAgo
+    ).sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
 
-    const workoutEffectiveness = Array.from(workoutStats.entries()).map(([workoutId, stats]) => ({
-      workoutId,
-      workoutName: stats.name,
-      classCount: stats.classCount,
-      averageFillRate: stats.totalCapacity > 0 ? (stats.totalAttendance / stats.totalCapacity) * 100 : 0,
-      completionRate: stats.classCount > 0 ? (stats.completedClasses / stats.classCount) * 100 : 0,
-    })).sort((a, b) => b.averageFillRate - a.averageFillRate);
+    const attendanceTrends = recentClasses.map(classData => {
+      const attendance = attendanceData.find(a => a.classId === classData.classId)?.attendanceCount || 0;
+      const fillRate = classData.capacity > 0 ? (attendance / classData.capacity) * 100 : 0;
+      
+      return {
+        date: classData.scheduledDate,
+        attendance,
+        capacity: classData.capacity,
+        fillRate: Math.round(fillRate * 100) / 100,
+      };
+    });
 
     return {
       averageAttendance: Math.round(averageAttendance * 100) / 100,
       totalClasses: coachClasses.length,
       averageFillRate: Math.round(averageFillRate * 100) / 100,
-      workoutEffectiveness,
+      attendanceTrends,
     };
   }
 

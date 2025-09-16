@@ -20,15 +20,14 @@ export interface CoachAnalytics {
   averageAttendance: number;
   totalClasses: number;
   averageFillRate: number;
-  workoutEffectiveness: WorkoutEffectiveness[];
+  attendanceTrends: AttendanceTrend[];
 }
 
-export interface WorkoutEffectiveness {
-  workoutId: number;
-  workoutName: string;
-  classCount: number;
-  averageFillRate: number;
-  completionRate: number;
+export interface AttendanceTrend {
+  date: string;
+  attendance: number;
+  capacity: number;
+  fillRate: number;
 }
 
 export interface MemberAnalytics {

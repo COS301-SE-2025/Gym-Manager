@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { AuthController } from '../../controllers/auth/authController';
 import { AuthService } from '../../services/auth/authService';
 import { UserRepository } from '../../repositories/auth/userRepository';
@@ -18,6 +19,13 @@ import { AdminService } from '../../services/admin/adminService';
 import { AdminRepository } from '../../repositories/admin/adminRepository';
 import { AdminRoutes } from '../../presentation/admin/adminRoutes';
 
+// Analytics-related imports
+import analyticsRoutes from '../../presentation/analytics/analyticsRoutes';
+import { AnalyticsController } from '../../controllers/analytics/analyticsController';
+import { AnalyticsService } from '../../services/analytics/analyticsService';
+import { AnalyticsRepository } from '../../repositories/analytics/analyticsRepository';
+import { IAnalyticsRepository } from '../../domain/interfaces/analytics.interface';
+import { IAnalyticsService } from '../../domain/interfaces/analytics.interface';
 // Live class-related imports
 import { LiveClassController } from '../../controllers/liveClass/liveClassController';
 import { LiveClassService } from '../../services/liveClass/liveClassService';

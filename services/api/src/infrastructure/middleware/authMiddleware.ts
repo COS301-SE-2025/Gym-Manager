@@ -34,3 +34,16 @@ export class AuthMiddleware {
     }
   };
 }
+
+export const requireRole = (role: string) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const authMiddleware = new AuthMiddleware();
+    authMiddleware.isAuthenticated(req, res, () => {
+      if (req.user && req.user.roles && req.user.roles.includes(role)) {
+        next();
+      } else {
+        res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
+      }
+    });
+  };
+};

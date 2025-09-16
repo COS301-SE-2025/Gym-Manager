@@ -103,7 +103,7 @@ const MemberAnalyticsScreen: React.FC<MemberAnalyticsScreenProps> = ({ navigatio
         <View style={styles.performanceInfo}>
           <Text style={styles.workoutName}>{performance.workoutName}</Text>
           <Text style={styles.performanceDetails}>
-            Score: {performance.score} • {performance.totalParticipants} participants
+            Score: {performance.score ?? 'N/A'} • {performance.totalParticipants} participants
           </Text>
         </View>
         <View style={styles.performanceStats}>

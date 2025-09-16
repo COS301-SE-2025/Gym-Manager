@@ -30,7 +30,7 @@ export interface MemberAnalytics {
     scheduledDate: string;
     position: number;
     totalParticipants: number;
-    score: number;
+    score: number | null;
   }>;
 }
 

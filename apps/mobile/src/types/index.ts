@@ -41,5 +41,5 @@ export interface ClassPerformance {
   scheduledDate: string;
   position: number;
   totalParticipants: number;
-  score: number;
+  score: number | null;
 }

@@ -1,11 +1,12 @@
-// src/screens/LiveClassEndScreen.tsx
-import React, { useMemo } from 'react';
+// src/screens/classes/LiveClassEndScreen.tsx
+import React, { useMemo, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { useSession } from '../../hooks/useSession';
 import { useMyProgress } from '../../hooks/useMyProgress';
 import { useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
+import { getUser } from '../../utils/authStorage';
 
 type R = RouteProp<AuthStackParamList, 'LiveClassEnd'>;
 
@@ -27,11 +28,21 @@ export default function LiveClassEndScreen() {
   const prog = useMyProgress(classId);
   const lb = useLeaderboardRealtime(classId);
 
-  // inside LiveClassEndScreen.tsx
-const type = (session?.workout_type ?? '').toUpperCase();
+  const [myUserId, setMyUserId] = React.useState<number | null>(null);
 
-const myScore = useMemo(() => {
-  if (!session) return '';
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const me = await getUser();
+        if (me?.userId) setMyUserId(Number(me.userId));
+      } catch {}
+    })();
+  }, []);
+
+  const type = (session?.workout_type ?? '').toUpperCase();
+
+  const myScore = useMemo(() => {
+    if (!session) return '';
 
     // canonical server time if available (keeps end screen == leaderboard)
     const serverElapsed = prog?.elapsed_seconds != null ? Number(prog.elapsed_seconds) : null;
@@ -50,11 +61,10 @@ const myScore = useMemo(() => {
       return `Time: ${fmt(elapsed)}`;
     }
 
-    // AMRAP (and default reps fallback)
-    const cum: number[] = (session.steps_cum_reps as number[]) ?? [];
-    const within = (prog.current_step ?? 0) > 0 ? (cum[(prog.current_step! - 1)] ?? 0) : 0;
-
+    // AMRAP (existing logic)
     if (type === 'AMRAP') {
+      const cum: number[] = (session.steps_cum_reps as number[]) ?? [];
+      const within = (prog.current_step ?? 0) > 0 ? (cum[(prog.current_step! - 1)] ?? 0) : 0;
       const repsPerRound = cum.length ? cum[cum.length - 1] : 0;
       const serverTotal = (prog as any)?.total_reps as number | undefined;
       const total = serverTotal ?? (
@@ -65,12 +75,30 @@ const myScore = useMemo(() => {
       return `${total} reps`;
     }
 
+     // EMOM
+    if (type === 'EMOM') {
+      const meRow = lb.find((r:any) => myUserId != null && String(r.user_id) === String(myUserId));
+      if (meRow?.elapsed_seconds != null) {
+        return `Time: ${fmt(Number(meRow.elapsed_seconds))}`;
+      }
+      return 'Time: —';
+    }
+
+
+    // TABATA / INTERVAL / EMOM — pull my total from the realtime leaderboard
+    if (['TABATA','INTERVAL','EMOM'].includes(type)) {
+      if (!myId) return '—';
+      const mine = lb.find((r: any) => Number(r.user_id) === Number(myId));
+      const reps = Number(mine?.total_reps ?? 0);
+      return `${reps} reps`;
+    }
+
     // Non-FOR_TIME fallback
+    const cum: number[] = (session.steps_cum_reps as number[]) ?? [];
+    const within = (prog.current_step ?? 0) > 0 ? (cum[(prog.current_step! - 1)] ?? 0) : 0;
     const reps = within + Number(prog.dnf_partial_reps ?? 0);
     return `${reps} reps`;
-  }, [session, prog]);
-
-
+  }, [session, prog, lb, myUserId]);
 
   return (
     <SafeAreaView style={s.root}>

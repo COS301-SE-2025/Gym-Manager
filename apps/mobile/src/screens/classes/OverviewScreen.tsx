@@ -90,6 +90,7 @@ export default function OverviewScreen() {
       if (t === 'FOR_TIME') nav.replace('ForTimeLive', { classId });
       if (t === 'AMRAP')   nav.replace('AmrapLive',   { classId });
       if (t == 'TABATA') nav.replace('IntervalLive', {classId});
+      if (t === 'EMOM')     nav.replace('EmomLive', { classId });
     }
     if (session.status === 'ended') {
       nav.replace('LiveClassEnd', { classId });

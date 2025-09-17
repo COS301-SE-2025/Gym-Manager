@@ -21,6 +21,7 @@ export function builder<T = unknown>(returnVal?: T): any {
     for      : () => chain,
     as       : () => chain,
     onConflictDoNothing: () => chain,
+    onConflictDoUpdate: () => chain,
     returning: () => promised,
     limit    : () => promised,
 

@@ -6,7 +6,7 @@ import {
   members,
   classattendance
 } from '../../db/schema';
-import { eq, and, sql, desc } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import type { InferSelectModel } from 'drizzle-orm';
 
 /**
@@ -27,7 +27,7 @@ type Executor = typeof globalDb | any;
  * Domain interfaces
  */
 export interface IDailyLeaderboardRepository {
-  getDailyLeaderboard(date: string, tx?: Executor): Promise<DailyLeaderboardEntry[]>;
+  getDailyLeaderboard(date: string, scaling?: string, tx?: Executor): Promise<DailyLeaderboardEntry[]>;
 }
 
 export interface DailyLeaderboardEntry {
@@ -38,6 +38,7 @@ export interface DailyLeaderboardEntry {
   classCount: number;
   bestScore: number;
   bestWorkoutName: string;
+  scaling: string;
 }
 
 /**
@@ -52,9 +53,20 @@ export class DailyLeaderboardRepository implements IDailyLeaderboardRepository {
     return tx ?? globalDb;
   }
 
-  async getDailyLeaderboard(date: string, tx?: Executor): Promise<DailyLeaderboardEntry[]> {
+  async getDailyLeaderboard(date: string, scaling?: string, tx?: Executor): Promise<DailyLeaderboardEntry[]> {
     try {
-      // First, get all classes for the specified date with their attendance records
+      // Build the where conditions
+      const whereConditions = [
+        eq(classes.scheduledDate, date),
+        eq(members.publicVisibility, true)
+      ];
+
+      // Add scaling filter if provided
+      if (scaling) {
+        whereConditions.push(eq(classattendance.scaling, scaling));
+      }
+
+      // Get all classes for the specified date with their attendance records
       const rows = await this.exec(tx)
         .select({
           classId: classes.classId,
@@ -62,6 +74,7 @@ export class DailyLeaderboardRepository implements IDailyLeaderboardRepository {
           firstName: users.firstName,
           lastName: users.lastName,
           score: classattendance.score,
+          scaling: classattendance.scaling,
           workoutName: workouts.workoutName,
           workoutType: workouts.type,
         })
@@ -70,12 +83,7 @@ export class DailyLeaderboardRepository implements IDailyLeaderboardRepository {
         .innerJoin(users, eq(classattendance.memberId, users.userId))
         .innerJoin(members, eq(users.userId, members.userId))
         .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
-        .where(
-          and(
-            eq(classes.scheduledDate, date),
-            eq(members.publicVisibility, true)
-          )
-        );
+        .where(and(...whereConditions));
 
       // Aggregate the results by user
       const userMap = new Map<number, {
@@ -84,6 +92,7 @@ export class DailyLeaderboardRepository implements IDailyLeaderboardRepository {
         lastName: string;
         scores: number[];
         workouts: { name: string; score: number }[];
+        scaling: string;
       }>();
 
       // Process each row and group by user
@@ -97,7 +106,8 @@ export class DailyLeaderboardRepository implements IDailyLeaderboardRepository {
             firstName: row.firstName || '',
             lastName: row.lastName || '',
             scores: [],
-            workouts: []
+            workouts: [],
+            scaling: row.scaling || 'rx'
           });
         }
 
@@ -124,7 +134,8 @@ export class DailyLeaderboardRepository implements IDailyLeaderboardRepository {
           totalScore,
           classCount: userData.scores.length,
           bestScore: bestWorkout.score,
-          bestWorkoutName: bestWorkout.name
+          bestWorkoutName: bestWorkout.name,
+          scaling: userData.scaling
         };
       });
 

@@ -1,13 +1,13 @@
 import { IDailyLeaderboardRepository, DailyLeaderboardEntry } from '../../repositories/dailyLeaderboard/dailyLeaderboardRepository';
 
 export interface IDailyLeaderboardService {
-  getDailyLeaderboard(date?: string): Promise<DailyLeaderboardEntry[]>;
+  getDailyLeaderboard(date?: string, scaling?: string): Promise<DailyLeaderboardEntry[]>;
 }
 
 export class DailyLeaderboardService implements IDailyLeaderboardService {
   constructor(private repository: IDailyLeaderboardRepository) {}
 
-  async getDailyLeaderboard(date?: string): Promise<DailyLeaderboardEntry[]> {
+  async getDailyLeaderboard(date?: string, scaling?: string): Promise<DailyLeaderboardEntry[]> {
     // Default to today in UTC (you might want to adjust timezone)
     const targetDate = date || new Date().toISOString().slice(0, 10);
     
@@ -22,6 +22,11 @@ export class DailyLeaderboardService implements IDailyLeaderboardService {
       throw new Error('FUTURE_DATE_NOT_ALLOWED');
     }
 
-    return this.repository.getDailyLeaderboard(targetDate);
+    // Validate scaling parameter
+    if (scaling && !['rx', 'sc'].includes(scaling)) {
+      throw new Error('INVALID_SCALING_TYPE');
+    }
+
+    return this.repository.getDailyLeaderboard(targetDate, scaling);
   }
 }

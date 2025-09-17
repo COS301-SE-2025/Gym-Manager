@@ -1,4 +1,4 @@
-import { pgTable, foreignKey, integer, text, serial, date, time, timestamp, check, varchar, jsonb, index, unique, pgPolicy, bigint, boolean, bigserial, primaryKey, uniqueIndex, pgView, numeric, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, integer, text, serial, date, time, timestamp, check, varchar, jsonb, index, unique, pgPolicy, bigint, boolean, bigserial, primaryKey, uniqueIndex, pgView, numeric, pgEnum} from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const membershipStatus = pgEnum("membership_status", ['pending', 'approved', 'suspended', 'cancelled'])
@@ -271,8 +271,10 @@ export const classattendance = pgTable("classattendance", {
 	memberId: integer("member_id").notNull(),
 	markedAt: timestamp("marked_at", { mode: 'string' }).defaultNow(),
 	score: integer().default(0),
+	scaling: varchar("scaling", { length: 10}).default("rx").notNull(),
 }, (table) => [
 	index("idx_classattendance_class_member").using("btree", table.classId.asc().nullsLast().op("int4_ops"), table.memberId.asc().nullsLast().op("int4_ops")),
+	index("idx_classattendance_scaling").using("btree", table.scaling.asc().nullsLast()),
 	foreignKey({
 			columns: [table.classId, table.memberId],
 			foreignColumns: [classbookings.classId, classbookings.memberId],

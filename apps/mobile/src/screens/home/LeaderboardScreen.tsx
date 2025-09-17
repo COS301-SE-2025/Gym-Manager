@@ -54,48 +54,50 @@ const LeaderboardScreen = () => {
   const [selectedScaling, setSelectedScaling] = useState<ScalingType>('all');
   const [showScalingDropdown, setShowScalingDropdown] = useState(false); // Changed from modal to dropdown
 
-  const fetchDailyLeaderboard = useCallback(async (useRefresh = false, date?: string, scaling?: ScalingType) => {
-    if (!useRefresh) setLoading(true);
-    setError('');
+  const fetchDailyLeaderboard = async (date: string, scaling: ScalingType = 'all') => {
     try {
-      const token = await getToken();
-      const targetDate = date || selectedDate;
-      const targetScaling = scaling || selectedScaling;
+      setLoading(true);
+      setError('');
       
-      const res = await axios.get<DailyLeaderboardResponse>(
-        `${config.BASE_URL}/daily-leaderboard?date=${targetDate}&scaling=${targetScaling}`, 
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (res.data.success) {
-        setLeaderboard(res.data.leaderboard);
-        if (res.data.leaderboard.length === 0) {
-          setError('No public scores found for this day');
-        }
-      } else {
-        setError('Failed to load daily leaderboard');
-        setLeaderboard([]);
+      const token = await getToken();
+      if (!token) {
+        setError('Not authenticated');
+        return;
       }
-    } catch (err: any) {
-      console.error('Daily leaderboard fetch error:', err);
-      setError('Failed to load daily leaderboard');
-      setLeaderboard([]);
+
+      // Build query parameters
+      const params = new URLSearchParams({ date });
+      if (scaling !== 'all') {
+        params.append('scaling', scaling);
+      }
+
+      const response = await axios.get(`${config.BASE_URL}/daily-leaderboard?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data.success) {
+        setLeaderboard(response.data.leaderboard);
+      } else {
+        setError('Failed to fetch leaderboard');
+      }
+    } catch (error: any) {
+      console.error('Error fetching daily leaderboard:', error);
+      setError(error.response?.data?.error || 'Network error');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  }, [selectedDate, selectedScaling]);
+  };
 
   useEffect(() => {
-    fetchDailyLeaderboard();
-  }, [fetchDailyLeaderboard]);
+    fetchDailyLeaderboard(selectedDate, selectedScaling);
+  }, [selectedDate, selectedScaling]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchDailyLeaderboard(true);
-  }, [fetchDailyLeaderboard]);
+    fetchDailyLeaderboard(selectedDate, selectedScaling);
+  }, [selectedDate, selectedScaling]);
 
   const navigateDate = useCallback((direction: 'prev' | 'next') => {
     const currentDate = new Date(selectedDate);
@@ -113,13 +115,13 @@ const LeaderboardScreen = () => {
     
     const newDateString = newDate.toISOString().slice(0, 10);
     setSelectedDate(newDateString);
-    fetchDailyLeaderboard(false, newDateString);
-  }, [selectedDate, fetchDailyLeaderboard]);
+    fetchDailyLeaderboard(newDateString, selectedScaling);
+  }, [selectedDate, selectedScaling, fetchDailyLeaderboard]);
 
-  const handleScalingChange = (scaling: ScalingType) => {
+  const handleScalingSelect = (scaling: ScalingType) => {
     setSelectedScaling(scaling);
-    setShowScalingDropdown(false); // Close dropdown
-    fetchDailyLeaderboard(false, selectedDate, scaling);
+    setShowScalingDropdown(false);
+    // The useEffect will automatically trigger the API call
   };
 
   const formatDate = (dateString: string) => {
@@ -190,7 +192,7 @@ const LeaderboardScreen = () => {
                 selectedScaling === option.value && styles.dropdownOptionSelected,
                 index === scalingOptions.length - 1 && styles.dropdownOptionLast
               ]}
-              onPress={() => handleScalingChange(option.value as ScalingType)}
+              onPress={() => handleScalingSelect(option.value as ScalingType)}
             >
               <Ionicons name={option.icon as any} size={18} color={option.color} />
               <Text style={[

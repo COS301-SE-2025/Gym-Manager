@@ -124,7 +124,8 @@ export class DependencyContainer {
     ));
 
     this.services.set('memberService', new MemberService(
-      this.services.get('memberRepository')
+      this.services.get('memberRepository'),
+      this.services.get('paymentPackagesService')
     ));
 
     this.services.set('analyticsService', new AnalyticsService());

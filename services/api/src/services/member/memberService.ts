@@ -19,9 +19,11 @@ export interface MemberProfile {
 
 export class MemberService {
   private memberRepository: MemberRepository;
+  private paymentPackagesService: PaymentPackagesService;
 
-  constructor(memberRepository: MemberRepository) {
+  constructor(memberRepository: MemberRepository, paymentPackagesService?: PaymentPackagesService) {
     this.memberRepository = memberRepository;
+    this.paymentPackagesService = paymentPackagesService || new PaymentPackagesService();
   }
 
   /**
@@ -69,6 +71,57 @@ export class MemberService {
       newBalance,
       creditsAdded: credits,
       transactionId
+    };
+  }
+
+  /**
+   * Purchase credits using payment packages (new system)
+   */
+  async purchaseCreditsWithPackage(
+    userId: number,
+    packageId: number,
+    paymentMethod?: string,
+    externalTransactionId?: string
+  ): Promise<CreditPurchaseResult> {
+    // Validate that the user exists and is a member
+    const memberExists = await this.memberRepository.memberExists(userId);
+    if (!memberExists) {
+      throw new Error('User is not a member or does not exist');
+    }
+
+    // Create payment transaction
+    const transactionId = await this.paymentPackagesService.createTransaction({
+      memberId: userId,
+      packageId,
+      paymentMethod,
+      externalTransactionId,
+    });
+
+    // Get current balance
+    const currentBalance = await this.memberRepository.getCreditsBalance(userId);
+
+    // Get package details to add credits
+    const packages = await this.paymentPackagesService.getActivePackages();
+    const selectedPackage = packages.find(pkg => pkg.packageId === packageId);
+    
+    if (!selectedPackage) {
+      throw new Error('Payment package not found');
+    }
+
+    // Add credits to the user's balance
+    const newBalance = await this.memberRepository.addCredits(userId, selectedPackage.creditsAmount);
+
+    // Update transaction status to completed
+    await this.paymentPackagesService.updateTransactionStatus(
+      transactionId,
+      'completed',
+      externalTransactionId
+    );
+
+    return {
+      newBalance,
+      creditsAdded: selectedPackage.creditsAmount,
+      transactionId: transactionId.toString(),
     };
   }
 

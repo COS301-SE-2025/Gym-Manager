@@ -49,6 +49,11 @@ import { AnalyticsController } from '../../controllers/analytics/analyticsContro
 import { AnalyticsService } from '../../services/analytics/analyticsService';
 import { AnalyticsRoutes } from '../../presentation/analytics/analyticsRoutes';
 
+// Payment Packages-related imports
+import { PaymentPackagesController } from '../../controllers/paymentPackages/paymentPackagesController';
+import { PaymentPackagesService } from '../../services/paymentPackages/paymentPackagesService';
+import { PaymentPackagesRoutes } from '../../presentation/paymentPackages/paymentPackagesRoutes';
+
 /**
  * Dependency Container - Infrastructure Layer
  * Manages dependency injection and object creation
@@ -123,6 +128,7 @@ export class DependencyContainer {
     ));
 
     this.services.set('analyticsService', new AnalyticsService());
+    this.services.set('paymentPackagesService', new PaymentPackagesService());
 
     // Controller layer
     this.services.set('authController', new AuthController(
@@ -157,6 +163,10 @@ export class DependencyContainer {
       this.services.get('analyticsService')
     ));
 
+    this.services.set('paymentPackagesController', new PaymentPackagesController(
+      this.services.get('paymentPackagesService')
+    ));
+
     // Presentation layer
     this.services.set('authRoutes', new AuthRoutes());
     this.services.set('classRoutes', new ClassRoutes());
@@ -169,6 +179,7 @@ export class DependencyContainer {
     ));
 
     this.services.set('analyticsRoutes', new AnalyticsRoutes());
+    this.services.set('paymentPackagesRoutes', new PaymentPackagesRoutes());
   }
 
   get<T>(serviceName: string): T {
@@ -270,5 +281,9 @@ export class DependencyContainer {
 
   getAnalyticsRoutes(): AnalyticsRoutes {
     return this.get<AnalyticsRoutes>('analyticsRoutes');
+  }
+
+  getPaymentPackagesRoutes(): PaymentPackagesRoutes {
+    return this.get<PaymentPackagesRoutes>('paymentPackagesRoutes');
   }
 }

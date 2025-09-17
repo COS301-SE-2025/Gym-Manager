@@ -64,6 +64,7 @@ export class App {
     const healthRoutes = this.container.getHealthRoutes();
     const memberRoutes = this.container.getMemberRoutes();
     const analyticsRoutes = this.container.getAnalyticsRoutes();
+    const paymentPackagesRoutes = this.container.getPaymentPackagesRoutes();
     
     // Mount routes
     // this.app.use('/auth', authRoutes.getRouter());
@@ -82,6 +83,7 @@ export class App {
     
     this.app.use('/members', memberRoutes.getRouter());
     this.app.use('/analytics', analyticsRoutes.getRouter());
+    this.app.use('/payments', paymentPackagesRoutes.getRouter());
     
     // Health check
     this.app.get('/health', (req, res) => {
@@ -122,8 +124,8 @@ export class App {
       console.log('- /settings/* - User settings endpoints');
       console.log('- /members/* - Member management endpoints');
       console.log('- /analytics/* - Analytics endpoints');
+      console.log('- /payments/* - Payment packages and financial analytics endpoints');
       console.log('- /health - Health check endpoint');
-      console.log('- /analytics/* - Analytics endpoints');
     });
   }
 }

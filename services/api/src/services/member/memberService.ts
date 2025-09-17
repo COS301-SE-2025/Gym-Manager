@@ -1,4 +1,5 @@
 import { MemberRepository } from '../../repositories/member/memberRepository';
+import { PaymentPackagesService } from '../paymentPackages/paymentPackagesService';
 
 export interface CreditPurchaseResult {
   newBalance: number;

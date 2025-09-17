@@ -43,6 +43,19 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
   const [packagesLoading, setPackagesLoading] = useState(true);
   const [currentCredits, setCurrentCredits] = useState<number>(0);
 
+  const fetchPaymentPackages = async () => {
+    try {
+      setPackagesLoading(true);
+      const response = await apiClient.get('/payments/packages');
+      setPackages(response.data);
+    } catch (error) {
+      console.error('Failed to fetch payment packages:', error);
+      Alert.alert('Error', 'Failed to load payment packages. Please try again.');
+    } finally {
+      setPackagesLoading(false);
+    }
+  };
+
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -80,10 +93,11 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
     };
 
     loadUserData();
+    fetchPaymentPackages();
   }, []);
 
-  const handlePurchaseCredits = async (packageId: string) => {
-    const selectedPackage = CREDIT_PACKAGES.find(pkg => pkg.id === packageId);
+  const handlePurchaseCredits = async (packageId: number) => {
+    const selectedPackage = packages.find(pkg => pkg.packageId === packageId);
     if (!selectedPackage || !currentUser?.userId) return;
 
     setIsProcessing(true);
@@ -92,19 +106,27 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
       // Mock payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Add credits to user account
-      const response = await apiClient.post(`/members/${currentUser.userId}/credits/purchase`, {
-        credits: selectedPackage.credits,
-        amount: selectedPackage.price,
+      // Create payment transaction using the new system
+      const transactionResponse = await apiClient.post('/payments/transactions', {
+        packageId: selectedPackage.packageId,
         paymentMethod: 'mock_payment',
-        transactionId: `mock_${Date.now()}`,
+        externalTransactionId: `mock_${Date.now()}`,
       });
 
-      if (response.data.success) {
-        setCurrentCredits(response.data.newBalance);
+      if (transactionResponse.data.success) {
+        // Update transaction status to completed (mock payment success)
+        await apiClient.put(`/payments/transactions/${transactionResponse.data.transactionId}/status`, {
+          status: 'completed',
+          externalTransactionId: `mock_${Date.now()}`,
+        });
+
+        // Fetch updated credit balance
+        const creditsResponse = await apiClient.get(`/members/${currentUser.userId}/credits`);
+        setCurrentCredits(creditsResponse.data.creditsBalance || 0);
+
         Alert.alert(
           'Payment Successful!',
-          `You've successfully purchased ${selectedPackage.credits} credits for R${selectedPackage.price}. Your new balance is ${response.data.newBalance} credits.`,
+          `You've successfully purchased ${selectedPackage.creditsAmount} credits for ${formatPrice(selectedPackage.priceCents)}. Your new balance is ${creditsResponse.data.creditsBalance || 0} credits.`,
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       } else {
@@ -122,8 +144,8 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return `R${price.toFixed(0)}`;
+  const formatPrice = (priceCents: number) => {
+    return `R${(priceCents / 100).toFixed(2)}`;
   };
 
   if (isLoading) {
@@ -168,46 +190,50 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Choose Your Package</Text>
           
-          {CREDIT_PACKAGES.map((pkg) => (
-            <TouchableOpacity
-              key={pkg.id}
-              style={[
-                styles.packageCard,
-                pkg.popular && styles.popularPackage,
-              ]}
-              onPress={() => handlePurchaseCredits(pkg.id)}
-              disabled={isProcessing}
-            >
-              {pkg.popular && (
-                <View style={styles.popularBadge}>
-                  <Text style={styles.popularText}>Most Popular</Text>
+          {packagesLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#D8FF3E" />
+              <Text style={styles.loadingText}>Loading packages...</Text>
+            </View>
+          ) : packages.length === 0 ? (
+            <View style={styles.noPackagesContainer}>
+              <Text style={styles.noPackagesText}>No packages available</Text>
+            </View>
+          ) : (
+            packages.map((pkg) => (
+              <TouchableOpacity
+                key={pkg.packageId}
+                style={styles.packageCard}
+                onPress={() => handlePurchaseCredits(pkg.packageId)}
+                disabled={isProcessing || !pkg.isActive}
+              >
+                <View style={styles.packageHeader}>
+                  <View style={styles.packageInfo}>
+                    <Text style={styles.packageCredits}>{pkg.creditsAmount} Credits</Text>
+                    <Text style={styles.packagePrice}>{formatPrice(pkg.priceCents)}</Text>
+                  </View>
+                  <View style={styles.packageIcon}>
+                    <Ionicons name="card-outline" size={32} color="#D8FF3E" />
+                  </View>
                 </View>
-              )}
-              
-              <View style={styles.packageHeader}>
-                <View style={styles.packageInfo}>
-                  <Text style={styles.packageCredits}>{pkg.credits} Credits</Text>
-                  <Text style={styles.packagePrice}>{formatPrice(pkg.price)}</Text>
-                </View>
-                <View style={styles.packageIcon}>
-                  <Ionicons name="card-outline" size={32} color="#D8FF3E" />
-                </View>
-              </View>
-              
-              <Text style={styles.packageDescription}>{pkg.description}</Text>
-              
-              <View style={styles.packageFooter}>
-                <Text style={styles.packageValue}>
-                  R{(pkg.price / pkg.credits).toFixed(0)} per credit
+                
+                <Text style={styles.packageDescription}>
+                  {pkg.description || pkg.name}
                 </Text>
-                {isProcessing ? (
-                  <ActivityIndicator size="small" color="#D8FF3E" />
-                ) : (
-                  <Ionicons name="chevron-forward" size={20} color="#888" />
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
+                
+                <View style={styles.packageFooter}>
+                  <Text style={styles.packageValue}>
+                    R{((pkg.priceCents / 100) / pkg.creditsAmount).toFixed(2)} per credit
+                  </Text>
+                  {isProcessing ? (
+                    <ActivityIndicator size="small" color="#D8FF3E" />
+                  ) : (
+                    <Ionicons name="chevron-forward" size={20} color="#888" />
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
 
         {/* Payment Info */}
@@ -392,5 +418,24 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 14,
     lineHeight: 20,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    color: '#888',
+    fontSize: 16,
+    marginTop: 12,
+  },
+  noPackagesContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  noPackagesText: {
+    color: '#888',
+    fontSize: 16,
   },
 });

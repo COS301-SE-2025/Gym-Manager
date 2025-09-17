@@ -11,6 +11,10 @@ interface LogsFiltersProps {
   onStartDateChange: (value: string) => void;
   endDate: string;
   onEndDateChange: (value: string) => void;
+  userIdFilter: string;
+  onUserIdChange: (value: string) => void;
+  sortOrder: 'asc' | 'desc';
+  onSortOrderChange: (value: 'asc' | 'desc') => void;
   onReset: () => void;
 }
 
@@ -22,6 +26,10 @@ export default function LogsFilters({
   onStartDateChange,
   endDate,
   onEndDateChange,
+  userIdFilter,
+  onUserIdChange,
+  sortOrder,
+  onSortOrderChange,
   onReset,
 }: LogsFiltersProps) {
   const [maxDate, setMaxDate] = useState<string>('');
@@ -52,7 +60,6 @@ export default function LogsFilters({
 
   return (
     <div className="filters-container">
-      <h3>Filters</h3>
       <div className="filter-group">
         <label className="filter-label">Event Type</label>
         <select
@@ -64,6 +71,29 @@ export default function LogsFilters({
           {availableEventTypes.map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
+        </select>
+      </div>
+
+      <div className="filter-group">
+        <label className="filter-label">User ID</label>
+        <input
+          type="text"
+          value={userIdFilter}
+          onChange={(e) => onUserIdChange(e.target.value)}
+          placeholder="Search any user ID"
+          className="filter-input"
+        />
+      </div>
+
+      <div className="filter-group">
+        <label className="filter-label">Sort Order</label>
+        <select
+          value={sortOrder}
+          onChange={(e) => onSortOrderChange(e.target.value as 'asc' | 'desc')}
+          className="filter-select"
+        >
+          <option value="desc">Newest First</option>
+          <option value="asc">Oldest First</option>
         </select>
       </div>
 

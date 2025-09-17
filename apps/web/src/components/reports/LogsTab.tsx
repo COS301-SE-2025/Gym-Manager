@@ -25,13 +25,13 @@ const formatLogMessage = (log: any): string => {
       return `User (ID: ${userId}) attended class ID: ${properties?.classId}.`;
     
     case 'user_role_assignment':
-      return `Assigned role "${properties?.role}" to user ID: ${properties?.assignedUserId}.`;
+      return `Assigned role "${properties?.role}" to user ID: ${properties?.assignedUserId}${userId ? ` by user ID: ${userId}` : ' (performed by system)'}.`;
     
     case 'user_role_update':
-      return `Updated user ID: ${properties?.updatedUserId} to role "${properties?.newRole}".`;
+      return `Updated user ID: ${properties?.updatedUserId} to role "${properties?.newRole}"${userId ? ` by user ID: ${userId}` : ' (performed by system)'}.`;
     
     case 'membership_approval':
-      return `Approved membership for user ID: ${properties?.approvedUserId}.`;
+      return `Approved membership for user ID: ${properties?.approvedUserId}${userId ? ` by user ID: ${userId}` : ' (performed by system)'}.`;
     
     default:
       return `${eventType} event occurred${userId ? ` for user ID: ${userId}` : ''}.`;
@@ -44,6 +44,8 @@ export default function LogsTab() {
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [userIdFilter, setUserIdFilter] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     reportsService.getLogs()
@@ -78,11 +80,24 @@ export default function LogsTab() {
     // end filter is inclusive of the entire endDate day
     const end = endDate ? new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000) : null;
 
-    return logs.filter((l) => {
+    let filtered = logs.filter((l) => {
       const ts = new Date(l.timestamp);
       
       // Filter by event type
       if (eventTypeFilter !== 'all' && l.eventType !== eventTypeFilter) return false;
+      
+      // Filter by user ID - search in multiple fields
+      if (userIdFilter) {
+        const targetUserId = parseInt(userIdFilter);
+        const hasMatchingUserId = 
+          l.userId === targetUserId ||
+          l.properties?.assignedUserId === targetUserId ||
+          l.properties?.updatedUserId === targetUserId ||
+          l.properties?.approvedUserId === targetUserId ||
+          l.properties?.memberId === targetUserId;
+        
+        if (!hasMatchingUserId) return false;
+      }
       
       // Filter by date range - works with single date filters
       if (start && end) {
@@ -98,12 +113,23 @@ export default function LogsTab() {
       
       return true;
     });
-  }, [logs, eventTypeFilter, startDate, endDate]);
+
+    // Sort by timestamp
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.timestamp);
+      const dateB = new Date(b.timestamp);
+      return sortOrder === 'asc' ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+    });
+
+    return filtered;
+  }, [logs, eventTypeFilter, startDate, endDate, userIdFilter, sortOrder]);
 
   const handleReset = () => {
     setEventTypeFilter('all');
     setStartDate('');
     setEndDate('');
+    setUserIdFilter('');
+    setSortOrder('desc');
   };
 
   return (
@@ -118,6 +144,10 @@ export default function LogsTab() {
         onStartDateChange={setStartDate}
         endDate={endDate}
         onEndDateChange={setEndDate}
+        userIdFilter={userIdFilter}
+        onUserIdChange={setUserIdFilter}
+        sortOrder={sortOrder}
+        onSortOrderChange={setSortOrder}
         onReset={handleReset}
       />
 

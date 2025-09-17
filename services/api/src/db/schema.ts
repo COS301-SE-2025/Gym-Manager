@@ -14,6 +14,7 @@ import {
   pgEnum,
   jsonb,
   bigint,
+  decimal,
 } from 'drizzle-orm/pg-core';
 
 // -------------- ENUMS --------------
@@ -394,7 +395,7 @@ export const userFinancialMetrics = pgTable("user_financial_metrics", {
 	lastPurchaseDate: timestamp("last_purchase_date", { mode: 'string' }),
 	lifetimeValueCents: integer("lifetime_value_cents").default(0),
 	averageOrderValueCents: integer("average_order_value_cents").default(0),
-	purchaseFrequency: integer("purchase_frequency").default(0),
+	purchaseFrequency: decimal("purchase_frequency", { precision: 5, scale: 2 }).default("0"),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
 });

@@ -23,40 +23,24 @@ interface PaymentScreenProps {
   navigation: PaymentScreenNavigationProp;
 }
 
-interface CreditPackage {
-  id: string;
-  credits: number;
-  price: number;
-  description: string;
-  popular?: boolean;
+interface PaymentPackage {
+  packageId: number;
+  name: string;
+  description?: string;
+  creditsAmount: number;
+  priceCents: number;
+  currency: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
-
-const CREDIT_PACKAGES: CreditPackage[] = [
-  {
-    id: 'small',
-    credits: 5,
-    price: 150,
-    description: 'Perfect for trying out classes',
-  },
-  {
-    id: 'medium',
-    credits: 12,
-    price: 300,
-    description: 'Great value for regular members',
-    popular: true,
-  },
-  {
-    id: 'large',
-    credits: 25,
-    price: 550,
-    description: 'Best value for frequent attendees',
-  },
-];
 
 export default function PaymentScreen({ navigation }: PaymentScreenProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [packages, setPackages] = useState<PaymentPackage[]>([]);
+  const [packagesLoading, setPackagesLoading] = useState(true);
   const [currentCredits, setCurrentCredits] = useState<number>(0);
 
   useEffect(() => {

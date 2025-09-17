@@ -52,6 +52,7 @@ export default function LogsFilters({
 
   return (
     <div className="filters-container">
+      <h3>Filters</h3>
       <div className="filter-group">
         <label className="filter-label">Event Type</label>
         <select

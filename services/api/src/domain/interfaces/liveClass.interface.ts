@@ -30,7 +30,8 @@ export interface ILiveClassRepository {
   getWorkoutType(workoutId: number): Promise<string | null>;
 
   getClassMeta(classId: number): Promise<any>;
-  upsertClassSession(classId: number, workoutId: number, timeCapSeconds: number, steps: Step[], stepsCumReps: number[], workoutType: string): Promise<void>;
+  getWorkoutMetadata(workoutId: number): Promise<any>
+  upsertClassSession(classId: number, workoutId: number, timeCapSeconds: number, steps: Step[], stepsCumReps: number[], workoutType: string, workoutMetadata: any): Promise<void>;
   seedLiveProgressForClass(classId: number): Promise<void>;
   resetLiveProgressForClass(classId: number): Promise<void>;
   stopSession(classId: number): Promise<void>;
@@ -59,6 +60,15 @@ export interface ILiveClassRepository {
   assertCoachOwnsClass(classId: number, coachId: number): Promise<void>;
   upsertScoresBatch(classId: number, rows: { userId: number; score: number }[]): Promise<number>;
   upsertMemberScore(classId: number, userId: number, score: number): Promise<void>;
+
+  realtimeEmomLeaderboard(classId: number): Promise<any[]>;
+
+  getCoachNote(classId: number): Promise<any[]>;
+  setCoachNote(classId: number, text: string): Promise<void>;
+  setForTimeFinish(classId: number, userId: number, finishSeconds: number | null, startedAt: any): Promise<void>;
+  setAmrapProgress(classId: number, userId: number, rounds: number, currentStep: number, partial: number): Promise<void>;
+  upsertEmomMark(classId: number, userId: number, minuteIndex: number, finished: boolean, finishSeconds: number): Promise<void>;
+
 }
 
 export type { LiveSession, Step };

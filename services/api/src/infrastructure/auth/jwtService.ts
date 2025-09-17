@@ -2,7 +2,8 @@ import jwt from 'jsonwebtoken';
 import { IJwtService } from '../../domain/interfaces/auth.interface';
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = '2h';
+
+const JWT_EXPIRES_IN = '6h';
 const REFRESH_EXPIRES_IN = '30d';
 
 export class JwtService implements IJwtService {

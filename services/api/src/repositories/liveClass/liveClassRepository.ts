@@ -33,7 +33,8 @@ export class LiveClassRepository implements ILiveClassRepository {
         extract(epoch from started_at)::bigint as started_at_s,
         extract(epoch from ended_at)::bigint   as ended_at_s,
         extract(epoch from paused_at)::bigint  as paused_at_s,
-        steps, steps_cum_reps, workout_type
+        steps, steps_cum_reps, workout_type,
+        coalesce(workout_metadata, '{}'::jsonb) as workout_metadata
       from public.class_sessions
       where class_id = ${classId}
       limit 1
@@ -171,20 +172,31 @@ export class LiveClassRepository implements ILiveClassRepository {
     return cls.rows[0] as any;
   }
 
+  async getWorkoutMetadata(workoutId: number): Promise<any> {
+    const { rows } = await globalDb.execute(sql`
+      select coalesce(metadata, '{}'::jsonb) as metadata
+      from public.workouts
+      where workout_id = ${workoutId}
+      limit 1
+    `);
+    return (rows[0] as any)?.metadata ?? {};
+  }
+
   async upsertClassSession(
     classId: number,
     workoutId: number,
     timeCapSeconds: number,
     steps: Step[],
     stepsCumReps: number[],
-    workoutType: string
+    workoutType: string,
+    workoutMetadata: any
   ) {
     await globalDb.execute(sql`
       insert into public.class_sessions
-        (class_id, workout_id, status, time_cap_seconds, started_at, ended_at, paused_at, pause_accum_seconds, steps, steps_cum_reps, workout_type)
+        (class_id, workout_id, status, time_cap_seconds, started_at, ended_at, paused_at, pause_accum_seconds, steps, steps_cum_reps, workout_type, workout_metadata)
       values (
         ${classId}, ${workoutId}, 'live', ${timeCapSeconds}, now(), null, null, 0,
-        ${JSON.stringify(steps)}::jsonb, ${JSON.stringify(stepsCumReps)}::jsonb, ${workoutType}
+        ${JSON.stringify(steps)}::jsonb, ${JSON.stringify(stepsCumReps)}::jsonb, ${workoutType}, ${JSON.stringify(workoutMetadata)}::jsonb
       )
       on conflict (class_id) do update
         set status               = 'live',
@@ -195,7 +207,8 @@ export class LiveClassRepository implements ILiveClassRepository {
             pause_accum_seconds  = 0,
             steps                = excluded.steps,
             steps_cum_reps       = excluded.steps_cum_reps,
-            workout_type         = excluded.workout_type
+            workout_type         = excluded.workout_type,
+            workout_metadata     = excluded.workout_metadata
     `);
   }
 
@@ -495,6 +508,141 @@ export class LiveClassRepository implements ILiveClassRepository {
     return rows;
   }
 
+  async realtimeEmomLeaderboard(classId: number) {
+    // Cumulative time rules:
+    // - Past minutes [0..full_minutes-1]: finished -> finish_seconds (0..59), else 60
+    // - Current minute (= full_minutes): include ONLY if finished; else 0
+    // - Future minutes: 0
+    const { rows } = await globalDb.execute(sql`
+      with sess as (
+        select
+          cs.class_id,
+          cs.started_at,
+          cs.paused_at,
+          coalesce(cs.pause_accum_seconds, 0)::bigint as pause_accum_seconds,
+          cs.status,
+          cs.workout_id
+        from public.class_sessions cs
+        where cs.class_id = ${classId}
+        limit 1
+      ),
+      plan as (
+        select
+          s.class_id,
+          (w.metadata -> 'emom_repeats') as reps,
+          s.started_at,
+          s.paused_at,
+          s.pause_accum_seconds,
+          s.status
+        from sess s
+        join public.workouts w on w.workout_id = s.workout_id
+      ),
+      mins as (
+        select
+          p.class_id,
+          coalesce(
+            (select sum((x)::int) from jsonb_array_elements_text(coalesce(p.reps, '[]'::jsonb)) x),
+            0
+          ) as planned_minutes,
+          (
+            extract(epoch from (now() - p.started_at))::bigint
+            - coalesce(p.pause_accum_seconds, 0)
+            - coalesce(extract(epoch from (now() - p.paused_at))::bigint, 0)
+          )::bigint as elapsed_seconds,
+          p.status
+        from plan p
+      ),
+      bound as (
+        select
+          class_id,
+          planned_minutes,
+          least(planned_minutes, greatest(0, (elapsed_seconds / 60)::int)) as full_minutes,
+          status
+        from mins
+      ),
+
+      members as (
+        select cb.member_id as user_id
+        from public.classbookings cb
+        where cb.class_id = ${classId}
+      ),
+
+      /* ✅ Generate rows ONLY when we actually have past minutes.
+        If full_minutes = 0, this produces ZERO rows (no phantom +60). */
+      past_idx as (
+        select m.user_id, gs.idx as minute_index
+        from members m
+        cross join bound b
+        join lateral (
+          select generate_series(0, b.full_minutes - 1) as idx
+        ) gs on b.full_minutes > 0
+      ),
+
+      past_minutes as (
+        select
+          p.user_id,
+          coalesce(
+            case
+              when s.finished then greatest(0, least(59, coalesce(s.finish_seconds, 60)))::numeric
+              else 60::numeric
+            end,
+            60::numeric
+          ) as minute_time
+        from past_idx p
+        left join public.live_emom_scores s
+          on s.class_id    = ${classId}
+        and s.user_id     = p.user_id
+        and s.minute_index = p.minute_index
+      ),
+
+      past_sum as (
+        select user_id, coalesce(sum(minute_time), 0)::numeric as total_past
+        from past_minutes
+        group by user_id
+      ),
+
+      /* Current minute: include ONLY if finished (else 0) */
+      current_sum as (
+        select
+          m.user_id,
+          coalesce((
+            select greatest(0, least(59, coalesce(s.finish_seconds, 60)))::numeric
+            from public.live_emom_scores s
+            join bound b on true
+            where s.class_id     = ${classId}
+              and s.user_id      = m.user_id
+              and s.minute_index = b.full_minutes
+              and s.finished     = true
+              and b.full_minutes < b.planned_minutes
+              and b.status      <> 'ended'
+          ), 0)::numeric as cur_part
+        from members m
+      ),
+
+      totals as (
+        select
+          m.user_id,
+          coalesce(p.total_past, 0)::numeric + coalesce(c.cur_part, 0)::numeric as total_time
+        from members m
+        left join past_sum   p on p.user_id = m.user_id
+        left join current_sum c on c.user_id = m.user_id
+      )
+
+      select
+        ${classId}::int as class_id,
+        t.user_id,
+        u.first_name,
+        u.last_name,
+        true as finished,                 -- force time display path
+        t.total_time as elapsed_seconds,  -- cumulative seconds so far
+        null::int as total_reps
+      from totals t
+      join public.users u on u.user_id = t.user_id
+      order by t.total_time asc, u.first_name asc;
+    `);
+    return rows;
+  }
+
   // --- My progress ---
   // repositories/liveClass/liveClassRepository.ts
   async getMyProgress(classId: number, userId: number) {
@@ -625,4 +773,62 @@ export class LiveClassRepository implements ILiveClassRepository {
         set: { score },
       });
   }
+
+  // --- Notes ---
+  async getCoachNote(classId: number) {
+    const { rows } = await globalDb.execute(sql`
+      select coach_notes from public.class_sessions where class_id = ${classId} limit 1
+    `);
+    return (rows[0] as any)?.coach_notes ?? null;
+  }
+
+  async setCoachNote(classId: number, text: string) {
+    await globalDb.execute(sql`
+      update public.class_sessions
+      set coach_notes = ${text}
+      where class_id = ${classId}
+    `);
+  }
+
+  // --- Coach edit: FOR_TIME finish ---
+  async setForTimeFinish(classId: number, userId: number, finishSeconds: number | null, startedAt: any) {
+    if (finishSeconds == null) {
+      await globalDb.execute(sql`
+        update public.live_progress
+        set finished_at = null, updated_at = now()
+        where class_id = ${classId} and user_id = ${userId}
+      `);
+    } else {
+      await globalDb.execute(sql`
+        update public.live_progress
+        set finished_at = (${startedAt} + make_interval(secs => ${Math.max(0, Number(finishSeconds))})), updated_at = now()
+        where class_id = ${classId} and user_id = ${userId}
+      `);
+    }
+  }
+
+  // --- Coach edit: AMRAP map from total reps ---
+  async setAmrapProgress(classId: number, userId: number, rounds: number, currentStep: number, partial: number) {
+    await globalDb.execute(sql`
+      update public.live_progress
+      set rounds_completed = ${Math.max(0, rounds)},
+          current_step     = ${Math.max(0, currentStep)},
+          dnf_partial_reps = ${Math.max(0, partial)},
+          updated_at       = now()
+      where class_id = ${classId} and user_id = ${userId}
+    `);
+  }
+
+  // --- Coach edit: EMOM mark ---
+  async upsertEmomMark(classId: number, userId: number, minuteIndex: number, finished: boolean, finishSeconds: number) {
+    await globalDb.execute(sql`
+      insert into public.live_emom_scores (class_id, user_id, minute_index, finished, finish_seconds)
+      values (${classId}, ${userId}, ${minuteIndex}, ${finished}, ${finishSeconds})
+      on conflict (class_id, user_id, minute_index) do update
+        set finished = excluded.finished,
+            finish_seconds = excluded.finish_seconds,
+            updated_at = now()
+    `);
+  }
+
 }

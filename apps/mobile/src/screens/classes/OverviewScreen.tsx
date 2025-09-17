@@ -73,7 +73,7 @@ export default function OverviewScreen() {
     (session?.workout_type as string) ||
     (preType as string) ||
     'FOR_TIME';
-
+ 
   const capSeconds: number =
     (Number(session?.time_cap_seconds ?? 0)) || preDurationSeconds;
 
@@ -89,6 +89,8 @@ export default function OverviewScreen() {
     if (session.status === 'live') {
       if (t === 'FOR_TIME') nav.replace('ForTimeLive', { classId });
       if (t === 'AMRAP')   nav.replace('AmrapLive',   { classId });
+      if (t == 'TABATA') nav.replace('IntervalLive', {classId});
+      if (t === 'EMOM')     nav.replace('EmomLive', { classId });
     }
     if (session.status === 'ended') {
       nav.replace('LiveClassEnd', { classId });
@@ -172,6 +174,7 @@ export default function OverviewScreen() {
   );
 }
 
+// === Returns Pill
 function TypePill({ label, active }: { label: string; active?: boolean }) {
   return (
     <View style={[s.pill, active && s.pillActive]}>
@@ -180,6 +183,7 @@ function TypePill({ label, active }: { label: string; active?: boolean }) {
   );
 }
 
+// === Formats number of seconds to HH:MM:SS format ===
 function fmtHMS(sec: number) {
   const t = Math.max(0, Math.floor(sec || 0));
   const h = Math.floor(t / 3600);
@@ -190,6 +194,7 @@ function fmtHMS(sec: number) {
   return h > 0 ? `${String(h).padStart(2, '0')}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+// === Styling ===
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#101010' },
   scroll: { padding: 16, paddingBottom: 40 },

@@ -14,6 +14,7 @@ import {
   pgEnum,
   jsonb,
   bigint,
+  decimal,
 } from 'drizzle-orm/pg-core';
 
 // -------------- ENUMS --------------
@@ -346,3 +347,56 @@ export const notificationReads = pgTable("notification_reads", {
 		}).onDelete("cascade"),
 	primaryKey({ columns: [table.notificationId, table.userId], name: "notification_reads_pkey"}),
 ]);
+
+// Payment Packages and Financial Analytics Tables
+export const paymentPackages = pgTable("payment_packages", {
+	packageId: serial("package_id").primaryKey(),
+	name: varchar("name", { length: 255 }).notNull(),
+	description: text("description"),
+	creditsAmount: integer("credits_amount").notNull(),
+	priceCents: integer("price_cents").notNull(),
+	currency: varchar("currency", { length: 3 }).default("ZAR"),
+	isActive: boolean("is_active").default(true),
+	createdBy: integer("created_by").references(() => admins.userId),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+});
+
+export const paymentTransactions = pgTable("payment_transactions", {
+	transactionId: serial("transaction_id").primaryKey(),
+	memberId: integer("member_id").notNull().references(() => members.userId),
+	packageId: integer("package_id").notNull().references(() => paymentPackages.packageId),
+	amountCents: integer("amount_cents").notNull(),
+	creditsPurchased: integer("credits_purchased").notNull(),
+	paymentMethod: varchar("payment_method", { length: 50 }),
+	paymentStatus: varchar("payment_status", { length: 20 }).default("pending"),
+	externalTransactionId: varchar("external_transaction_id", { length: 255 }),
+	processedAt: timestamp("processed_at", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+});
+
+export const monthlyRevenue = pgTable("monthly_revenue", {
+	id: serial("id").primaryKey(),
+	year: integer("year").notNull(),
+	month: integer("month").notNull(),
+	totalRevenueCents: integer("total_revenue_cents").default(0),
+	newSubscriptionsCents: integer("new_subscriptions_cents").default(0),
+	recurringRevenueCents: integer("recurring_revenue_cents").default(0),
+	oneTimePurchasesCents: integer("one_time_purchases_cents").default(0),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+});
+
+export const userFinancialMetrics = pgTable("user_financial_metrics", {
+	id: serial("id").primaryKey(),
+	memberId: integer("member_id").notNull().references(() => members.userId),
+	totalSpentCents: integer("total_spent_cents").default(0),
+	totalCreditsPurchased: integer("total_credits_purchased").default(0),
+	firstPurchaseDate: timestamp("first_purchase_date", { mode: 'string' }),
+	lastPurchaseDate: timestamp("last_purchase_date", { mode: 'string' }),
+	lifetimeValueCents: integer("lifetime_value_cents").default(0),
+	averageOrderValueCents: integer("average_order_value_cents").default(0),
+	purchaseFrequency: decimal("purchase_frequency", { precision: 5, scale: 2 }).default("0"),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+});

@@ -38,6 +38,12 @@ import { HealthRoutes } from '../../presentation/health/healthRoutes';
 import { NotificationService } from '../../services/notifications/notificationService';
 import { NotificationRepository } from '../../repositories/notifications/notificationRepository';
 
+// Daily Leaderboard-related imports
+import { DailyLeaderboardController } from '../../controllers/dailyLeaderboard/dailyLeaderboardController';
+import { DailyLeaderboardService } from '../../services/dailyLeaderboard/dailyLeaderboardService';
+import { DailyLeaderboardRepository } from '../../repositories/dailyLeaderboard/dailyLeaderboardRepository';
+import { DailyLeaderboardRoutes } from '../../presentation/dailyLeaderboard/dailyLeaderboardRoutes';
+
 // Member-related imports
 import { MemberController } from '../../controllers/member/memberController';
 import { MemberService } from '../../services/member/memberService';
@@ -87,7 +93,9 @@ export class DependencyContainer {
     this.services.set('userSettingsRepository', new UserSettingsRepository());
     this.services.set('healthRepository', new HealthRepository());
     this.services.set('notificationRepository', new NotificationRepository());
+    this.services.set('dailyLeaderboardRepository', new DailyLeaderboardRepository());
     this.services.set('memberRepository', new MemberRepository());
+
 
     // Service layer
     this.services.set('authService', new AuthService(
@@ -123,9 +131,15 @@ export class DependencyContainer {
       this.services.get('notificationRepository')
     ));
 
+
+    this.services.set('dailyLeaderboardService', new DailyLeaderboardService(
+      this.services.get('dailyLeaderboardRepository')
+
     this.services.set('memberService', new MemberService(
       this.services.get('memberRepository'),
       this.services.get('paymentPackagesService')
+      this.services.get('memberRepository')
+
     ));
 
     this.services.set('analyticsService', new AnalyticsService());
@@ -156,8 +170,13 @@ export class DependencyContainer {
       this.services.get('healthService')
     ));
 
+
+    this.services.set('dailyLeaderboardController', new DailyLeaderboardController(
+      this.services.get('dailyLeaderboardService')
+
     this.services.set('memberController', new MemberController(
       this.services.get('memberService')
+
     ));
 
     this.services.set('analyticsController', new AnalyticsController(
@@ -175,6 +194,8 @@ export class DependencyContainer {
     this.services.set('liveClassRoutes', new LiveClassRoutes());
     this.services.set('userSettingsRoutes', new UserSettingsRoutes());
     this.services.set('healthRoutes', new HealthRoutes());
+
+    this.services.set('dailyLeaderboardRoutes', new DailyLeaderboardRoutes());
     this.services.set('memberRoutes', new MemberRoutes(
       this.services.get('memberController')
     ));
@@ -271,6 +292,9 @@ export class DependencyContainer {
   getAuthMiddleware(): AuthMiddleware {
     return this.get<AuthMiddleware>('authMiddleware');
   }
+
+  getDailyLeaderboardRoutes(): DailyLeaderboardRoutes {
+    return this.get<DailyLeaderboardRoutes>('dailyLeaderboardRoutes');
 
   getMemberService(): MemberService {
     return this.get<MemberService>('memberService');

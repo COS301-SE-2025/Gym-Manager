@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { IDailyLeaderboardService } from '../services/dailyLeaderboard/dailyLeaderboardService';
 import { AuthenticatedRequest } from '../infrastructure/middleware/authMiddleware';
 import UserRepository from '../repositories/user.repository';
 import { PasswordService } from '../infrastructure/auth/passwordService';

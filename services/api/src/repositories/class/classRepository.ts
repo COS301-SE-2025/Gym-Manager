@@ -61,6 +61,16 @@ export class ClassRepository implements IClassRepository {
   }
 
   async findAssignedClassesWithWorkoutsByCoach(coachId: number, tx?: Executor): Promise<ClassWithWorkout[]> {
+    // Subquery: count bookings per class
+    const bookingsCount = this.exec(tx)
+      .select({
+        classId: classbookings.classId,
+        bookingsCount: sql<number>`COUNT(${classbookings.bookingId})`.as('bookingsCount'),
+      })
+      .from(classbookings)
+      .groupBy(classbookings.classId)
+      .as('bookingsCount');
+
     const rows = await this.exec(tx)
       .select({
         classId: classes.classId,
@@ -75,9 +85,14 @@ export class ClassRepository implements IClassRepository {
         workoutId: workouts.workoutId,
         workoutType: workouts.type,
         workoutMetadata: workouts.metadata,
+        coachFirstName: users.firstName,
+        coachLastName: users.lastName,
+        bookingsCount: bookingsCount.bookingsCount,
       })
       .from(classes)
       .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
+      .leftJoin(users, eq(classes.coachId, users.userId))
+      .leftJoin(bookingsCount, eq(classes.classId, bookingsCount.classId))
       .where(eq(classes.coachId, coachId));
 
     return rows.map((row: any) => this.mapToClassWithWorkout(row));

@@ -245,6 +245,7 @@ export const classattendance = pgTable(
     memberId: integer('member_id').notNull(),
     markedAt: timestamp('marked_at', { mode: 'string' }).defaultNow(),
     score: integer().default(0),
+    scaling: varchar('scaling', { length: 10 }).default('rx').notNull(), 
   },
   (table) => [
     foreignKey({

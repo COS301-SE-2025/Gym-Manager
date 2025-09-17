@@ -5,14 +5,13 @@ import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
 import { useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
 import config from '../../config';
+import apiClient from '../../utils/apiClient';
 
 type R = RouteProp<AuthStackParamList, 'CoachLive'>;
 
 async function call(path: string) {
-  const token = await getToken();
-  await axios.post(`${config.BASE_URL}${path}`, {}, { headers: { Authorization: `Bearer ${token}` }});
+  await apiClient.post(`${path}`, {});
 }
 
 export default function CoachScreen() {

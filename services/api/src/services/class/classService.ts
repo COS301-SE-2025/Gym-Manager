@@ -13,6 +13,7 @@ import {
 import { ClassRepository } from '../../repositories/class/classRepository';
 import { UserRepository } from '../../repositories/auth/userRepository';
 import { IUserRepository } from '../../domain/interfaces/auth.interface';
+import { AnalyticsService } from '../analytics/analyticsService';
 
 /**
  * ClassService - Business Layer
@@ -21,10 +22,12 @@ import { IUserRepository } from '../../domain/interfaces/auth.interface';
 export class ClassService implements IClassService {
   private classRepository: IClassRepository;
   private userRepository: UserRepository;
+  private analyticsService: AnalyticsService;
 
-  constructor(classRepository?: IClassRepository, userRepository?: UserRepository) {
+  constructor(classRepository?: IClassRepository, userRepository?: UserRepository, analyticsService?: AnalyticsService) {
     this.classRepository = classRepository || new ClassRepository();
     this.userRepository = userRepository || new UserRepository();
+    this.analyticsService = analyticsService || new AnalyticsService();
   }
 
   async getCoachAssignedClasses(coachId: number): Promise<Class[]> {
@@ -135,6 +138,18 @@ export class ClassService implements IClassService {
       // Insert booking
       await this.classRepository.insertBooking(classId, memberId, tx);
     });
+
+    // Log booking event
+    await this.analyticsService.addLog({
+      gymId: 1, // Assuming a single gym for now
+      userId: memberId,
+      eventType: 'class_booking',
+      properties: {
+        classId: classId,
+        memberId: memberId,
+      },
+      source: 'api',
+    });
   }
 
   async checkInToClass(classId: number, memberId: number): Promise<ClassAttendance> {
@@ -142,6 +157,19 @@ export class ClassService implements IClassService {
     if (!attendance) {
       throw new Error('Already checked in');
     }
+
+    // Log attendance event
+    await this.analyticsService.addLog({
+      gymId: 1, // Assuming a single gym for now
+      userId: memberId,
+      eventType: 'class_attendance',
+      properties: {
+        classId: classId,
+        memberId: memberId,
+      },
+      source: 'api',
+    });
+
     return attendance;
   }
 
@@ -151,6 +179,18 @@ export class ClassService implements IClassService {
     if (rowCount === 0) {
       throw new Error('Booking not found');
     }
+
+    // Log cancellation event
+    await this.analyticsService.addLog({
+      gymId: 1, // Assuming a single gym for now
+      userId: memberId,
+      eventType: 'class_cancellation',
+      properties: {
+        classId: classId,
+        memberId: memberId,
+      },
+      source: 'api',
+    });
   }
 
   private validateWorkoutData(workoutData: CreateWorkoutRequest): void {

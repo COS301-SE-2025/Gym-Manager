@@ -14,6 +14,28 @@ export const logService = {
     }
   },
 };
+
+export const analyticsService = {
+  async getSummaryStats(period?: string): Promise<{
+    totalBookings: number;
+    fillRate: number;
+    cancellationRate: number;
+    noShowRate: number;
+  }> {
+    try {
+      const token = localStorage.getItem('authToken');
+      const params = period ? { period } : {};
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/analytics/summary-stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch summary stats:', error);
+      throw error;
+    }
+  },
+};
 // MOCK DATA GENERATORS
 const getMockOperations = (period: string) => {
   if (period === 'daily') {
@@ -69,21 +91,25 @@ export const reportsService = {
     return logService.getLogs();
   },
 
-  // NEW MOCKED FUNCTIONS
-  getSummaryStats: async () => {
-    return new Promise((resolve) =>
-      // eslint-disable-next-line no-undef
-      setTimeout(
-        () =>
-          resolve({
-            bookings: '1,284',
-            fillRate: 0.88,
-            cancellationRate: 0.04,
-            noShowRate: 0.02,
-          }),
-        500,
-      )
-    );
+  getSummaryStats: async (period?: string) => {
+    try {
+      const stats = await analyticsService.getSummaryStats(period);
+      return {
+        bookings: stats.totalBookings.toLocaleString(),
+        fillRate: stats.fillRate,
+        cancellationRate: stats.cancellationRate,
+        noShowRate: stats.noShowRate,
+      };
+    } catch (error) {
+      console.error('Failed to fetch summary stats:', error);
+      // Fallback to mock data if API fails
+      return {
+        bookings: '0',
+        fillRate: 0,
+        cancellationRate: 0,
+        noShowRate: 0,
+      };
+    }
   },
 
   getOperationsData: (period: string) => {

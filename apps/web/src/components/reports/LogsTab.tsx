@@ -14,6 +14,15 @@ const formatLogMessage = (log: any): string => {
     case 'class_creation':
       return `Created new class: "${properties?.classId ? `Class ID: ${properties.classId}` : 'Unknown Class'}" on ${properties?.scheduledDate} at ${properties?.scheduledTime}.`;
     
+    case 'class_booking':
+      return `User (ID: ${userId}) booked class ID: ${properties?.classId}.`;
+    
+    case 'class_cancellation':
+      return `User (ID: ${userId}) cancelled booking for class ID: ${properties?.classId}.`;
+    
+    case 'class_attendance':
+      return `User (ID: ${userId}) attended class ID: ${properties?.classId}.`;
+    
     case 'user_role_assignment':
       return `Assigned role "${properties?.role}" to user ID: ${properties?.assignedUserId}.`;
     

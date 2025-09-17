@@ -8,6 +8,7 @@ import HeatMapReport from '@/components/reports/HeatMapReport';
 import ReportStatCard from '@/components/reports/ReportStatCard';
 import OperationsChart from '@/components/reports/OperationsChart';
 import AcquisitionChart from '@/components/reports/AcquisitionChart';
+import TimePeriodToggle from '@/components/reports/TimePeriodToggle';
 import { reportsService } from '../../services/reports';
 import './reports.css';
 
@@ -17,14 +18,29 @@ const TABS = [
   { key: 'logs', label: 'Logs' },
 ];
 
+type Period = 'today' | 'lastWeek' | 'lastMonth' | 'lastYear' | 'all';
+
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<string>('operations');
   const [stats, setStats] = useState<any>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>('all');
+  const [loading, setLoading] = useState(false);
+
+  const fetchStats = async (period: Period) => {
+    setLoading(true);
+    try {
+      const statsData = await reportsService.getSummaryStats(period);
+      setStats(statsData);
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Mock fetching summary stats
-    reportsService.getSummaryStats().then(setStats);
-  }, []);
+    fetchStats(selectedPeriod);
+  }, [selectedPeriod]);
 
   return (
     <div className="page-container">
@@ -50,18 +66,33 @@ export default function ReportsPage() {
       <div className="tab-content">
         {activeTab === 'operations' && (
           <div className="operations-tab">
+            <div style={{ marginBottom: '1.5rem' }}>
+              <TimePeriodToggle selected={selectedPeriod} onSelect={setSelectedPeriod} />
+            </div>
             <div className="cards-row">
-              <ReportStatCard title="Total Bookings" value={stats?.bookings ?? '...'} />
-              <ReportStatCard title="Fill Rate" value={stats?.fillRate ? `${(stats.fillRate * 100).toFixed(1)}%` : '...'} />
-              <ReportStatCard title="Cancellation Rate" value={stats?.cancellationRate ? `${(stats.cancellationRate * 100).toFixed(1)}%` : '...'} />
-              <ReportStatCard title="No-Show Rate" value={stats?.noShowRate ? `${(stats.noShowRate * 100).toFixed(1)}%` : '...'} />
+              <ReportStatCard 
+                title="Total Bookings" 
+                value={loading ? '...' : (stats?.bookings ?? '...')} 
+              />
+              <ReportStatCard 
+                title="Fill Rate" 
+                value={loading ? '...' : (stats?.fillRate ? `${(stats.fillRate * 100).toFixed(1)}%` : '...')} 
+              />
+              <ReportStatCard 
+                title="Cancellation Rate" 
+                value={loading ? '...' : (stats?.cancellationRate ? `${(stats.cancellationRate * 100).toFixed(1)}%` : '...')} 
+              />
+              <ReportStatCard 
+                title="No-Show Rate" 
+                value={loading ? '...' : (stats?.noShowRate ? `${(stats.noShowRate * 100).toFixed(1)}%` : '...')} 
+              />
             </div>
             <div className="management-card full-width-card">
               <div className="card-title">
                 <h2>Operational Metrics</h2>
               </div>
               <div className="card-content">
-                <OperationsChart />
+                <OperationsChart period={selectedPeriod} />
               </div>
             </div>
             {/* <div className="management-card full-width-card">

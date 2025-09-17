@@ -119,7 +119,7 @@ export class App {
       console.log('- /admin/* - Admin management endpoints');
       console.log('- /live/* - Live class endpoints');
       console.log('- /settings/* - User settings endpoints');
-      console.log('- /analytics/* - Analytics endpoints');
+      console.log('- /analytics/* - Analytics endpoints (logs, summary-stats)');
       console.log('- /health - Health check endpoint');
     });
   }

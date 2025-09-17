@@ -2,17 +2,17 @@
 
 import './TimePeriodToggle.css';
 
-type Period = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'all';
+type Period = 'today' | 'lastWeek' | 'lastMonth' | 'lastYear' | 'all';
 interface TimePeriodToggleProps {
   selected: Period;
   onSelect: (period: Period) => void;
 }
 
 const periods: { key: Period; label: string }[] = [
-  { key: 'daily', label: 'Daily' },
-  { key: 'weekly', label: 'Weekly' },
-  { key: 'monthly', label: 'Monthly' },
-  { key: 'yearly', label: 'Yearly' },
+  { key: 'today', label: 'Today' },
+  { key: 'lastWeek', label: 'Last Week' },
+  { key: 'lastMonth', label: 'Last Month' },
+  { key: 'lastYear', label: 'Last Year' },
   { key: 'all', label: 'All Time' },
 ];
 

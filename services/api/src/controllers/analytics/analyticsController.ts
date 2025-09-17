@@ -15,3 +15,13 @@ export const getLogs = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Failed to retrieve logs', error });
   }
 };
+
+export const getSummaryStats = async (req: Request, res: Response) => {
+  try {
+    const { period } = req.query;
+    const stats = await analyticsService.getSummaryStats(period as string);
+    res.status(200).json(stats);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to retrieve summary stats', error });
+  }
+};

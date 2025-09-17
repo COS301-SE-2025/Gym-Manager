@@ -2,18 +2,25 @@
 import { useEffect, useState } from 'react';
 import { CustomChart } from '@/components/Chart/CustomChart';
 import { reportsService } from '@/app/services/reports';
-import TimePeriodToggle from './TimePeriodToggle';
 
-export default function OperationsChart() {
+type Period = 'today' | 'lastWeek' | 'lastMonth' | 'lastYear' | 'all';
+
+interface OperationsChartProps {
+  period: Period;
+}
+
+export default function OperationsChart({ period }: OperationsChartProps) {
   const [data, setData] = useState<any | null>(null);
-  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
 
   useEffect(() => {
     setData(null); // Clear previous data
     // reportsService.getOperationsData(period).then(setData).catch(console.error);
     
-    // Mock data fetching
-    const mockData = reportsService.getOperationsData(period);
+    // Mock data fetching - convert new period to old format for now
+    const oldPeriod = period === 'today' ? 'daily' : 
+                     period === 'lastWeek' ? 'weekly' : 
+                     period === 'lastMonth' ? 'monthly' : 'weekly';
+    const mockData = reportsService.getOperationsData(oldPeriod);
     setTimeout(() => setData(mockData), 300);
 
   }, [period]);
@@ -21,11 +28,8 @@ export default function OperationsChart() {
   if (!data) return <div>Loading Chart...</div>;
 
   return (
-    <div>
-      <TimePeriodToggle selected={period} onSelect={setPeriod} />
-      <div style={{ height: 350, marginTop: '1rem' }}>
-        <CustomChart type="line" labels={data.labels} datasets={data.datasets} />
-      </div>
+    <div style={{ height: 350 }}>
+      <CustomChart type="line" labels={data.labels} datasets={data.datasets} />
     </div>
   );
 }

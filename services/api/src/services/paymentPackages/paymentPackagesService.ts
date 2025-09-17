@@ -100,10 +100,10 @@ export class PaymentPackagesService {
       creditsAmount: pkg.creditsAmount,
       priceCents: pkg.priceCents,
       currency: pkg.currency || 'USD',
-      isActive: pkg.isActive,
+      isActive: pkg.isActive ?? true,
       createdBy: pkg.createdBy || undefined,
-      createdAt: pkg.createdAt,
-      updatedAt: pkg.updatedAt,
+      createdAt: pkg.createdAt || new Date().toISOString(),
+      updatedAt: pkg.updatedAt || new Date().toISOString(),
     }));
   }
 
@@ -123,10 +123,10 @@ export class PaymentPackagesService {
       creditsAmount: pkg.creditsAmount,
       priceCents: pkg.priceCents,
       currency: pkg.currency || 'USD',
-      isActive: pkg.isActive,
+      isActive: pkg.isActive ?? true,
       createdBy: pkg.createdBy || undefined,
-      createdAt: pkg.createdAt,
-      updatedAt: pkg.updatedAt,
+      createdAt: pkg.createdAt || new Date().toISOString(),
+      updatedAt: pkg.updatedAt || new Date().toISOString(),
     }));
   }
 
@@ -271,8 +271,8 @@ export class PaymentPackagesService {
       .where(eq(members.status, 'approved'));
 
     // Calculate MRR (using current month as proxy)
-    const currentMRR = currentRevenue?.totalRevenue || 0;
-    const previousMRR = previousRevenue?.totalRevenue || 0;
+    const currentMRR = Number(currentRevenue?.totalRevenue) || 0;
+    const previousMRR = Number(previousRevenue?.totalRevenue) || 0;
     const mrrGrowth = previousMRR > 0 ? ((currentMRR - previousMRR) / previousMRR) * 100 : 0;
 
     // Calculate ARPU
@@ -302,14 +302,16 @@ export class PaymentPackagesService {
     // Calculate growth for each month
     const trendsWithGrowth = revenueTrends.map((trend, index) => {
       const previousTrend = index > 0 ? revenueTrends[index - 1] : null;
-      const growth = previousTrend && previousTrend.revenue > 0 
-        ? ((trend.revenue - previousTrend.revenue) / previousTrend.revenue) * 100 
+      const currentRevenue = Number(trend.revenue) || 0;
+      const previousRevenue = Number(previousTrend?.revenue) || 0;
+      const growth = previousTrend && previousRevenue > 0 
+        ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 
         : 0;
 
       return {
         year: trend.year,
         month: trend.month,
-        revenue: trend.revenue || 0,
+        revenue: currentRevenue,
         growth: Math.round(growth * 100) / 100,
       };
     });
@@ -326,8 +328,8 @@ export class PaymentPackagesService {
         growth: Math.round(arpuGrowth * 100) / 100,
       },
       lifetimeValue: {
-        average: Math.round(ltvData?.averageLTV || 0),
-        median: Math.round(ltvData?.medianLTV || 0),
+        average: Math.round(Number(ltvData?.averageLTV) || 0),
+        median: Math.round(Number(ltvData?.medianLTV) || 0),
       },
       revenueTrends: trendsWithGrowth,
     };
@@ -361,10 +363,10 @@ export class PaymentPackagesService {
       amountCents: tx.amountCents,
       creditsPurchased: tx.creditsPurchased,
       paymentMethod: tx.paymentMethod || undefined,
-      paymentStatus: tx.paymentStatus,
+      paymentStatus: tx.paymentStatus || 'pending',
       externalTransactionId: tx.externalTransactionId || undefined,
       processedAt: tx.processedAt || undefined,
-      createdAt: tx.createdAt,
+      createdAt: tx.createdAt || new Date().toISOString(),
     }));
   }
 }

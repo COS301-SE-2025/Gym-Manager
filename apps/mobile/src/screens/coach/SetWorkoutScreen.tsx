@@ -20,8 +20,10 @@ import BottomSheet from '@gorhom/bottom-sheet';
 import IconLogo from '../../components/common/IconLogo';
 import { CoachStackParamList } from '../../navigation/CoachNavigator';
 import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
 import config from '../../config';
+import apiClient from '../../utils/apiClient';
+import { getUser, User } from '../../utils/authStorage';
+import WorkoutSelectSheet from '../../components/WorkoutSelectSheet';
 
 const { width } = Dimensions.get('window');
 
@@ -37,6 +39,10 @@ interface ClassDetails {
   workoutId: number | null;
   coachId: number;
   workoutName?: string;
+  durationMinutes?: number;
+  coachFirstName?: string;
+  coachLastName?: string;
+  bookingsCount?: number;
 }
 
 interface Exercise {
@@ -61,24 +67,23 @@ interface Workout {
   workoutType: WorkoutType;
   workoutTime: string;
   numberOfRounds: string;
-  numberOfSubRounds: string;
   subRounds: SubRound[];
 }
 
 type SetWorkoutScreenProps = StackScreenProps<CoachStackParamList, 'SetWorkout'>;
 
 export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreenProps) {
-  const { classId } = route.params;
+  const { classId, editMode = false } = route.params;
 
   const [classDetails, setClassDetails] = useState<ClassDetails | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [workouts, setWorkouts] = useState<Workout[]>([
     {
       id: '1',
-      workoutName: 'Workout 1',
-      workoutType: 'EMOM',
+      workoutName: 'Workout',
+      workoutType: 'FOR_TIME',
       workoutTime: '00:00:00',
       numberOfRounds: '',
-      numberOfSubRounds: '',
       subRounds: [
         {
           id: '1',
@@ -98,28 +103,35 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedMinutes, setSelectedMinutes] = useState(0);
   const [selectedSeconds, setSelectedSeconds] = useState(0);
+  const [showWorkoutSelectSheet, setShowWorkoutSelectSheet] = useState(false);
   
   // Bottom sheet refs
   const timePickerBottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['50%'], []);
 
   useEffect(() => {
-    fetchClassDetails();
+    (async () => {
+      const u = await getUser();
+      setUser(u);
+      await fetchClassDetails();
+    })();
   }, [classId]);
+
+  // Separate useEffect to handle loading existing workout when classDetails is available
+  useEffect(() => {
+    if (editMode && classDetails?.workoutId) {
+      loadExistingWorkout(classDetails.workoutId);
+    }
+  }, [classDetails, editMode]);
 
   const fetchClassDetails = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await axios.get<ClassDetails[]>(
-        `${config.BASE_URL}/coach/assigned`,
-        { headers: { Authorization: `Bearer ${token}` } },
+      // Use classes-with-workouts to get capacity, bookingsCount, coach names, and duration
+      const response = await apiClient.get<ClassDetails[]>(
+        `/coach/classes-with-workouts`,
       );
 
       const classData = response.data.find((c) => c.classId === classId);
@@ -160,28 +172,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
     );
   };
 
-  const addWorkout = () => {
-    const newWorkoutId = (workouts.length + 1).toString();
-    const newWorkout: Workout = {
-      id: newWorkoutId,
-      workoutName: `Workout ${newWorkoutId}`,
-      workoutType: 'EMOM',
-      workoutTime: '00:00:00',
-      numberOfRounds: '',
-      numberOfSubRounds: '',
-      subRounds: [
-        {
-          id: '1',
-          name: 'Sub Round 1',
-          exercises: [],
-          isExpanded: false,
-          subroundNumber: 1,
-        },
-      ],
-    };
-    setWorkouts(prev => [...prev, newWorkout]);
-    setCurrentWorkoutIndex(workouts.length);
-  };
+  // removed addWorkout functionality
 
   const removeWorkout = (workoutIndex: number) => {
     if (workouts.length <= 1) {
@@ -213,13 +204,14 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
   };
 
   const addExercise = (subRoundId: string) => {
+    const newExerciseId = Date.now().toString();
     setCurrentWorkout({
       subRounds: currentWorkout.subRounds.map(sr => 
         sr.id === subRoundId 
           ? { 
               ...sr, 
               exercises: [...sr.exercises, { 
-                id: Date.now().toString(), 
+                id: newExerciseId, 
                 name: '', 
                 reps: '',
                 quantityType: 'reps' as const,
@@ -312,16 +304,165 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
     setShowTimePicker(false);
   }, []);
 
+  const handleLoadWorkout = async (workoutId: number, workoutName: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Fetch workout details
+      const response = await apiClient.get(`/workout/${workoutId}/steps`);
+      const workoutData = response.data;
+
+      // Parse the workout data and populate the form
+      if (workoutData && workoutData.steps) {
+        const steps = workoutData.steps;
+        
+        // Group steps by round and subround
+        const roundsMap = new Map<number, Map<number, any[]>>();
+        
+        steps.forEach((step: any) => {
+          const roundNum = step.round || step.roundNumber || 1;
+          const subroundNum = step.subround || step.subroundNumber || 1;
+          
+          if (!roundsMap.has(roundNum)) {
+            roundsMap.set(roundNum, new Map());
+          }
+          
+          const subroundsMap = roundsMap.get(roundNum)!;
+          if (!subroundsMap.has(subroundNum)) {
+            subroundsMap.set(subroundNum, []);
+          }
+          
+          // Extract clean exercise name by removing reps information
+          const rawName = step.name || step.title || step.exerciseName || 'Exercise';
+          const cleanName = rawName.replace(/^\d+\s*x\s*/i, '').trim();
+          
+          subroundsMap.get(subroundNum)!.push({
+            id: Date.now().toString() + Math.random(),
+            name: cleanName,
+            reps: (step.reps || step.quantity || step.duration || 0).toString(),
+            quantityType: step.quantityType || (step.reps ? 'reps' : 'duration'),
+            notes: step.notes || '',
+          });
+        });
+
+        // Convert to workout structure
+        const subRounds: SubRound[] = [];
+        let subroundCounter = 1;
+
+        roundsMap.forEach((subroundsMap, roundNum) => {
+          subroundsMap.forEach((exercises, subroundNum) => {
+            subRounds.push({
+              id: subroundCounter.toString(),
+              name: `Sub Round ${subroundCounter}`,
+              exercises: exercises,
+              isExpanded: false,
+              subroundNumber: subroundCounter,
+            });
+            subroundCounter++;
+          });
+        });
+
+        // Update the workout
+        setCurrentWorkout({
+          workoutName: workoutName,
+          workoutType: 'FOR_TIME', // Default, can be updated
+          workoutTime: '00:15:00', // Default, can be updated
+          numberOfRounds: '1', // Default, can be updated
+          subRounds: subRounds,
+        });
+
+        Alert.alert('Success!', `Loaded workout "${workoutName}" with ${subRounds.length} sub-rounds.`);
+      }
+    } catch (error: any) {
+      console.error('Failed to load workout:', error);
+      setError('Failed to load workout details. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadExistingWorkout = async (workoutId: number) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Fetch workout details
+      const response = await apiClient.get(`/workout/${workoutId}/steps`);
+      const workoutData = response.data;
+
+      // Parse the workout data and populate the form
+      if (workoutData && workoutData.steps) {
+        const steps = workoutData.steps;
+        
+        // Group steps by round and subround
+        const roundsMap = new Map<number, Map<number, any[]>>();
+        
+        steps.forEach((step: any) => {
+          const roundNum = step.round || step.roundNumber || 1;
+          const subroundNum = step.subround || step.subroundNumber || 1;
+          
+          if (!roundsMap.has(roundNum)) {
+            roundsMap.set(roundNum, new Map());
+          }
+          
+          const subroundsMap = roundsMap.get(roundNum)!;
+          if (!subroundsMap.has(subroundNum)) {
+            subroundsMap.set(subroundNum, []);
+          }
+          
+          // Extract clean exercise name by removing reps information
+          const rawName = step.name || step.title || step.exerciseName || 'Exercise';
+          const cleanName = rawName.replace(/^\d+\s*x\s*/i, '').trim();
+          
+          subroundsMap.get(subroundNum)!.push({
+            id: Date.now().toString() + Math.random(),
+            name: cleanName,
+            reps: (step.reps || step.quantity || step.duration || 0).toString(),
+            quantityType: step.quantityType || (step.reps ? 'reps' : 'duration'),
+            notes: step.notes || '',
+          });
+        });
+
+        // Convert to workout structure
+        const subRounds: SubRound[] = [];
+        let subroundCounter = 1;
+
+        roundsMap.forEach((subroundsMap, roundNum) => {
+          subroundsMap.forEach((exercises, subroundNum) => {
+            subRounds.push({
+              id: subroundCounter.toString(),
+              name: `Sub Round ${subroundCounter}`,
+              exercises: exercises,
+              isExpanded: false,
+              subroundNumber: subroundCounter,
+            });
+            subroundCounter++;
+          });
+        });
+
+        // Update the workout with existing data
+        setCurrentWorkout({
+          workoutName: classDetails?.workoutName || 'Workout',
+          workoutType: 'FOR_TIME', // Default, can be updated
+          workoutTime: '00:15:00', // Default, can be updated
+          numberOfRounds: '1', // Default, can be updated
+          subRounds: subRounds,
+        });
+      }
+    } catch (error: any) {
+      console.error('Failed to load existing workout:', error);
+      setError('Failed to load existing workout details. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSaveWorkout = async () => {
     setIsSaving(true);
     setError(null);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
       // Validate all workouts
       for (let i = 0; i < workouts.length; i++) {
         const workout = workouts[i];
@@ -352,7 +493,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             ...(workout.workoutType === 'EMOM' || workout.workoutType === 'TABATA' ? {
               number_of_rounds: parseInt(workout.numberOfRounds) || 1,
             } : {}),
-            number_of_subrounds: parseInt(workout.numberOfSubRounds) || workout.subRounds.length,
+            number_of_subrounds: workout.subRounds.length,
           },
           rounds: [
             {
@@ -375,10 +516,9 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
         console.log(`Creating workout: ${workout.workoutName}`, workoutData);
 
-        const createResponse = await axios.post(
-          `${config.BASE_URL}/coach/create-workout`,
+        const createResponse = await apiClient.post(
+          `/coach/create-workout`,
           workoutData,
-          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (createResponse.data.success) {
@@ -392,13 +532,12 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       if (classDetails && createdWorkoutIds.length > 0) {
         // For now, assign the first workout to the class
         // You might want to modify the API to support multiple workouts per class
-        const assignResponse = await axios.post(
-          `${config.BASE_URL}/coach/assign-workout`,
+        const assignResponse = await apiClient.post(
+          `/coach/assign-workout`,
           {
             classId: classDetails.classId,
             workoutId: createdWorkoutIds[0], // Assign the first workout
           },
-          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (assignResponse.data.success) {
@@ -495,7 +634,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Set Workout</Text>
+        <Text style={styles.headerTitle}>{editMode ? 'Edit Workout' : 'Set Workout'}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -508,49 +647,26 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
               <Text style={styles.infoTime}>{formatTime(classDetails.scheduledTime)}</Text>
             </View>
             <View style={styles.infoProgressSection}>
-              <Text style={styles.infoProgress}>8/12</Text>
+              <Text style={styles.infoProgress}>
+                {`${(classDetails as any).bookingsCount ?? 0}/${classDetails.capacity}`}
+              </Text>
             </View>
           </View>
           <View style={styles.infoDetails}>
-            <Text style={styles.infoInstructor}>Vansh Sood</Text>
+            <Text style={styles.infoInstructor}>
+              {(() => {
+                const first = classDetails.coachFirstName ?? user?.firstName ?? ''; // if no coach name, use user name
+                const last = classDetails.coachLastName ?? user?.lastName ?? ''; // if no coach name, use user name
+                const name = `${first} ${last}`.trim();
+                const dur = typeof classDetails.durationMinutes === 'number' ? ` • ${classDetails.durationMinutes} min` : '';
+                return (name || 'Coach') + dur;
+              })()}
+            </Text>
             <Text style={styles.infoWorkoutName}>{currentWorkout.workoutName}</Text>
           </View>
         </View>
 
-        {/* Workout Selector */}
-        <View style={styles.workoutSelectorContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {workouts.map((workout, index) => (
-              <TouchableOpacity
-                key={workout.id}
-                style={[
-                  styles.workoutTab,
-                  currentWorkoutIndex === index && styles.workoutTabActive
-                ]}
-                onPress={() => selectWorkout(index)}
-              >
-                <Text style={[
-                  styles.workoutTabText,
-                  currentWorkoutIndex === index && styles.workoutTabTextActive
-                ]}>
-                  {workout.workoutName}
-                </Text>
-                {workouts.length > 1 && (
-                  <TouchableOpacity
-                    style={styles.removeWorkoutTabButton}
-                    onPress={() => removeWorkout(index)}
-                  >
-                    <Ionicons 
-                      name="trash-outline" 
-                      size={16} 
-                      color={currentWorkoutIndex === index ? "#1a1a1a" : "white"} 
-                    />
-                  </TouchableOpacity>
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        {/* Workout Selector removed */}
 
         {/* Current Workout Content */}
         <View style={styles.workoutContent}>
@@ -645,19 +761,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
               </View>
             )}
 
-            {/* Number of Sub Rounds */}
-            <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Number of Sub Rounds</Text>
-              <TextInput
-                style={styles.numberInput}
-                value={currentWorkout.numberOfSubRounds}
-                onChangeText={(value) => setCurrentWorkout({ numberOfSubRounds: value })}
-                placeholder=""
-                placeholderTextColor="#888"
-                keyboardType="numeric"
-                editable={!isSaving}
-              />
-            </View>
+            {/* Number of Sub Rounds removed (computed from subRounds length) */}
           </View>
 
           {/* Sub Rounds Section */}
@@ -698,14 +802,22 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                   <View style={styles.subRoundContent}>
                     {subRound.exercises.map((exercise) => (
                       <View key={exercise.id} style={styles.exerciseRow}>
-                        <TextInput
+                        <TouchableOpacity
                           style={styles.exerciseInput}
-                          value={exercise.name}
-                          onChangeText={(value) => updateExercise(subRound.id, exercise.id, 'name', value)}
-                          placeholder="Input Exercise"
-                          placeholderTextColor="#888"
-                          editable={!isSaving}
-                        />
+                          disabled={isSaving}
+                          onPress={() => {
+                            navigation.navigate('ExerciseSelect', {
+                              query: exercise.name,
+                              onSelect: (name: string) => {
+                                updateExercise(subRound.id, exercise.id, 'name', name);
+                              },
+                            });
+                          }}
+                        >
+                          <Text style={{ color: exercise.name ? 'white' : '#888', fontSize: 12 }}>
+                            {exercise.name || 'Select Exercise'}
+                          </Text>
+                        </TouchableOpacity>
                         <TextInput
                           style={styles.repsInput}
                           value={exercise.reps}
@@ -761,30 +873,35 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             )}
           </View>
 
-          {/* Add Workout Button - Original design with dashed outline */}
-          <TouchableOpacity 
-            style={styles.addWorkoutButton}
-            onPress={addWorkout}
-          >
-            <Text style={styles.addWorkoutIcon}>+</Text>
-            <Text style={styles.addWorkoutText}>Add Workout</Text>
-          </TouchableOpacity>
+          {/* Add Workout Button removed */}
         </View>
       </ScrollView>
 
-      {/* Set Workout Button */}
+      {/* Bottom Buttons */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity
-          style={[styles.setWorkoutButton, isSaving && styles.disabledButton]}
-          onPress={handleSaveWorkout}
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <ActivityIndicator size="small" color="#1a1a1a" />
-          ) : (
-            <Text style={styles.setWorkoutButtonText}>Set {workouts.length} Workout(s)</Text>
-          )}
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[styles.loadWorkoutButton, isSaving && styles.disabledButton]}
+            onPress={() => setShowWorkoutSelectSheet(true)}
+            disabled={isSaving}
+          >
+            <Text style={styles.loadWorkoutButtonText}>Load Workout</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.setWorkoutButton, isSaving && styles.disabledButton]}
+            onPress={handleSaveWorkout}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#1a1a1a" />
+            ) : (
+              <Text style={styles.setWorkoutButtonText}>
+                {editMode ? 'Update Workout' : `Set ${workouts.length} Workout(s)`}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Premium Time Picker Modal */}
@@ -906,6 +1023,13 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           </View>
         </View>
       </Modal>
+
+      {/* Workout Select Sheet */}
+      <WorkoutSelectSheet
+        visible={showWorkoutSelectSheet}
+        onClose={() => setShowWorkoutSelectSheet(false)}
+        onSelectWorkout={handleLoadWorkout}
+      />
     </SafeAreaView>
   );
 }
@@ -1194,38 +1318,39 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333',
   },
-  addWorkoutButton: {
-    borderWidth: 1,
-    borderColor: '#555',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  addWorkoutIcon: {
-    color: '#D8FF3E',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginRight: 8,
-  },
-  addWorkoutText: {
-    color: '#D8FF3E',
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  // addWorkoutButton removed
+  // addWorkoutIcon removed
+  // addWorkoutText removed
   bottomContainer: {
     paddingHorizontal: 20,
     paddingVertical: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  loadWorkoutButton: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#D8FF3E',
+    flex: 1,
+  },
+  loadWorkoutButtonText: {
+    color: '#D8FF3E',
+    fontSize: 16,
+    fontWeight: '700',
   },
   setWorkoutButton: {
     backgroundColor: '#D8FF3E',
     borderRadius: 12,
     paddingVertical: 16,
+    paddingHorizontal: 20,
     alignItems: 'center',
+    flex: 2,
   },
   setWorkoutButtonText: {
     color: '#1a1a1a',
@@ -1338,31 +1463,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  workoutSelectorContainer: {
-    marginBottom: 20,
-  },
-  workoutTab: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    minWidth: 120,
-  },
-  workoutTabActive: {
-    backgroundColor: '#D8FF3E',
-  },
-  workoutTabText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-    flex: 1,
-  },
-  workoutTabTextActive: {
-    color: '#1a1a1a',
-  },
+  // workout selector styles removed
   removeWorkoutTabButton: {
     borderRadius: 4,
     width: 24,
@@ -1372,20 +1473,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
-  addWorkoutTabButton: {
-    backgroundColor: '#D8FF3E',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 40,
-  },
-  addWorkoutTabIcon: {
-    color: '#1a1a1a',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  // addWorkoutTabButton removed
+  // addWorkoutTabIcon removed
   workoutContent: {
     // Container for the current workout's content
   },
@@ -1396,69 +1485,6 @@ const styles = StyleSheet.create({
   },
   bottomSheetIndicator: {
     backgroundColor: '#666',
-  },
-  timePickerContainer: {
-    padding: 20,
-  },
-  timePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  timePickerTitle: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  timePickerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-  },
-  timePickerColumn: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  timePickerLabel: {
-    color: 'white',
-    fontSize: 14,
-    marginBottom: 12,
-    fontWeight: '500',
-  },
-  timePickerScrollView: {
-    height: 200,
-    width: 120,
-  },
-  timePickerItem: {
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-    marginVertical: 2,
-  },
-  timePickerItemSelected: {
-    backgroundColor: '#D8FF3E',
-  },
-  timePickerItemText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '500',
-  },
-  timePickerItemTextSelected: {
-    color: '#1a1a1a',
-    fontWeight: '600',
-  },
-  timePickerDoneButton: {
-    backgroundColor: '#D8FF3E',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  timePickerDoneButtonText: {
-    color: '#1a1a1a',
-    fontSize: 16,
-    fontWeight: '700',
   },
 
   // Premium Time Picker Modal Styles

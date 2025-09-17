@@ -14,3 +14,33 @@ export interface GymClass {
   capacity: number;
   enrolled: number;
 }
+
+// Analytics Types
+export interface CoachAnalytics {
+  averageAttendance: number;
+  totalClasses: number;
+  averageFillRate: number;
+  attendanceTrends: AttendanceTrend[];
+}
+
+export interface AttendanceTrend {
+  date: string;
+  attendance: number;
+  capacity: number;
+  fillRate: number;
+}
+
+export interface MemberAnalytics {
+  averageLeaderboardPosition: number;
+  totalClassesAttended: number;
+  classPerformance: ClassPerformance[];
+}
+
+export interface ClassPerformance {
+  classId: number;
+  workoutName: string;
+  scheduledDate: string;
+  position: number;
+  totalParticipants: number;
+  score: number | null;
+}

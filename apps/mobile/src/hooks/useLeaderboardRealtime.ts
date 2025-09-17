@@ -24,6 +24,7 @@ export function useLeaderboardRealtime(classId: number) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'class_sessions', filter: `class_id=eq.${classId}`}, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'live_progress',  filter: `class_id=eq.${classId}`}, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'live_interval_scores', filter: `class_id=eq.${classId}`}, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_emom_scores', filter: `class_id=eq.${classId}`}, refresh)
       .subscribe();
 
     const poll = setInterval(refresh, 2500);

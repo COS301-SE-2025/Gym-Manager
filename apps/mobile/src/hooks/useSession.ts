@@ -14,23 +14,39 @@ export function useSession(classId?: number) {
         const r = await apiClient.get(`/live/${classId}/session`);
         if (!canceled) setSess(r.data);
       } catch (err: any) {
-        console.error('Failed to fetch session:', err);
+        const status = err?.response?.status;
+        if (status === 404) {
+          // No session yet — clear stale state & avoid noisy redbox
+          if (!canceled) setSess(null);
+        } else {
+          console.warn('Failed to fetch session:', err?.message ?? err);
+        }
       }
     };
 
-    // realtime updates from Postgres
-    const ch = supabase.channel(`sess-${classId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'class_sessions', filter: `class_id=eq.${classId}` }, payload => {
-        if (payload?.new && !canceled) setSess(payload.new);
-      })
+    // Realtime updates from Postgres
+    const ch = supabase
+      .channel(`sess-${classId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'class_sessions', filter: `class_id=eq.${classId}` },
+        (payload) => {
+          if (canceled) return;
+          if (payload?.new) setSess(payload.new);
+          // (If the row were ever deleted, you'd get payload.old; not expected in this flow.)
+        }
+      )
       .subscribe();
 
-    // very light fallback poll in case realtime lags
-    // (we have 2 seconds here which can be a bit aggressive, might have to lower for rates)
+    // Light poll as a fallback
     const poll = setInterval(initial, 2000);
 
     initial();
-    return () => { canceled = true; supabase.removeChannel(ch); clearInterval(poll); };
+    return () => {
+      canceled = true;
+      supabase.removeChannel(ch);
+      clearInterval(poll);
+    };
   }, [classId]);
 
   return sess;

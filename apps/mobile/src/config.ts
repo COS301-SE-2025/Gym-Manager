@@ -1,4 +1,4 @@
-const BASE_URL = 'http://192.168.1.45:4000';
+const BASE_URL = __DEV__ ? 'http://localhost:4000' : 'https://gym-manager-api-new.vercel.app';
 
 const config = {
   BASE_URL,

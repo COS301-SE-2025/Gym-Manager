@@ -141,6 +141,26 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [liveClassError, setLiveClassError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Credit balance state
+  const [creditBalance, setCreditBalance] = useState<number>(0);
+  const [isLoadingCredits, setIsLoadingCredits] = useState<boolean>(true);
+
+  // Fetch credit balance
+  const fetchCreditBalance = async () => {
+    if (!currentUser?.userId) return;
+    
+    setIsLoadingCredits(true);
+    try {
+      const response = await apiClient.get(`/members/${currentUser.userId}/credits`);
+      setCreditBalance(response.data.creditsBalance || 0);
+    } catch (error) {
+      console.error('Failed to fetch credit balance:', error);
+      setCreditBalance(0);
+    } finally {
+      setIsLoadingCredits(false);
+    }
+  };
+
   // Extracted fetch logic to be reusable
   const fetchBookedClasses = async () => {
     setIsLoadingBooked(true);
@@ -268,8 +288,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     await fetchLiveClass();
     await fetchBookedClasses();
     await fetchUpcomingClasses();
+    await fetchCreditBalance();
     setRefreshing(false);
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -278,10 +299,18 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       await fetchLiveClass();
       await fetchBookedClasses();
       await fetchUpcomingClasses();
+      await fetchCreditBalance();
     };
 
     fetchInitialData();
   }, []);
+
+  // Fetch credit balance when user changes
+  useEffect(() => {
+    if (currentUser?.userId) {
+      fetchCreditBalance();
+    }
+  }, [currentUser]);
 
   const handleCancelClass = (classId: string) => {
     const classToCancel = bookedClasses.find((c) => c.id === classId);
@@ -325,6 +354,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         // Refresh booked classes to show the new one
         await fetchBookedClasses();
+        // Refresh credit balance
+        await fetchCreditBalance();
         return true;
       } else {
         Alert.alert(
@@ -347,6 +378,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           error.response.data.error === 'Already booked'
         ) {
           errorMessage = 'You have already booked this class.';
+        } else if (
+          error.response.status === 400 &&
+          error.response.data.error === 'Insufficient credits'
+        ) {
+          errorMessage = 'You don\'t have enough credits to book this class. Purchase more credits in your profile.';
         }
       }
       Alert.alert('Booking Error', errorMessage);
@@ -366,6 +402,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         // Optionally refresh upcoming to re-show class availability
         await fetchUpcomingClasses();
+        // Refresh credit balance
+        await fetchCreditBalance();
       } else {
         Alert.alert('Cancellation Failed', response.data?.error || 'Please try again.');
       }
@@ -454,12 +492,18 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <Text style={styles.welcomeText}>Welcome , {currentUser?.firstName || 'User'} 👋</Text>
 
           <View style={styles.passContainer}>
-            <Text style={styles.passText}>Your Pass</Text>
+            <Text style={styles.passText}>Credits</Text>
             <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View style={styles.progressFill} />
-              </View>
-              <Text style={styles.progressText}>2/3</Text>
+              {isLoadingCredits ? (
+                <Text style={styles.progressText}>Loading...</Text>
+              ) : (
+                <>
+                  <View style={styles.progressBar}>
+                    <View style={[styles.progressFill, { width: `${Math.min((creditBalance / 10) * 100, 100)}%` }]} />
+                  </View>
+                  <Text style={styles.progressText}>{creditBalance}</Text>
+                </>
+              )}
             </View>
           </View>
         </View>

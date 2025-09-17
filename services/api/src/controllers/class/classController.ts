@@ -204,6 +204,10 @@ export class ClassController {
       if (error.message === 'Class full') {
         return res.status(400).json({ error: 'Class full' });
       }
+      
+      if (error.message === 'Insufficient credits') {
+        return res.status(400).json({ error: 'Insufficient credits' });
+      }
 
       console.error('bookClass error:', error);
       return res.status(500).json({ error: 'Internal error' });

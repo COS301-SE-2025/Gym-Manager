@@ -25,6 +25,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import FAQScreen from '../screens/home/FAQScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import PaymentScreen from '../screens/profile/PaymentScreen';
 
 export type AuthStackParamList = {
   MemberTabs: undefined;
@@ -49,6 +50,7 @@ export type AuthStackParamList = {
   Onboarding: undefined;
   ResolveAuth: undefined;
   FAQ: undefined;
+  Payment: undefined;
 };
 
 
@@ -132,6 +134,7 @@ export default function AuthNavigator() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="FAQ" component={FAQScreen} />
+      <Stack.Screen name="Payment" component={PaymentScreen} />
     </Stack.Navigator>
   );
 }

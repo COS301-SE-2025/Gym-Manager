@@ -12,6 +12,7 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import ForTimeLive from '../screens/classes/ForTimeLiveScreen';
 import IntervalLive from '../screens/classes/IntervalLiveScreen';
 import AmrapLive from '../screens/classes/AmrapLiveScreen';
+import EmomLive from '../screens/classes/EmomLiveScreen';
 import Overview from '../screens/classes/OverviewScreen';
 import LiveClassEnd from '../screens/classes/LiveClassEndScreen';
 
@@ -124,6 +125,7 @@ export default function AuthNavigator() {
 
       <Stack.Screen name="Overview" component={Overview} />
       <Stack.Screen name="ForTimeLive" component={ForTimeLive} />
+      <Stack.Screen name="EmomLive" component={EmomLive} />
       <Stack.Screen name="AmrapLive" component={AmrapLive} />
       <Stack.Screen name="IntervalLive" component={IntervalLive} />
       <Stack.Screen name="LiveClassEnd" component={LiveClassEnd} />

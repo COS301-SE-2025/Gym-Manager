@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { reportsService } from '@/app/services/reports';
 
 // Helper function to format log messages based on event type
@@ -40,11 +40,14 @@ const formatLogMessage = (log: any): string => {
 export default function LogsTab() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   useEffect(() => {
     reportsService.getLogs()
       .then((data) => {
-        // Transform the API data to match the expected format
+        //transform data to match the expected format
         const transformedLogs = data.map((log: any) => ({
           timestamp: log.createdAt,
           message: formatLogMessage(log),
@@ -61,15 +64,119 @@ export default function LogsTab() {
       .finally(() => setLoading(false));
   }, []);
 
+  const availableEventTypes = useMemo(() => {
+    const set = new Set<string>();
+    logs.forEach((l) => l?.eventType && set.add(l.eventType));
+    return Array.from(set).sort();
+  }, [logs]);
+
+  const filteredLogs = useMemo(() => {
+    if (!logs || logs.length === 0) return [];
+
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000) : null;
+
+    return logs.filter((l) => {
+      const ts = new Date(l.timestamp);
+      if (eventTypeFilter !== 'all' && l.eventType !== eventTypeFilter) return false;
+      if (start && ts < start) return false;
+      if (end && ts >= end) return false;
+      return true;
+    });
+  }, [logs, eventTypeFilter, startDate, endDate]);
+
   return (
     <div>
       <h3>Activity Logs</h3>
+      {/* Filters */}
+      <div style={{
+        display: 'flex',
+        gap: 12,
+        alignItems: 'center',
+        background: '#1e1e1e',
+        padding: 12,
+        borderRadius: 8,
+        border: '1px solid #434343',
+        margin: '12px 0'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label style={{ color: '#fff', fontSize: 12 }}>Event Type</label>
+          <select
+            value={eventTypeFilter}
+            onChange={(e) => setEventTypeFilter(e.target.value)}
+            style={{
+              background: '#2e2e2e',
+              color: '#fff',
+              border: '1px solid #434343',
+              borderRadius: 6,
+              padding: '8px 10px',
+              minWidth: 180
+            }}
+          >
+            <option value="all">All events</option>
+            {availableEventTypes.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label style={{ color: '#fff', fontSize: 12 }}>From</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            style={{
+              background: '#2e2e2e',
+              color: '#fff',
+              border: '1px solid #434343',
+              borderRadius: 6,
+              padding: '8px 10px'
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label style={{ color: '#fff', fontSize: 12 }}>To</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            style={{
+              background: '#2e2e2e',
+              color: '#fff',
+              border: '1px solid #434343',
+              borderRadius: 6,
+              padding: '8px 10px'
+            }}
+          />
+        </div>
+
+        <div style={{ flex: 1 }} />
+
+        <button
+          onClick={() => { setEventTypeFilter('all'); setStartDate(''); setEndDate(''); }}
+          className=""
+          style={{
+            backgroundColor: '#d8ff3e',
+            color: '#0b0b0b',
+            border: 'none',
+            padding: '10px 14px',
+            borderRadius: 6,
+            cursor: 'pointer',
+            fontWeight: 600
+          }}
+        >
+          Reset filters
+        </button>
+      </div>
+
       {loading ? <div>Loading logs…</div> : (
         <div style={{ maxHeight: 420, overflow: 'auto', background: '#0f0f0f', padding: 12, borderRadius: 8 }}>
-          {logs.length === 0 ? (
+          {filteredLogs.length === 0 ? (
             <div style={{ color: '#aaa', textAlign: 'center', padding: 20 }}>No logs available</div>
           ) : (
-            logs.map((l, i) => (
+            filteredLogs.map((l, i) => (
               <div key={i} style={{ padding: 12, borderBottom: '1px solid #222', marginBottom: 4 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                   <div style={{ color: '#ddd', fontSize: 13, fontWeight: 'bold' }}>

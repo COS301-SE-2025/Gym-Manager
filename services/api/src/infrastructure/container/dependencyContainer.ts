@@ -134,12 +134,11 @@ export class DependencyContainer {
 
     this.services.set('dailyLeaderboardService', new DailyLeaderboardService(
       this.services.get('dailyLeaderboardRepository')
+    ));
 
     this.services.set('memberService', new MemberService(
       this.services.get('memberRepository'),
       this.services.get('paymentPackagesService')
-      this.services.get('memberRepository')
-
     ));
 
     this.services.set('analyticsService', new AnalyticsService());
@@ -173,10 +172,10 @@ export class DependencyContainer {
 
     this.services.set('dailyLeaderboardController', new DailyLeaderboardController(
       this.services.get('dailyLeaderboardService')
+    ));
 
     this.services.set('memberController', new MemberController(
       this.services.get('memberService')
-
     ));
 
     this.services.set('analyticsController', new AnalyticsController(
@@ -295,6 +294,7 @@ export class DependencyContainer {
 
   getDailyLeaderboardRoutes(): DailyLeaderboardRoutes {
     return this.get<DailyLeaderboardRoutes>('dailyLeaderboardRoutes');
+  }
 
   getMemberService(): MemberService {
     return this.get<MemberService>('memberService');

@@ -63,6 +63,9 @@ export class App {
     const userSettingsRoutes = this.container.getUserSettingsRoutes();
     const healthRoutes = this.container.getHealthRoutes();
     
+    // Import analytics routes directly
+    const analyticsRoutes = require('./presentation/analytics/analyticsRoutes').default;
+    
     // Mount routes
     // this.app.use('/auth', authRoutes.getRouter());
     // this.app.use('/classes', classRoutes.getRouter());
@@ -77,6 +80,7 @@ export class App {
     this.app.use(liveClassRoutes.getRouter());
     this.app.use( userSettingsRoutes.getRouter());
     this.app.use( healthRoutes.getRouter());
+    this.app.use('/analytics', analyticsRoutes);
     
     // Health check
     this.app.get('/health', (req, res) => {
@@ -115,6 +119,7 @@ export class App {
       console.log('- /admin/* - Admin management endpoints');
       console.log('- /live/* - Live class endpoints');
       console.log('- /settings/* - User settings endpoints');
+      console.log('- /analytics/* - Analytics endpoints');
       console.log('- /health - Health check endpoint');
     });
   }

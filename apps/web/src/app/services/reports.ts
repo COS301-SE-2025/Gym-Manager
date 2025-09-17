@@ -4,7 +4,7 @@ export const logService = {
   async getLogs(): Promise<any[]> {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/logs`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/analytics/logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;
@@ -63,6 +63,11 @@ const getMockAcquisition = (period: string) => {
 
 export const reportsService = {
   // getBookings: async () => (await api.get('/reports/bookings')).data,
+
+  // Real API functions
+  getLogs: async () => {
+    return logService.getLogs();
+  },
 
   // NEW MOCKED FUNCTIONS
   getSummaryStats: async () => {

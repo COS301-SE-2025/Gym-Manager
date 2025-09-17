@@ -74,7 +74,7 @@ export class AdminService implements IAdminService {
     if (result.ok) {
       await this.analyticsService.addLog({
         gymId: 1, // Assuming a single gym for now
-        userId: undefined, //add admin id
+        userId: null, //add admin id
         eventType: 'user_role_assignment',
         properties: {
           assignedUserId: userId,
@@ -171,7 +171,7 @@ export class AdminService implements IAdminService {
     if (result.ok) {
       await this.analyticsService.addLog({
         gymId: 1, // Assuming a single gym for now
-        userId: undefined, // TODO: Add admin ID
+        userId: null, // TODO: Add admin ID
         eventType: 'user_role_update',
         properties: {
           updatedUserId: userId,
@@ -190,7 +190,7 @@ export class AdminService implements IAdminService {
     if (result.ok) {
       await this.analyticsService.addLog({
         gymId: 1, // Assuming a single gym for now
-        userId: undefined,
+        userId: null,
         eventType: 'membership_approval',
         properties: {
           approvedUserId: userId,

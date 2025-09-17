@@ -1,6 +1,6 @@
 import { db } from '../../db/client';
 import { analyticsEvents } from '../../db/schema';
-import { LogEntry } from '../../domain/entities/analytics.entity';
+import { LogEntry, CreateLogEntry } from '../../domain/entities/analytics.entity';
 import {
   IAnalyticsService,
   IAnalyticsRepository,
@@ -14,7 +14,7 @@ export class AnalyticsService implements IAnalyticsService {
     this.analyticsRepository = analyticsRepository || new AnalyticsRepository();
   }
 
-  async addLog(logEntry: LogEntry): Promise<void> {
+  async addLog(logEntry: CreateLogEntry): Promise<void> {
     try {
       await db.insert(analyticsEvents).values({
         gymId: logEntry.gymId,

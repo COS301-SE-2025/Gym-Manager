@@ -107,6 +107,7 @@ export class AuthService implements IAuthService {
         gymId: 1, // Assuming a single gym for now
         userId: user.userId,
         eventType: 'admin_login',
+        properties: {},
         source: 'api',
       });
     }

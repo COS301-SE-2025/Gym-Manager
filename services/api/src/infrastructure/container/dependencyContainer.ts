@@ -21,7 +21,6 @@ import { AdminRoutes } from '../../presentation/admin/adminRoutes';
 
 // Analytics-related imports
 import analyticsRoutes from '../../presentation/analytics/analyticsRoutes';
-import { AnalyticsController } from '../../controllers/analytics/analyticsController';
 import { AnalyticsService } from '../../services/analytics/analyticsService';
 import { AnalyticsRepository } from '../../repositories/analytics/analyticsRepository';
 import { IAnalyticsRepository } from '../../domain/interfaces/analytics.interface';
@@ -85,7 +84,8 @@ export class DependencyContainer {
       this.services.get('userRepository'),
       this.services.get('jwtService'),
       this.services.get('passwordService'),
-      this.services.get('notificationService')
+      this.services.get('notificationService'),
+      this.services.get('analyticsService')
     ));
 
     this.services.set('classService', new ClassService(
@@ -94,7 +94,8 @@ export class DependencyContainer {
     ));
 
     this.services.set('adminService', new AdminService(
-      this.services.get('adminRepository')
+      this.services.get('adminRepository'),
+      this.services.get('analyticsService')
     ));
 
     this.services.set('liveClassService', new LiveClassService(
@@ -111,6 +112,12 @@ export class DependencyContainer {
 
     this.services.set('notificationService', new NotificationService(
       this.services.get('notificationRepository')
+    ));
+
+    // Analytics service
+    this.services.set('analyticsRepository', new AnalyticsRepository());
+    this.services.set('analyticsService', new AnalyticsService(
+      this.services.get('analyticsRepository')
     ));
 
     // Controller layer

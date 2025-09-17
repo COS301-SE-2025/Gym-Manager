@@ -1,7 +1,7 @@
-import { LogEntry } from '../entities/analytics.entity';
+import { LogEntry, CreateLogEntry } from '../entities/analytics.entity';
 
 export interface IAnalyticsService {
-  addLog(logEntry: LogEntry): Promise<void>;
+  addLog(logEntry: CreateLogEntry): Promise<void>;
   getLogs(startDate?: string, endDate?: string): Promise<LogEntry[]>;
 }
 

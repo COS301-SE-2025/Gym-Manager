@@ -45,7 +45,7 @@ describe('AdminRepository', () => {
 
   describe('createWeeklySchedule', () => {
     it('should create classes for each day in the weekly schedule', async () => {
-      // Arrange
+      
       const startDate = '2024-01-15';
       const createdBy = 1;
       const weeklySchedule = [
@@ -82,23 +82,25 @@ describe('AdminRepository', () => {
         },
       ];
 
-      const mockInsertedClasses = [
-        { classId: 1, scheduledDate: '2024-01-15', scheduledTime: '09:00' },
-        { classId: 2, scheduledDate: '2024-01-15', scheduledTime: '18:00' },
-        { classId: 3, scheduledDate: '2024-01-16', scheduledTime: '10:00' },
-      ];
+      const mockClass1 = { classId: 1, scheduledDate: '2025-01-15', scheduledTime: '09:00' };
+      const mockClass2 = { classId: 2, scheduledDate: '2025-01-15', scheduledTime: '18:00' };
+      const mockClass3 = { classId: 3, scheduledDate: '2025-01-16', scheduledTime: '10:00' };
 
-      mockDb.insert.mockReturnValue(builder(mockInsertedClasses));
+      mockDb.insert
+        .mockReturnValueOnce(builder([mockClass1]))  // First Monday class
+        .mockReturnValueOnce(builder([mockClass2]))  // Second Monday class  
+        .mockReturnValueOnce(builder([mockClass3])); // Tuesday class
 
+      
       const result = await adminRepository.createWeeklySchedule(
         startDate,
         createdBy,
         weeklySchedule
       );
 
-
+      
       expect(mockDb.insert).toHaveBeenCalledTimes(3); // 2 Monday classes + 1 Tuesday class
-      expect(result).toEqual(mockInsertedClasses);
+      expect(result).toEqual([mockClass1, mockClass2, mockClass3]);
     });
 
     it('should handle empty weekly schedule', async () => {

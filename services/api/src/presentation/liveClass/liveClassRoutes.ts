@@ -49,6 +49,25 @@ export class LiveClassRoutes {
     // interval/tabata/emom
     this.router.post('/live/:classId/interval/score', this.auth.isAuthenticated, this.controller.postIntervalScore);
     this.router.get('/live/:classId/interval/leaderboard', this.auth.isAuthenticated, this.controller.getIntervalLeaderboard);
+    this.router.post('/live/:classId/emom/mark', this.auth.isAuthenticated, this.controller.postEmomMark);
+
+    // Coach notes
+    this.router.get('/coach/live/:classId/note',  this.auth.isAuthenticated, this.coachOnly, this.controller.getCoachNote);
+    this.router.post('/coach/live/:classId/note', this.auth.isAuthenticated, this.coachOnly, this.controller.setCoachNote);
+
+    // Coach score editing
+    // FOR_TIME: set finish time (seconds from start) or clear
+    this.router.post('/coach/live/:classId/ft/set-finish', this.auth.isAuthenticated, this.coachOnly, this.controller.coachSetForTimeFinish);
+
+    // AMRAP: set total reps (we’ll map to rounds/current_step/partial)
+    this.router.post('/coach/live/:classId/amrap/set-total', this.auth.isAuthenticated, this.coachOnly, this.controller.coachSetAmrapTotal);
+
+    // INTERVAL/TABATA: set a step's reps for any user
+    this.router.post('/coach/live/:classId/interval/score', this.auth.isAuthenticated, this.coachOnly, this.controller.coachPostIntervalScore);
+
+    // EMOM: mark a minute for any user
+    this.router.post('/coach/live/:classId/emom/mark', this.auth.isAuthenticated, this.coachOnly, this.controller.coachPostEmomMark);
+
   }
 
   getRouter() { return this.router; }

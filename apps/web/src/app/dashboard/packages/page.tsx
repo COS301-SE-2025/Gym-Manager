@@ -13,13 +13,14 @@ interface PaymentPackage {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  transactionCount?: number; // Number of transactions using this package
 }
 
 interface CreatePackageData {
   name: string;
   description: string;
   creditsAmount: number;
-  priceCents: number;
+  priceRands: number;
   currency: string;
 }
 
@@ -33,8 +34,8 @@ export default function PackagesPage() {
     name: '',
     description: '',
     creditsAmount: 0,
-    priceCents: 0,
-    currency: 'USD'
+    priceRands: 0,
+    currency: 'ZAR'
   });
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -70,18 +71,22 @@ export default function PackagesPage() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('authToken');
+      const packageData = {
+        ...formData,
+        priceCents: Math.round(formData.priceRands * 100) // Convert Rands to cents
+      };
       const response = await fetch(`${API_BASE_URL}/payments/packages`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(packageData)
       });
 
       if (response.ok) {
         setShowCreateModal(false);
-        setFormData({ name: '', description: '', creditsAmount: 0, priceCents: 0, currency: 'USD' });
+        setFormData({ name: '', description: '', creditsAmount: 0, priceRands: 0, currency: 'ZAR' });
         fetchPackages();
       } else {
         const error = await response.json();
@@ -99,19 +104,23 @@ export default function PackagesPage() {
 
     try {
       const token = localStorage.getItem('authToken');
+      const packageData = {
+        ...formData,
+        priceCents: Math.round(formData.priceRands * 100) // Convert Rands to cents
+      };
       const response = await fetch(`${API_BASE_URL}/payments/packages/${editingPackage.packageId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(packageData)
       });
 
       if (response.ok) {
         setShowEditModal(false);
         setEditingPackage(null);
-        setFormData({ name: '', description: '', creditsAmount: 0, priceCents: 0, currency: 'USD' });
+        setFormData({ name: '', description: '', creditsAmount: 0, priceRands: 0, currency: 'ZAR' });
         fetchPackages();
       } else {
         const error = await response.json();
@@ -140,7 +149,11 @@ export default function PackagesPage() {
         fetchPackages();
       } else {
         const error = await response.json();
-        alert(`Failed to delete package: ${error.error}`);
+        if (error.error && error.error.includes('existing transactions')) {
+          alert('Cannot delete this package because it has been purchased by users. Please deactivate it instead by clicking the eye icon.');
+        } else {
+          alert(`Failed to delete package: ${error.error}`);
+        }
       }
     } catch (error) {
       console.error('Error deleting package:', error);
@@ -178,14 +191,14 @@ export default function PackagesPage() {
       name: pkg.name,
       description: pkg.description || '',
       creditsAmount: pkg.creditsAmount,
-      priceCents: pkg.priceCents,
+      priceRands: pkg.priceCents / 100, // Convert cents to Rands
       currency: pkg.currency
     });
     setShowEditModal(true);
   };
 
   const formatPrice = (cents: number) => {
-    return `$${(cents / 100).toFixed(2)}`;
+    return `R${(cents / 100).toFixed(2)}`;
   };
 
   if (loading) {
@@ -232,7 +245,8 @@ export default function PackagesPage() {
                 <button
                   className="action-btn delete-btn"
                   onClick={() => handleDeletePackage(pkg.packageId)}
-                  title="Delete"
+                  title={pkg.transactionCount && pkg.transactionCount > 0 ? "Cannot delete - has transactions" : "Delete"}
+                  disabled={pkg.transactionCount && pkg.transactionCount > 0}
                 >
                   <TrashIcon size={16} />
                 </button>
@@ -307,13 +321,14 @@ export default function PackagesPage() {
                 </div>
                 
                 <div className="form-group">
-                  <label htmlFor="priceCents">Price (cents) *</label>
+                  <label htmlFor="priceRands">Price (Rands) *</label>
                   <input
                     type="number"
-                    id="priceCents"
-                    value={formData.priceCents}
-                    onChange={(e) => setFormData({ ...formData, priceCents: parseInt(e.target.value) || 0 })}
-                    min="1"
+                    id="priceRands"
+                    value={formData.priceRands}
+                    onChange={(e) => setFormData({ ...formData, priceRands: parseFloat(e.target.value) || 0 })}
+                    min="0.01"
+                    step="0.01"
                     required
                   />
                 </div>
@@ -326,9 +341,7 @@ export default function PackagesPage() {
                   value={formData.currency}
                   onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
                 >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
+                  <option value="ZAR">ZAR (South African Rand)</option>
                 </select>
               </div>
               
@@ -392,13 +405,14 @@ export default function PackagesPage() {
                 </div>
                 
                 <div className="form-group">
-                  <label htmlFor="edit-priceCents">Price (cents) *</label>
+                  <label htmlFor="edit-priceRands">Price (Rands) *</label>
                   <input
                     type="number"
-                    id="edit-priceCents"
-                    value={formData.priceCents}
-                    onChange={(e) => setFormData({ ...formData, priceCents: parseInt(e.target.value) || 0 })}
-                    min="1"
+                    id="edit-priceRands"
+                    value={formData.priceRands}
+                    onChange={(e) => setFormData({ ...formData, priceRands: parseFloat(e.target.value) || 0 })}
+                    min="0.01"
+                    step="0.01"
                     required
                   />
                 </div>
@@ -411,9 +425,7 @@ export default function PackagesPage() {
                   value={formData.currency}
                   onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
                 >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
+                  <option value="ZAR">ZAR (South African Rand)</option>
                 </select>
               </div>
               

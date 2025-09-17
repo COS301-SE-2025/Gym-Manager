@@ -108,15 +108,15 @@ export class MemberService {
       throw new Error('Payment package not found');
     }
 
-    // Add credits to the user's balance
-    const newBalance = await this.memberRepository.addCredits(userId, selectedPackage.creditsAmount);
-
-    // Update transaction status to completed
+    // Update transaction status to completed first
     await this.paymentPackagesService.updateTransactionStatus(
       transactionId,
       'completed',
       externalTransactionId
     );
+
+    // Add credits to the user's balance
+    const newBalance = await this.memberRepository.addCredits(userId, selectedPackage.creditsAmount);
 
     return {
       newBalance,

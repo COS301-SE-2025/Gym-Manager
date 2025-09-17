@@ -354,7 +354,7 @@ export const paymentPackages = pgTable("payment_packages", {
 	description: text("description"),
 	creditsAmount: integer("credits_amount").notNull(),
 	priceCents: integer("price_cents").notNull(),
-	currency: varchar("currency", { length: 3 }).default("USD"),
+	currency: varchar("currency", { length: 3 }).default("ZAR"),
 	isActive: boolean("is_active").default(true),
 	createdBy: integer("created_by").references(() => admins.userId),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),

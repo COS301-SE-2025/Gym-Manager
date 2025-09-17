@@ -104,4 +104,48 @@ export class MemberController {
       res.status(500).json({ error: 'Failed to get member profile' });
     }
   };
+
+  /**
+   * Purchase credits using payment packages
+   */
+  purchaseCreditsWithPackage = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { userId } = req.params;
+      const { packageId, paymentMethod, externalTransactionId } = req.body;
+      const userIdNum = parseInt(userId, 10);
+
+      if (isNaN(userIdNum)) {
+        res.status(400).json({ error: 'Invalid user ID' });
+        return;
+      }
+
+      if (!packageId) {
+        res.status(400).json({ error: 'Package ID is required' });
+        return;
+      }
+
+      const result = await this.memberService.purchaseCreditsWithPackage(
+        userIdNum,
+        packageId,
+        paymentMethod,
+        externalTransactionId
+      );
+
+      res.json({
+        success: true,
+        newBalance: result.newBalance,
+        creditsAdded: result.creditsAdded,
+        transactionId: result.transactionId
+      });
+    } catch (error: any) {
+      console.error('Error purchasing credits with package:', error);
+      if (error.message === 'Payment package not found') {
+        res.status(404).json({ error: 'Payment package not found' });
+      } else if (error.message === 'User is not a member or does not exist') {
+        res.status(404).json({ error: 'User is not a member or does not exist' });
+      } else {
+        res.status(500).json({ error: 'Failed to purchase credits' });
+      }
+    }
+  };
 }

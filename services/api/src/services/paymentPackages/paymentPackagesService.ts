@@ -7,7 +7,7 @@ import {
   members,
   users
 } from '../../db/schema';
-import { eq, and, desc, sql, count, avg, sum } from 'drizzle-orm';
+import { eq, and, desc, sql, count, avg, sum, leftJoin } from 'drizzle-orm';
 
 export interface PaymentPackage {
   packageId: number;
@@ -99,7 +99,7 @@ export class PaymentPackagesService {
       description: pkg.description || undefined,
       creditsAmount: pkg.creditsAmount,
       priceCents: pkg.priceCents,
-      currency: pkg.currency || 'USD',
+      currency: pkg.currency || 'ZAR',
       isActive: pkg.isActive ?? true,
       createdBy: pkg.createdBy || undefined,
       createdAt: pkg.createdAt || new Date().toISOString(),
@@ -112,8 +112,22 @@ export class PaymentPackagesService {
    */
   async getAllPackages(): Promise<PaymentPackage[]> {
     const packages = await db
-      .select()
+      .select({
+        packageId: paymentPackages.packageId,
+        name: paymentPackages.name,
+        description: paymentPackages.description,
+        creditsAmount: paymentPackages.creditsAmount,
+        priceCents: paymentPackages.priceCents,
+        currency: paymentPackages.currency,
+        isActive: paymentPackages.isActive,
+        createdBy: paymentPackages.createdBy,
+        createdAt: paymentPackages.createdAt,
+        updatedAt: paymentPackages.updatedAt,
+        transactionCount: sql<number>`COALESCE(COUNT(${paymentTransactions.transactionId}), 0)`,
+      })
       .from(paymentPackages)
+      .leftJoin(paymentTransactions, eq(paymentPackages.packageId, paymentTransactions.packageId))
+      .groupBy(paymentPackages.packageId)
       .orderBy(desc(paymentPackages.createdAt));
 
     return packages.map(pkg => ({
@@ -122,11 +136,12 @@ export class PaymentPackagesService {
       description: pkg.description || undefined,
       creditsAmount: pkg.creditsAmount,
       priceCents: pkg.priceCents,
-      currency: pkg.currency || 'USD',
+      currency: pkg.currency || 'ZAR',
       isActive: pkg.isActive ?? true,
       createdBy: pkg.createdBy || undefined,
       createdAt: pkg.createdAt || new Date().toISOString(),
       updatedAt: pkg.updatedAt || new Date().toISOString(),
+      transactionCount: pkg.transactionCount,
     }));
   }
 
@@ -166,6 +181,17 @@ export class PaymentPackagesService {
    * Delete a payment package (admin only)
    */
   async deletePackage(packageId: number): Promise<void> {
+    // Check if there are any transactions using this package
+    const existingTransactions = await db
+      .select({ transactionId: paymentTransactions.transactionId })
+      .from(paymentTransactions)
+      .where(eq(paymentTransactions.packageId, packageId))
+      .limit(1);
+
+    if (existingTransactions.length > 0) {
+      throw new Error('Cannot delete package: There are existing transactions using this package. Please deactivate it instead.');
+    }
+
     await db
       .delete(paymentPackages)
       .where(eq(paymentPackages.packageId, packageId));

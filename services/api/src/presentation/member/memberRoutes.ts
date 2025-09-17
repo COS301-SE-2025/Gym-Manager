@@ -30,6 +30,11 @@ export class MemberRoutes {
       this.memberController.purchaseCredits(req, res);
     });
 
+    // Purchase credits using payment packages
+    this.router.post('/:userId/credits/purchase-package', this.authMiddleware.isAuthenticated, (req, res) => {
+      this.memberController.purchaseCreditsWithPackage(req, res);
+    });
+
     // Get member profile
     this.router.get('/:userId/profile', this.authMiddleware.isAuthenticated, (req, res) => {
       this.memberController.getMemberProfile(req, res);

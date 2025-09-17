@@ -2,6 +2,9 @@
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
+  background-color: #1e1e1e;
+  min-height: 100vh;
+  color: whitesmoke;
 }
 
 .packages-header {
@@ -9,10 +12,11 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+  gap: 2rem;
 }
 
 .packages-header h1 {
-  color: #1a1a1a;
+  color: whitesmoke;
   font-size: 2rem;
   font-weight: 600;
   margin: 0;
@@ -22,18 +26,19 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #3b82f6;
-  color: white;
+  background: #D8FF3E;
+  color: #1e1e1e;
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .create-btn:hover {
-  background: #2563eb;
+  background: #c4e635;
+  transform: translateY(-1px);
 }
 
 .packages-grid {
@@ -43,22 +48,23 @@
 }
 
 .package-card {
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: #252525;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.75rem;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: all 0.2s;
 }
 
 .package-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   transform: translateY(-2px);
+  border-color: rgba(216, 255, 62, 0.3);
 }
 
 .package-card.inactive {
   opacity: 0.6;
-  background: #f9fafb;
+  background: #1a1a1a;
 }
 
 .package-header {
@@ -69,7 +75,7 @@
 }
 
 .package-header h3 {
-  color: #1a1a1a;
+  color: whitesmoke;
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0;
@@ -83,7 +89,7 @@
 
 .action-btn {
   background: none;
-  border: 1px solid #d1d5db;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 0.375rem;
   padding: 0.5rem;
   cursor: pointer;
@@ -91,25 +97,36 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  color: whitesmoke;
 }
 
 .action-btn:hover {
-  background: #f3f4f6;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .toggle-btn:hover {
-  background: #fef3c7;
-  border-color: #f59e0b;
+  background: rgba(216, 255, 62, 0.2);
+  border-color: #D8FF3E;
 }
 
 .edit-btn:hover {
-  background: #dbeafe;
+  background: rgba(59, 130, 246, 0.2);
   border-color: #3b82f6;
 }
 
 .delete-btn:hover {
-  background: #fee2e2;
+  background: rgba(239, 68, 68, 0.2);
   border-color: #ef4444;
+}
+
+.delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.delete-btn:disabled:hover {
+  background: none;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .package-details {
@@ -119,7 +136,7 @@
 }
 
 .package-description {
-  color: #6b7280;
+  color: #a0a0a0;
   font-size: 0.875rem;
   line-height: 1.5;
   margin: 0;
@@ -140,12 +157,12 @@
 .price {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #059669;
+  color: #D8FF3E;
 }
 
 .credits {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #a0a0a0;
   font-weight: 500;
 }
 
@@ -166,18 +183,18 @@
 }
 
 .status.active {
-  background: #d1fae5;
-  color: #065f46;
+  background: rgba(216, 255, 62, 0.2);
+  color: #D8FF3E;
 }
 
 .status.inactive {
-  background: #fee2e2;
-  color: #991b1b;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
 }
 
 .currency {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #a0a0a0;
   font-weight: 500;
 }
 
@@ -196,13 +213,14 @@
 }
 
 .modal {
-  background: white;
+  background: #252525;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.75rem;
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
 .modal-header {
@@ -210,12 +228,12 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 1.5rem 0;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 1.5rem;
 }
 
 .modal-header h2 {
-  color: #1a1a1a;
+  color: whitesmoke;
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
@@ -226,13 +244,13 @@
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #6b7280;
+  color: #a0a0a0;
   padding: 0.25rem;
   line-height: 1;
 }
 
 .close-btn:hover {
-  color: #374151;
+  color: whitesmoke;
 }
 
 .package-form {
@@ -251,7 +269,7 @@
 
 .form-group label {
   display: block;
-  color: #374151;
+  color: whitesmoke;
   font-size: 0.875rem;
   font-weight: 500;
   margin-bottom: 0.5rem;
@@ -262,18 +280,20 @@
 .form-group select {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 0.375rem;
   font-size: 0.875rem;
   transition: border-color 0.2s;
+  background: #1e1e1e;
+  color: whitesmoke;
 }
 
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #D8FF3E;
+  box-shadow: 0 0 0 3px rgba(216, 255, 62, 0.1);
 }
 
 .form-group textarea {
@@ -287,7 +307,7 @@
   justify-content: flex-end;
   margin-top: 1.5rem;
   padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .form-actions button {
@@ -299,23 +319,23 @@
 }
 
 .form-actions button[type="button"] {
-  background: white;
-  border: 1px solid #d1d5db;
-  color: #374151;
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: whitesmoke;
 }
 
 .form-actions button[type="button"]:hover {
-  background: #f9fafb;
+  background: #252525;
 }
 
 .form-actions button[type="submit"] {
-  background: #3b82f6;
-  border: 1px solid #3b82f6;
-  color: white;
+  background: #D8FF3E;
+  border: 1px solid #D8FF3E;
+  color: #1e1e1e;
 }
 
 .form-actions button[type="submit"]:hover {
-  background: #2563eb;
+  background: #c4e635;
 }
 
 .loading {
@@ -323,7 +343,7 @@
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: #6b7280;
+  color: #a0a0a0;
   font-size: 1.125rem;
 }
 
@@ -337,6 +357,11 @@
     flex-direction: column;
     gap: 1rem;
     align-items: stretch;
+  }
+  
+  .create-btn {
+    width: 100%;
+    justify-content: center;
   }
   
   .packages-grid {

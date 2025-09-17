@@ -106,27 +106,19 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
       // Mock payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Create payment transaction using the new system
-      const transactionResponse = await apiClient.post('/payments/transactions', {
+      // Purchase credits using the new payment packages system
+      const response = await apiClient.post(`/members/${currentUser.userId}/credits/purchase-package`, {
         packageId: selectedPackage.packageId,
         paymentMethod: 'mock_payment',
         externalTransactionId: `mock_${Date.now()}`,
       });
 
-      if (transactionResponse.data.success) {
-        // Update transaction status to completed (mock payment success)
-        await apiClient.put(`/payments/transactions/${transactionResponse.data.transactionId}/status`, {
-          status: 'completed',
-          externalTransactionId: `mock_${Date.now()}`,
-        });
-
-        // Fetch updated credit balance
-        const creditsResponse = await apiClient.get(`/members/${currentUser.userId}/credits`);
-        setCurrentCredits(creditsResponse.data.creditsBalance || 0);
+      if (response.data.success) {
+        setCurrentCredits(response.data.newBalance);
 
         Alert.alert(
           'Payment Successful!',
-          `You've successfully purchased ${selectedPackage.creditsAmount} credits for ${formatPrice(selectedPackage.priceCents)}. Your new balance is ${creditsResponse.data.creditsBalance || 0} credits.`,
+          `You've successfully purchased ${response.data.creditsAdded} credits for ${formatPrice(selectedPackage.priceCents)}. Your new balance is ${response.data.newBalance} credits.`,
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       } else {

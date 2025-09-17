@@ -124,7 +124,11 @@ export class PaymentPackagesController {
       res.json({ success: true, message: 'Payment package deleted successfully' });
     } catch (error: any) {
       console.error('deletePackage error:', error);
-      res.status(500).json({ error: 'Failed to delete payment package' });
+      if (error.message && error.message.includes('existing transactions')) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Failed to delete payment package' });
+      }
     }
   };
 

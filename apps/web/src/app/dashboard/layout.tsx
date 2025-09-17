@@ -54,15 +54,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               Reports
             </Link>
           </li>
-          <li>
-            <Link
-              href="/dashboard/analytics"
-              className={pathname === '/dashboard/analytics' ? 'active' : ''}
-            >
-              <ChartBarIcon size={20} />
-              Analytics
-            </Link>
-          </li>
         </ul>
         <div className="logout-container">
           <Link href={'/'} onClick={handleLogout} className="logout">

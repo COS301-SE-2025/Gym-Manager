@@ -7,7 +7,7 @@ import {
   members,
   users
 } from '../../db/schema';
-import { eq, and, desc, sql, count, avg, sum, leftJoin } from 'drizzle-orm';
+import { eq, and, desc, sql, count, avg, sum } from 'drizzle-orm';
 
 export interface PaymentPackage {
   packageId: number;

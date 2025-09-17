@@ -29,6 +29,9 @@ export default function PackagesPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingPackage, setDeletingPackage] = useState<PaymentPackage | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [editingPackage, setEditingPackage] = useState<PaymentPackage | null>(null);
   const [formData, setFormData] = useState<CreatePackageData>({
     name: '',
@@ -132,12 +135,24 @@ export default function PackagesPage() {
     }
   };
 
-  const handleDeletePackage = async (packageId: number) => {
-    if (!confirm('Are you sure you want to delete this package?')) return;
+  const openDeleteModal = (pkg: PaymentPackage) => {
+    setDeletingPackage(pkg);
+    setDeleteError(null);
+    setShowDeleteModal(true);
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeletingPackage(null);
+    setDeleteError(null);
+  };
+
+  const handleDeletePackage = async () => {
+    if (!deletingPackage) return;
 
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/payments/packages/${packageId}`, {
+      const response = await fetch(`${API_BASE_URL}/payments/packages/${deletingPackage.packageId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -147,17 +162,18 @@ export default function PackagesPage() {
 
       if (response.ok) {
         fetchPackages();
+        closeDeleteModal();
       } else {
         const error = await response.json();
         if (error.error && error.error.includes('existing transactions')) {
-          alert('Cannot delete this package because it has been purchased by users. Please deactivate it instead by clicking the eye icon.');
+          setDeleteError('Cannot delete this package because it has been purchased by users. Please deactivate it instead by clicking the eye icon.');
         } else {
-          alert(`Failed to delete package: ${error.error}`);
+          setDeleteError(`Failed to delete package: ${error.error}`);
         }
       }
     } catch (error) {
       console.error('Error deleting package:', error);
-      alert('Failed to delete package');
+      setDeleteError('Failed to delete package');
     }
   };
 
@@ -244,7 +260,7 @@ export default function PackagesPage() {
                 </button>
                 <button
                   className="action-btn delete-btn"
-                  onClick={() => handleDeletePackage(pkg.packageId)}
+                  onClick={() => openDeleteModal(pkg)}
                   title={pkg.transactionCount && pkg.transactionCount > 0 ? "Cannot delete - has transactions" : "Delete"}
                   disabled={pkg.transactionCount && pkg.transactionCount > 0}
                 >
@@ -436,6 +452,49 @@ export default function PackagesPage() {
                 <button type="submit">Update Package</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && deletingPackage && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h2>Delete Package</h2>
+              <button 
+                className="close-btn"
+                onClick={closeDeleteModal}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-content">
+              <p>Are you sure you want to delete the package <strong>"{deletingPackage.name}"</strong>?</p>
+              <p className="warning-text">This action cannot be undone.</p>
+              
+              {deleteError && (
+                <div className="error-message">
+                  {deleteError}
+                </div>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button 
+                type="button" 
+                className="cancel-btn"
+                onClick={closeDeleteModal}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="delete-confirm-btn"
+                onClick={handleDeletePackage}
+              >
+                Delete Package
+              </button>
+            </div>
           </div>
         </div>
       )}

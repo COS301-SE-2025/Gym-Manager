@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { reportsService } from '@/app/services/reports';
+import LogsFilters from './LogsFilters';
 
 // Helper function to format log messages based on event type
 const formatLogMessage = (log: any): string => {
@@ -74,102 +75,51 @@ export default function LogsTab() {
     if (!logs || logs.length === 0) return [];
 
     const start = startDate ? new Date(startDate) : null;
+    // end filter is inclusive of the entire endDate day
     const end = endDate ? new Date(new Date(endDate).getTime() + 24 * 60 * 60 * 1000) : null;
 
     return logs.filter((l) => {
       const ts = new Date(l.timestamp);
+      
+      // Filter by event type
       if (eventTypeFilter !== 'all' && l.eventType !== eventTypeFilter) return false;
-      if (start && ts < start) return false;
-      if (end && ts >= end) return false;
+      
+      // Filter by date range - works with single date filters
+      if (start && end) {
+        // Both dates provided - filter within range
+        return ts >= start && ts < end;
+      } else if (start) {
+        // Only start date provided - filter from start date onwards
+        return ts >= start;
+      } else if (end) {
+        // Only end date provided - filter up to end date
+        return ts < end;
+      }
+      
       return true;
     });
   }, [logs, eventTypeFilter, startDate, endDate]);
 
+  const handleReset = () => {
+    setEventTypeFilter('all');
+    setStartDate('');
+    setEndDate('');
+  };
+
   return (
     <div>
       <h3>Activity Logs</h3>
-      {/* Filters */}
-      <div style={{
-        display: 'flex',
-        gap: 12,
-        alignItems: 'center',
-        background: '#1e1e1e',
-        padding: 12,
-        borderRadius: 8,
-        border: '1px solid #434343',
-        margin: '12px 0'
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label style={{ color: '#fff', fontSize: 12 }}>Event Type</label>
-          <select
-            value={eventTypeFilter}
-            onChange={(e) => setEventTypeFilter(e.target.value)}
-            style={{
-              background: '#2e2e2e',
-              color: '#fff',
-              border: '1px solid #434343',
-              borderRadius: 6,
-              padding: '8px 10px',
-              minWidth: 180
-            }}
-          >
-            <option value="all">All events</option>
-            {availableEventTypes.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label style={{ color: '#fff', fontSize: 12 }}>From</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            style={{
-              background: '#2e2e2e',
-              color: '#fff',
-              border: '1px solid #434343',
-              borderRadius: 6,
-              padding: '8px 10px'
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label style={{ color: '#fff', fontSize: 12 }}>To</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            style={{
-              background: '#2e2e2e',
-              color: '#fff',
-              border: '1px solid #434343',
-              borderRadius: 6,
-              padding: '8px 10px'
-            }}
-          />
-        </div>
-
-        <div style={{ flex: 1 }} />
-
-        <button
-          onClick={() => { setEventTypeFilter('all'); setStartDate(''); setEndDate(''); }}
-          className=""
-          style={{
-            backgroundColor: '#d8ff3e',
-            color: '#0b0b0b',
-            border: 'none',
-            padding: '10px 14px',
-            borderRadius: 6,
-            cursor: 'pointer',
-            fontWeight: 600
-          }}
-        >
-          Reset filters
-        </button>
-      </div>
+      
+      <LogsFilters
+        availableEventTypes={availableEventTypes}
+        eventTypeFilter={eventTypeFilter}
+        onEventTypeChange={setEventTypeFilter}
+        startDate={startDate}
+        onStartDateChange={setStartDate}
+        endDate={endDate}
+        onEndDateChange={setEndDate}
+        onReset={handleReset}
+      />
 
       {loading ? <div>Loading logs…</div> : (
         <div style={{ maxHeight: 420, overflow: 'auto', background: '#0f0f0f', padding: 12, borderRadius: 8 }}>

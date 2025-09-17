@@ -242,6 +242,23 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             </View>
           )}
 
+          {/* Purchase Credits - Only show for members */}
+          {isMember && (
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => navigation.navigate('Payment')}
+            >
+              <View style={styles.settingLeft}>
+                <Ionicons name="card-outline" size={24} color="#D8FF3E" />
+                <View style={styles.settingText}>
+                  <Text style={styles.settingTitle}>Purchase Credits</Text>
+                  <Text style={styles.settingDescription}>Buy credits to book classes</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#888" />
+            </TouchableOpacity>
+          )}
+
           {/* Role Swap - Only show if user has multiple roles */}
           {currentUser?.roles && currentUser.roles.length > 1 && (
             <TouchableOpacity

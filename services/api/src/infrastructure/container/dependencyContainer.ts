@@ -38,6 +38,12 @@ import { HealthRoutes } from '../../presentation/health/healthRoutes';
 import { NotificationService } from '../../services/notifications/notificationService';
 import { NotificationRepository } from '../../repositories/notifications/notificationRepository';
 
+// Member-related imports
+import { MemberController } from '../../controllers/member/memberController';
+import { MemberService } from '../../services/member/memberService';
+import { MemberRepository } from '../../repositories/member/memberRepository';
+import { MemberRoutes } from '../../presentation/member/memberRoutes';
+
 /**
  * Dependency Container - Infrastructure Layer
  * Manages dependency injection and object creation
@@ -71,6 +77,7 @@ export class DependencyContainer {
     this.services.set('userSettingsRepository', new UserSettingsRepository());
     this.services.set('healthRepository', new HealthRepository());
     this.services.set('notificationRepository', new NotificationRepository());
+    this.services.set('memberRepository', new MemberRepository());
 
     // Service layer
     this.services.set('authService', new AuthService(
@@ -82,7 +89,8 @@ export class DependencyContainer {
 
     this.services.set('classService', new ClassService(
       this.services.get('classRepository'),
-      this.services.get('userRepository')
+      this.services.get('userRepository'),
+      this.services.get('memberService')
     ));
 
     this.services.set('adminService', new AdminService(
@@ -103,6 +111,10 @@ export class DependencyContainer {
 
     this.services.set('notificationService', new NotificationService(
       this.services.get('notificationRepository')
+    ));
+
+    this.services.set('memberService', new MemberService(
+      this.services.get('memberRepository')
     ));
 
     // Controller layer
@@ -130,6 +142,10 @@ export class DependencyContainer {
       this.services.get('healthService')
     ));
 
+    this.services.set('memberController', new MemberController(
+      this.services.get('memberService')
+    ));
+
     // Presentation layer
     this.services.set('authRoutes', new AuthRoutes());
     this.services.set('classRoutes', new ClassRoutes());
@@ -137,6 +153,9 @@ export class DependencyContainer {
     this.services.set('liveClassRoutes', new LiveClassRoutes());
     this.services.set('userSettingsRoutes', new UserSettingsRoutes());
     this.services.set('healthRoutes', new HealthRoutes());
+    this.services.set('memberRoutes', new MemberRoutes(
+      this.services.get('memberController')
+    ));
   }
 
   get<T>(serviceName: string): T {
@@ -170,6 +189,10 @@ export class DependencyContainer {
 
   getHealthRoutes(): HealthRoutes {
     return this.get<HealthRoutes>('healthRoutes');
+  }
+
+  getMemberRoutes(): MemberRoutes {
+    return this.get<MemberRoutes>('memberRoutes');
   }
 
   getAuthController(): AuthController {
@@ -222,5 +245,13 @@ export class DependencyContainer {
 
   getAuthMiddleware(): AuthMiddleware {
     return this.get<AuthMiddleware>('authMiddleware');
+  }
+
+  getMemberService(): MemberService {
+    return this.get<MemberService>('memberService');
+  }
+
+  getMemberRepository(): MemberRepository {
+    return this.get<MemberRepository>('memberRepository');
   }
 }

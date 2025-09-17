@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import './LogsFilters.css';
 
 interface LogsFiltersProps {
   availableEventTypes: string[];
@@ -50,34 +51,13 @@ export default function LogsFilters({
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      gap: 16,
-      alignItems: 'flex-end',
-      background: '#1e1e1e',
-      padding: 16,
-      borderRadius: 8,
-      border: '1px solid #434343',
-      margin: '12px 0',
-      flexWrap: 'wrap'
-    }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 180 }}>
-        <label style={{ color: '#fff', fontSize: 13, fontWeight: 500 }}>Event Type</label>
+    <div className="filters-container">
+      <div className="filter-group">
+        <label className="filter-label">Event Type</label>
         <select
           value={eventTypeFilter}
           onChange={(e) => onEventTypeChange(e.target.value)}
-          style={{
-            background: '#2e2e2e',
-            color: '#fff',
-            border: '1px solid #434343',
-            borderRadius: 6,
-            padding: '10px 12px',
-            fontSize: 14,
-            outline: 'none',
-            transition: 'border-color 0.2s',
-          }}
-          onFocus={(e) => e.target.style.borderColor = '#d8ff3e'}
-          onBlur={(e) => e.target.style.borderColor = '#434343'}
+          className="filter-select"
         >
           <option value="all">All events</option>
           {availableEventTypes.map((t) => (
@@ -86,69 +66,34 @@ export default function LogsFilters({
         </select>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 160 }}>
-        <label style={{ color: '#fff', fontSize: 13, fontWeight: 500 }}>From Date</label>
+      <div className="filter-group date-group">
+        <label className="filter-label">From Date</label>
         <input
           type="date"
           value={startDate}
           onChange={(e) => handleStartDateChange(e.target.value)}
           max={maxDate}
-          style={{
-            background: '#2e2e2e',
-            color: '#fff',
-            border: '1px solid #434343',
-            borderRadius: 6,
-            padding: '10px 12px',
-            fontSize: 14,
-            outline: 'none',
-            transition: 'border-color 0.2s',
-          }}
-          onFocus={(e) => e.target.style.borderColor = '#d8ff3e'}
-          onBlur={(e) => e.target.style.borderColor = '#434343'}
+          className="filter-input"
         />
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 160 }}>
-        <label style={{ color: '#fff', fontSize: 13, fontWeight: 500 }}>To Date</label>
+      <div className="filter-group date-group">
+        <label className="filter-label">To Date</label>
         <input
           type="date"
           value={endDate}
           onChange={(e) => handleEndDateChange(e.target.value)}
           max={maxDate}
           min={startDate || undefined}
-          style={{
-            background: '#2e2e2e',
-            color: '#fff',
-            border: '1px solid #434343',
-            borderRadius: 6,
-            padding: '10px 12px',
-            fontSize: 14,
-            outline: 'none',
-            transition: 'border-color 0.2s',
-          }}
-          onFocus={(e) => e.target.style.borderColor = '#d8ff3e'}
-          onBlur={(e) => e.target.style.borderColor = '#434343'}
+          className="filter-input"
         />
       </div>
 
-      <div style={{ flex: 1 }} />
+      <div className="filters-spacer" />
 
       <button
         onClick={onReset}
-        style={{
-          backgroundColor: '#d8ff3e',
-          color: '#0b0b0b',
-          border: 'none',
-          padding: '10px 16px',
-          borderRadius: 6,
-          cursor: 'pointer',
-          fontWeight: 600,
-          fontSize: 14,
-          transition: 'background-color 0.2s',
-          height: 'fit-content',
-        }}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#748c24'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#d8ff3e'}
+        className="reset-button"
       >
         Reset filters
       </button>

@@ -8,6 +8,7 @@ module.exports = {
 
   /* NEW – your tests now live in organized sub-folders */
   roots: [
+    '<rootDir>/src/tests/unit/repositories',
     '<rootDir>/src/tests/unit/controllers',
     '<rootDir>/src/tests/unit/services',
     '<rootDir>/src/tests/integration',
@@ -19,6 +20,7 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html', 'json'],
   coveragePathIgnorePatterns: ['/node_modules/', '/src/tests/', '/src/db/', '/src/infrastructure/'],
   collectCoverageFrom: [
+    'src/repositories/**/*.ts',
     'src/services/**/*.ts',
     'src/controllers/**/*.ts',
     '!src/**/*.d.ts',

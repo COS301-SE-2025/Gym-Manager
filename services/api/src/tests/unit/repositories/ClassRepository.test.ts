@@ -194,7 +194,7 @@ describe('ClassRepository', () => {
       expect(result).toEqual({
         classId: 1,
         capacity: 20,
-        scheduledDate: '2024-01-15',
+        scheduledDate: '2025-01-15',
         scheduledTime: '09:00',
         durationMinutes: 60,
         coachId: 1,

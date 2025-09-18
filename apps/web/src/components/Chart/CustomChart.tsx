@@ -1,34 +1,8 @@
 'use client';
 
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  PointElement,
-  LineElement,
-  ArcElement,
-  RadialLinearScale,
-  ChartOptions,
-} from 'chart.js';
+import 'chart.js/auto'; //auto to get all chart types 
+import { Chart as ChartJS, ChartOptions } from 'chart.js';
 import { Chart } from 'react-chartjs-2';
-
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  PointElement,
-  LineElement,
-  ArcElement,
-  RadialLinearScale,
-);
 
 type ChartType = 'bar' | 'line' | 'pie' | 'doughnut';
 

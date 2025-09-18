@@ -58,7 +58,6 @@ import { MemberRoutes } from '../../presentation/member/memberRoutes';
 
 // Analytics-related imports
 import { AnalyticsController } from '../../controllers/analytics/analyticsController';
-import { AnalyticsService } from '../../services/analytics/analyticsService';
 import { AnalyticsRoutes } from '../../presentation/analytics/analyticsRoutes';
 
 // Payment Packages-related imports

@@ -5,6 +5,7 @@ import ConversionFunnelReport from '@/components/reports/ConversionFunnelReport'
 import CohortRetentionReport from '@/components/reports/CohortRetentionReport';
 import LogsTab from '@/components/reports/LogsTab';
 import HeatMapReport from '@/components/reports/HeatMapReport';
+import GymUtilizationReport from '@/components/reports/GymUtilizationReport';
 import ReportStatCard from '@/components/reports/ReportStatCard';
 import OperationsChart from '@/components/reports/OperationsChart';
 import AcquisitionChart from '@/components/reports/AcquisitionChart';
@@ -108,11 +109,13 @@ export default function ReportsPage() {
                 <OperationsChart period={selectedPeriod} />
               </div>
             </div>
-            <div className="management-card full-width-card">
-              <div className="card-title">
-                <h2>Utilization by Hour</h2>
+        <div className="management-card full-width-card">
+          <div className="card-title">
+            <h2>Gym Utilization Analytics</h2>
+          </div>
+              <div className="card-content">
+                <GymUtilizationReport />
               </div>
-              <HeatMapReport />
             </div>
           </div>
         )}

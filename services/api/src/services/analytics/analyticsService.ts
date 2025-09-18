@@ -483,37 +483,18 @@ export class AnalyticsService {
   }> {
     const { startDate, endDate } = this.getDateRange(period);
     
-    // Determine grouping based on period
-    let groupBy: string;
-    switch (period) {
-      case 'today':
-        groupBy = 'DATE_TRUNC(\'hour\', created_at)';
-        break;
-      case 'lastWeek':
-        groupBy = 'DATE(created_at)';
-        break;
-      case 'lastMonth':
-        groupBy = 'DATE(created_at)';
-        break;
-      case 'lastYear':
-        groupBy = 'DATE_TRUNC(\'month\', created_at)';
-        break;
-      case 'all':
-      default:
-        groupBy = 'DATE_TRUNC(\'month\', created_at)';
-        break;
-    }
-
     // Build date conditions
     const dateConds = [] as any[];
     if (startDate) dateConds.push(gte(analyticsEvents.createdAt, new Date(startDate)));
     if (endDate) dateConds.push(lte(analyticsEvents.createdAt, new Date(endDate)));
 
-    // Get signup events
-    const signupEvents = await db
+    // Get all signup events in the date range
+    const allSignupEvents = await db
       .select({
-        date: sql<string>`${sql.raw(groupBy)}`,
-        count: count(analyticsEvents.id)
+        id: analyticsEvents.id,
+        createdAt: analyticsEvents.createdAt,
+        eventType: analyticsEvents.eventType,
+        properties: analyticsEvents.properties
       })
       .from(analyticsEvents)
       .where(
@@ -522,14 +503,16 @@ export class AnalyticsService {
           ...dateConds
         )
       )
-      .groupBy(sql.raw(groupBy))
-      .orderBy(sql.raw(groupBy));
+      .orderBy(analyticsEvents.createdAt);
 
-    // Get approval events
-    const approvalEvents = await db
+
+    // Get all approval events in the date range
+    const allApprovalEvents = await db
       .select({
-        date: sql<string>`${sql.raw(groupBy)}`,
-        count: count(analyticsEvents.id)
+        id: analyticsEvents.id,
+        createdAt: analyticsEvents.createdAt,
+        eventType: analyticsEvents.eventType,
+        properties: analyticsEvents.properties
       })
       .from(analyticsEvents)
       .where(
@@ -538,8 +521,8 @@ export class AnalyticsService {
           ...dateConds
         )
       )
-      .groupBy(sql.raw(groupBy))
-      .orderBy(sql.raw(groupBy));
+      .orderBy(analyticsEvents.createdAt);
+
 
     // Create date range for consistent labels
     const labels: string[] = [];
@@ -580,15 +563,71 @@ export class AnalyticsService {
 
       labels.push(label);
 
-      // Find data for this date
-      const signupCount = signupEvents.find(e => e.date.startsWith(dateKey))?.count || 0;
-      const approvalCount = approvalEvents.find(e => e.date.startsWith(dateKey))?.count || 0;
+      // Count events for this date period
+      let signupCount = 0;
+      let approvalCount = 0;
+
+      for (const event of allSignupEvents) {
+        const eventDate = new Date(event.createdAt!);
+        let matches = false;
+
+        switch (period) {
+          case 'today':
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth() &&
+                     eventDate.getDate() === currentDate.getDate() &&
+                     eventDate.getHours() === currentDate.getHours();
+            break;
+          case 'lastWeek':
+          case 'lastMonth':
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth() &&
+                     eventDate.getDate() === currentDate.getDate();
+            break;
+          case 'lastYear':
+          case 'all':
+          default:
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth();
+            break;
+        }
+
+        if (matches) signupCount++;
+      }
+
+      for (const event of allApprovalEvents) {
+        const eventDate = new Date(event.createdAt!);
+        let matches = false;
+
+        switch (period) {
+          case 'today':
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth() &&
+                     eventDate.getDate() === currentDate.getDate() &&
+                     eventDate.getHours() === currentDate.getHours();
+            break;
+          case 'lastWeek':
+          case 'lastMonth':
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth() &&
+                     eventDate.getDate() === currentDate.getDate();
+            break;
+          case 'lastYear':
+          case 'all':
+          default:
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth();
+            break;
+        }
+
+        if (matches) approvalCount++;
+      }
 
       signupData.push(signupCount);
       approvalData.push(approvalCount);
     }
 
-    return {
+    const result = {
       labels,
       datasets: [
         {
@@ -603,5 +642,7 @@ export class AnalyticsService {
         },
       ],
     };
+
+    return result;
   }
 }

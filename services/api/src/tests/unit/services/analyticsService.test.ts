@@ -398,4 +398,93 @@ describe('AnalyticsService', () => {
       });
     });
   });
+
+  describe('getUserAcquisitionData', () => {
+    it('should return acquisition data with empty arrays when no events exist', async () => {
+      // Mock empty results
+      mockDb.select.mockReturnValue({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            orderBy: jest.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+
+      const result = await analyticsService.getUserAcquisitionData('lastMonth');
+
+      expect(result).toEqual({
+        labels: expect.any(Array),
+        datasets: [
+          {
+            label: 'Signups',
+            data: expect.any(Array),
+            borderColor: '#3b82f6',
+          },
+          {
+            label: 'Approvals',
+            data: expect.any(Array),
+            borderColor: '#22c55e',
+          },
+        ],
+      });
+    });
+
+    it('should return acquisition data with signup and approval events', async () => {
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      
+      const mockSignupEvents = [
+        {
+          id: 1,
+          createdAt: yesterday,
+          eventType: 'user_signup',
+          properties: { email: 'test@example.com' }
+        }
+      ];
+
+      const mockApprovalEvents = [
+        {
+          id: 2,
+          createdAt: yesterday,
+          eventType: 'membership_approval',
+          properties: { approvedUserId: 1 }
+        }
+      ];
+
+      // Mock the two separate queries
+      mockDb.select
+        .mockReturnValueOnce({
+          from: jest.fn().mockReturnValue({
+            where: jest.fn().mockReturnValue({
+              orderBy: jest.fn().mockResolvedValue(mockSignupEvents),
+            }),
+          }),
+        })
+        .mockReturnValueOnce({
+          from: jest.fn().mockReturnValue({
+            where: jest.fn().mockReturnValue({
+              orderBy: jest.fn().mockResolvedValue(mockApprovalEvents),
+            }),
+          }),
+        });
+
+      const result = await analyticsService.getUserAcquisitionData('lastMonth');
+
+      expect(result).toEqual({
+        labels: expect.any(Array),
+        datasets: [
+          {
+            label: 'Signups',
+            data: expect.any(Array),
+            borderColor: '#3b82f6',
+          },
+          {
+            label: 'Approvals',
+            data: expect.any(Array),
+            borderColor: '#22c55e',
+          },
+        ],
+      });
+    });
+  });
 });

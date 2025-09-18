@@ -30,17 +30,22 @@ describe('AnalyticsService', () => {
   describe('getCoachAnalytics', () => {
     it('should return analytics for a coach with classes', async () => {
       const coachId = 1;
+      // Use recent dates within the last 30 days
+      const today = new Date();
+      const recentDate1 = new Date(today.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10); // 10 days ago
+      const recentDate2 = new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10); // 5 days ago
+      
       const mockCoachClasses = [
         {
           classId: 1,
-          scheduledDate: '2024-01-01',
+          scheduledDate: recentDate1,
           workoutId: 1,
           workoutName: 'HIIT Workout',
           capacity: 10,
         },
         {
           classId: 2,
-          scheduledDate: '2024-01-02',
+          scheduledDate: recentDate2,
           workoutId: 2,
           workoutName: 'Strength Training',
           capacity: 15,
@@ -52,7 +57,7 @@ describe('AnalyticsService', () => {
         { classId: 2, attendanceCount: 12 },
       ];
 
-      // Mock the query chain
+      // Mock the query chain for coach classes
       mockDb.select.mockReturnValueOnce({
         from: jest.fn().mockReturnValue({
           leftJoin: jest.fn().mockReturnValue({
@@ -61,6 +66,7 @@ describe('AnalyticsService', () => {
         }),
       });
 
+      // Mock the query chain for attendance data
       mockDb.select.mockReturnValueOnce({
         from: jest.fn().mockReturnValue({
           where: jest.fn().mockReturnValue({
@@ -77,13 +83,13 @@ describe('AnalyticsService', () => {
         averageFillRate: 80, // (8 + 12) / (10 + 15) * 100
         attendanceTrends: expect.arrayContaining([
           expect.objectContaining({
-            date: '2024-01-01',
+            date: recentDate1,
             attendance: 8,
             capacity: 10,
             fillRate: 80,
           }),
           expect.objectContaining({
-            date: '2024-01-02',
+            date: recentDate2,
             attendance: 12,
             capacity: 15,
             fillRate: 80,

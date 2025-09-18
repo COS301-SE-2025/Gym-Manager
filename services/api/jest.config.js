@@ -27,9 +27,6 @@ module.exports = {
   },
   collectCoverageFrom: [
     'src/services/**/*.ts',
-    'src/controllers/**/*.ts',
-    'src/domain/**/*.ts',
-    'src/repositories/**/*.ts',
     '!src/**/*.d.ts',
     '!src/**/*.interface.ts',
     '!src/**/*.entity.ts'

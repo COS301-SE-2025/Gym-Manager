@@ -91,7 +91,7 @@ describe('DailyLeaderboardService', () => {
 
     it('should accept valid scaling types', async () => {
       const date = '2024-01-15';
-      const mockLeaderboard = [];
+      const mockLeaderboard: any[] = [];
 
       mockRepository.getDailyLeaderboard.mockResolvedValue(mockLeaderboard);
 

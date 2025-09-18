@@ -262,7 +262,7 @@ export default function PackagesPage() {
                   className="action-btn delete-btn"
                   onClick={() => openDeleteModal(pkg)}
                   title={pkg.transactionCount && pkg.transactionCount > 0 ? "Cannot delete - has transactions" : "Delete"}
-                  disabled={(pkg.transactionCount ?? 0) > 0}
+                  disabled={!!(pkg.transactionCount && pkg.transactionCount > 0)}
                 >
                   <TrashIcon size={16} />
                 </button>

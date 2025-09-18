@@ -121,6 +121,171 @@ describe('AnalyticsService', () => {
     });
   });
 
+  describe('getSummaryStats', () => {
+    it('should calculate correct summary stats for today period', async () => {
+      const today = new Date();
+      const todayDate = today.toISOString().slice(0, 10);
+      
+      const mockClassesInPeriod = [
+        { classId: 1, capacity: 10 },
+        { classId: 2, capacity: 15 },
+      ];
+
+      const mockBookingCount = [{ value: 20 }]; // 20 total bookings
+      const mockAttendanceCount = [{ value: 18 }]; // 18 people attended
+      const mockCancellationCount = [{ value: 2 }]; // 2 cancellations
+
+      // Mock classes query
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue(mockClassesInPeriod),
+        }),
+      });
+
+      // Mock bookings query
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue(mockBookingCount),
+        }),
+      });
+
+      // Mock attendance query
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue(mockAttendanceCount),
+        }),
+      });
+
+      // Mock cancellations query
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue(mockCancellationCount),
+        }),
+      });
+
+      const result = await analyticsService.getSummaryStats('today');
+
+      expect(result).toEqual({
+        totalBookings: 20,
+        fillRate: 0.8, // 20 bookings / 25 total capacity
+        cancellationRate: 0.1, // 2 cancellations / 20 total bookings
+        noShowRate: 0.9, // 18 attendances / 20 total bookings
+      });
+    });
+
+    it('should handle empty data gracefully', async () => {
+      // Mock empty classes
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue([]),
+        }),
+      });
+
+      const result = await analyticsService.getSummaryStats('today');
+
+      expect(result).toEqual({
+        totalBookings: 0,
+        fillRate: 0,
+        cancellationRate: 0,
+        noShowRate: 0,
+      });
+    });
+  });
+
+  describe('getOperationsData', () => {
+    it('should return operations data for today period', async () => {
+      const today = new Date();
+      const todayDate = today.toISOString().slice(0, 10);
+      
+      const mockClassesInPeriod = [
+        { classId: 1, capacity: 10, scheduledDate: todayDate },
+        { classId: 2, capacity: 15, scheduledDate: todayDate },
+      ];
+
+      const mockBookingsData = [
+        { classId: 1, count: 8 },
+        { classId: 2, count: 12 },
+      ];
+
+      const mockAttendanceData = [
+        { classId: 1, count: 7 },
+        { classId: 2, count: 10 },
+      ];
+
+      const mockCancellationData = [
+        { classId: 1, count: 1 },
+        { classId: 2, count: 2 },
+      ];
+
+      // Mock classes query
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            orderBy: jest.fn().mockResolvedValue(mockClassesInPeriod),
+          }),
+        }),
+      });
+
+      // Mock bookings query
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            groupBy: jest.fn().mockResolvedValue(mockBookingsData),
+          }),
+        }),
+      });
+
+      // Mock attendance query
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            groupBy: jest.fn().mockResolvedValue(mockAttendanceData),
+          }),
+        }),
+      });
+
+      // Mock cancellations query
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            groupBy: jest.fn().mockResolvedValue(mockCancellationData),
+          }),
+        }),
+      });
+
+      const result = await analyticsService.getOperationsData('today');
+
+      expect(result).toEqual({
+        labels: [expect.stringMatching(/Jan \d+|Feb \d+|Mar \d+|Apr \d+|May \d+|Jun \d+|Jul \d+|Aug \d+|Sep \d+|Oct \d+|Nov \d+|Dec \d+/)],
+        datasets: [
+          { label: 'Capacity', data: [25], borderColor: '#4b5563' },
+          { label: 'Bookings', data: [20], borderColor: '#3b82f6' },
+          { label: 'Attendance', data: [17], borderColor: '#22c55e' },
+          { label: 'Cancellations', data: [3], borderColor: '#f97316' },
+          { label: 'No-Shows', data: [3], borderColor: '#ef4444' }, // 20 bookings - 17 attendance
+        ]
+      });
+    });
+
+    it('should handle empty operations data gracefully', async () => {
+      // Mock empty classes
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            orderBy: jest.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+
+      const result = await analyticsService.getOperationsData('today');
+
+      expect(result).toEqual({
+        labels: [],
+        datasets: []
+      });
+    });
+  });
+
   describe('getMemberAnalytics', () => {
     it('should return analytics for a member with attendance', async () => {
       const memberId = 1;
@@ -230,6 +395,95 @@ describe('AnalyticsService', () => {
         averageLeaderboardPosition: 0,
         totalClassesAttended: 0,
         classPerformance: [],
+      });
+    });
+  });
+
+  describe('getUserAcquisitionData', () => {
+    it('should return acquisition data with empty arrays when no events exist', async () => {
+      // Mock empty results
+      mockDb.select.mockReturnValue({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            orderBy: jest.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+
+      const result = await analyticsService.getUserAcquisitionData('lastMonth');
+
+      expect(result).toEqual({
+        labels: expect.any(Array),
+        datasets: [
+          {
+            label: 'Signups',
+            data: expect.any(Array),
+            borderColor: '#3b82f6',
+          },
+          {
+            label: 'Approvals',
+            data: expect.any(Array),
+            borderColor: '#22c55e',
+          },
+        ],
+      });
+    });
+
+    it('should return acquisition data with signup and approval events', async () => {
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      
+      const mockSignupEvents = [
+        {
+          id: 1,
+          createdAt: yesterday,
+          eventType: 'user_signup',
+          properties: { email: 'test@example.com' }
+        }
+      ];
+
+      const mockApprovalEvents = [
+        {
+          id: 2,
+          createdAt: yesterday,
+          eventType: 'membership_approval',
+          properties: { approvedUserId: 1 }
+        }
+      ];
+
+      // Mock the two separate queries
+      mockDb.select
+        .mockReturnValueOnce({
+          from: jest.fn().mockReturnValue({
+            where: jest.fn().mockReturnValue({
+              orderBy: jest.fn().mockResolvedValue(mockSignupEvents),
+            }),
+          }),
+        })
+        .mockReturnValueOnce({
+          from: jest.fn().mockReturnValue({
+            where: jest.fn().mockReturnValue({
+              orderBy: jest.fn().mockResolvedValue(mockApprovalEvents),
+            }),
+          }),
+        });
+
+      const result = await analyticsService.getUserAcquisitionData('lastMonth');
+
+      expect(result).toEqual({
+        labels: expect.any(Array),
+        datasets: [
+          {
+            label: 'Signups',
+            data: expect.any(Array),
+            borderColor: '#3b82f6',
+          },
+          {
+            label: 'Approvals',
+            data: expect.any(Array),
+            borderColor: '#22c55e',
+          },
+        ],
       });
     });
   });

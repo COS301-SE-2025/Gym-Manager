@@ -4,21 +4,26 @@ import { CustomChart } from '@/components/Chart/CustomChart';
 import { reportsService } from '@/app/services/reports';
 import TimePeriodToggle from './TimePeriodToggle';
 
+type Period = 'today' | 'lastWeek' | 'lastMonth' | 'lastYear' | 'all';
+
 export default function AcquisitionChart() {
   const [data, setData] = useState<any | null>(null);
-  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
+  const [period, setPeriod] = useState<Period>('lastMonth');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     setData(null);
-    // reportsService.getAcquisitionData(period).then(setData).catch(console.error);
-
-    // Mock data fetching
-    const mockData = reportsService.getAcquisitionData(period);
-    setTimeout(() => setData(mockData), 300);
+    
+    reportsService.getAcquisitionData(period)
+      .then(setData)
+      .catch(console.error)
+      .finally(() => setLoading(false));
 
   }, [period]);
 
-  if (!data) return <div>Loading Chart...</div>;
+  if (loading) return <div>Loading Chart...</div>;
+  if (!data) return <div>No data available</div>;
 
   return (
     <div>

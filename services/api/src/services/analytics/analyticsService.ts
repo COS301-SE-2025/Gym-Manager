@@ -30,6 +30,24 @@ export interface MemberAnalytics {
   }>;
 }
 
+export interface GymUtilizationData {
+  x_labels: string[]; // Time slots (e.g., ['6am', '7am', '8am', ...])
+  y_labels: string[]; // Days of week (e.g., ['Mon', 'Tue', 'Wed', ...])
+  values: number[][]; // Utilization percentages for each day/time combination
+  averageUtilizationByHour: Array<{
+    hour: string;
+    averageUtilization: number;
+  }>;
+}
+
+export interface BookingTimesData {
+  hour: string;
+  averageBookings: number;
+  totalBookings: number;
+  popularityRank: number;
+}
+
+
 export class AnalyticsService {
   private analyticsRepository: IAnalyticsRepository;
 
@@ -53,6 +71,165 @@ export class AnalyticsService {
 
   async getLogs(startDate?: string, endDate?: string): Promise<LogEntry[]> {
     return this.analyticsRepository.getLogs(startDate, endDate);
+  }
+
+  async getOperationsData(period?: string): Promise<{
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      borderColor: string;
+    }>;
+  }> {
+    const { startDate, endDate } = this.getDateRange(period);
+    
+    // Convert ISO datetime to date-only where needed for classes.scheduledDate
+    const startDateOnly = startDate ? startDate.slice(0, 10) : undefined;
+    const endDateOnly = endDate ? endDate.slice(0, 10) : undefined;
+
+    // Find classes in the selected period (by scheduled date)
+    const classDateConds = [] as any[];
+    if (startDateOnly) classDateConds.push(gte(classes.scheduledDate, startDateOnly));
+    if (endDateOnly) classDateConds.push(lte(classes.scheduledDate, endDateOnly));
+
+    const classesInPeriod = await db
+      .select({ 
+        classId: classes.classId, 
+        capacity: classes.capacity,
+        scheduledDate: classes.scheduledDate
+      })
+      .from(classes)
+      .where(classDateConds.length ? and(...classDateConds) : undefined as any)
+      .orderBy(classes.scheduledDate);
+
+    if (classesInPeriod.length === 0) {
+      return {
+        labels: [],
+        datasets: []
+      };
+    }
+
+    // Group classes by date and calculate metrics for each date
+    const dateGroups = new Map<string, {
+      capacity: number;
+      bookings: number;
+      attendance: number;
+      cancellations: number;
+    }>();
+
+    // Initialize date groups
+    classesInPeriod.forEach(cls => {
+      if (!dateGroups.has(cls.scheduledDate)) {
+        dateGroups.set(cls.scheduledDate, {
+          capacity: 0,
+          bookings: 0,
+          attendance: 0,
+          cancellations: 0
+        });
+      }
+      const group = dateGroups.get(cls.scheduledDate)!;
+      group.capacity += cls.capacity;
+    });
+
+    const classIds = classesInPeriod.map(c => c.classId);
+
+    // Get bookings for each class
+    if (classIds.length > 0) {
+      const bookingsData = await db
+        .select({
+          classId: classbookings.classId,
+          count: count(classbookings.bookingId)
+        })
+        .from(classbookings)
+        .where(sql`${classbookings.classId} IN (${sql.join(classIds, sql`, `)})`)
+        .groupBy(classbookings.classId);
+
+      // Map bookings to dates
+      bookingsData.forEach(booking => {
+        const classData = classesInPeriod.find(c => c.classId === booking.classId);
+        if (classData) {
+          const group = dateGroups.get(classData.scheduledDate)!;
+          group.bookings += booking.count;
+        }
+      });
+    }
+
+    // Get attendance for each class
+    if (classIds.length > 0) {
+      const attendanceData = await db
+        .select({
+          classId: classattendance.classId,
+          count: count(classattendance.memberId)
+        })
+        .from(classattendance)
+        .where(sql`${classattendance.classId} IN (${sql.join(classIds, sql`, `)})`)
+        .groupBy(classattendance.classId);
+
+      // Map attendance to dates
+      attendanceData.forEach(attendance => {
+        const classData = classesInPeriod.find(c => c.classId === attendance.classId);
+        if (classData) {
+          const group = dateGroups.get(classData.scheduledDate)!;
+          group.attendance += attendance.count;
+        }
+      });
+    }
+
+    // Get cancellations for each class
+    if (classIds.length > 0) {
+      const cancellationData = await db
+        .select({
+          classId: sql`(${analyticsEvents.properties} ->> 'classId')::int`.as('classId'),
+          count: count(analyticsEvents.id)
+        })
+        .from(analyticsEvents)
+        .where(
+          and(
+            eq(analyticsEvents.eventType, 'class_cancellation'),
+            sql`( ${analyticsEvents.properties} ->> 'classId')::int IN (${sql.join(classIds, sql`, `)})`
+          )
+        )
+        .groupBy(sql`(${analyticsEvents.properties} ->> 'classId')::int`);
+
+      // Map cancellations to dates
+      cancellationData.forEach(cancellation => {
+        const classData = classesInPeriod.find(c => c.classId === cancellation.classId);
+        if (classData) {
+          const group = dateGroups.get(classData.scheduledDate)!;
+          group.cancellations += cancellation.count;
+        }
+      });
+    }
+
+    // Convert to chart format
+    const sortedDates = Array.from(dateGroups.keys()).sort();
+    const labels = sortedDates.map(date => {
+      const dateObj = new Date(date);
+      return dateObj.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    });
+
+    const capacityData = sortedDates.map(date => dateGroups.get(date)!.capacity);
+    const bookingsData = sortedDates.map(date => dateGroups.get(date)!.bookings);
+    const attendanceData = sortedDates.map(date => dateGroups.get(date)!.attendance);
+    const cancellationsData = sortedDates.map(date => dateGroups.get(date)!.cancellations);
+    const noShowsData = sortedDates.map(date => {
+      const group = dateGroups.get(date)!;
+      return group.bookings - group.attendance;
+    });
+
+    return {
+      labels,
+      datasets: [
+        { label: 'Capacity', data: capacityData, borderColor: '#4b5563' },
+        { label: 'Bookings', data: bookingsData, borderColor: '#3b82f6' },
+        { label: 'Attendance', data: attendanceData, borderColor: '#22c55e' },
+        { label: 'Cancellations', data: cancellationsData, borderColor: '#f97316' },
+        { label: 'No-Shows', data: noShowsData, borderColor: '#ef4444' },
+      ]
+    };
   }
 
   async getSummaryStats(period?: string): Promise<{
@@ -80,7 +257,7 @@ export class AnalyticsService {
     const classIds = classesInPeriod.map(c => c.classId);
     const totalCapacity = classesInPeriod.reduce((sum, c) => sum + c.capacity, 0);
 
-    // Count bookings for those classes
+    // Count bookings for classes held in the selected period
     let totalBookings = 0;
     if (classIds.length > 0) {
       const bookingCountRows = await db
@@ -90,7 +267,7 @@ export class AnalyticsService {
       totalBookings = bookingCountRows[0]?.value ?? 0;
     }
 
-    // Count attendances for those classes
+    // Count actual attendances for classes held in the selected period
     let totalAttendances = 0;
     if (classIds.length > 0) {
       const attendanceCountRows = await db
@@ -100,7 +277,7 @@ export class AnalyticsService {
       totalAttendances = attendanceCountRows[0]?.value ?? 0;
     }
 
-    // Count cancellations from analytics events logs only, but scoped to classes in period
+    // Count cancellations from analytics events logs for classes in the selected period
     let totalCancellations = 0;
     if (classIds.length > 0) {
       const cancellationCountRows = await db
@@ -126,10 +303,16 @@ export class AnalyticsService {
       totalCancellations = cancellationCountRows[0]?.value ?? 0;
     }
 
-    // Fill rate: bookings per capacity of classes in the period
+    // Calculate metrics based on the requirements:
+    // 1. Total Bookings: Total bookings for classes held in the period (already correct)
+    // 2. Fill Rate: Percentage of bookings made compared to capacity of classes held in the period
     const fillRate = totalCapacity > 0 ? totalBookings / totalCapacity : 0;
+    
+    // 3. Cancellation Rate: Number of cancellations compared to total bookings for classes held in the period
     const cancellationRate = totalBookings > 0 ? totalCancellations / totalBookings : 0;
-    const noShowRate = totalBookings > 0 ? (totalBookings - totalAttendances) / totalBookings : 0;
+    
+    // 4. No Show Rate: Percentage of people who actually attended vs total bookings for classes held in the period
+    const noShowRate = totalBookings > 0 ? totalAttendances / totalBookings : 0;
 
     return {
       totalBookings,
@@ -306,5 +489,333 @@ export class AnalyticsService {
       totalClassesAttended: memberAttendance.length,
       classPerformance,
     };
+  }
+
+  async getUserAcquisitionData(period?: string): Promise<{
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      borderColor: string;
+    }>;
+  }> {
+    const { startDate, endDate } = this.getDateRange(period);
+    
+    // Build date conditions
+    const dateConds = [] as any[];
+    if (startDate) dateConds.push(gte(analyticsEvents.createdAt, new Date(startDate)));
+    if (endDate) dateConds.push(lte(analyticsEvents.createdAt, new Date(endDate)));
+
+    // Get all signup events in the date range
+    const allSignupEvents = await db
+      .select({
+        id: analyticsEvents.id,
+        createdAt: analyticsEvents.createdAt,
+        eventType: analyticsEvents.eventType,
+        properties: analyticsEvents.properties
+      })
+      .from(analyticsEvents)
+      .where(
+        and(
+          eq(analyticsEvents.eventType, 'user_signup'),
+          ...dateConds
+        )
+      )
+      .orderBy(analyticsEvents.createdAt);
+
+
+    // Get all approval events in the date range
+    const allApprovalEvents = await db
+      .select({
+        id: analyticsEvents.id,
+        createdAt: analyticsEvents.createdAt,
+        eventType: analyticsEvents.eventType,
+        properties: analyticsEvents.properties
+      })
+      .from(analyticsEvents)
+      .where(
+        and(
+          eq(analyticsEvents.eventType, 'membership_approval'),
+          ...dateConds
+        )
+      )
+      .orderBy(analyticsEvents.createdAt);
+
+
+    // Create date range for consistent labels
+    const labels: string[] = [];
+    const signupData: number[] = [];
+    const approvalData: number[] = [];
+
+    const currentDate = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const endDateObj = endDate ? new Date(endDate) : new Date();
+
+    while (currentDate <= endDateObj) {
+      let label: string;
+      let dateKey: string;
+
+      switch (period) {
+        case 'today':
+          label = currentDate.toLocaleTimeString('en-US', { hour: '2-digit', hour12: false });
+          dateKey = currentDate.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+          currentDate.setHours(currentDate.getHours() + 1);
+          break;
+        case 'lastWeek':
+        case 'lastMonth':
+          label = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          dateKey = currentDate.toISOString().split('T')[0];
+          currentDate.setDate(currentDate.getDate() + 1);
+          break;
+        case 'lastYear':
+          label = currentDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+          dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+          currentDate.setMonth(currentDate.getMonth() + 1);
+          break;
+        case 'all':
+        default:
+          label = currentDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+          dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+          currentDate.setMonth(currentDate.getMonth() + 1);
+          break;
+      }
+
+      labels.push(label);
+
+      // Count events for this date period
+      let signupCount = 0;
+      let approvalCount = 0;
+
+      for (const event of allSignupEvents) {
+        const eventDate = new Date(event.createdAt!);
+        let matches = false;
+
+        switch (period) {
+          case 'today':
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth() &&
+                     eventDate.getDate() === currentDate.getDate() &&
+                     eventDate.getHours() === currentDate.getHours();
+            break;
+          case 'lastWeek':
+          case 'lastMonth':
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth() &&
+                     eventDate.getDate() === currentDate.getDate();
+            break;
+          case 'lastYear':
+          case 'all':
+          default:
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth();
+            break;
+        }
+
+        if (matches) signupCount++;
+      }
+
+      for (const event of allApprovalEvents) {
+        const eventDate = new Date(event.createdAt!);
+        let matches = false;
+
+        switch (period) {
+          case 'today':
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth() &&
+                     eventDate.getDate() === currentDate.getDate() &&
+                     eventDate.getHours() === currentDate.getHours();
+            break;
+          case 'lastWeek':
+          case 'lastMonth':
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth() &&
+                     eventDate.getDate() === currentDate.getDate();
+            break;
+          case 'lastYear':
+          case 'all':
+          default:
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth();
+            break;
+        }
+
+        if (matches) approvalCount++;
+      }
+
+      signupData.push(signupCount);
+      approvalData.push(approvalCount);
+    }
+
+    const result = {
+      labels,
+      datasets: [
+        {
+          label: 'Signups',
+          data: signupData,
+          borderColor: '#3b82f6',
+        },
+        {
+          label: 'Approvals',
+          data: approvalData,
+          borderColor: '#22c55e',
+        },
+      ],
+    };
+
+    return result;
+  }
+
+  async getGymUtilization(weekStartDate?: string): Promise<GymUtilizationData> {
+    // Default to current week if no date provided
+    const startDate = weekStartDate ? new Date(weekStartDate) : this.getWeekStart(new Date());
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6); // End of week
+
+    // Get all classes in the specified week with their bookings
+    const classesWithBookings = await db
+      .select({
+        classId: classes.classId,
+        scheduledDate: classes.scheduledDate,
+        scheduledTime: classes.scheduledTime,
+        capacity: classes.capacity,
+        bookingCount: count(classbookings.bookingId),
+      })
+      .from(classes)
+      .leftJoin(classbookings, eq(classes.classId, classbookings.classId))
+      .where(
+        and(
+          gte(classes.scheduledDate, startDate.toISOString().slice(0, 10)),
+          lte(classes.scheduledDate, endDate.toISOString().slice(0, 10))
+        )
+      )
+      .groupBy(classes.classId, classes.scheduledDate, classes.scheduledTime, classes.capacity);
+
+    // Create time slots for all business hours (6am to 10pm)
+    const timeSlots = [
+      '6am', '7am', '8am', '9am', '10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', 
+      '5pm', '6pm', '7pm', '8pm', '9pm', '10pm'
+    ];
+
+    // Days of week
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    // Initialize utilization matrix
+    const utilizationMatrix: number[][] = [];
+    for (let day = 0; day < 7; day++) {
+      utilizationMatrix[day] = new Array(timeSlots.length).fill(0);
+    }
+
+    // Process each class and calculate utilization
+    for (const classData of classesWithBookings) {
+      const classDate = new Date(classData.scheduledDate);
+      const dayOfWeek = classDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      
+      // Parse time (format: "HH:MM:SS")
+      const timeParts = classData.scheduledTime.split(':');
+      const hour = parseInt(timeParts[0]);
+      
+      // Find the appropriate time slot index based on all business hours
+      let timeSlotIndex = -1;
+      if (hour >= 6 && hour <= 22) { // 6am to 10pm (22:00)
+        timeSlotIndex = hour - 6; // Direct mapping: 6am = 0, 7am = 1, etc.
+      }
+      
+      if (timeSlotIndex >= 0 && timeSlotIndex < timeSlots.length) {
+        const utilization = classData.capacity > 0 ? (classData.bookingCount / classData.capacity) * 100 : 0;
+        utilizationMatrix[dayOfWeek][timeSlotIndex] = Math.round(utilization * 100) / 100;
+      }
+    }
+
+    // Calculate average utilization by hour across all days
+    const averageUtilizationByHour = timeSlots.map((hour, index) => {
+      const dayUtilizations = utilizationMatrix.map(day => day[index]).filter(val => val > 0);
+      const average = dayUtilizations.length > 0 
+        ? dayUtilizations.reduce((sum, val) => sum + val, 0) / dayUtilizations.length 
+        : 0;
+      
+      return {
+        hour,
+        averageUtilization: Math.round(average * 100) / 100,
+      };
+    });
+
+    return {
+      x_labels: timeSlots,
+      y_labels: daysOfWeek,
+      values: utilizationMatrix,
+      averageUtilizationByHour,
+    };
+  }
+
+  async getBookingTimesAnalytics(): Promise<BookingTimesData[]> {
+    // Get all time slots from 6am to 10pm (17 hours)
+    const timeSlots = [
+      '6am', '7am', '8am', '9am', '10am', '11am', '12pm', 
+      '1pm', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm', '8pm', '9pm', '10pm'
+    ];
+
+    // Get all bookings with their class times
+    const bookingsData = await db
+      .select({
+        scheduledTime: classes.scheduledTime,
+        scheduledDate: classes.scheduledDate,
+        bookingId: classbookings.bookingId,
+      })
+      .from(classbookings)
+      .innerJoin(classes, eq(classbookings.classId, classes.classId));
+
+    // Group bookings by hour
+    const bookingsByHour = new Map<string, number>();
+    const totalBookings = bookingsData.length;
+
+    bookingsData.forEach(booking => {
+      const time = booking.scheduledTime;
+      if (time) {
+        // Convert time to hour format (e.g., "09:00:00" -> "9am")
+        const hour = this.formatTimeToHour(time);
+        if (hour) {
+          bookingsByHour.set(hour, (bookingsByHour.get(hour) || 0) + 1);
+        }
+      }
+    });
+
+    // Calculate analytics for each time slot
+    const analytics = timeSlots.map((hour, index) => {
+      const totalBookingsForHour = bookingsByHour.get(hour) || 0;
+      const averageBookings = totalBookings > 0 ? totalBookingsForHour / totalBookings : 0;
+      
+      return {
+        hour,
+        averageBookings: Math.round(averageBookings * 100) / 100, // Round to 2 decimal places
+        totalBookings: totalBookingsForHour,
+        popularityRank: index + 1, // Will be sorted by total bookings later
+      };
+    });
+
+    // Sort by total bookings (descending) and update popularity rank
+    const sortedAnalytics = analytics.sort((a, b) => b.totalBookings - a.totalBookings);
+    return sortedAnalytics.map((item, index) => ({
+      ...item,
+      popularityRank: index + 1,
+    }));
+  }
+
+  private formatTimeToHour(time: string): string | null {
+    try {
+      const [hours, minutes] = time.split(':').map(Number);
+      const hour = hours % 12 || 12;
+      const ampm = hours < 12 ? 'am' : 'pm';
+      return `${hour}${ampm}`;
+    } catch {
+      return null;
+    }
+  }
+
+  private getWeekStart(date: Date): Date {
+    const day = date.getDay();
+    const diff = date.getDate() - day; // Adjust to start of week (Sunday)
+    const weekStart = new Date(date);
+    weekStart.setDate(diff);
+    weekStart.setHours(0, 0, 0, 0);
+    return weekStart;
   }
 }

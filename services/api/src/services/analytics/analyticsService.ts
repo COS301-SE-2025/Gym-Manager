@@ -73,6 +73,165 @@ export class AnalyticsService {
     return this.analyticsRepository.getLogs(startDate, endDate);
   }
 
+  async getOperationsData(period?: string): Promise<{
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      borderColor: string;
+    }>;
+  }> {
+    const { startDate, endDate } = this.getDateRange(period);
+    
+    // Convert ISO datetime to date-only where needed for classes.scheduledDate
+    const startDateOnly = startDate ? startDate.slice(0, 10) : undefined;
+    const endDateOnly = endDate ? endDate.slice(0, 10) : undefined;
+
+    // Find classes in the selected period (by scheduled date)
+    const classDateConds = [] as any[];
+    if (startDateOnly) classDateConds.push(gte(classes.scheduledDate, startDateOnly));
+    if (endDateOnly) classDateConds.push(lte(classes.scheduledDate, endDateOnly));
+
+    const classesInPeriod = await db
+      .select({ 
+        classId: classes.classId, 
+        capacity: classes.capacity,
+        scheduledDate: classes.scheduledDate
+      })
+      .from(classes)
+      .where(classDateConds.length ? and(...classDateConds) : undefined as any)
+      .orderBy(classes.scheduledDate);
+
+    if (classesInPeriod.length === 0) {
+      return {
+        labels: [],
+        datasets: []
+      };
+    }
+
+    // Group classes by date and calculate metrics for each date
+    const dateGroups = new Map<string, {
+      capacity: number;
+      bookings: number;
+      attendance: number;
+      cancellations: number;
+    }>();
+
+    // Initialize date groups
+    classesInPeriod.forEach(cls => {
+      if (!dateGroups.has(cls.scheduledDate)) {
+        dateGroups.set(cls.scheduledDate, {
+          capacity: 0,
+          bookings: 0,
+          attendance: 0,
+          cancellations: 0
+        });
+      }
+      const group = dateGroups.get(cls.scheduledDate)!;
+      group.capacity += cls.capacity;
+    });
+
+    const classIds = classesInPeriod.map(c => c.classId);
+
+    // Get bookings for each class
+    if (classIds.length > 0) {
+      const bookingsData = await db
+        .select({
+          classId: classbookings.classId,
+          count: count(classbookings.bookingId)
+        })
+        .from(classbookings)
+        .where(sql`${classbookings.classId} IN (${sql.join(classIds, sql`, `)})`)
+        .groupBy(classbookings.classId);
+
+      // Map bookings to dates
+      bookingsData.forEach(booking => {
+        const classData = classesInPeriod.find(c => c.classId === booking.classId);
+        if (classData) {
+          const group = dateGroups.get(classData.scheduledDate)!;
+          group.bookings += booking.count;
+        }
+      });
+    }
+
+    // Get attendance for each class
+    if (classIds.length > 0) {
+      const attendanceData = await db
+        .select({
+          classId: classattendance.classId,
+          count: count(classattendance.memberId)
+        })
+        .from(classattendance)
+        .where(sql`${classattendance.classId} IN (${sql.join(classIds, sql`, `)})`)
+        .groupBy(classattendance.classId);
+
+      // Map attendance to dates
+      attendanceData.forEach(attendance => {
+        const classData = classesInPeriod.find(c => c.classId === attendance.classId);
+        if (classData) {
+          const group = dateGroups.get(classData.scheduledDate)!;
+          group.attendance += attendance.count;
+        }
+      });
+    }
+
+    // Get cancellations for each class
+    if (classIds.length > 0) {
+      const cancellationData = await db
+        .select({
+          classId: sql`(${analyticsEvents.properties} ->> 'classId')::int`.as('classId'),
+          count: count(analyticsEvents.id)
+        })
+        .from(analyticsEvents)
+        .where(
+          and(
+            eq(analyticsEvents.eventType, 'class_cancellation'),
+            sql`( ${analyticsEvents.properties} ->> 'classId')::int IN (${sql.join(classIds, sql`, `)})`
+          )
+        )
+        .groupBy(sql`(${analyticsEvents.properties} ->> 'classId')::int`);
+
+      // Map cancellations to dates
+      cancellationData.forEach(cancellation => {
+        const classData = classesInPeriod.find(c => c.classId === cancellation.classId);
+        if (classData) {
+          const group = dateGroups.get(classData.scheduledDate)!;
+          group.cancellations += cancellation.count;
+        }
+      });
+    }
+
+    // Convert to chart format
+    const sortedDates = Array.from(dateGroups.keys()).sort();
+    const labels = sortedDates.map(date => {
+      const dateObj = new Date(date);
+      return dateObj.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    });
+
+    const capacityData = sortedDates.map(date => dateGroups.get(date)!.capacity);
+    const bookingsData = sortedDates.map(date => dateGroups.get(date)!.bookings);
+    const attendanceData = sortedDates.map(date => dateGroups.get(date)!.attendance);
+    const cancellationsData = sortedDates.map(date => dateGroups.get(date)!.cancellations);
+    const noShowsData = sortedDates.map(date => {
+      const group = dateGroups.get(date)!;
+      return group.bookings - group.attendance;
+    });
+
+    return {
+      labels,
+      datasets: [
+        { label: 'Capacity', data: capacityData, borderColor: '#4b5563' },
+        { label: 'Bookings', data: bookingsData, borderColor: '#3b82f6' },
+        { label: 'Attendance', data: attendanceData, borderColor: '#22c55e' },
+        { label: 'Cancellations', data: cancellationsData, borderColor: '#f97316' },
+        { label: 'No-Shows', data: noShowsData, borderColor: '#ef4444' },
+      ]
+    };
+  }
+
   async getSummaryStats(period?: string): Promise<{
     totalBookings: number;
     fillRate: number;
@@ -98,7 +257,7 @@ export class AnalyticsService {
     const classIds = classesInPeriod.map(c => c.classId);
     const totalCapacity = classesInPeriod.reduce((sum, c) => sum + c.capacity, 0);
 
-    // Count bookings for those classes
+    // Count bookings for classes held in the selected period
     let totalBookings = 0;
     if (classIds.length > 0) {
       const bookingCountRows = await db
@@ -108,7 +267,7 @@ export class AnalyticsService {
       totalBookings = bookingCountRows[0]?.value ?? 0;
     }
 
-    // Count attendances for those classes
+    // Count actual attendances for classes held in the selected period
     let totalAttendances = 0;
     if (classIds.length > 0) {
       const attendanceCountRows = await db
@@ -118,7 +277,7 @@ export class AnalyticsService {
       totalAttendances = attendanceCountRows[0]?.value ?? 0;
     }
 
-    // Count cancellations from analytics events logs only, but scoped to classes in period
+    // Count cancellations from analytics events logs for classes in the selected period
     let totalCancellations = 0;
     if (classIds.length > 0) {
       const cancellationCountRows = await db
@@ -144,10 +303,16 @@ export class AnalyticsService {
       totalCancellations = cancellationCountRows[0]?.value ?? 0;
     }
 
-    // Fill rate: bookings per capacity of classes in the period
+    // Calculate metrics based on the requirements:
+    // 1. Total Bookings: Total bookings for classes held in the period (already correct)
+    // 2. Fill Rate: Percentage of bookings made compared to capacity of classes held in the period
     const fillRate = totalCapacity > 0 ? totalBookings / totalCapacity : 0;
+    
+    // 3. Cancellation Rate: Number of cancellations compared to total bookings for classes held in the period
     const cancellationRate = totalBookings > 0 ? totalCancellations / totalBookings : 0;
-    const noShowRate = totalBookings > 0 ? (totalBookings - totalAttendances) / totalBookings : 0;
+    
+    // 4. No Show Rate: Percentage of people who actually attended vs total bookings for classes held in the period
+    const noShowRate = totalBookings > 0 ? totalAttendances / totalBookings : 0;
 
     return {
       totalBookings,
@@ -324,6 +489,179 @@ export class AnalyticsService {
       totalClassesAttended: memberAttendance.length,
       classPerformance,
     };
+  }
+
+  async getUserAcquisitionData(period?: string): Promise<{
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      borderColor: string;
+    }>;
+  }> {
+    const { startDate, endDate } = this.getDateRange(period);
+    
+    // Build date conditions
+    const dateConds = [] as any[];
+    if (startDate) dateConds.push(gte(analyticsEvents.createdAt, new Date(startDate)));
+    if (endDate) dateConds.push(lte(analyticsEvents.createdAt, new Date(endDate)));
+
+    // Get all signup events in the date range
+    const allSignupEvents = await db
+      .select({
+        id: analyticsEvents.id,
+        createdAt: analyticsEvents.createdAt,
+        eventType: analyticsEvents.eventType,
+        properties: analyticsEvents.properties
+      })
+      .from(analyticsEvents)
+      .where(
+        and(
+          eq(analyticsEvents.eventType, 'user_signup'),
+          ...dateConds
+        )
+      )
+      .orderBy(analyticsEvents.createdAt);
+
+
+    // Get all approval events in the date range
+    const allApprovalEvents = await db
+      .select({
+        id: analyticsEvents.id,
+        createdAt: analyticsEvents.createdAt,
+        eventType: analyticsEvents.eventType,
+        properties: analyticsEvents.properties
+      })
+      .from(analyticsEvents)
+      .where(
+        and(
+          eq(analyticsEvents.eventType, 'membership_approval'),
+          ...dateConds
+        )
+      )
+      .orderBy(analyticsEvents.createdAt);
+
+
+    // Create date range for consistent labels
+    const labels: string[] = [];
+    const signupData: number[] = [];
+    const approvalData: number[] = [];
+
+    const currentDate = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const endDateObj = endDate ? new Date(endDate) : new Date();
+
+    while (currentDate <= endDateObj) {
+      let label: string;
+      let dateKey: string;
+
+      switch (period) {
+        case 'today':
+          label = currentDate.toLocaleTimeString('en-US', { hour: '2-digit', hour12: false });
+          dateKey = currentDate.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+          currentDate.setHours(currentDate.getHours() + 1);
+          break;
+        case 'lastWeek':
+        case 'lastMonth':
+          label = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          dateKey = currentDate.toISOString().split('T')[0];
+          currentDate.setDate(currentDate.getDate() + 1);
+          break;
+        case 'lastYear':
+          label = currentDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+          dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+          currentDate.setMonth(currentDate.getMonth() + 1);
+          break;
+        case 'all':
+        default:
+          label = currentDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+          dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+          currentDate.setMonth(currentDate.getMonth() + 1);
+          break;
+      }
+
+      labels.push(label);
+
+      // Count events for this date period
+      let signupCount = 0;
+      let approvalCount = 0;
+
+      for (const event of allSignupEvents) {
+        const eventDate = new Date(event.createdAt!);
+        let matches = false;
+
+        switch (period) {
+          case 'today':
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth() &&
+                     eventDate.getDate() === currentDate.getDate() &&
+                     eventDate.getHours() === currentDate.getHours();
+            break;
+          case 'lastWeek':
+          case 'lastMonth':
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth() &&
+                     eventDate.getDate() === currentDate.getDate();
+            break;
+          case 'lastYear':
+          case 'all':
+          default:
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth();
+            break;
+        }
+
+        if (matches) signupCount++;
+      }
+
+      for (const event of allApprovalEvents) {
+        const eventDate = new Date(event.createdAt!);
+        let matches = false;
+
+        switch (period) {
+          case 'today':
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth() &&
+                     eventDate.getDate() === currentDate.getDate() &&
+                     eventDate.getHours() === currentDate.getHours();
+            break;
+          case 'lastWeek':
+          case 'lastMonth':
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth() &&
+                     eventDate.getDate() === currentDate.getDate();
+            break;
+          case 'lastYear':
+          case 'all':
+          default:
+            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
+                     eventDate.getMonth() === currentDate.getMonth();
+            break;
+        }
+
+        if (matches) approvalCount++;
+      }
+
+      signupData.push(signupCount);
+      approvalData.push(approvalCount);
+    }
+
+    const result = {
+      labels,
+      datasets: [
+        {
+          label: 'Signups',
+          data: signupData,
+          borderColor: '#3b82f6',
+        },
+        {
+          label: 'Approvals',
+          data: approvalData,
+          borderColor: '#22c55e',
+        },
+      ],
+    };
+
+    return result;
   }
 
   async getGymUtilization(weekStartDate?: string): Promise<GymUtilizationData> {

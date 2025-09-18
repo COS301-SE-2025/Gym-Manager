@@ -35,6 +35,28 @@ export class AnalyticsController {
     }
   };
 
+  // Admin operations data for charts
+  getOperationsData = async (req: Request, res: Response) => {
+    try {
+      const { period } = req.query as { period?: string };
+      const operationsData = await this.analyticsService.getOperationsData(period);
+      res.status(200).json(operationsData);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to retrieve operations data' });
+    }
+  };
+
+  // Admin user acquisition data for charts
+  getUserAcquisitionData = async (req: Request, res: Response) => {
+    try {
+      const { period } = req.query as { period?: string };
+      const acquisitionData = await this.analyticsService.getUserAcquisitionData(period);
+      res.status(200).json(acquisitionData);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to retrieve user acquisition data' });
+    }
+  };
+
   /**
    * Get coach analytics - average class attendance and workout popularity
    */

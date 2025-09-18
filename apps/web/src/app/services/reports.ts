@@ -38,6 +38,28 @@ export const analyticsService = {
     }
   },
 
+  async getOperationsData(period?: string): Promise<{
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      borderColor: string;
+    }>;
+  }> {
+    try {
+      const token = localStorage.getItem('authToken');
+      const params = period ? { period } : {};
+      const response = await axios.get(`${API_BASE_URL}/analytics/operations-data`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch operations data:', error);
+      throw error;
+    }
+  },
+
   async getGymUtilization(weekStartDate?: string): Promise<{
     x_labels: string[];
     y_labels: string[];
@@ -61,6 +83,27 @@ export const analyticsService = {
     }
   },
 
+  async getAcquisitionData(period?: string): Promise<{
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      borderColor: string;
+    }>;
+  }> {
+    try {
+      const token = localStorage.getItem('authToken');
+      const params = period ? { period } : {};
+      const response = await axios.get(`${API_BASE_URL}/analytics/acquisition-data`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch acquisition data:', error);
+      throw error;
+    }
+  },
 };
 // MOCK DATA GENERATORS
 const getMockOperations = (period: string) => {
@@ -138,6 +181,19 @@ export const reportsService = {
     }
   },
 
+  getOperationsData: async (period?: string) => {
+    try {
+      return await analyticsService.getOperationsData(period);
+    } catch (error) {
+      console.error('Failed to fetch operations data:', error);
+      // Fallback to mock data if API fails
+      const oldPeriod = period === 'today' ? 'daily' : 
+                       period === 'lastWeek' ? 'weekly' : 
+                       period === 'lastMonth' ? 'monthly' : 'weekly';
+      return getMockOperations(oldPeriod);
+    }
+  },
+
   getGymUtilization: async (weekStartDate?: string) => {
     try {
       return await analyticsService.getGymUtilization(weekStartDate);
@@ -206,12 +262,16 @@ export const reportsService = {
     }
   },
 
-
-  getOperationsData: (period: string) => {
-    return getMockOperations(period);
-  },
-
-  getAcquisitionData: (period: string) => {
-    return getMockAcquisition(period);
+  getAcquisitionData: async (period?: string) => {
+    try {
+      return await analyticsService.getAcquisitionData(period);
+    } catch (error) {
+      console.error('Failed to fetch acquisition data:', error);
+      // Fallback to mock data if API fails
+      const oldPeriod = period === 'today' ? 'daily' : 
+                       period === 'lastWeek' ? 'weekly' : 
+                       period === 'lastMonth' ? 'monthly' : 'monthly';
+      return getMockAcquisition(oldPeriod);
+    }
   },
 };

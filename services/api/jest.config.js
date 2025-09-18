@@ -6,9 +6,10 @@ module.exports = {
   /* NEW – tell Jest where *source* lives */
   moduleDirectories: ['node_modules', '<rootDir>/src'],
 
-  /* NEW – your tests now live in two sub-folders */
+  /* NEW – your tests now live in organized sub-folders */
   roots: [
-    '<rootDir>/src/tests/unit',
+    '<rootDir>/src/tests/unit/controllers',
+    '<rootDir>/src/tests/unit/services',
     '<rootDir>/src/tests/integration',
   ],
 

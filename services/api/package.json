@@ -17,6 +17,7 @@
     "test:coverage": "jest --coverage",
     "test:unit": "jest --coverage --testPathPattern=tests/unit",
     "test:services": "jest --coverage --testPathPattern=tests/unit.*Service.test.ts",
+    "test:controllers": "jest --coverage --testPathPattern=tests/unit.*Controller.test.ts",
     "test:ci": "jest --coverage --ci --watchAll=false"
   },
   "keywords": [],

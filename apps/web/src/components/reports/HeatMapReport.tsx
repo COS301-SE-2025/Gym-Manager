@@ -1,66 +1,80 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CustomChart } from '@/components/Chart/CustomChart';
+import HeatmapGrid from './HeatmapGrid';
 
-// not used un til fixed
+interface HeatmapData {
+  x_labels: string[];
+  y_labels: string[];
+  values: number[][];
+}
+
 export default function HeatMapReport() {
-  const [data, setData] = useState<any | null>(null);
+  const [data, setData] = useState<HeatmapData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // reportsService.getUtilizationByHour().then(setData).catch(console.error);
 
-    // Mock Data
-    const mockRawData = {
+    // Mock Data - Monday at top
+    const mockRawData: HeatmapData = {
       x_labels: ['6am', '7am', '8am', '9am', '5pm', '6pm', '7pm', '8pm'],
-      y_labels: ['Sun', 'Sat', 'Fri', 'Thu', 'Wed', 'Tue', 'Mon'],
+      y_labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
       values: [
-        [70, 60, 80, 90, 30, 20, 10, 5],   // Sun
-        [80, 70, 90, 100, 40, 30, 20, 10], // Sat
-        [30, 60, 40, 70, 90, 80, 70, 50],  // Fri
-        [25, 55, 35, 65, 85, 95, 75, 45],  // Thu
-        [20, 50, 30, 60, 80, 100, 70, 40], // Wed
-        [15, 45, 25, 55, 75, 95, 65, 35],  // Tue
         [10, 40, 20, 50, 70, 90, 60, 30],  // Mon
+        [15, 45, 25, 55, 75, 95, 65, 35],  // Tue
+        [20, 50, 30, 60, 80, 100, 70, 40], // Wed
+        [25, 55, 35, 65, 85, 95, 75, 45],  // Thu
+        [30, 60, 40, 70, 90, 80, 70, 50],  // Fri
+        [80, 70, 90, 100, 40, 30, 20, 10], // Sat
+        [70, 60, 80, 90, 30, 20, 10, 5],   // Sun
       ],
     };
 
-    // Transform raw data into {x, y, v} format for the heatmap
-    const heatmapData = [];
-    for (let i = 0; i < mockRawData.y_labels.length; i++) {
-      for (let j = 0; j < mockRawData.x_labels.length; j++) {
-        heatmapData.push({
-          x: mockRawData.x_labels[j],
-          y: mockRawData.y_labels[i],
-          v: mockRawData.values[i][j],
-        });
-      }
-    }
-
-    const chartJsData = {
-      datasets: [{
-        label: 'Utilization by Hour',
-        data: heatmapData,
-        backgroundColor(context: any) {
-          const value = context.dataset.data[context.dataIndex].v;
-          const alpha = (value - 5) / (100 - 5);
-          return `rgba(216, 255, 62, ${alpha})`;
-        },
-        borderColor: 'rgba(0,0,0,0.5)',
-        borderWidth: 1,
-        width: (c: any) => (c.chart.chartArea || {}).width / mockRawData.x_labels.length - 1,
-        height: (c: any) => (c.chart.chartArea || {}).height / mockRawData.y_labels.length - 1,
-      }],
-    };
-
-    setTimeout(() => setData(chartJsData), 500);
+    // Simulate API call delay
+    setTimeout(() => {
+      setData(mockRawData);
+      setLoading(false);
+    }, 500);
   }, []);
 
-  if (!data) return <div>Loading heatmap...</div>;
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: 400,
+        color: '#fff',
+        fontSize: '1.1rem'
+      }}>
+        Loading heatmap...
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: 400,
+        color: '#ef4444',
+        fontSize: '1.1rem'
+      }}>
+        Failed to load heatmap data
+      </div>
+    );
+  }
 
   return (
-    <div style={{ height: 400, position: 'relative' }}>
-      <CustomChart type="heatmap" datasets={data.datasets} />
+    <div style={{ width: '100%', height: '100%' }}>
+      <HeatmapGrid 
+        data={data} 
+        title="Gym Utilization by Day and Time"
+        colorScale={{ min: 0, max: 100, color: '#d8ff3e' }}
+      />
     </div>
   );
 }

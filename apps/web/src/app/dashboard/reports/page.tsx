@@ -95,12 +95,12 @@ export default function ReportsPage() {
                 <OperationsChart period={selectedPeriod} />
               </div>
             </div>
-            {/* <div className="management-card full-width-card">
+            <div className="management-card full-width-card">
               <div className="card-title">
                 <h2>Utilization by Hour</h2>
               </div>
               <HeatMapReport />
-            </div> */}
+            </div>
           </div>
         )}
 

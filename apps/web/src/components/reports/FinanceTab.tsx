@@ -138,15 +138,62 @@ export default function FinanceTab() {
       {analytics && buildTrendForGranularity().labels.length > 0 && (
         <div className="management-card full-width-card" style={{ marginTop: '1rem' }}>
           <div className="card-title">
-            <h2>Monthly Growth %</h2>
-            <p className="card-subtitle">Growth between consecutive months</p>
+            <h2>Revenue Growth Trend</h2>
+            <p className="card-subtitle">Month-over-month growth percentage</p>
           </div>
           <div className="card-content" style={{ height: 320 }}>
             <CustomChart 
-              type="bar" 
+              type="line" 
               labels={buildTrendForGranularity().labels} 
-              datasets={[{ label: 'Growth %', data: buildTrendForGranularity().growth, backgroundColor: 'rgba(75, 192, 192, 0.7)' }]} 
-              options={{ scales: { y: { beginAtZero: true } } }} 
+              datasets={[{
+                label: 'Growth %',
+                data: buildTrendForGranularity().growth,
+                borderColor: '#d8ff3e',
+                backgroundColor: 'rgba(216, 255, 62, 0.1)',
+              }]} 
+              options={{ 
+                responsive: true,
+                scales: { 
+                  y: { 
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { 
+                      color: '#aaa',
+                      callback: function(value) {
+                        return value + '%';
+                      }
+                    }
+                  },
+                  x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                    ticks: { color: '#aaa' }
+                  }
+                },
+                plugins: {
+                  legend: { 
+                    display: true,
+                    labels: { color: '#fff' }
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        const value = context.parsed.y;
+                        const sign = value >= 0 ? '+' : '';
+                        return `Growth: ${sign}${value.toFixed(2)}%`;
+                      }
+                    }
+                  }
+                },
+                elements: {
+                  point: {
+                    radius: 6,
+                    hoverRadius: 8,
+                    backgroundColor: buildTrendForGranularity().growth.map(g => g >= 0 ? '#4caf50' : '#f44336'),
+                    borderColor: buildTrendForGranularity().growth.map(g => g >= 0 ? '#4caf50' : '#f44336'),
+                    hoverBackgroundColor: '#d8ff3e'
+                  }
+                }
+              }} 
             />
           </div>
           {buildTrendForGranularity().labels.length < 2 && (
@@ -154,6 +201,16 @@ export default function FinanceTab() {
               Need at least two months of data to compute month-over-month growth.
             </div>
           )}
+          <div style={{ marginTop: 12, display: 'flex', gap: 16, fontSize: 12, color: '#aaa' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#4caf50' }}></div>
+              <span>Positive Growth</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#f44336' }}></div>
+              <span>Negative Growth</span>
+            </div>
+          </div>
         </div>
       )}
     </div>

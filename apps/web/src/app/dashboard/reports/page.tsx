@@ -10,12 +10,14 @@ import ReportStatCard from '@/components/reports/ReportStatCard';
 import OperationsChart from '@/components/reports/OperationsChart';
 import AcquisitionChart from '@/components/reports/AcquisitionChart';
 import TimePeriodToggle from '@/components/reports/TimePeriodToggle';
+import FinanceTab from '@/components/reports/FinanceTab';
 import BookingTimesChart from '@/components/reports/BookingTimesChart';
 import { reportsService } from '../../services/reports';
 import './reports.css';
 
 const TABS = [
   { key: 'operations', label: 'Operations' },
+  {key: 'finance', label: 'Finance' },
   { key: 'retention', label: 'Retention & Acquisition' },
   { key: 'logs', label: 'Logs' },
 ];
@@ -128,6 +130,10 @@ export default function ReportsPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {activeTab === 'finance' && (
+          <FinanceTab />
         )}
 
         {activeTab === 'retention' && (

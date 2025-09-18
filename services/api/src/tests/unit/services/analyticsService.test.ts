@@ -121,6 +121,77 @@ describe('AnalyticsService', () => {
     });
   });
 
+  describe('getSummaryStats', () => {
+    it('should calculate correct summary stats for today period', async () => {
+      const today = new Date();
+      const todayDate = today.toISOString().slice(0, 10);
+      
+      const mockClassesInPeriod = [
+        { classId: 1, capacity: 10 },
+        { classId: 2, capacity: 15 },
+      ];
+
+      const mockBookingCount = [{ value: 20 }]; // 20 total bookings
+      const mockAttendanceCount = [{ value: 18 }]; // 18 people attended
+      const mockCancellationCount = [{ value: 2 }]; // 2 cancellations
+
+      // Mock classes query
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue(mockClassesInPeriod),
+        }),
+      });
+
+      // Mock bookings query
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue(mockBookingCount),
+        }),
+      });
+
+      // Mock attendance query
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue(mockAttendanceCount),
+        }),
+      });
+
+      // Mock cancellations query
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue(mockCancellationCount),
+        }),
+      });
+
+      const result = await analyticsService.getSummaryStats('today');
+
+      expect(result).toEqual({
+        totalBookings: 20,
+        fillRate: 0.8, // 20 bookings / 25 total capacity
+        cancellationRate: 0.1, // 2 cancellations / 20 total bookings
+        noShowRate: 0.9, // 18 attendances / 20 total bookings
+      });
+    });
+
+    it('should handle empty data gracefully', async () => {
+      // Mock empty classes
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue([]),
+        }),
+      });
+
+      const result = await analyticsService.getSummaryStats('today');
+
+      expect(result).toEqual({
+        totalBookings: 0,
+        fillRate: 0,
+        cancellationRate: 0,
+        noShowRate: 0,
+      });
+    });
+  });
+
   describe('getMemberAnalytics', () => {
     it('should return analytics for a member with attendance', async () => {
       const memberId = 1;

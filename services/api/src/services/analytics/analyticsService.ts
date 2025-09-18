@@ -80,7 +80,7 @@ export class AnalyticsService {
     const classIds = classesInPeriod.map(c => c.classId);
     const totalCapacity = classesInPeriod.reduce((sum, c) => sum + c.capacity, 0);
 
-    // Count bookings for those classes
+    // Count bookings for classes held in the selected period
     let totalBookings = 0;
     if (classIds.length > 0) {
       const bookingCountRows = await db
@@ -90,7 +90,7 @@ export class AnalyticsService {
       totalBookings = bookingCountRows[0]?.value ?? 0;
     }
 
-    // Count attendances for those classes
+    // Count actual attendances for classes held in the selected period
     let totalAttendances = 0;
     if (classIds.length > 0) {
       const attendanceCountRows = await db
@@ -100,7 +100,7 @@ export class AnalyticsService {
       totalAttendances = attendanceCountRows[0]?.value ?? 0;
     }
 
-    // Count cancellations from analytics events logs only, but scoped to classes in period
+    // Count cancellations from analytics events logs for classes in the selected period
     let totalCancellations = 0;
     if (classIds.length > 0) {
       const cancellationCountRows = await db
@@ -126,10 +126,16 @@ export class AnalyticsService {
       totalCancellations = cancellationCountRows[0]?.value ?? 0;
     }
 
-    // Fill rate: bookings per capacity of classes in the period
+    // Calculate metrics based on the requirements:
+    // 1. Total Bookings: Total bookings for classes held in the period (already correct)
+    // 2. Fill Rate: Percentage of bookings made compared to capacity of classes held in the period
     const fillRate = totalCapacity > 0 ? totalBookings / totalCapacity : 0;
+    
+    // 3. Cancellation Rate: Number of cancellations compared to total bookings for classes held in the period
     const cancellationRate = totalBookings > 0 ? totalCancellations / totalBookings : 0;
-    const noShowRate = totalBookings > 0 ? (totalBookings - totalAttendances) / totalBookings : 0;
+    
+    // 4. No Show Rate: Percentage of people who actually attended vs total bookings for classes held in the period
+    const noShowRate = totalBookings > 0 ? totalAttendances / totalBookings : 0;
 
     return {
       totalBookings,

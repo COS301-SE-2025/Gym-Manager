@@ -1,9 +1,9 @@
 import { db } from '../../db/client';
-import { analyticsEvents, classes, classattendance, workouts } from '../../db/schema';
+import { analyticsEvents, classes, classattendance, classbookings, workouts } from '../../db/schema';
 import { LogEntry, CreateLogEntry } from '../../domain/entities/analytics.entity';
 import { IAnalyticsRepository } from '../../domain/interfaces/analytics.interface';
 import { AnalyticsRepository } from '../../repositories/analytics/analyticsRepository';
-import { eq, sql, desc, count } from 'drizzle-orm';
+import { eq, sql, desc, count, and, gte, lte } from 'drizzle-orm';
 
 export interface CoachAnalytics {
   averageAttendance: number;
@@ -62,24 +62,80 @@ export class AnalyticsService {
     noShowRate: number;
   }> {
     const { startDate, endDate } = this.getDateRange(period);
-    const bookingEvents = await this.analyticsRepository.getLogs(startDate, endDate);
-    const bookings = bookingEvents.filter(log => log.eventType === 'class_booking');
-    const cancellations = bookingEvents.filter(log => log.eventType === 'class_cancellation');
-    const attendances = bookingEvents.filter(log => log.eventType === 'class_attendance');
 
-    const totalBookings = bookings.length;
-    const totalCancellations = cancellations.length;
-    const totalAttendances = attendances.length;
+    // Convert ISO datetime to date-only where needed for classes.scheduledDate
+    const startDateOnly = startDate ? startDate.slice(0, 10) : undefined;
+    const endDateOnly = endDate ? endDate.slice(0, 10) : undefined;
 
-    const fillRate = totalBookings > 0 ? totalAttendances / totalBookings : 0;
+    // Find classes in the selected period (by scheduled date)
+    const classDateConds = [] as any[];
+    if (startDateOnly) classDateConds.push(gte(classes.scheduledDate, startDateOnly));
+    if (endDateOnly) classDateConds.push(lte(classes.scheduledDate, endDateOnly));
+
+    const classesInPeriod = await db
+      .select({ classId: classes.classId, capacity: classes.capacity })
+      .from(classes)
+      .where(classDateConds.length ? and(...classDateConds) : undefined as any);
+
+    const classIds = classesInPeriod.map(c => c.classId);
+    const totalCapacity = classesInPeriod.reduce((sum, c) => sum + c.capacity, 0);
+
+    // Count bookings for those classes
+    let totalBookings = 0;
+    if (classIds.length > 0) {
+      const bookingCountRows = await db
+        .select({ value: count(classbookings.bookingId) })
+        .from(classbookings)
+        .where(sql`${classbookings.classId} IN (${sql.join(classIds, sql`, `)})`);
+      totalBookings = bookingCountRows[0]?.value ?? 0;
+    }
+
+    // Count attendances for those classes
+    let totalAttendances = 0;
+    if (classIds.length > 0) {
+      const attendanceCountRows = await db
+        .select({ value: count(classattendance.memberId) })
+        .from(classattendance)
+        .where(sql`${classattendance.classId} IN (${sql.join(classIds, sql`, `)})`);
+      totalAttendances = attendanceCountRows[0]?.value ?? 0;
+    }
+
+    // Count cancellations from analytics events logs only, but scoped to classes in period
+    let totalCancellations = 0;
+    if (classIds.length > 0) {
+      const cancellationCountRows = await db
+        .select({ value: count(analyticsEvents.id) })
+        .from(analyticsEvents)
+        .where(
+          and(
+            eq(analyticsEvents.eventType, 'class_cancellation'),
+            // properties->>'classId' cast to int should be in classIds
+            sql`( ${analyticsEvents.properties} ->> 'classId')::int IN (${sql.join(classIds, sql`, `)})`
+          )
+        );
+      totalCancellations = cancellationCountRows[0]?.value ?? 0;
+    } else {
+      // Fallback to date range if no classes found in period
+      const cancellationConditions = [eq(analyticsEvents.eventType, 'class_cancellation')] as any[];
+      if (startDate) cancellationConditions.push(gte(analyticsEvents.createdAt, new Date(startDate)));
+      if (endDate) cancellationConditions.push(lte(analyticsEvents.createdAt, new Date(endDate)));
+      const cancellationCountRows = await db
+        .select({ value: count(analyticsEvents.id) })
+        .from(analyticsEvents)
+        .where(and(...cancellationConditions));
+      totalCancellations = cancellationCountRows[0]?.value ?? 0;
+    }
+
+    // Fill rate: bookings per capacity of classes in the period
+    const fillRate = totalCapacity > 0 ? totalBookings / totalCapacity : 0;
     const cancellationRate = totalBookings > 0 ? totalCancellations / totalBookings : 0;
-    const noShowRate = totalBookings > 0 ? (totalBookings - totalAttendances - totalCancellations) / totalBookings : 0;
+    const noShowRate = totalBookings > 0 ? (totalBookings - totalAttendances) / totalBookings : 0;
 
     return {
       totalBookings,
-      fillRate: Math.round(fillRate * 100) / 100,
-      cancellationRate: Math.round(cancellationRate * 100) / 100,
-      noShowRate: Math.round(noShowRate * 100) / 100,
+      fillRate,
+      cancellationRate,
+      noShowRate,
     };
   }
 
@@ -102,20 +158,20 @@ export class AnalyticsService {
         return { startDate: lastWeekStart.toISOString(), endDate: lastWeekEnd.toISOString() };
       }
       case 'lastMonth': {
-        const lastMonthStart = new Date(now);
-        lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
-        lastMonthStart.setHours(0, 0, 0, 0);
-        const lastMonthEnd = new Date(now);
-        lastMonthEnd.setHours(23, 59, 59, 999);
-        return { startDate: lastMonthStart.toISOString(), endDate: lastMonthEnd.toISOString() };
+        const start = new Date(now);
+        start.setDate(start.getDate() - 30);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        return { startDate: start.toISOString(), endDate: end.toISOString() };
       }
       case 'lastYear': {
-        const lastYearStart = new Date(now);
-        lastYearStart.setFullYear(lastYearStart.getFullYear() - 1);
-        lastYearStart.setHours(0, 0, 0, 0);
-        const lastYearEnd = new Date(now);
-        lastYearEnd.setHours(23, 59, 59, 999);
-        return { startDate: lastYearStart.toISOString(), endDate: lastYearEnd.toISOString() };
+        const start = new Date(now);
+        start.setDate(start.getDate() - 365);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        return { startDate: start.toISOString(), endDate: end.toISOString() };
       }
       case 'all':
       default:

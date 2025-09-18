@@ -30,6 +30,7 @@ export default function ReportsPage() {
     setLoading(true);
     try {
       const statsData = await reportsService.getSummaryStats(period);
+      console.log(statsData);
       setStats(statsData);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
@@ -76,15 +77,27 @@ export default function ReportsPage() {
               />
               <ReportStatCard 
                 title="Fill Rate" 
-                value={loading ? '...' : (stats?.fillRate ? `${(stats.fillRate * 100).toFixed(1)}%` : '...')} 
+                value={
+                  loading || !stats || stats.fillRate === undefined
+                    ? '...'
+                    : `${(stats.fillRate * 100).toFixed(1)}%`
+                } 
               />
               <ReportStatCard 
                 title="Cancellation Rate" 
-                value={loading ? '...' : (stats?.cancellationRate ? `${(stats.cancellationRate * 100).toFixed(1)}%` : '...')} 
+                value={
+                  loading || !stats || stats.cancellationRate === undefined
+                    ? '...'
+                    : `${(stats.cancellationRate * 100).toFixed(1)}%`
+                } 
               />
               <ReportStatCard 
                 title="No-Show Rate" 
-                value={loading ? '...' : (stats?.noShowRate ? `${(stats.noShowRate * 100).toFixed(1)}%` : '...')} 
+                value={
+                  loading || !stats || stats.noShowRate === undefined
+                    ? '...'
+                    : `${(stats.noShowRate * 100).toFixed(1)}%`
+                } 
               />
             </div>
             <div className="management-card full-width-card">

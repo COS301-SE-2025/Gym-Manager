@@ -1,4 +1,4 @@
-import { ClassService } from '../../services/class/classService';
+import { ClassService } from '../../../services/class/classService';
 
 describe('ClassService', () => {
   it('assignWorkoutToClass checks ownership', async () => {
@@ -30,7 +30,7 @@ describe('ClassService', () => {
     } as any;
 
     // Monkey-patch db.transaction used inside service
-    const clientModule = await import('../../db/client');
+    const clientModule = await import('../../../db/client');
     const originalDb = clientModule.db;
     (clientModule as any).db = { transaction: async (fn: any) => fn({}) };
 
@@ -109,7 +109,7 @@ describe('ClassService', () => {
     } as any;
     
     // Monkey-patch db.transaction used inside service
-    const clientModule = await import('../../db/client');
+    const clientModule = await import('../../../db/client');
     const originalDb = clientModule.db;
     (clientModule as any).db = { transaction: async (fn: any) => fn({}) };
 

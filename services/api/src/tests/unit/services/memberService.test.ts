@@ -1,7 +1,7 @@
-import { MemberService } from '../../services/member/memberService';
+import { MemberService } from '../../../services/member/memberService';
 
 // Mock the PaymentPackagesService
-jest.mock('../../services/paymentPackages/paymentPackagesService', () => {
+jest.mock('../../../services/paymentPackages/paymentPackagesService', () => {
   return {
     PaymentPackagesService: jest.fn().mockImplementation(() => ({
       createTransaction: jest.fn(),

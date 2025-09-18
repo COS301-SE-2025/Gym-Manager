@@ -1,4 +1,4 @@
-import { DailyLeaderboardService } from '../../services/dailyLeaderboard/dailyLeaderboardService';
+import { DailyLeaderboardService } from '../../../services/dailyLeaderboard/dailyLeaderboardService';
 
 describe('DailyLeaderboardService', () => {
   let service: DailyLeaderboardService;

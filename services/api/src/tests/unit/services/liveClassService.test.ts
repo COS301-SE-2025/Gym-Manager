@@ -1,4 +1,4 @@
-import { LiveClassService } from '../../services/liveClass/liveClassService';
+import { LiveClassService } from '../../../services/liveClass/liveClassService';
 
 describe('LiveClassService', () => {
   let service: LiveClassService;

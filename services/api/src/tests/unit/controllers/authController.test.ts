@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
-import { AuthController } from '../../controllers/auth/authController';
-import { AuthService } from '../../services/auth/authService';
-import { UserRegistrationData, UserLoginData } from '../../domain/entities/user.entity';
-import { AuthenticatedRequest } from '../../infrastructure/middleware/authMiddleware';
+import { AuthController } from '../../../controllers/auth/authController';
+import { AuthService } from '../../../services/auth/authService';
+import { UserRegistrationData, UserLoginData } from '../../../domain/entities/user.entity';
+import { AuthenticatedRequest } from '../../../infrastructure/middleware/authMiddleware';
 
 // Mock the AuthService
-jest.mock('../../services/auth/authService');
+jest.mock('../../../services/auth/authService');
 
 describe('AuthController', () => {
   let controller: AuthController;

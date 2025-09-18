@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { DailyLeaderboardController } from '../../controllers/dailyLeaderboard/dailyLeaderboardController';
-import { IDailyLeaderboardService } from '../../services/dailyLeaderboard/dailyLeaderboardService';
+import { DailyLeaderboardController } from '../../../controllers/dailyLeaderboard/dailyLeaderboardController';
+import { IDailyLeaderboardService } from '../../../services/dailyLeaderboard/dailyLeaderboardService';
 
 // Mock the DailyLeaderboardService
-jest.mock('../../services/dailyLeaderboard/dailyLeaderboardService');
+jest.mock('../../../services/dailyLeaderboard/dailyLeaderboardService');
 
 describe('DailyLeaderboardController', () => {
   let controller: DailyLeaderboardController;

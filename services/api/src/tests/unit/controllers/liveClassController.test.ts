@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../../infrastructure/middleware/authMiddleware';
-import { LiveClassController } from '../../controllers/liveClass/liveClassController';
-import { LiveClassService } from '../../services/liveClass/liveClassService';
+import { AuthenticatedRequest } from '../../../infrastructure/middleware/authMiddleware';
+import { LiveClassController } from '../../../controllers/liveClass/liveClassController';
+import { LiveClassService } from '../../../services/liveClass/liveClassService';
 
 // Mock the LiveClassService
-jest.mock('../../services/liveClass/liveClassService');
+jest.mock('../../../services/liveClass/liveClassService');
 
 describe('LiveClassController', () => {
   let controller: LiveClassController;

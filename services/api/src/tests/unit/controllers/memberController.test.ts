@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { MemberController } from '../../controllers/member/memberController';
-import { MemberService } from '../../services/member/memberService';
+import { MemberController } from '../../../controllers/member/memberController';
+import { MemberService } from '../../../services/member/memberService';
 
 // Mock the MemberService
-jest.mock('../../services/member/memberService');
+jest.mock('../../../services/member/memberService');
 
 describe('MemberController', () => {
   let controller: MemberController;

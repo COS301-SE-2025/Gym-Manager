@@ -1,4 +1,4 @@
-import { UserSettingsService } from '../../services/userSettings/userSettingsService';
+import { UserSettingsService } from '../../../services/userSettings/userSettingsService';
 
 describe('UserSettingsService', () => {
   let service: UserSettingsService;

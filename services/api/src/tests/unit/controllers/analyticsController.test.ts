@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../../infrastructure/middleware/authMiddleware';
-import { AnalyticsController } from '../../controllers/analytics/analyticsController';
-import { AnalyticsService } from '../../services/analytics/analyticsService';
+import { AuthenticatedRequest } from '../../../infrastructure/middleware/authMiddleware';
+import { AnalyticsController } from '../../../controllers/analytics/analyticsController';
+import { AnalyticsService } from '../../../services/analytics/analyticsService';
 
 // Mock the AnalyticsService
-jest.mock('../../services/analytics/analyticsService');
+jest.mock('../../../services/analytics/analyticsService');
 
 describe('AnalyticsController', () => {
   let controller: AnalyticsController;

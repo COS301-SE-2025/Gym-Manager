@@ -2,15 +2,15 @@
  * ongoingClassController.test.ts
  * Unit tests for getLeaderboard, getLiveClass, submitScore
  */
-import * as ctrl from '../../controllers/ongoingClassController';
-import { db } from '../../db/client';
+import * as ctrl from '../../../controllers/ongoingClassController';
+import { db } from '../../../db/client';
 import { Request, Response } from 'express';
-import { builder } from '../builder';
+import { builder } from '../../builder';
 
 // ──────────────────── Drizzle Mock ──────────────────────────
 var insertMock: jest.Mock;
 
-jest.mock('../../db/client', () => {
+jest.mock('../../../db/client', () => {
   insertMock = jest.fn(() => ({
     values: () => ({
       onConflictDoUpdate: () => Promise.resolve(),

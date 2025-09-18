@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { HealthController } from '../../controllers/health/healthController';
-import { HealthService } from '../../services/health/healthService';
+import { HealthController } from '../../../controllers/health/healthController';
+import { HealthService } from '../../../services/health/healthService';
 
 // Mock the HealthService
-jest.mock('../../services/health/healthService');
+jest.mock('../../../services/health/healthService');
 
 describe('HealthController', () => {
   let controller: HealthController;

@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../../infrastructure/middleware/authMiddleware';
-import { PaymentPackagesController } from '../../controllers/paymentPackages/paymentPackagesController';
-import { PaymentPackagesService } from '../../services/paymentPackages/paymentPackagesService';
+import { AuthenticatedRequest } from '../../../infrastructure/middleware/authMiddleware';
+import { PaymentPackagesController } from '../../../controllers/paymentPackages/paymentPackagesController';
+import { PaymentPackagesService } from '../../../services/paymentPackages/paymentPackagesService';
 
 // Mock the PaymentPackagesService
-jest.mock('../../services/paymentPackages/paymentPackagesService');
+jest.mock('../../../services/paymentPackages/paymentPackagesService');
 
 describe('PaymentPackagesController', () => {
   let controller: PaymentPackagesController;

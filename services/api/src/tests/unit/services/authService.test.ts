@@ -1,5 +1,5 @@
 // tests/unit/services/authService.test.ts
-import { AuthService } from '../../../src/services/auth/authService';
+import { AuthService } from '../../../services/auth/authService';
 
 function makeMockUserRepository(overrides: Partial<any> = {}) {
   return {

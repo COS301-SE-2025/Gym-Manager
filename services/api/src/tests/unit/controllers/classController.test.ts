@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../../infrastructure/middleware/authMiddleware';
-import { ClassController } from '../../controllers/class/classController';
-import { ClassService } from '../../services/class/classService';
+import { AuthenticatedRequest } from '../../../infrastructure/middleware/authMiddleware';
+import { ClassController } from '../../../controllers/class/classController';
+import { ClassService } from '../../../services/class/classService';
 
 // Mock the ClassService
-jest.mock('../../services/class/classService');
+jest.mock('../../../services/class/classService');
 
 describe('ClassController', () => {
   let controller: ClassController;

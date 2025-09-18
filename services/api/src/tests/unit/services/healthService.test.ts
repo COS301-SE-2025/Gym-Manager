@@ -1,4 +1,4 @@
-import { HealthService } from '../../services/health/healthService';
+import { HealthService } from '../../../services/health/healthService';
 
 describe('HealthService', () => {
   let service: HealthService;

@@ -1,4 +1,4 @@
-import { NotificationService } from '../../services/notifications/notificationService';
+import { NotificationService } from '../../../services/notifications/notificationService';
 
 describe('NotificationService', () => {
   let service: NotificationService;

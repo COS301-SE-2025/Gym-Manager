@@ -1,7 +1,7 @@
-import { PaymentPackagesService } from '../../services/paymentPackages/paymentPackagesService';
+import { PaymentPackagesService } from '../../../services/paymentPackages/paymentPackagesService';
 
 // Mock the database client
-jest.mock('../../db/client', () => ({
+jest.mock('../../../db/client', () => ({
   db: {
     select: jest.fn().mockReturnThis(),
     from: jest.fn().mockReturnThis(),
@@ -25,7 +25,7 @@ describe('PaymentPackagesService', () => {
 
   beforeEach(() => {
     service = new PaymentPackagesService();
-    mockDb = require('../../db/client').db;
+    mockDb = require('../../../db/client').db;
   });
 
   afterEach(() => {

@@ -130,7 +130,7 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('validates inputs, verifies password, fetches roles, and returns token', async () => {
+    it('should successfully login with valid credentials', async () => {
       const mockUserRepository = makeMockUserRepository({
         findByEmail: jest.fn().mockResolvedValue({
           userId: 42,
@@ -144,6 +144,7 @@ describe('AuthService', () => {
 
       const mockJwtService = makeMockJwtService({
         generateToken: jest.fn().mockReturnValue('jwt-token'),
+        generateRefreshToken: jest.fn().mockReturnValue('refresh-token'),
       });
 
       const mockPasswordService = makeMockPasswordService({
@@ -164,24 +165,40 @@ describe('AuthService', () => {
       expect(mockUserRepository.findByEmail).toHaveBeenCalledWith('john@example.com');
       expect(mockPasswordService.verifyPassword).toHaveBeenCalledWith('password123', 'hash');
       expect(mockUserRepository.getRolesByUserId).toHaveBeenCalledWith(42);
-      // expect(mockJwtService.generateToken).toHaveBeenCalledWith({
-      //   userId: 42,
-      //   email: 'john@example.com',
-      //   roles: ['member'],
-      // });
+      expect(mockJwtService.generateToken).toHaveBeenCalledWith({
+        userId: 42,
+        roles: ['member'],
+      });
+      expect(mockJwtService.generateRefreshToken).toHaveBeenCalledWith({
+        userId: 42,
+      });
 
       expect(result).toEqual({
         token: 'jwt-token',
+        refreshToken: 'refresh-token',
         user: expect.objectContaining({
           userId: 42,
           email: 'john@example.com',
           firstName: 'John',
           lastName: 'Doe',
+          roles: ['member'],
         }),
       });
     });
 
-    it('throws error if user not found', async () => {
+    it('should throw error if credentials are missing', async () => {
+      const service = new AuthService();
+
+      await expect(
+        service.login({ email: '', password: 'test' })
+      ).rejects.toThrow('Missing credentials');
+
+      await expect(
+        service.login({ email: 'test@example.com', password: '' })
+      ).rejects.toThrow('Missing credentials');
+    });
+
+    it('should throw error if user not found', async () => {
       const mockUserRepository = makeMockUserRepository({
         findByEmail: jest.fn().mockResolvedValue(null),
       });
@@ -197,7 +214,29 @@ describe('AuthService', () => {
       ).rejects.toThrow('Invalid credentials');
     });
 
-    it('throws error if password is invalid', async () => {
+    it('should throw error if user has no password hash', async () => {
+      const mockUserRepository = makeMockUserRepository({
+        findByEmail: jest.fn().mockResolvedValue({
+          userId: 99,
+          firstName: 'Bad',
+          lastName: 'Login',
+          email: 'bad@example.com',
+          passwordHash: null,
+        }),
+      });
+
+      const service = new AuthService(
+        mockUserRepository,
+        makeMockJwtService(),
+        makeMockPasswordService(),
+      );
+
+      await expect(
+        service.login({ email: 'bad@example.com', password: 'wrong' }),
+      ).rejects.toThrow('Invalid credentials');
+    });
+
+    it('should throw error if password is invalid', async () => {
       const mockUserRepository = makeMockUserRepository({
         findByEmail: jest.fn().mockResolvedValue({
           userId: 99,
@@ -225,13 +264,136 @@ describe('AuthService', () => {
     });
   });
 
-  // it('getUserStatus validates inputs and calls repository', async () => {
-  //   const mockUserRepository = makeMockUserRepository({
-  //     getRolesByUserId: jest.fn().mockResolvedValue(['member']),
-  //   });
+  describe('refresh', () => {
+    it('should successfully refresh tokens', async () => {
+      const mockUserRepository = makeMockUserRepository({
+        getRolesByUserId: jest.fn().mockResolvedValue(['member']),
+      });
 
-  //   const service = new AuthService(mockUserRepository, makeMockJwtService(), makeMockPasswordService());
-  //   const result = await service.getUserStatus(1);
-  //   expect(result).toEqual({ userId: 1, roles: ['member'], membershipStatus: 'pending' });
-  // });
+      const mockJwtService = makeMockJwtService({
+        verifyRefreshToken: jest.fn().mockReturnValue({ userId: 1 }),
+        generateToken: jest.fn().mockReturnValue('new-jwt-token'),
+        generateRefreshToken: jest.fn().mockReturnValue('new-refresh-token'),
+      });
+
+      const service = new AuthService(
+        mockUserRepository,
+        mockJwtService,
+        makeMockPasswordService(),
+      );
+
+      const result = await service.refresh('old-token', 'refresh-token');
+
+      expect(mockJwtService.verifyRefreshToken).toHaveBeenCalledWith('refresh-token');
+      expect(mockUserRepository.getRolesByUserId).toHaveBeenCalledWith(1);
+      expect(mockJwtService.generateToken).toHaveBeenCalledWith({
+        userId: 1,
+        roles: ['member'],
+      });
+      expect(mockJwtService.generateRefreshToken).toHaveBeenCalledWith({
+        userId: 1,
+      });
+
+      expect(result).toEqual({
+        token: 'new-jwt-token',
+        refreshToken: 'new-refresh-token',
+      });
+    });
+  });
+
+  describe('getUserStatus', () => {
+    it('should return user status with member role', async () => {
+      const mockUserRepository = makeMockUserRepository({
+        getRolesByUserId: jest.fn().mockResolvedValue(['member']),
+        getMemberStatus: jest.fn().mockResolvedValue('approved'),
+      });
+
+      const service = new AuthService(mockUserRepository);
+
+      const result = await service.getUserStatus(1);
+
+      expect(mockUserRepository.getRolesByUserId).toHaveBeenCalledWith(1);
+      expect(mockUserRepository.getMemberStatus).toHaveBeenCalledWith(1);
+      expect(result).toEqual({
+        userId: 1,
+        roles: ['member'],
+        membershipStatus: 'approved',
+      });
+    });
+
+    it('should return visitor status for non-member', async () => {
+      const mockUserRepository = makeMockUserRepository({
+        getRolesByUserId: jest.fn().mockResolvedValue(['admin']),
+      });
+
+      const service = new AuthService(mockUserRepository);
+
+      const result = await service.getUserStatus(1);
+
+      expect(mockUserRepository.getRolesByUserId).toHaveBeenCalledWith(1);
+      expect(mockUserRepository.getMemberStatus).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        userId: 1,
+        roles: ['admin'],
+        membershipStatus: 'visitor',
+      });
+    });
+
+    it('should return pending status when member status is null', async () => {
+      const mockUserRepository = makeMockUserRepository({
+        getRolesByUserId: jest.fn().mockResolvedValue(['member']),
+        getMemberStatus: jest.fn().mockResolvedValue(null),
+      });
+
+      const service = new AuthService(mockUserRepository);
+
+      const result = await service.getUserStatus(1);
+
+      expect(result).toEqual({
+        userId: 1,
+        roles: ['member'],
+        membershipStatus: 'pending',
+      });
+    });
+  });
+
+  describe('getMe', () => {
+    it('should return user profile with roles', async () => {
+      const mockUserRepository = makeMockUserRepository({
+        findById: jest.fn().mockResolvedValue({
+          userId: 1,
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john@example.com',
+          passwordHash: 'hash',
+        }),
+        getRolesByUserId: jest.fn().mockResolvedValue(['member']),
+      });
+
+      const service = new AuthService(mockUserRepository);
+
+      const result = await service.getMe(1);
+
+      expect(mockUserRepository.findById).toHaveBeenCalledWith(1);
+      expect(mockUserRepository.getRolesByUserId).toHaveBeenCalledWith(1);
+      expect(result).toEqual({
+        userId: 1,
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        roles: ['member'],
+      });
+      expect(result).not.toHaveProperty('passwordHash');
+    });
+
+    it('should throw error if user not found', async () => {
+      const mockUserRepository = makeMockUserRepository({
+        findById: jest.fn().mockResolvedValue(null),
+      });
+
+      const service = new AuthService(mockUserRepository);
+
+      await expect(service.getMe(999)).rejects.toThrow('User not found');
+    });
+  });
 });

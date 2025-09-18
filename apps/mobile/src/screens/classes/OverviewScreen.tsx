@@ -1,6 +1,6 @@
 // src/screens/classes/OverviewScreen.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, StatusBar, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
@@ -19,6 +19,24 @@ type FlatStep = {
   subround: number;
 };
 
+async function setMyScaling(classId: number, scaling: 'RX' | 'SC') {
+  const token = await getToken();
+  await axios.post(`${config.BASE_URL}/live/${classId}/scaling`, { scaling }, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+async function getMyScaling(classId: number): Promise<'RX'|'SC'> {
+  const token = await getToken();
+  try {
+    const { data } = await axios.get(`${config.BASE_URL}/live/${classId}/scaling`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const s = (data?.scaling ?? 'RX').toUpperCase();
+    return s === 'SC' ? 'SC' : 'RX';
+  } catch { return 'RX'; }
+}
+
 export default function OverviewScreen() {
   const nav = useNavigation<any>();
   const { params } = useRoute<R>();
@@ -32,6 +50,17 @@ export default function OverviewScreen() {
   const preType: string | undefined = liveClassData?.class?.workoutType;
 
   const session = useSession(classId);
+
+  const [myScaling, setScaling] = useState<'RX'|'SC'>('RX');
+
+  useEffect(() => {
+    getMyScaling(classId).then(setScaling).catch(()=>{});
+  }, [classId]);
+
+  const chooseScaling = async (val: 'RX' | 'SC') => {
+    setScaling(val);
+    try { await setMyScaling(classId, val); } catch {}
+  };
 
   // --- fallback steps before session exists ---
   const [fallbackSteps, setFallbackSteps] = useState<FlatStep[]>([]);
@@ -132,6 +161,23 @@ export default function OverviewScreen() {
             {roundCount > 0 ? `${roundCount} ROUNDS` : '—'}
           </Text>
         </View>
+
+        <View style={[s.typeRow, { marginTop: 6 }]}>
+          <Text style={{ color:'#aaa', marginRight:8, fontWeight:'800' }}>Scaling:</Text>
+          <TouchableOpacity
+            onPress={() => chooseScaling('RX')}
+            style={[s.pill, myScaling === 'RX' && s.pillActive]}
+          >
+            <Text style={[s.pillText, myScaling === 'RX' && s.pillTextActive]}>RX</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => chooseScaling('SC')}
+            style={[s.pill, myScaling === 'SC' && s.pillActive]}
+          >
+            <Text style={[s.pillText, myScaling === 'SC' && s.pillTextActive]}>Scaled</Text>
+          </TouchableOpacity>
+        </View>
+
 
         {steps.length === 0 ? (
           <View style={{ paddingVertical: 20 }}>

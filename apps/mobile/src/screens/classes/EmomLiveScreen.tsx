@@ -1,14 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, SafeAreaView, StatusBar,
-  ActivityIndicator, Animated
+  ActivityIndicator, Animated,
+  TouchableOpacity
 } from 'react-native';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { BlurView } from 'expo-blur';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
-import { useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
+import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
@@ -41,7 +42,10 @@ export default function EmomLiveScreen() {
   );
 
   const session = useSession(classId);
-  const lb = useLeaderboardRealtime(classId);
+  
+  const [scope, setScope] = useState<LbFilter>('ALL');
+  const lb = useLeaderboardRealtime(classId, scope);
+
 
   const steps: any[] = (session?.steps as any[]) ?? [];
   const ready = Array.isArray(steps) && steps.length > 0;
@@ -225,7 +229,7 @@ export default function EmomLiveScreen() {
       </View>
 
       {/* centered content */}
-      <View pointerEvents="none" style={s.centerOverlay}>
+      <View pointerEvents="box-none" style={s.centerOverlay}>
         {!ready ? (
           <>
             <ActivityIndicator size="large" color="#D8FF3E" />
@@ -255,9 +259,27 @@ export default function EmomLiveScreen() {
               </>
             )}
 
-            <View style={s.lb}>
+            <View style={[s.lb, { zIndex: 50, elevation: 6 }]} pointerEvents="auto">
               <Text style={s.lbTitle}>Leaderboard</Text>
-              {lbTop.map((r: any, i: number) => {
+
+              {/* RX/SC filter */}
+              <View style={{ flexDirection:'row', justifyContent:'center', gap:6, marginBottom:8 }}>
+                {(['ALL','RX','SC'] as const).map(opt => (
+                  <TouchableOpacity
+                    key={opt}
+                    onPress={()=>setScope(opt)}
+                    style={{
+                      paddingHorizontal:10, paddingVertical:6, borderRadius:999,
+                      backgroundColor: scope===opt ? '#2e3500' : '#1f1f1f',
+                      borderWidth:1, borderColor: scope===opt ? '#d8ff3e' : '#2a2a2a'
+                    }}
+                  >
+                    <Text style={{ color: scope===opt ? '#d8ff3e' : '#9aa', fontWeight:'800' }}>{opt}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {lb.slice(0, 6).map((r: any, i: number) => {
                 const displayName =
                   (r.first_name || r.last_name)
                     ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
@@ -265,11 +287,10 @@ export default function EmomLiveScreen() {
                 return (
                   <View key={`${r.user_id}-${i}`} style={s.lbRow}>
                     <Text style={s.lbPos}>{i+1}</Text>
-                    <Text style={s.lbUser}>{displayName}</Text>
-                    <Text style={s.lbScore}>
-                      {/* our repo will now return elapsed_seconds for everyone */}
-                      {fmt(Number(r.elapsed_seconds ?? 0))}
+                    <Text style={s.lbUser}>
+                      {displayName} <Text style={{ color:'#9aa' }}>({(r.scaling ?? 'RX')})</Text>
                     </Text>
+                    <Text style={s.lbScore}>{fmt(Number(r.elapsed_seconds ?? 0))}</Text>
                   </View>
                 );
               })}
@@ -284,7 +305,7 @@ export default function EmomLiveScreen() {
         <Pressable style={s.next} android_ripple={{color:'#0a0'}} onPress={() => go(1)} disabled={!ready || session?.status !== 'live' || plannedDone} />
       </View>
 
-      {/* PAUSE overlay (blocks taps) */}
+      {/* PAUSE overlay */}
       {session?.status === 'paused' && (
         <View style={s.pausedOverlay} pointerEvents="auto">
           <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor:'#000', opacity: fadeOpacity }]} />
@@ -297,6 +318,7 @@ export default function EmomLiveScreen() {
       )}
     </SafeAreaView>
   );
+
 }
 
 const s = StyleSheet.create({

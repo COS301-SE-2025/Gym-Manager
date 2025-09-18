@@ -116,7 +116,15 @@ export class LiveClassService implements ILiveClassService {
 
   async stopLiveClass(classId: number) {
     await this.repo.stopSession(classId);
+    // ⬇️ persist final scores for history
+    try {
+      await this.repo.persistScoresFromLive(classId);
+    } catch (e) {
+      // don't blow up stop on a persistence hiccup; log and move on
+      console.error('persistScoresFromLive failed', e);
+    }
   }
+
   async pauseLiveClass(classId: number) {
     await this.repo.pauseSession(classId);
   }
@@ -290,4 +298,48 @@ export class LiveClassService implements ILiveClassService {
     await this.repo.assertCoachOwnsClass(classId, coachId);
     await this.repo.upsertEmomMark(classId, userId, minuteIndex, finished, Math.max(0, Math.min(59, Number(finishSeconds || 0))));
   }
+
+  async coachForTimeSetFinishSecondsEndedOnly(classId: number, userId: number, finishSeconds: number) {
+    const sess = await this.repo.getClassSession(classId);
+    if (!sess) throw new Error('SESSION_NOT_FOUND');
+    if ((sess.status || '').toString() !== 'ended') throw new Error('NOT_ENDED');
+    await this.repo.assertMemberBooked(classId, userId);
+    await this.repo.setForTimeFinishBySeconds(classId, userId, finishSeconds);
+  }
+
+  async coachForTimeSetTotalRepsEndedOnly(classId: number, userId: number, totalReps: number) {
+    const sess = await this.repo.getClassSession(classId);
+    if (!sess) throw new Error('SESSION_NOT_FOUND');
+    if ((sess.status || '').toString() !== 'ended') throw new Error('NOT_ENDED');
+    await this.repo.assertMemberBooked(classId, userId);
+    await this.repo.setForTimeTotalReps(classId, userId, totalReps);
+  }
+
+  async coachAmrapSetTotalEndedOnly(classId: number, userId: number, totalReps: number) {
+    const sess = await this.repo.getClassSession(classId);
+    if (!sess) throw new Error('SESSION_NOT_FOUND');
+    if ((sess.status || '').toString() !== 'ended') throw new Error('NOT_ENDED');
+    await this.repo.assertMemberBooked(classId, userId);
+    await this.repo.setAmrapTotalReps(classId, userId, totalReps);
+  }
+
+  async coachIntervalSetTotalEndedOnly(classId: number, userId: number, totalReps: number) {
+    const sess = await this.repo.getClassSession(classId);
+    if (!sess) throw new Error('SESSION_NOT_FOUND');
+    if ((sess.status || '').toString() !== 'ended') throw new Error('NOT_ENDED');
+    await this.repo.assertMemberBooked(classId, userId);
+    await this.repo.upsertIntervalOverride(classId, userId, totalReps);
+  }
+
+  async getMyScaling(classId: number, userId: number): Promise<'RX'|'SC'> {
+    return this.repo.getScaling(classId, userId);
+  }
+
+  async setMyScaling(classId: number, userId: number, scaling: 'RX'|'SC'): Promise<void> {
+    // user must be booked to set scaling
+    await this.repo.assertMemberBooked(classId, userId);
+    await this.repo.upsertScaling(classId, userId, scaling);
+  }
+
+
 }

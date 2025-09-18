@@ -1,45 +1,36 @@
+// apps/mobile/src/screens/coach/CoachLiveClassScreen.tsx
 import React, { useMemo, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, TextInput, Modal, ScrollView } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
-import { useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
+import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import axios from 'axios';
+import { getToken } from '../../utils/authStorage';
 import config from '../../config';
-import apiClient from '../../utils/apiClient';
 
 type R = RouteProp<AuthStackParamList, 'CoachLive'>;
 
-async function call(path: string) {
-  await apiClient.post(`${path}`, {});
-}
-
-async function callAuthed(path: string, body: any = {}) {
+async function call(path: string, body?: any) {
   const token = await getToken();
-  return axios.post(`${config.BASE_URL}${path}`, body, { headers: { Authorization: `Bearer ${token}` } });
+  return axios.post(`${config.BASE_URL}${path}`, body ?? {}, { headers: { Authorization: `Bearer ${token}` }});
 }
 
-export default function CoachScreen() {
+export default function CoachLiveClassScreen() {
   const { params } = useRoute<R>();
   const classId = params.classId as number;
-
   const session = useSession(classId);
-  const lb = useLeaderboardRealtime(classId);
+  
+  const [scope, setScope] = useState<LbFilter>('ALL');
+  const lb = useLeaderboardRealtime(classId, scope);
+
 
   const type = (session?.workout_type ?? '').toUpperCase();
-  const allFinished = useMemo(() => {
-    if (type === 'FOR_TIME') {
-      return lb.length > 0 && lb.every((r:any) => !!r.finished);
-    }
-    return false;
-  }, [lb, type]);
+  const isEnded = (session?.status ?? '') === 'ended';
 
-  // ----------------------
-  // Coach notes
-  // ----------------------
+  // --- Notes (unchanged) ---
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
-
   useEffect(() => {
     let stop = false;
     (async () => {
@@ -56,103 +47,64 @@ export default function CoachScreen() {
 
   const saveNote = async () => {
     setSaving(true);
-    try {
-      await callAuthed(`/coach/live/${classId}/note`, { note });
-    } finally {
-      setSaving(false);
-    }
+    try { await call(`/coach/live/${classId}/note`, { note }); }
+    finally { setSaving(false); }
   };
 
-  // ----------------------
-  // Edit modal (type-aware)
-  // ----------------------
+  // --- Edit modal (enabled only when ended) ---
   const [editOpen, setEditOpen] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
   const [form, setForm] = useState<{
-    // FOR_TIME
-    ftFinished?: boolean;
-    ftMM?: string;
-    ftSS?: string;
-    ftPartialReps?: string;
+    // FOR TIME
+    ftMode?: 'time' | 'reps';
+    mm?: string;
+    ss?: string;
+    ftReps?: string;
     // AMRAP
-    totalReps?: string;
+    amrapReps?: string;
     // INTERVAL/TABATA
-    stepIndex?: string;
-    reps?: string;
-    // EMOM
-    minuteIndex?: string;
-    emomSec?: string;
-    emomFinished?: boolean;
-  }>({});
+    intervalReps?: string;
+  }>({ ftMode: 'time' });
 
   const openEdit = (row: any) => {
+    if (!isEnded) return; // safety in UI
     setEditUser(row);
-    // Pre-fill based on row + type
-    if ((session?.workout_type ?? '').toUpperCase() === 'FOR_TIME') {
-      if (row.finished) {
-        const secs = Math.max(0, Number(row.elapsed_seconds ?? 0));
-        const mm = Math.floor(secs / 60);
-        const ss = secs % 60;
-        setForm({
-          ftFinished: true,
-          ftMM: String(mm),
-          ftSS: String(ss),
-          ftPartialReps: '',
-        });
-      } else {
-        setForm({
-          ftFinished: false,
-          ftMM: '',
-          ftSS: '',
-          ftPartialReps: row.total_reps != null ? String(row.total_reps) : '',
-        });
-      }
-    } else if ((session?.workout_type ?? '').toUpperCase() === 'AMRAP') {
-      setForm({ totalReps: row.total_reps != null ? String(row.total_reps) : '' });
-    } else if ((session?.workout_type ?? '').toUpperCase() === 'INTERVAL' || (session?.workout_type ?? '').toUpperCase() === 'TABATA') {
-      setForm({ stepIndex: '', reps: '' });
-    } else if ((session?.workout_type ?? '').toUpperCase() === 'EMOM') {
-      setForm({ minuteIndex: '', emomSec: '', emomFinished: false });
-    } else {
-      setForm({});
-    }
+    setForm({ ftMode: 'time' });
     setEditOpen(true);
   };
 
   const submitEdit = async () => {
-    if (!editUser) return;
-    const t = (session?.workout_type ?? '').toUpperCase();
+    if (!editUser || !isEnded) return;
+
     try {
-      if (t === 'FOR_TIME') {
-        const finished = !!form.ftFinished;
-        if (finished) {
-          const mm = Math.max(0, Number(form.ftMM || 0));
-          const ss = Math.max(0, Math.min(59, Number(form.ftSS || 0)));
-          const totalSec = (mm * 60) + ss;
-          await callAuthed(`/coach/live/${classId}/ft/set-finish`, { userId: editUser.user_id, finishSeconds: totalSec });
+      if (type === 'FOR_TIME') {
+        if (form.ftMode === 'time') {
+          const mm = Math.max(0, Number(form.mm || 0));
+          const ss = Math.max(0, Math.min(59, Number(form.ss || 0)));
+          const finishSeconds = (mm * 60) + ss;
+          await call(`/coach/live/${classId}/ft/set-finish`, { userId: editUser.user_id, finishSeconds });
         } else {
-          const partial = Math.max(0, Number(form.ftPartialReps || 0));
-          // NEW: coach can set partial reps for athletes who didn't finish
-          await callAuthed(`/coach/live/${classId}/ft/set-partial`, { userId: editUser.user_id, partialReps: partial });
+          const totalReps = Math.max(0, Number(form.ftReps || 0));
+          await call(`/coach/live/${classId}/ft/set-reps`, { userId: editUser.user_id, totalReps });
         }
-      } else if (t === 'AMRAP') {
-        const totalReps = Math.max(0, Number(form.totalReps || 0));
-        await callAuthed(`/coach/live/${classId}/amrap/set-total`, { userId: editUser.user_id, totalReps });
-      } else if (t === 'INTERVAL' || t === 'TABATA') {
-        const stepIndex = Math.max(0, Number(form.stepIndex || 0));
-        const reps = Math.max(0, Number(form.reps || 0));
-        await callAuthed(`/coach/live/${classId}/interval/score`, { userId: editUser.user_id, stepIndex, reps });
-      } else if (t === 'EMOM') {
-        const minuteIndex = Math.max(0, Number(form.minuteIndex || 0));
-        const emomSec = Math.max(0, Math.min(59, Number(form.emomSec || 0)));
-        const finished = !!form.emomFinished;
-        await callAuthed(`/coach/live/${classId}/emom/mark`, { userId: editUser.user_id, minuteIndex, finished, finishSeconds: emomSec });
+      } else if (type === 'AMRAP') {
+        const totalReps = Math.max(0, Number(form.amrapReps || 0));
+        await call(`/coach/live/${classId}/amrap/set-total`, { userId: editUser.user_id, totalReps });
+      } else if (type === 'INTERVAL' || type === 'TABATA') {
+        const totalReps = Math.max(0, Number(form.intervalReps || 0));
+        await call(`/coach/live/${classId}/interval/set-total`, { userId: editUser.user_id, totalReps });
       }
       setEditOpen(false);
     } catch {
       setEditOpen(false);
     }
   };
+
+  // Are all finished? (only meaningful for FT)
+  const allFinished = useMemo(() => {
+    if (type === 'FOR_TIME') return lb.length > 0 && lb.every((r:any) => !!r.finished);
+    return false;
+  }, [lb, type]);
 
   return (
     <SafeAreaView style={s.root}>
@@ -161,9 +113,9 @@ export default function CoachScreen() {
         <Text style={s.title}>Coach Controls</Text>
         <Text style={s.meta}>Class #{classId}</Text>
         <Text style={s.meta}>Status: {session?.status ?? '—'}</Text>
-        <Text style={s.meta}>Type: {session?.workout_type ?? '—'}</Text>
+        <Text style={s.meta}>Type: {type || '—'}</Text>
 
-        {/* Coach Notes */}
+        {/* Notes */}
         <Text style={s.section}>Coach Notes</Text>
         <View style={s.noteCard}>
           <TextInput
@@ -212,78 +164,106 @@ export default function CoachScreen() {
 
         <View style={{ height: 18 }} />
         <Text style={s.section}>Leaderboard</Text>
+
+        {/* RX/SC filter */}
+        <View style={{ flexDirection:'row', justifyContent:'flex-start', gap:6, marginBottom:8 }}>
+          {(['ALL','RX','SC'] as const).map(opt => (
+            <TouchableOpacity
+              key={opt}
+              onPress={()=>setScope(opt)}
+              style={{
+                paddingHorizontal:10, paddingVertical:6, borderRadius:999,
+                backgroundColor: scope===opt ? '#2e3500' : '#1f1f1f',
+                borderWidth:1, borderColor: scope===opt ? '#d8ff3e' : '#2a2a2a'
+              }}
+            >
+              <Text style={{ color: scope===opt ? '#d8ff3e' : '#9aa', fontWeight:'800' }}>{opt}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         <View style={s.lb}>
           {lb.map((r:any,i:number)=>(
             <View key={`${r.user_id}-${i}`} style={s.lbRow}>
               <Text style={s.pos}>{i+1}</Text>
               <Text style={s.user}>
-                {(r.first_name || r.last_name) ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim() : (r.name ?? `User ${r.user_id}`)}
+                {(r.first_name || r.last_name)
+                  ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
+                  : (r.name ?? `User ${r.user_id}`)}
+                <Text style={{ color:'#9aa' }}> ({(r.scaling ?? 'RX')})</Text>
               </Text>
               <Text style={s.score}>
-                {r.finished && (type === 'FOR_TIME' || type === 'EMOM')
+                {(type === 'FOR_TIME' || type === 'EMOM') && r.finished
                   ? fmt(Number(r.elapsed_seconds ?? 0))
                   : `${Number(r.total_reps ?? 0)} reps`}
               </Text>
-              <TouchableOpacity style={s.editBtn} onPress={() => openEdit(r)}>
-                <Text style={s.editBtnText}>Edit</Text>
-              </TouchableOpacity>
+
+              {/* Edit is ONLY available after the workout has ENDED */}
+              {isEnded && (
+                <TouchableOpacity style={s.editBtn} onPress={() => openEdit(r)}>
+                  <Text style={s.editBtnText}>Edit</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ))}
         </View>
       </View>
 
-      {/* Edit modal */}
+      {/* Edit modal (shows only for ended sessions) */}
       <Modal visible={editOpen} transparent animationType="fade" onRequestClose={()=>setEditOpen(false)}>
         <View style={s.modalWrap}>
           <View style={s.modalCard}>
-            <Text style={s.modalTitle}>Edit — {(session?.workout_type ?? '').toUpperCase()}</Text>
+            <Text style={s.modalTitle}>Edit — {type}</Text>
 
-            {/* FOR TIME: either finish time OR partial reps */}
-            {(type === 'FOR_TIME') && (
+            {type === 'FOR_TIME' && (
               <>
-                <TouchableOpacity
-                  style={[s.toggle, form.ftFinished ? s.toggleOn : null]}
-                  onPress={()=>setForm(f=>({ ...f, ftFinished: !f.ftFinished }))}
-                >
-                  <Text style={s.toggleText}>{form.ftFinished ? 'Finished ✓' : 'Not finished — set partial reps'}</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection:'row', gap:8, marginBottom:8 }}>
+                  <TouchableOpacity
+                    style={[s.toggle, (form.ftMode === 'time') && s.toggleOn]}
+                    onPress={()=>setForm(f=>({ ...f, ftMode: 'time' }))}
+                  >
+                    <Text style={s.toggleText}>Score by Time</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[s.toggle, (form.ftMode === 'reps') && s.toggleOn]}
+                    onPress={()=>setForm(f=>({ ...f, ftMode: 'reps' }))}
+                  >
+                    <Text style={s.toggleText}>Score by Reps</Text>
+                  </TouchableOpacity>
+                </View>
 
-                {form.ftFinished ? (
-                  <>
-                    <Text style={s.modalLabel}>Finish time</Text>
-                    <View style={{ flexDirection:'row', gap:8 }}>
-                      <TextInput
-                        style={s.modalInput}
-                        placeholder="mm"
-                        keyboardType="numeric"
-                        value={form.ftMM ?? ''}
-                        onChangeText={v=>setForm(f=>({ ...f, ftMM: v.replace(/[^0-9]/g,'') }))}
-                      />
-                      <TextInput
-                        style={s.modalInput}
-                        placeholder="ss"
-                        keyboardType="numeric"
-                        value={form.ftSS ?? ''}
-                        onChangeText={v=>setForm(f=>({ ...f, ftSS: v.replace(/[^0-9]/g,'') }))}
-                      />
-                    </View>
-                  </>
+                {form.ftMode === 'time' ? (
+                  <View style={{ flexDirection:'row', gap:8 }}>
+                    <TextInput
+                      style={s.modalInput}
+                      placeholder="mm"
+                      keyboardType="numeric"
+                      value={form.mm ?? ''}
+                      onChangeText={v=>setForm(f=>({ ...f, mm: v.replace(/[^0-9]/g,'') }))}
+                    />
+                    <TextInput
+                      style={s.modalInput}
+                      placeholder="ss"
+                      keyboardType="numeric"
+                      value={form.ss ?? ''}
+                      onChangeText={v=>setForm(f=>({ ...f, ss: v.replace(/[^0-9]/g,'') }))}
+                    />
+                  </View>
                 ) : (
                   <>
-                    <Text style={s.modalLabel}>Partial reps</Text>
+                    <Text style={s.modalLabel}>Total reps</Text>
                     <TextInput
                       style={s.modalInput}
                       placeholder="0"
                       keyboardType="numeric"
-                      value={form.ftPartialReps ?? ''}
-                      onChangeText={v=>setForm(f=>({ ...f, ftPartialReps: v.replace(/[^0-9]/g,'') }))}
+                      value={form.ftReps ?? ''}
+                      onChangeText={v=>setForm(f=>({ ...f, ftReps: v.replace(/[^0-9]/g,'') }))}
                     />
                   </>
                 )}
               </>
             )}
 
-            {/* AMRAP */}
             {type === 'AMRAP' && (
               <>
                 <Text style={s.modalLabel}>Total reps</Text>
@@ -291,57 +271,22 @@ export default function CoachScreen() {
                   style={s.modalInput}
                   placeholder="0"
                   keyboardType="numeric"
-                  value={form.totalReps ?? ''}
-                  onChangeText={v=>setForm(f=>({ ...f, totalReps: v.replace(/[^0-9]/g,'') }))}
+                  value={form.amrapReps ?? ''}
+                  onChangeText={v=>setForm(f=>({ ...f, amrapReps: v.replace(/[^0-9]/g,'') }))}
                 />
               </>
             )}
 
-            {/* INTERVAL / TABATA */}
             {(type === 'INTERVAL' || type === 'TABATA') && (
               <>
-                <Text style={s.modalLabel}>Step index & reps</Text>
+                <Text style={s.modalLabel}>Total reps</Text>
                 <TextInput
                   style={s.modalInput}
-                  placeholder="step index"
+                  placeholder="0"
                   keyboardType="numeric"
-                  value={form.stepIndex ?? ''}
-                  onChangeText={v=>setForm(f=>({ ...f, stepIndex: v.replace(/[^0-9]/g,'') }))}
+                  value={form.intervalReps ?? ''}
+                  onChangeText={v=>setForm(f=>({ ...f, intervalReps: v.replace(/[^0-9]/g,'') }))}
                 />
-                <TextInput
-                  style={s.modalInput}
-                  placeholder="reps"
-                  keyboardType="numeric"
-                  value={form.reps ?? ''}
-                  onChangeText={v=>setForm(f=>({ ...f, reps: v.replace(/[^0-9]/g,'') }))}
-                />
-              </>
-            )}
-
-            {/* EMOM */}
-            {type === 'EMOM' && (
-              <>
-                <Text style={s.modalLabel}>Minute index (0-based) & finish seconds</Text>
-                <TextInput
-                  style={s.modalInput}
-                  placeholder="minute index"
-                  keyboardType="numeric"
-                  value={form.minuteIndex ?? ''}
-                  onChangeText={v=>setForm(f=>({ ...f, minuteIndex: v.replace(/[^0-9]/g,'') }))}
-                />
-                <TextInput
-                  style={s.modalInput}
-                  placeholder="seconds (0–59)"
-                  keyboardType="numeric"
-                  value={form.emomSec ?? ''}
-                  onChangeText={v=>setForm(f=>({ ...f, emomSec: v.replace(/[^0-9]/g,'') }))}
-                />
-                <TouchableOpacity
-                  style={[s.toggle, form.emomFinished ? s.toggleOn : null]}
-                  onPress={()=>setForm(f=>({ ...f, emomFinished: !f.emomFinished }))}
-                >
-                  <Text style={s.toggleText}>{form.emomFinished ? 'Finished ✓' : 'Mark finished'}</Text>
-                </TouchableOpacity>
               </>
             )}
 
@@ -358,6 +303,7 @@ export default function CoachScreen() {
       </Modal>
     </SafeAreaView>
   );
+
 }
 
 function fmt(t: number) {
@@ -388,7 +334,7 @@ const s = StyleSheet.create({
   user:{ flex:1, color:'#e1e1e1' },
   score:{ color:'#fff', fontWeight:'800' },
 
-  // Notes UI
+  // Notes
   noteCard:{ backgroundColor:'#1a1a1a', borderRadius:10, padding:10, marginTop:8 },
   noteInput:{ minHeight:80, color:'#fff', textAlignVertical:'top' },
 
@@ -402,7 +348,7 @@ const s = StyleSheet.create({
   modalLabel:{ color:'#bbb', marginTop:6, marginBottom:6 },
   modalInput:{ backgroundColor:'#222', borderRadius:10, color:'#fff', fontSize:18, fontWeight:'800', paddingVertical:8, paddingHorizontal:10 },
 
-  toggle:{ backgroundColor:'#2a2a2a', borderRadius:10, padding:10, alignItems:'center', marginTop:8 },
+  toggle:{ backgroundColor:'#2a2a2a', borderRadius:10, padding:10, alignItems:'center' },
   toggleOn:{ backgroundColor:'#26531f' },
   toggleText:{ color:'#fff', fontWeight:'800' },
 });

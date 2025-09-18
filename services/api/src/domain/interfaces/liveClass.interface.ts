@@ -16,9 +16,17 @@ export interface ILiveClassService {
   getMyProgress(classId: number, userId: number): Promise<any>;
   postIntervalScore(classId: number, userId: number, stepIndex: number, reps: number): Promise<void>;
   getIntervalLeaderboard(classId: number): Promise<any>;
+  coachForTimeSetFinishSecondsEndedOnly(classId: number, userId: number, finishSeconds: number): Promise<void>;
+  coachForTimeSetTotalRepsEndedOnly(classId: number, userId: number, totalReps: number): Promise<void>;
+  coachAmrapSetTotalEndedOnly(classId: number, userId: number, totalReps: number): Promise<void>;
+  coachIntervalSetTotalEndedOnly(classId: number, userId: number, totalReps: number): Promise<void>;
+
 }
 
 export interface ILiveClassRepository {
+  persistScoresFromLive(classId: number): unknown;
+  upsertScaling(classId: number, userId: number, scaling: string): unknown;
+  getScaling(classId: number, userId: number): "RX" | "SC" | PromiseLike<"RX" | "SC">;
   autoEndIfCapReached(classId: number): Promise<void>;
   getClassSession(classId: number): Promise<LiveSession | null>;
 
@@ -68,6 +76,15 @@ export interface ILiveClassRepository {
   setForTimeFinish(classId: number, userId: number, finishSeconds: number | null, startedAt: any): Promise<void>;
   setAmrapProgress(classId: number, userId: number, rounds: number, currentStep: number, partial: number): Promise<void>;
   upsertEmomMark(classId: number, userId: number, minuteIndex: number, finished: boolean, finishSeconds: number): Promise<void>;
+
+  setForTimeFinishSeconds(classId: number, userId: number, seconds: number): Promise<void>;
+  setForTimePartialReps(classId: number, userId: number, reps: number): Promise<void>;
+  setForTimePosition(classId: number, userId: number, currentStep: number, partialReps: number): Promise<void>;
+
+  setForTimeFinishBySeconds(classId: number, userId: number, finishSeconds: number): Promise<void>;
+  setForTimeTotalReps(classId: number, userId: number, totalReps: number): Promise<void>;
+  setAmrapTotalReps(classId: number, userId: number, totalReps: number): Promise<void>;
+  upsertIntervalOverride(classId: number, userId: number, totalReps: number): Promise<void>;
 
 }
 

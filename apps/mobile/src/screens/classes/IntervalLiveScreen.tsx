@@ -6,7 +6,7 @@ import {
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
-import { useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
+import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
@@ -78,7 +78,10 @@ export default function IntervalLiveScreen() {
   const nav = useNavigation<any>();
 
   const session = useSession(classId);
-  const lb = useLeaderboardRealtime(classId);
+  
+  const [scope, setScope] = useState<LbFilter>('ALL');
+  const lb = useLeaderboardRealtime(classId, scope);
+
 
   const steps: any[] = (session?.steps as any[]) ?? [];
   const ready = Array.isArray(steps) && steps.length > 0;
@@ -238,10 +241,9 @@ export default function IntervalLiveScreen() {
                   <View key={`sub-${r}-${sr}`} style={s.subBox}>
                     {exs.map((e: any) => {
                       const i = Number(e.index);
-                      const isLive = !done && i === liveIdx; // no live highlight once done
+                      const isLive = !done && i === liveIdx;
                       const rest = isRestStep(e);
                       const showError = !!errors[i];
-
                       return (
                         <View key={`step-${i}`} style={[s.row, isLive && s.rowLive]}>
                           <View style={{ flex:1 }}>
@@ -254,7 +256,7 @@ export default function IntervalLiveScreen() {
                             <>
                               <TextInput
                                 value={inputs[i] ?? ''}
-                                onChangeText={(v) => setInput(i, v)} // no input-mangling
+                                onChangeText={(v) => setInput(i, v)}
                                 keyboardType="numeric"
                                 placeholder="0"
                                 placeholderTextColor="#777"
@@ -262,7 +264,7 @@ export default function IntervalLiveScreen() {
                                   s.input,
                                   submitted[i] && s.inputSaved,
                                   showError && s.inputError,
-                                  !canSubmit && s.inputDisabled, // allow edit after done; only block if no session
+                                  !canSubmit && s.inputDisabled
                                 ]}
                                 editable={canSubmit}
                               />
@@ -270,7 +272,7 @@ export default function IntervalLiveScreen() {
                                 style={[
                                   s.tick,
                                   submitted[i] && s.tickSaved,
-                                  !canSubmit && s.tickDisabled, // allow ✓ after done; only block if no session
+                                  !canSubmit && s.tickDisabled,
                                 ]}
                                 onPress={() => submit(i)}
                                 disabled={!canSubmit}
@@ -290,8 +292,26 @@ export default function IntervalLiveScreen() {
         })}
 
         {/* Leaderboard */}
-        <View style={s.lb}>
+        <View style={[s.lb, { zIndex: 50, elevation: 6 }]} pointerEvents="auto">
           <Text style={s.lbTitle}>Leaderboard</Text>
+
+          {/* RX/SC filter */}
+          <View style={{ flexDirection:'row', justifyContent:'center', gap:6, marginBottom:8 }}>
+            {(['ALL','RX','SC'] as const).map(opt => (
+              <TouchableOpacity
+                key={opt}
+                onPress={()=>setScope(opt)}
+                style={{
+                  paddingHorizontal:10, paddingVertical:6, borderRadius:999,
+                  backgroundColor: scope===opt ? '#2e3500' : '#1f1f1f',
+                  borderWidth:1, borderColor: scope===opt ? '#d8ff3e' : '#2a2a2a'
+                }}
+              >
+                <Text style={{ color: scope===opt ? '#d8ff3e' : '#9aa', fontWeight:'800' }}>{opt}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           {lb.map((r: any, i: number) => {
             const displayName =
               (r.first_name || r.last_name)
@@ -300,7 +320,9 @@ export default function IntervalLiveScreen() {
             return (
               <View key={`${r.user_id}-${i}`} style={s.lbRow}>
                 <Text style={s.lbPos}>{i+1}</Text>
-                <Text style={s.lbUser}>{displayName}</Text>
+                <Text style={s.lbUser}>
+                  {displayName} <Text style={{ color:'#9aa' }}>({(r.scaling ?? 'RX')})</Text>
+                </Text>
                 <Text style={s.lbScore}>{Number(r.total_reps ?? 0)} reps</Text>
               </View>
             );
@@ -346,6 +368,7 @@ export default function IntervalLiveScreen() {
       )}
     </SafeAreaView>
   );
+
 }
 
 const s = StyleSheet.create({

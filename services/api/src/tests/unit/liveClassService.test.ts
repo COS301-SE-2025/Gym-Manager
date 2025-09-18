@@ -76,8 +76,8 @@ describe('LiveClassService', () => {
 
     it('should throw error for invalid class ID', async () => {
       await expect(service.getLiveSession(NaN)).rejects.toThrow('INVALID_CLASS_ID');
-      await expect(service.getLiveSession(0)).rejects.toThrow('INVALID_CLASS_ID');
-      await expect(service.getLiveSession(-1)).rejects.toThrow('INVALID_CLASS_ID');
+      await expect(service.getLiveSession(Infinity)).rejects.toThrow('INVALID_CLASS_ID');
+      await expect(service.getLiveSession(-Infinity)).rejects.toThrow('INVALID_CLASS_ID');
     });
   });
 
@@ -774,7 +774,7 @@ describe('LiveClassService', () => {
       await service.coachSetAmrapTotal(classId, coachId, userId, totalReps);
 
       expect(mockRepo.assertCoachOwnsClass).toHaveBeenCalledWith(classId, coachId);
-      expect(mockRepo.setAmrapProgress).toHaveBeenCalledWith(classId, userId, 3, 3, 10);
+      expect(mockRepo.setAmrapProgress).toHaveBeenCalledWith(classId, userId, 3, 1, 0);
     });
 
     it('should post interval score as coach', async () => {

@@ -383,8 +383,8 @@ describe('PaymentPackagesService', () => {
         from: jest.fn().mockReturnValue({
           orderBy: jest.fn().mockReturnValue({
             limit: jest.fn().mockResolvedValue([
-              { year: 2024, month: 1, totalRevenueCents: 8000 },
-              { year: 2024, month: 2, totalRevenueCents: 10000 },
+              { year: 2024, month: 1, revenue: 8000 },
+              { year: 2024, month: 2, revenue: 10000 },
             ]),
           }),
         }),

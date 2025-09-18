@@ -472,4 +472,136 @@ export class AnalyticsService {
       classPerformance,
     };
   }
+
+  async getUserAcquisitionData(period?: string): Promise<{
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      borderColor: string;
+    }>;
+  }> {
+    const { startDate, endDate } = this.getDateRange(period);
+    
+    // Determine grouping based on period
+    let groupBy: string;
+    switch (period) {
+      case 'today':
+        groupBy = 'DATE_TRUNC(\'hour\', created_at)';
+        break;
+      case 'lastWeek':
+        groupBy = 'DATE(created_at)';
+        break;
+      case 'lastMonth':
+        groupBy = 'DATE(created_at)';
+        break;
+      case 'lastYear':
+        groupBy = 'DATE_TRUNC(\'month\', created_at)';
+        break;
+      case 'all':
+      default:
+        groupBy = 'DATE_TRUNC(\'month\', created_at)';
+        break;
+    }
+
+    // Build date conditions
+    const dateConds = [] as any[];
+    if (startDate) dateConds.push(gte(analyticsEvents.createdAt, new Date(startDate)));
+    if (endDate) dateConds.push(lte(analyticsEvents.createdAt, new Date(endDate)));
+
+    // Get signup events
+    const signupEvents = await db
+      .select({
+        date: sql<string>`${sql.raw(groupBy)}`,
+        count: count(analyticsEvents.id)
+      })
+      .from(analyticsEvents)
+      .where(
+        and(
+          eq(analyticsEvents.eventType, 'user_signup'),
+          ...dateConds
+        )
+      )
+      .groupBy(sql.raw(groupBy))
+      .orderBy(sql.raw(groupBy));
+
+    // Get approval events
+    const approvalEvents = await db
+      .select({
+        date: sql<string>`${sql.raw(groupBy)}`,
+        count: count(analyticsEvents.id)
+      })
+      .from(analyticsEvents)
+      .where(
+        and(
+          eq(analyticsEvents.eventType, 'membership_approval'),
+          ...dateConds
+        )
+      )
+      .groupBy(sql.raw(groupBy))
+      .orderBy(sql.raw(groupBy));
+
+    // Create date range for consistent labels
+    const labels: string[] = [];
+    const signupData: number[] = [];
+    const approvalData: number[] = [];
+
+    const currentDate = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const endDateObj = endDate ? new Date(endDate) : new Date();
+
+    while (currentDate <= endDateObj) {
+      let label: string;
+      let dateKey: string;
+
+      switch (period) {
+        case 'today':
+          label = currentDate.toLocaleTimeString('en-US', { hour: '2-digit', hour12: false });
+          dateKey = currentDate.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+          currentDate.setHours(currentDate.getHours() + 1);
+          break;
+        case 'lastWeek':
+        case 'lastMonth':
+          label = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          dateKey = currentDate.toISOString().split('T')[0];
+          currentDate.setDate(currentDate.getDate() + 1);
+          break;
+        case 'lastYear':
+          label = currentDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+          dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+          currentDate.setMonth(currentDate.getMonth() + 1);
+          break;
+        case 'all':
+        default:
+          label = currentDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+          dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+          currentDate.setMonth(currentDate.getMonth() + 1);
+          break;
+      }
+
+      labels.push(label);
+
+      // Find data for this date
+      const signupCount = signupEvents.find(e => e.date.startsWith(dateKey))?.count || 0;
+      const approvalCount = approvalEvents.find(e => e.date.startsWith(dateKey))?.count || 0;
+
+      signupData.push(signupCount);
+      approvalData.push(approvalCount);
+    }
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Signups',
+          data: signupData,
+          borderColor: '#3b82f6',
+        },
+        {
+          label: 'Approvals',
+          data: approvalData,
+          borderColor: '#22c55e',
+        },
+      ],
+    };
+  }
 }

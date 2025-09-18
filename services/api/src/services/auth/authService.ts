@@ -63,6 +63,18 @@ export class AuthService implements IAuthService {
     // Emit admin notification for approval
     await this.notificationService.createUserSignupNotification(createdUser);
 
+    // Log user sign up event
+    await this.analyticsService.addLog({
+      gymId: 1, // Assuming a single gym for now
+      userId: createdUser.userId,
+      eventType: 'user_signup',
+      properties: {
+        email: userData.email,
+        roles: roles,
+      },
+      source: 'api',
+    });
+
     // Get roles for token generation
     const assignedRoles = await this.userRepository.getRolesByUserId(createdUser.userId);
 

@@ -5,15 +5,17 @@ import { CustomChart } from '@/components/Chart/CustomChart';
 import { reportsService } from '@/app/services/reports';
 import TimePeriodToggle from './TimePeriodToggle';
 
+type Period = 'today' | 'lastWeek' | 'lastMonth' | 'lastYear' | 'all';
+
 export default function CohortRetentionReport() {
   const [data, setData] = useState<any | null>(null);
-  const [period, setPeriod] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
+  const [period, setPeriod] = useState<Period>('lastWeek');
 
   useEffect(() => {
     setData(null);
     // Mock Data for member retention percentage over time
-    const getMockCohortData = (p: typeof period) => {
-      if (p === 'monthly') {
+    const getMockCohortData = (p: Period) => {
+      if (p === 'lastMonth' || p === 'lastYear') {
         return {
           labels: ['Month 0', 'Month 1', 'Month 3', 'Month 6', 'Month 9', 'Month 12'],
           datasets: [
@@ -28,7 +30,7 @@ export default function CohortRetentionReport() {
           ],
         };
       }
-      // weekly
+      // weekly or other periods
       return {
         labels: ['Week 0', 'Week 1', 'Week 4', 'Week 8', 'Week 12', 'Week 24'],
         datasets: [
@@ -51,7 +53,7 @@ export default function CohortRetentionReport() {
 
   return (
     <div>
-      <TimePeriodToggle selected={period} onSelect={setPeriod as any} />
+      <TimePeriodToggle selected={period} onSelect={setPeriod} />
       <div style={{ height: 320, marginTop: '1rem' }}>
         <CustomChart type="line" labels={data.labels} datasets={data.datasets} options={{ responsive: true }} />
       </div>

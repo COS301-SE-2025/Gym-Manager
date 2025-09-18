@@ -57,6 +57,28 @@ export const analyticsService = {
       throw error;
     }
   },
+
+  async getAcquisitionData(period?: string): Promise<{
+    labels: string[];
+    datasets: Array<{
+      label: string;
+      data: number[];
+      borderColor: string;
+    }>;
+  }> {
+    try {
+      const token = localStorage.getItem('authToken');
+      const params = period ? { period } : {};
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/analytics/acquisition-data`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch acquisition data:', error);
+      throw error;
+    }
+  },
 };
 // MOCK DATA GENERATORS
 const getMockOperations = (period: string) => {
@@ -147,7 +169,16 @@ export const reportsService = {
     }
   },
 
-  getAcquisitionData: (period: string) => {
-    return getMockAcquisition(period);
+  getAcquisitionData: async (period?: string) => {
+    try {
+      return await analyticsService.getAcquisitionData(period);
+    } catch (error) {
+      console.error('Failed to fetch acquisition data:', error);
+      // Fallback to mock data if API fails
+      const oldPeriod = period === 'today' ? 'daily' : 
+                       period === 'lastWeek' ? 'weekly' : 
+                       period === 'lastMonth' ? 'monthly' : 'monthly';
+      return getMockAcquisition(oldPeriod);
+    }
   },
 };

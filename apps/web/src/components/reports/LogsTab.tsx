@@ -33,6 +33,9 @@ const formatLogMessage = (log: any): string => {
     case 'membership_approval':
       return `Approved membership for user ID: ${properties?.approvedUserId}${userId ? ` by user ID: ${userId}` : ' (performed by system)'}.`;
     
+    case 'user_signup':
+      return `User (ID: ${userId}) signed up with email: ${properties?.email} and roles: ${properties?.roles?.join(', ') || 'member'}.`;
+    
     default:
       return `${eventType} event occurred${userId ? ` for user ID: ${userId}` : ''}.`;
   }

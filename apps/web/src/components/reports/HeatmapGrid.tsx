@@ -33,7 +33,7 @@ export default function HeatmapGrid({
     return `${colorScale.color}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`;
   };
 
-  const cellWidth = 80; //wider to use horizontal space
+  const cellWidth = 60; // Smaller for better fit with more columns
   const cellHeight = 50;
   const gridWidth = x_labels.length * cellWidth;
   const gridHeight = y_labels.length * cellHeight;
@@ -60,47 +60,50 @@ export default function HeatmapGrid({
         </div>
 
         <div className="heatmap-grid-container">
-          {/* X-axis labels */}
-          <div className="x-axis-labels" style={{ width: gridWidth }}>
-            {x_labels.map((label, index) => (
-              <div 
-                key={label} 
-                className="x-axis-label"
-                style={{ 
-                  width: cellWidth,
-                  left: index * cellWidth + cellWidth / 2
-                }}
-              >
-                {label}
-              </div>
-            ))}
-          </div>
-
-          {/* Heatmap grid */}
-          <div 
-            className="heatmap-grid" 
-            style={{ 
-              width: gridWidth, 
-              height: gridHeight,
-              gridTemplateColumns: `repeat(${x_labels.length}, ${cellWidth}px)`,
-              gridTemplateRows: `repeat(${y_labels.length}, ${cellHeight}px)`
-            }}
-          >
-            {values.map((row, rowIndex) =>
-              row.map((value, colIndex) => (
-                <div
-                  key={`${rowIndex}-${colIndex}`}
-                  className="heatmap-cell"
-                  style={{
-                    backgroundColor: getCellColor(value),
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
+          {/* Scrollable content wrapper */}
+          <div className="heatmap-scroll-wrapper">
+            {/* X-axis labels */}
+            <div className="x-axis-labels" style={{ width: gridWidth }}>
+              {x_labels.map((label, index) => (
+                <div 
+                  key={label} 
+                  className="x-axis-label"
+                  style={{ 
+                    width: cellWidth,
+                    left: index * cellWidth + cellWidth / 2
                   }}
-                  title={`${y_labels[rowIndex]} ${x_labels[colIndex]}: ${value}%`}
                 >
-                  <span className="cell-value">{value}</span>
+                  {label}
                 </div>
-              ))
-            )}
+              ))}
+            </div>
+
+            {/* Heatmap grid */}
+            <div 
+              className="heatmap-grid" 
+              style={{ 
+                width: gridWidth, 
+                height: gridHeight,
+                gridTemplateColumns: `repeat(${x_labels.length}, ${cellWidth}px)`,
+                gridTemplateRows: `repeat(${y_labels.length}, ${cellHeight}px)`
+              }}
+            >
+              {values.map((row, rowIndex) =>
+                row.map((value, colIndex) => (
+                  <div
+                    key={`${rowIndex}-${colIndex}`}
+                    className="heatmap-cell"
+                    style={{
+                      backgroundColor: getCellColor(value),
+                      border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }}
+                    title={`${y_labels[rowIndex]} ${x_labels[colIndex]}: ${value}% utilization\n(Class capacity booking rate)`}
+                  >
+                    <span className="cell-value">{value}</span>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

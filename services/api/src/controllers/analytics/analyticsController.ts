@@ -72,4 +72,32 @@ export class AnalyticsController {
       res.status(500).json({ error: 'Failed to fetch member analytics' });
     }
   };
+
+  /**
+   * Get gym utilization analytics - heat map data and average utilization by hour
+   */
+  getGymUtilization = async (req: Request, res: Response) => {
+    try {
+      const { weekStartDate } = req.query as { weekStartDate?: string };
+      const utilizationData = await this.analyticsService.getGymUtilization(weekStartDate);
+      res.json(utilizationData);
+    } catch (error: any) {
+      console.error('getGymUtilization error:', error);
+      res.status(500).json({ error: 'Failed to fetch gym utilization data' });
+    }
+  };
+
+  /**
+   * Get booking times analytics - average and most popular booking times
+   */
+  getBookingTimesAnalytics = async (req: Request, res: Response) => {
+    try {
+      const bookingTimes = await this.analyticsService.getBookingTimesAnalytics();
+      res.json(bookingTimes);
+    } catch (error: any) {
+      console.error('getBookingTimesAnalytics error:', error);
+      res.status(500).json({ error: 'Failed to fetch booking times analytics' });
+    }
+  };
+
 }

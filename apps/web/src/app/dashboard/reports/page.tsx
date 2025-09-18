@@ -5,10 +5,12 @@ import ConversionFunnelReport from '@/components/reports/ConversionFunnelReport'
 import CohortRetentionReport from '@/components/reports/CohortRetentionReport';
 import LogsTab from '@/components/reports/LogsTab';
 import HeatMapReport from '@/components/reports/HeatMapReport';
+import GymUtilizationReport from '@/components/reports/GymUtilizationReport';
 import ReportStatCard from '@/components/reports/ReportStatCard';
 import OperationsChart from '@/components/reports/OperationsChart';
 import AcquisitionChart from '@/components/reports/AcquisitionChart';
 import TimePeriodToggle from '@/components/reports/TimePeriodToggle';
+import BookingTimesChart from '@/components/reports/BookingTimesChart';
 import { reportsService } from '../../services/reports';
 import './reports.css';
 
@@ -110,9 +112,20 @@ export default function ReportsPage() {
             </div>
             <div className="management-card full-width-card">
               <div className="card-title">
-                <h2>Utilization by Hour</h2>
+                <h2>Popular Booking Times</h2>
+                <p className="card-subtitle">Most popular class booking times based on all-time data</p>
               </div>
-              <HeatMapReport />
+              <div className="card-content">
+                <BookingTimesChart />
+              </div>
+            </div>
+        <div className="management-card full-width-card">
+          <div className="card-title">
+            <h2>Gym Utilization Analytics</h2>
+          </div>
+              <div className="card-content">
+                <GymUtilizationReport />
+              </div>
             </div>
           </div>
         )}

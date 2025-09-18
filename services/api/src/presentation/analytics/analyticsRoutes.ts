@@ -20,6 +20,8 @@ export class AnalyticsRoutes {
     // Admin analytics routes
     this.router.get('/logs', this.authMiddleware.isAuthenticated, requireRole('admin'), this.analyticsController.getLogs);
     this.router.get('/summary-stats', this.authMiddleware.isAuthenticated, requireRole('admin'), this.analyticsController.getSummaryStats);
+    this.router.get('/gym-utilization', this.authMiddleware.isAuthenticated, requireRole('admin'), this.analyticsController.getGymUtilization);
+    this.router.get('/booking-times', this.authMiddleware.isAuthenticated, requireRole('admin'), this.analyticsController.getBookingTimesAnalytics);
 
     // Coach analytics routes
     this.router.get('/coach', this.authMiddleware.isAuthenticated, this.analyticsController.getCoachAnalytics);

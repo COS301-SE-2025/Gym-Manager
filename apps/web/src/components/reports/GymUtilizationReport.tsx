@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import HeatmapGrid from './HeatmapGrid';
 import { reportsService } from '../../app/services/reports';
 
-interface HeatmapData {
+interface UtilizationData {
   x_labels: string[];
   y_labels: string[];
   values: number[][];
@@ -34,49 +34,84 @@ function WeekFilter({ selectedWeek, onWeekChange }: WeekFilterProps) {
       
       options.push({
         value: weekStart.toISOString().slice(0, 10),
-        label: `${weekLabel} (${dateRange})`,
+        label: weekLabel,
+        dateRange: dateRange,
       });
     }
     
     return options;
   };
 
+  const weekOptions = getWeekOptions();
+
   return (
-    <div style={{ marginBottom: '1rem' }}>
-      <label style={{ 
-        display: 'block', 
-        marginBottom: '0.5rem', 
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      gap: '1rem', 
+      marginBottom: '1.5rem'
+    }}>
+      <div style={{ 
         color: '#fff', 
         fontSize: '0.9rem',
         fontWeight: '500'
       }}>
-        Week:
-      </label>
-      <select
-        value={selectedWeek}
-        onChange={(e) => onWeekChange(e.target.value)}
-        style={{
-          padding: '0.5rem',
-          borderRadius: '4px',
-          border: '1px solid #374151',
-          backgroundColor: '#1f2937',
-          color: '#fff',
-          fontSize: '0.9rem',
-          minWidth: '200px'
-        }}
-      >
-        {getWeekOptions().map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
+        Select Week:
+      </div>
+      
+      <div style={{ 
+        display: 'flex', 
+        gap: '0.5rem', 
+        flexWrap: 'wrap'
+      }}>
+        {weekOptions.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => onWeekChange(option.value)}
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: '6px',
+              border: selectedWeek === option.value ? '2px solid #d8ff3e' : '1px solid #434343',
+              backgroundColor: selectedWeek === option.value ? '#d8ff3e20' : '#2a2a2a',
+              color: selectedWeek === option.value ? '#d8ff3e' : '#fff',
+              fontSize: '0.9rem',
+              fontWeight: selectedWeek === option.value ? '600' : '400',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              minWidth: '120px',
+              textAlign: 'center'
+            }}
+            onMouseEnter={(e) => {
+              if (selectedWeek !== option.value) {
+                e.currentTarget.style.backgroundColor = '#3a3a3a';
+                e.currentTarget.style.borderColor = '#666';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (selectedWeek !== option.value) {
+                e.currentTarget.style.backgroundColor = '#2a2a2a';
+                e.currentTarget.style.borderColor = '#434343';
+              }
+            }}
+          >
+            <div style={{ fontWeight: '500' }}>{option.label}</div>
+            <div style={{ 
+              fontSize: '0.75rem', 
+              opacity: 0.8,
+              marginTop: '0.25rem'
+            }}>
+              {option.dateRange}
+            </div>
+          </button>
         ))}
-      </select>
+      </div>
+      
     </div>
   );
 }
 
-export default function HeatMapReport() {
-  const [data, setData] = useState<HeatmapData | null>(null);
+export default function GymUtilizationReport() {
+  const [data, setData] = useState<UtilizationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState<string>('');
 
@@ -126,7 +161,7 @@ export default function HeatMapReport() {
         color: '#fff',
         fontSize: '1.1rem'
       }}>
-        Loading heatmap...
+        Loading gym utilization data...
       </div>
     );
   }
@@ -141,19 +176,23 @@ export default function HeatMapReport() {
         color: '#ef4444',
         fontSize: '1.1rem'
       }}>
-        Failed to load heatmap data
+        Failed to load gym utilization data
       </div>
     );
   }
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: '100%' }}>
       <WeekFilter selectedWeek={selectedWeek} onWeekChange={handleWeekChange} />
-      <HeatmapGrid 
-        data={data} 
-        title="Gym Utilization by Day and Time"
-        colorScale={{ min: 0, max: 100, color: '#d8ff3e' }}
-      />
+      
+      {/* Heat Map Section */}
+      <div style={{ marginBottom: '2rem' }}>
+        <HeatmapGrid 
+          data={data} 
+          title="Class Booking Utilization Heatmap - Percentage of Capacity Booked"
+          colorScale={{ min: 0, max: 100, color: '#d8ff3e' }}
+        />
+      </div>
     </div>
   );
 }

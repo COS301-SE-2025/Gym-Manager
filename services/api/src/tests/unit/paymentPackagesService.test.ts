@@ -343,4 +343,179 @@ describe('PaymentPackagesService', () => {
       ]);
     });
   });
+
+  describe('getFinancialAnalytics', () => {
+    it('should return financial analytics with current and previous month data', async () => {
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth() + 1;
+      const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+      const previousYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+
+      // Mock current month revenue
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue([{ totalRevenue: 10000 }]),
+        }),
+      });
+
+      // Mock previous month revenue
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue([{ totalRevenue: 8000 }]),
+        }),
+      });
+
+      // Mock member count
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue([{ count: 50 }]),
+        }),
+      });
+
+      // Mock LTV data
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockResolvedValue([{ averageLTV: 20000, medianLTV: 18000 }]),
+      });
+
+      // Mock revenue trends
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          orderBy: jest.fn().mockReturnValue({
+            limit: jest.fn().mockResolvedValue([
+              { year: 2024, month: 1, totalRevenueCents: 8000 },
+              { year: 2024, month: 2, totalRevenueCents: 10000 },
+            ]),
+          }),
+        }),
+      });
+
+      const result = await service.getFinancialAnalytics();
+
+      expect(result).toEqual({
+        monthlyRecurringRevenue: {
+          current: 10000,
+          previous: 8000,
+          growth: 25,
+        },
+        averageRevenuePerUser: {
+          current: 200,
+          previous: 160,
+          growth: 25,
+        },
+        lifetimeValue: {
+          average: 20000,
+          median: 18000,
+        },
+        revenueTrends: [
+          {
+            year: 2024,
+            month: 1,
+            revenue: 8000,
+            growth: 0,
+          },
+          {
+            year: 2024,
+            month: 2,
+            revenue: 10000,
+            growth: 25,
+          },
+        ],
+      });
+    });
+
+    it('should handle zero previous revenue for growth calculation', async () => {
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth() + 1;
+
+      // Mock current month revenue
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue([{ totalRevenue: 10000 }]),
+        }),
+      });
+
+      // Mock previous month revenue (zero)
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue([{ totalRevenue: 0 }]),
+        }),
+      });
+
+      // Mock member count
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue([{ count: 50 }]),
+        }),
+      });
+
+      // Mock LTV data
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockResolvedValue([{ averageLTV: 20000, medianLTV: 18000 }]),
+      });
+
+      // Mock revenue trends
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          orderBy: jest.fn().mockReturnValue({
+            limit: jest.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+
+      const result = await service.getFinancialAnalytics();
+
+      expect(result.monthlyRecurringRevenue.growth).toBe(0);
+      expect(result.averageRevenuePerUser.growth).toBe(0);
+    });
+
+    it('should handle null revenue data', async () => {
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth() + 1;
+
+      // Mock null revenue data
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue([{ totalRevenue: null }]),
+        }),
+      });
+
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue([{ totalRevenue: null }]),
+        }),
+      });
+
+      // Mock member count
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockResolvedValue([{ count: 0 }]),
+        }),
+      });
+
+      // Mock LTV data
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockResolvedValue([{ averageLTV: null, medianLTV: null }]),
+      });
+
+      // Mock revenue trends
+      mockDb.select.mockReturnValueOnce({
+        from: jest.fn().mockReturnValue({
+          orderBy: jest.fn().mockReturnValue({
+            limit: jest.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+
+      const result = await service.getFinancialAnalytics();
+
+      expect(result.monthlyRecurringRevenue.current).toBe(0);
+      expect(result.monthlyRecurringRevenue.previous).toBe(0);
+      expect(result.averageRevenuePerUser.current).toBe(0);
+      expect(result.lifetimeValue.average).toBe(0);
+      expect(result.lifetimeValue.median).toBe(0);
+    });
+  });
 });

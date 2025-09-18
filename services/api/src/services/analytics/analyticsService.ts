@@ -30,6 +30,24 @@ export interface MemberAnalytics {
   }>;
 }
 
+export interface GymUtilizationData {
+  x_labels: string[]; // Time slots (e.g., ['6am', '7am', '8am', ...])
+  y_labels: string[]; // Days of week (e.g., ['Mon', 'Tue', 'Wed', ...])
+  values: number[][]; // Utilization percentages for each day/time combination
+  averageUtilizationByHour: Array<{
+    hour: string;
+    averageUtilization: number;
+  }>;
+}
+
+export interface BookingTimesData {
+  hour: string;
+  averageBookings: number;
+  totalBookings: number;
+  popularityRank: number;
+}
+
+
 export class AnalyticsService {
   private analyticsRepository: IAnalyticsRepository;
 
@@ -644,5 +662,160 @@ export class AnalyticsService {
     };
 
     return result;
+  }
+
+  async getGymUtilization(weekStartDate?: string): Promise<GymUtilizationData> {
+    // Default to current week if no date provided
+    const startDate = weekStartDate ? new Date(weekStartDate) : this.getWeekStart(new Date());
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6); // End of week
+
+    // Get all classes in the specified week with their bookings
+    const classesWithBookings = await db
+      .select({
+        classId: classes.classId,
+        scheduledDate: classes.scheduledDate,
+        scheduledTime: classes.scheduledTime,
+        capacity: classes.capacity,
+        bookingCount: count(classbookings.bookingId),
+      })
+      .from(classes)
+      .leftJoin(classbookings, eq(classes.classId, classbookings.classId))
+      .where(
+        and(
+          gte(classes.scheduledDate, startDate.toISOString().slice(0, 10)),
+          lte(classes.scheduledDate, endDate.toISOString().slice(0, 10))
+        )
+      )
+      .groupBy(classes.classId, classes.scheduledDate, classes.scheduledTime, classes.capacity);
+
+    // Create time slots for all business hours (6am to 10pm)
+    const timeSlots = [
+      '6am', '7am', '8am', '9am', '10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', 
+      '5pm', '6pm', '7pm', '8pm', '9pm', '10pm'
+    ];
+
+    // Days of week
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    // Initialize utilization matrix
+    const utilizationMatrix: number[][] = [];
+    for (let day = 0; day < 7; day++) {
+      utilizationMatrix[day] = new Array(timeSlots.length).fill(0);
+    }
+
+    // Process each class and calculate utilization
+    for (const classData of classesWithBookings) {
+      const classDate = new Date(classData.scheduledDate);
+      const dayOfWeek = classDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      
+      // Parse time (format: "HH:MM:SS")
+      const timeParts = classData.scheduledTime.split(':');
+      const hour = parseInt(timeParts[0]);
+      
+      // Find the appropriate time slot index based on all business hours
+      let timeSlotIndex = -1;
+      if (hour >= 6 && hour <= 22) { // 6am to 10pm (22:00)
+        timeSlotIndex = hour - 6; // Direct mapping: 6am = 0, 7am = 1, etc.
+      }
+      
+      if (timeSlotIndex >= 0 && timeSlotIndex < timeSlots.length) {
+        const utilization = classData.capacity > 0 ? (classData.bookingCount / classData.capacity) * 100 : 0;
+        utilizationMatrix[dayOfWeek][timeSlotIndex] = Math.round(utilization * 100) / 100;
+      }
+    }
+
+    // Calculate average utilization by hour across all days
+    const averageUtilizationByHour = timeSlots.map((hour, index) => {
+      const dayUtilizations = utilizationMatrix.map(day => day[index]).filter(val => val > 0);
+      const average = dayUtilizations.length > 0 
+        ? dayUtilizations.reduce((sum, val) => sum + val, 0) / dayUtilizations.length 
+        : 0;
+      
+      return {
+        hour,
+        averageUtilization: Math.round(average * 100) / 100,
+      };
+    });
+
+    return {
+      x_labels: timeSlots,
+      y_labels: daysOfWeek,
+      values: utilizationMatrix,
+      averageUtilizationByHour,
+    };
+  }
+
+  async getBookingTimesAnalytics(): Promise<BookingTimesData[]> {
+    // Get all time slots from 6am to 10pm (17 hours)
+    const timeSlots = [
+      '6am', '7am', '8am', '9am', '10am', '11am', '12pm', 
+      '1pm', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm', '8pm', '9pm', '10pm'
+    ];
+
+    // Get all bookings with their class times
+    const bookingsData = await db
+      .select({
+        scheduledTime: classes.scheduledTime,
+        scheduledDate: classes.scheduledDate,
+        bookingId: classbookings.bookingId,
+      })
+      .from(classbookings)
+      .innerJoin(classes, eq(classbookings.classId, classes.classId));
+
+    // Group bookings by hour
+    const bookingsByHour = new Map<string, number>();
+    const totalBookings = bookingsData.length;
+
+    bookingsData.forEach(booking => {
+      const time = booking.scheduledTime;
+      if (time) {
+        // Convert time to hour format (e.g., "09:00:00" -> "9am")
+        const hour = this.formatTimeToHour(time);
+        if (hour) {
+          bookingsByHour.set(hour, (bookingsByHour.get(hour) || 0) + 1);
+        }
+      }
+    });
+
+    // Calculate analytics for each time slot
+    const analytics = timeSlots.map((hour, index) => {
+      const totalBookingsForHour = bookingsByHour.get(hour) || 0;
+      const averageBookings = totalBookings > 0 ? totalBookingsForHour / totalBookings : 0;
+      
+      return {
+        hour,
+        averageBookings: Math.round(averageBookings * 100) / 100, // Round to 2 decimal places
+        totalBookings: totalBookingsForHour,
+        popularityRank: index + 1, // Will be sorted by total bookings later
+      };
+    });
+
+    // Sort by total bookings (descending) and update popularity rank
+    const sortedAnalytics = analytics.sort((a, b) => b.totalBookings - a.totalBookings);
+    return sortedAnalytics.map((item, index) => ({
+      ...item,
+      popularityRank: index + 1,
+    }));
+  }
+
+  private formatTimeToHour(time: string): string | null {
+    try {
+      const [hours, minutes] = time.split(':').map(Number);
+      const hour = hours % 12 || 12;
+      const ampm = hours < 12 ? 'am' : 'pm';
+      return `${hour}${ampm}`;
+    } catch {
+      return null;
+    }
+  }
+
+  private getWeekStart(date: Date): Date {
+    const day = date.getDay();
+    const diff = date.getDate() - day; // Adjust to start of week (Sunday)
+    const weekStart = new Date(date);
+    weekStart.setDate(diff);
+    weekStart.setHours(0, 0, 0, 0);
+    return weekStart;
   }
 }

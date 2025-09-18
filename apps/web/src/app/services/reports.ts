@@ -83,6 +83,46 @@ const getMockAcquisition = (period: string) => {
   };
 };
 
+const getMockFinanceSummary = (period?: string) => {
+  // period can influence values; keep simple for now
+  return {
+    revenue: 'R 125,430',
+    mrr: 'R 32,800',
+    arpu: 'R 420',
+    refunds: 'R 1,240',
+  };
+};
+
+const getMockRevenueTrend = (period?: string) => {
+  const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
+  return {
+    labels,
+    datasets: [
+      { label: 'Revenue', data: [18000, 19500, 21000, 20500, 22000, 24000, 24500], borderColor: '#d8ff3e' },
+      { label: 'Refunds', data: [600, 450, 500, 520, 480, 700, 620], borderColor: '#ef4444' },
+    ],
+  };
+};
+
+const getMockRevenueBreakdown = (period?: string) => {
+  const labels = ['Memberships', 'Personal Training', 'Classes', 'Merchandise'];
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Revenue Share',
+        data: [60, 20, 15, 5],
+        backgroundColor: [
+          'rgba(216, 255, 62, 0.7)',
+          'rgba(75, 192, 192, 0.7)',
+          'rgba(255, 159, 64, 0.7)',
+          'rgba(153, 102, 255, 0.7)',
+        ],
+      },
+    ],
+  };
+};
+
 export const reportsService = {
   // getBookings: async () => (await api.get('/reports/bookings')).data,
 
@@ -118,5 +158,20 @@ export const reportsService = {
 
   getAcquisitionData: (period: string) => {
     return getMockAcquisition(period);
+  },
+
+  // Finance
+  getFinancialAnalytics: async (): Promise<{
+    monthlyRecurringRevenue: { current: number; previous: number; growth: number };
+    averageRevenuePerUser: { current: number; previous: number; growth: number };
+    lifetimeValue: { average: number; median: number };
+    revenueTrends: Array<{ year: number; month: number; revenue: number; growth: number }>;
+  }> => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/payments/analytics`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    console.log('Financial analytics response:', response.data);
+    return response.data;
   },
 };

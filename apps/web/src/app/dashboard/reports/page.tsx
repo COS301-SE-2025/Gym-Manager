@@ -9,6 +9,7 @@ import ReportStatCard from '@/components/reports/ReportStatCard';
 import OperationsChart from '@/components/reports/OperationsChart';
 import AcquisitionChart from '@/components/reports/AcquisitionChart';
 import TimePeriodToggle from '@/components/reports/TimePeriodToggle';
+import FinanceTab from '@/components/reports/FinanceTab';
 import { reportsService } from '../../services/reports';
 import './reports.css';
 
@@ -116,6 +117,10 @@ export default function ReportsPage() {
               <HeatMapReport />
             </div>
           </div>
+        )}
+
+        {activeTab === 'finance' && (
+          <FinanceTab />
         )}
 
         {activeTab === 'retention' && (

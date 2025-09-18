@@ -17,7 +17,10 @@ export default function LandingPage() {
             <a href="#membership">Pricing</a>
             <a href="#trainers">Features</a>
             <a href="#about">About</a>
-            <a className="nav-cta" href="/login">
+            <a className="nav-cta" href="/signup">
+              Get Started
+            </a>
+            <a href="/login">
               Login
             </a>
           </nav>
@@ -28,7 +31,9 @@ export default function LandingPage() {
         <div className="container hero-inner">
           <div className="hero-text">
             <h1>HIIT gym management software</h1>
-            <button className="btn-primary">Request demo</button>
+            <Link href="/signup">
+              <button className="btn-primary">Get Started Free</button>
+            </Link>
           </div>
           <div className="hero-media">
             <Image

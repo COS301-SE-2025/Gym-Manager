@@ -31,7 +31,7 @@ export function useMyProgress(classId?: number, refreshSignal: number = 0) {
     const fetchOnce = async () => {
       try {
         const r = await apiClient.get(`/live/${classId}/me`);
-        if (!stop) setProg(prev => ({ ...prev, ...r.data })); // 👈 merge, don't replace
+        if (!stop) setProg(prev => ({ ...prev, ...r.data }));
       } catch (err: any) {
         console.error('Failed to fetch progress:', err);
       }
@@ -53,7 +53,7 @@ export function useMyProgress(classId?: number, refreshSignal: number = 0) {
           if (payload?.new) {
             const n = payload.new as any;
             setProg(prev => ({
-              ...prev, // 👈 preserve elapsed_seconds (and any future fields)
+              ...prev,
               current_step: Number(n.current_step ?? 0),
               finished_at: n.finished_at ?? null,
               finished_at_s: n.finished_at ? Math.floor(new Date(n.finished_at).getTime() / 1000) : null,

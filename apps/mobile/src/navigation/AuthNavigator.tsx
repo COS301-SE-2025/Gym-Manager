@@ -10,7 +10,9 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 
 import ForTimeLive from '../screens/classes/ForTimeLiveScreen';
+import IntervalLive from '../screens/classes/IntervalLiveScreen';
 import AmrapLive from '../screens/classes/AmrapLiveScreen';
+import EmomLive from '../screens/classes/EmomLiveScreen';
 import Overview from '../screens/classes/OverviewScreen';
 import LiveClassEnd from '../screens/classes/LiveClassEndScreen';
 
@@ -25,6 +27,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import FAQScreen from '../screens/home/FAQScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import PaymentScreen from '../screens/profile/PaymentScreen';
+import MemberAnalyticsScreen from '../screens/profile/MemberAnalyticsScreen';
 
 export type AuthStackParamList = {
   MemberTabs: undefined;
@@ -34,6 +38,7 @@ export type AuthStackParamList = {
   ForTimeLive: { classId: number };
   LiveClassEnd: { classId: number };
   AmrapLive: { classId: number };
+  IntervalLive: { classId: number };
 
   // Legacy
   LiveClass?: any;
@@ -49,6 +54,8 @@ export type AuthStackParamList = {
   Onboarding: undefined;
   ResolveAuth: undefined;
   FAQ: undefined;
+  Payment: undefined;
+  MemberAnalytics: undefined;
 };
 
 
@@ -122,7 +129,9 @@ export default function AuthNavigator() {
 
       <Stack.Screen name="Overview" component={Overview} />
       <Stack.Screen name="ForTimeLive" component={ForTimeLive} />
+      <Stack.Screen name="EmomLive" component={EmomLive} />
       <Stack.Screen name="AmrapLive" component={AmrapLive} />
+      <Stack.Screen name="IntervalLive" component={IntervalLive} />
       <Stack.Screen name="LiveClassEnd" component={LiveClassEnd} />
       <Stack.Screen name="CoachLive" component={CoachLive} />
 
@@ -132,6 +141,8 @@ export default function AuthNavigator() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="FAQ" component={FAQScreen} />
+      <Stack.Screen name="Payment" component={PaymentScreen} />
+      <Stack.Screen name="MemberAnalytics" component={MemberAnalyticsScreen} />
     </Stack.Navigator>
   );
 }

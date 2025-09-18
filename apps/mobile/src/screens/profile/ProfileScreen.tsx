@@ -17,10 +17,11 @@ import IconLogo from '../../components/common/IconLogo';
 import { getUser, User, removeToken, removeUser } from '../../utils/authStorage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
+import { CoachStackParamList } from '../../navigation/CoachNavigator';
 import { getUserSettings, updateUserVisibility } from '../../services/userSettings';
 import { supabase } from '../../lib/supabase';
 
-type ProfileScreenNavigationProp = StackNavigationProp<AuthStackParamList>;
+type ProfileScreenNavigationProp = StackNavigationProp<AuthStackParamList & CoachStackParamList>;
 
 interface ProfileScreenProps {
   navigation: ProfileScreenNavigationProp;
@@ -34,7 +35,8 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
   const isCoach = !!currentUser?.roles?.includes('coach');
   const isMember = !!currentUser?.roles?.includes('member');
-  const showLeaderboardSettings = isMember; 
+  const showLeaderboardSettings = isMember;
+
 
   useEffect(() => {
     const load = async () => {
@@ -241,6 +243,47 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               </View>
             </View>
           )}
+
+          {/* Purchase Credits - Only show for members */}
+          {isMember && (
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => navigation.navigate('Payment')}
+            >
+              <View style={styles.settingLeft}>
+                <Ionicons name="card-outline" size={24} color="#D8FF3E" />
+                <View style={styles.settingText}>
+                  <Text style={styles.settingTitle}>Purchase Credits</Text>
+                  <Text style={styles.settingDescription}>Buy credits to book classes</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#888" />
+            </TouchableOpacity>
+          )}
+
+          {/* Analytics - Show for both members and coaches */}
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => {
+              if (isMember) {
+                navigation.navigate('MemberAnalytics');
+              } else if (isCoach) {
+                navigation.navigate('CoachAnalytics');
+              }
+            }}
+          >
+            <View style={styles.settingLeft}>
+              <Ionicons name="analytics-outline" size={24} color="#D8FF3E" />
+              <View style={styles.settingText}>
+                <Text style={styles.settingTitle}>Analytics</Text>
+                <Text style={styles.settingDescription}>
+                  {isMember ? 'View your performance data' : isCoach ? 'View your coaching analytics' : 'View analytics'}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#888" />
+          </TouchableOpacity>
+
 
           {/* Role Swap - Only show if user has multiple roles */}
           {currentUser?.roles && currentUser.roles.length > 1 && (

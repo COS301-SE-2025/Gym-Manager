@@ -60,18 +60,18 @@ export default function ForTimeLiveScreen() {
   }, [ready, progress.current_step, steps.length]);
 
   // pause-aware elapsed seconds
-  const nowSec       = useNowSec();
+  const nowSec = useNowSec();
   const startedAtSec = Number((session as any)?.started_at_s ?? 0);
-  const pausedAtSec  = Number((session as any)?.paused_at_s ?? 0);
-  const pauseAccum   = Number((session as any)?.pause_accum_seconds ?? 0);
-  const extraPaused  = session?.status === 'paused' && pausedAtSec ? Math.max(0, nowSec - pausedAtSec) : 0;
-  const elapsed      = startedAtSec ? Math.max(0, (nowSec - startedAtSec) - (pauseAccum + extraPaused)) : 0;
+  const pausedAtSec = Number((session as any)?.paused_at_s ?? 0);
+  const pauseAccum = Number((session as any)?.pause_accum_seconds ?? 0);
+  const extraPaused = session?.status === 'paused' && pausedAtSec ? Math.max(0, nowSec - pausedAtSec) : 0;
+  const elapsed = startedAtSec ? Math.max(0, (nowSec - startedAtSec) - (pauseAccum + extraPaused)) : 0;
 
-  const cap    = session?.time_cap_seconds ?? 0;
+  const cap = session?.time_cap_seconds ?? 0;
   const timeUp = cap > 0 && elapsed >= cap;
 
-  const current  = ready ? steps[localIdx] : undefined;
-  const next     = ready ? steps[localIdx + 1] : undefined;
+  const current = ready ? steps[localIdx] : undefined;
+  const next = ready ? steps[localIdx + 1] : undefined;
   const finished =
     !!(progress as any)?.finished_at_s ||
     !!progress.finished_at ||

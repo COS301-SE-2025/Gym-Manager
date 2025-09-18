@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
-import axios from 'axios';
-import config from '../../config';
-import { getToken } from '../../utils/authStorage';
+import apiClient from '../../utils/apiClient';
 import CoachHistorySheet from '../../components/CoachHistorySheet';
 
 type ApiClassWithWorkout = {
@@ -34,13 +32,10 @@ export default function WorkoutHistoryScreen() {
       setLoading(true);
       setError(null);
       try {
-        const token = await getToken();
-        if (!token) throw new Error('Missing token');
-        const res = await axios.get<ApiClassWithWorkout[]>(
-          `${config.BASE_URL}/coach/classes-with-workouts`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        const res = await apiClient.get<ApiClassWithWorkout[]>(
+          '/coach/classes-with-workouts'
         );
-  
+
         // only include classes that actually have a workout assigned
         const items = res.data.filter(c => c.workoutId != null);
         // newest first
@@ -49,7 +44,7 @@ export default function WorkoutHistoryScreen() {
           const db = new Date(`${b.scheduledDate}T${b.scheduledTime}`).getTime();
           return db - da;
         });
-  
+
         setClasses(items);
       } catch (e: any) {
         setError('Failed to load workout history.');

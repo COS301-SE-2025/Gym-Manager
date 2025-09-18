@@ -55,6 +55,7 @@ export class App {
   }
 
   private setupRoutes(): void {
+    
     // Get routes from dependency container
     const authRoutes = this.container.getAuthRoutes();
     const classRoutes = this.container.getClassRoutes();
@@ -62,25 +63,24 @@ export class App {
     const liveClassRoutes = this.container.getLiveClassRoutes();
     const userSettingsRoutes = this.container.getUserSettingsRoutes();
     const healthRoutes = this.container.getHealthRoutes();
+    const memberRoutes = this.container.getMemberRoutes();
+    const analyticsRoutes = this.container.getAnalyticsRoutes();
+    const paymentPackagesRoutes = this.container.getPaymentPackagesRoutes();
     
-    // Import analytics routes directly
-    const analyticsRoutes = require('./presentation/analytics/analyticsRoutes').default;
+    const dailyLeaderboardRoutes = this.container.getDailyLeaderboardRoutes();
+    
     
     // Mount routes
-    // this.app.use('/auth', authRoutes.getRouter());
-    // this.app.use('/classes', classRoutes.getRouter());
-    // this.app.use('/admin', adminRoutes.getRouter());
-    // this.app.use('/live', liveClassRoutes.getRouter());
-    // this.app.use('/settings', userSettingsRoutes.getRouter());
-    // this.app.use('/', healthRoutes.getRouter());
-
-    this.app.use( authRoutes.getRouter());
+    this.app.use(authRoutes.getRouter());
     this.app.use(classRoutes.getRouter());
-    this.app.use( adminRoutes.getRouter());
+    this.app.use(adminRoutes.getRouter());
     this.app.use(liveClassRoutes.getRouter());
-    this.app.use( userSettingsRoutes.getRouter());
-    this.app.use( healthRoutes.getRouter());
-    this.app.use('/analytics', analyticsRoutes);
+    this.app.use(userSettingsRoutes.getRouter());
+    this.app.use(healthRoutes.getRouter());
+    this.app.use(dailyLeaderboardRoutes.getRouter());
+    this.app.use('/members', memberRoutes.getRouter());
+    this.app.use('/analytics', analyticsRoutes.getRouter());
+    this.app.use('/payments', paymentPackagesRoutes.getRouter());
     
     // Health check
     this.app.get('/health', (req, res) => {
@@ -119,7 +119,9 @@ export class App {
       console.log('- /admin/* - Admin management endpoints');
       console.log('- /live/* - Live class endpoints');
       console.log('- /settings/* - User settings endpoints');
-      console.log('- /analytics/* - Analytics endpoints (logs, summary-stats)');
+      console.log('- /members/* - Member management endpoints');
+      console.log('- /analytics/* - Analytics endpoints (coach, member, logs, summary-stats)');
+      console.log('- /payments/* - Payment packages and financial analytics endpoints');
       console.log('- /health - Health check endpoint');
     });
   }

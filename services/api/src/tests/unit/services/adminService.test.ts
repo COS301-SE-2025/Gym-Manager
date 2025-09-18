@@ -1,4 +1,4 @@
-import { AdminService } from '../../services/admin/adminService';
+import { AdminService } from '../../../services/admin/adminService';
 
 describe('AdminService', () => {
   it('assignCoachToClass validates inputs and calls repository', async () => {

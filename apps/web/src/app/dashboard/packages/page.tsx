@@ -258,7 +258,7 @@ export default function PackagesPage() {
                 >
                   <EditIcon size={16} />
                 </button>
-                                <button
+                <button
                   className="action-btn delete-btn"
                   onClick={() => openDeleteModal(pkg)}
                   title={pkg.transactionCount && pkg.transactionCount > 0 ? "Cannot delete - has transactions" : "Delete"}

@@ -298,4 +298,86 @@ export class LiveClassController {
       return res.status(code).json({ error: msg || 'EMOM_COACH_MARK_FAILED' });
     }
   };
+
+  ftSetFinish = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      const userId  = Number(req.body?.userId);
+      const finishSeconds = Math.max(0, Number(req.body?.finishSeconds || 0));
+      await this.service.coachForTimeSetFinishSecondsEndedOnly(classId, userId, finishSeconds);
+      return res.json({ ok: true });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = msg === 'SESSION_NOT_FOUND' ? 404 : msg === 'NOT_ENDED' ? 409 : msg === 'NOT_BOOKED' ? 403 : 500;
+      return res.status(code).json({ error: msg || 'FT_SET_FINISH_FAILED' });
+    }
+  };
+
+  ftSetReps = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      const userId  = Number(req.body?.userId);
+      const totalReps = Math.max(0, Number(req.body?.totalReps || 0));
+      await this.service.coachForTimeSetTotalRepsEndedOnly(classId, userId, totalReps);
+      return res.json({ ok: true });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = msg === 'SESSION_NOT_FOUND' ? 404 : msg === 'NOT_ENDED' ? 409 : msg === 'NOT_BOOKED' ? 403 : 500;
+      return res.status(code).json({ error: msg || 'FT_SET_REPS_FAILED' });
+    }
+  };
+
+  amrapSetTotal = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      const userId  = Number(req.body?.userId);
+      const totalReps = Math.max(0, Number(req.body?.totalReps || 0));
+      await this.service.coachAmrapSetTotalEndedOnly(classId, userId, totalReps);
+      return res.json({ ok: true });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = msg === 'SESSION_NOT_FOUND' ? 404 : msg === 'NOT_ENDED' ? 409 : msg === 'NOT_BOOKED' ? 403 : 500;
+      return res.status(code).json({ error: msg || 'AMRAP_SET_TOTAL_FAILED' });
+    }
+  };
+
+  intervalSetTotal = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      const userId  = Number(req.body?.userId);
+      const totalReps = Math.max(0, Number(req.body?.totalReps || 0));
+      await this.service.coachIntervalSetTotalEndedOnly(classId, userId, totalReps);
+      return res.json({ ok: true });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = msg === 'SESSION_NOT_FOUND' ? 404 : msg === 'NOT_ENDED' ? 409 : msg === 'NOT_BOOKED' ? 403 : 500;
+      return res.status(code).json({ error: msg || 'INTERVAL_SET_TOTAL_FAILED' });
+    }
+  };
+
+  getMyScaling = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+      const classId = Number(req.params.classId);
+      const scaling = await this.service.getMyScaling(classId, req.user.userId);
+      return res.json({ scaling });
+    } catch {
+      return res.status(500).json({ error: 'SCALING_FETCH_FAILED' });
+    }
+  };
+
+  setMyScaling = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+      const classId = Number(req.params.classId);
+      const scalingRaw = String(req.body?.scaling ?? '').toUpperCase();
+      const scaling = scalingRaw === 'SC' ? 'SC' : 'RX'; // default RX
+      await this.service.setMyScaling(classId, req.user.userId, scaling);
+      return res.json({ ok: true, scaling });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = msg === 'NOT_BOOKED' ? 403 : 500;
+      return res.status(code).json({ error: msg || 'SCALING_SAVE_FAILED' });
+    }
+  };
 }

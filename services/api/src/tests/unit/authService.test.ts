@@ -6,6 +6,8 @@ function makeMockUserRepository(overrides: Partial<any> = {}) {
     findByEmail: jest.fn(),
     createUserWithRoles: jest.fn(),
     getRolesByUserId: jest.fn(),
+    findById: jest.fn(),
+    getMemberStatus: jest.fn(),
     ...overrides,
   } as any;
 }
@@ -13,6 +15,8 @@ function makeMockUserRepository(overrides: Partial<any> = {}) {
 function makeMockJwtService(overrides: Partial<any> = {}) {
   return {
     generateToken: jest.fn(),
+    generateRefreshToken: jest.fn(),
+    verifyRefreshToken: jest.fn(),
     ...overrides,
   } as any;
 }
@@ -25,41 +29,103 @@ function makeMockPasswordService(overrides: Partial<any> = {}) {
   } as any;
 }
 
+function makeMockNotificationService(overrides: Partial<any> = {}) {
+  return {
+    createUserSignupNotification: jest.fn(),
+    ...overrides,
+  } as any;
+}
+
 describe('AuthService', () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
 
   describe('register', () => {
-    it('hashes password and calls repository', async () => {
-      const mockUserRepository = makeMockUserRepository();
-      const mockJwtService = makeMockJwtService();
+    it('should successfully register a new user', async () => {
+      const mockUserRepository = makeMockUserRepository({
+        findByEmail: jest.fn().mockResolvedValue(null),
+        createUserWithRoles: jest.fn().mockResolvedValue({
+          userId: 1,
+          firstName: 'Jane',
+          lastName: 'Doe',
+          email: 'jane@example.com',
+        }),
+        getRolesByUserId: jest.fn().mockResolvedValue(['member']),
+      });
+      const mockJwtService = makeMockJwtService({
+        generateToken: jest.fn().mockReturnValue('jwt-token'),
+        generateRefreshToken: jest.fn().mockReturnValue('refresh-token'),
+      });
       const mockPasswordService = makeMockPasswordService({
         hashPassword: jest.fn().mockResolvedValue('hashedPassword'),
+      });
+      const mockNotificationService = makeMockNotificationService({
+        createUserSignupNotification: jest.fn().mockResolvedValue(undefined),
       });
 
       const service = new AuthService(
         mockUserRepository,
         mockJwtService,
         mockPasswordService,
+        mockNotificationService,
       );
 
-      // await service.register({
-      //   firstName: 'Jane',
-      //   lastName: 'Doe',
-      //   email: 'jane@example.com',
-      //   password: 'password123',
-      //   roles: ['member'],
-      // });
+      const result = await service.register({
+        firstName: 'Jane',
+        lastName: 'Doe',
+        email: 'jane@example.com',
+        password: 'password123',
+        roles: ['member'],
+      });
 
-      //expect(mockPasswordService.hashPassword).toHaveBeenCalledWith('password123');
-      // expect(mockUserRepository.createUserWithRoles).toHaveBeenCalledWith(
-      //   expect.objectContaining({
-      //     email: 'jane@example.com',
-      //     passwordHash: 'hashedPassword',
-      //   }),
-      //   ['member'],
-      // );
+      expect(mockUserRepository.findByEmail).toHaveBeenCalledWith('jane@example.com');
+      expect(mockPasswordService.hashPassword).toHaveBeenCalledWith('password123');
+      expect(mockUserRepository.createUserWithRoles).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: 'jane@example.com',
+          passwordHash: 'hashedPassword',
+        }),
+        ['member'],
+      );
+      expect(mockNotificationService.createUserSignupNotification).toHaveBeenCalled();
+      expect(result).toEqual({
+        token: 'jwt-token',
+        refreshToken: 'refresh-token',
+      });
+    });
+
+    it('should throw error if required fields are missing', async () => {
+      const service = new AuthService();
+
+      await expect(
+        service.register({
+          firstName: '',
+          lastName: 'Doe',
+          email: 'jane@example.com',
+          password: 'password123',
+        } as any)
+      ).rejects.toThrow('Missing required fields');
+    });
+
+    it('should throw error if email already exists', async () => {
+      const mockUserRepository = makeMockUserRepository({
+        findByEmail: jest.fn().mockResolvedValue({
+          userId: 1,
+          email: 'jane@example.com',
+        }),
+      });
+
+      const service = new AuthService(mockUserRepository);
+
+      await expect(
+        service.register({
+          firstName: 'Jane',
+          lastName: 'Doe',
+          email: 'jane@example.com',
+          password: 'password123',
+        })
+      ).rejects.toThrow('Email already registered');
     });
   });
 

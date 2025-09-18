@@ -12,9 +12,27 @@ module.exports = {
     '<rootDir>/src/tests/integration',
   ],
 
-  /* leave coverage exactly as you had it */
+  /* Enhanced coverage configuration */
   collectCoverage: true,
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov'],
-  coveragePathIgnorePatterns: ['/node_modules/', '/src/tests/'],
+  coverageReporters: ['text', 'lcov', 'html', 'json'],
+  coveragePathIgnorePatterns: ['/node_modules/', '/src/tests/', '/src/db/', '/src/infrastructure/'],
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70
+    }
+  },
+  collectCoverageFrom: [
+    'src/services/**/*.ts',
+    'src/controllers/**/*.ts',
+    'src/domain/**/*.ts',
+    'src/repositories/**/*.ts',
+    '!src/**/*.d.ts',
+    '!src/**/*.interface.ts',
+    '!src/**/*.entity.ts'
+  ],
+  setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts']
 };

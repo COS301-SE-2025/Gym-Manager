@@ -1,4 +1,4 @@
-import { ClassService } from '../../services/class/classService';
+import { ClassService } from '../../../services/class/classService';
 
 describe('ClassService', () => {
   it('assignWorkoutToClass checks ownership', async () => {
@@ -25,15 +25,22 @@ describe('ClassService', () => {
       }),
       alreadyBooked: jest.fn().mockResolvedValue(false),
       countBookingsForClass: jest.fn().mockResolvedValue(0),
+      hasOverlappingBooking: jest.fn().mockResolvedValue(false),
       insertBooking: jest.fn().mockResolvedValue(undefined),
     } as any;
 
     // Monkey-patch db.transaction used inside service
-    const clientModule = await import('../../db/client');
+    const clientModule = await import('../../../db/client');
     const originalDb = clientModule.db;
     (clientModule as any).db = { transaction: async (fn: any) => fn({}) };
 
-    const svc = new ClassService(mockRepo as any, {} as any);
+    // Mock member service for credit operations
+    const mockMemberService = {
+      getCreditsBalance: jest.fn().mockResolvedValue(10),
+      deductCredits: jest.fn().mockResolvedValue(9),
+    };
+
+    const svc = new ClassService(mockRepo as any, {} as any, mockMemberService as any);
     await svc.bookClass(7, 1);
     expect(mockRepo.insertBooking).toHaveBeenCalledWith(1, 7, {});
 
@@ -97,11 +104,26 @@ describe('ClassService', () => {
 
   it('cancelBooking validates inputs and calls repository', async () => {
     const mockRepo = {
-      deleteBooking: jest.fn().mockResolvedValue(undefined),
+      alreadyBooked: jest.fn().mockResolvedValue(true),
+      deleteBooking: jest.fn().mockResolvedValue({ rowCount: 1 }),
     } as any;
-    const svc = new ClassService(mockRepo as any, {} as any);
+    
+    // Monkey-patch db.transaction used inside service
+    const clientModule = await import('../../../db/client');
+    const originalDb = clientModule.db;
+    (clientModule as any).db = { transaction: async (fn: any) => fn({}) };
+
+    // Mock member service for credit operations
+    const mockMemberService = {
+      addCredits: jest.fn().mockResolvedValue(11),
+    };
+
+    const svc = new ClassService(mockRepo as any, {} as any, mockMemberService as any);
     await svc.cancelBooking(1, 1);
-    expect(mockRepo.deleteBooking).toHaveBeenCalledWith(1, 1);
+    expect(mockRepo.deleteBooking).toHaveBeenCalledWith(1, 1, {});
+
+    // restore
+    (clientModule as any).db = originalDb;
   });
 
 });

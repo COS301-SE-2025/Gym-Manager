@@ -14,6 +14,7 @@ import './reports.css';
 
 const TABS = [
   { key: 'operations', label: 'Operations' },
+  {key: 'finance', label: 'Finance' },
   { key: 'retention', label: 'Retention & Acquisition' },
   { key: 'logs', label: 'Logs' },
 ];

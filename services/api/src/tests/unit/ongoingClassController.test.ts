@@ -21,6 +21,7 @@ jest.mock('../../db/client', () => {
     db: {
       select : jest.fn(),
       insert : (...args: any[]) => insertMock(...args),
+      execute : jest.fn(),
     },
   };
 });
@@ -207,4 +208,248 @@ describe('submitScore', () => {
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
   });
+});
+
+describe('getWorkoutSteps', () => {
+  it('should return workout steps successfully', async () => {
+    const mockSteps = [{ exerciseName: 'Pushups', reps: 10 }];
+    const mockStepsCumReps = [10];
+    const mockWorkoutType = 'AMRAP';
+    
+    (db.execute as jest.Mock).mockResolvedValue({
+      rows: [{ type: mockWorkoutType }]
+    });
+
+    const req = mockReq(1, ['member'], { params: { workoutId: '1' } });
+    const res = mockRes();
+    
+    await ctrl.getWorkoutSteps(req, res);
+    
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      workoutType: mockWorkoutType
+    }));
+  });
+
+  it('should return 400 for invalid workout ID', async () => {
+    const req = mockReq(1, ['member'], { params: { workoutId: 'invalid' } });
+    const res = mockRes();
+    
+    await ctrl.getWorkoutSteps(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'INVALID_WORKOUT_ID' });
+  });
+});
+
+describe('startLiveClass', () => {
+  it('should return 401 when user is not authenticated', async () => {
+    const req = mockReq();
+    const res = mockRes();
+    
+    await ctrl.startLiveClass(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
+  });
+
+  it('should handle class not found error', async () => {
+    (db.execute as jest.Mock).mockResolvedValue({ rows: [] });
+    
+    const req = mockReq(1, ['coach'], { params: { classId: '1' } });
+    const res = mockRes();
+    
+    await ctrl.startLiveClass(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: 'CLASS_NOT_FOUND' });
+  });
+});
+
+describe('stopLiveClass', () => {
+  it('should stop live class successfully', async () => {
+    (db.execute as jest.Mock).mockResolvedValue({ rows: [] });
+    
+    const req = mockReq(1, ['coach'], { params: { classId: '1' } });
+    const res = mockRes();
+    
+    await ctrl.stopLiveClass(req, res);
+    
+    expect(res.json).toHaveBeenCalledWith({ ok: true, classId: 1 });
+  });
+
+  it('should return 401 when user is not authenticated', async () => {
+    const req = mockReq();
+    const res = mockRes();
+    
+    await ctrl.stopLiveClass(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
+  });
+});
+
+describe('advanceProgress', () => {
+  it('should return 401 when user is not authenticated', async () => {
+    const req = mockReq();
+    const res = mockRes();
+    
+    await ctrl.advanceProgress(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
+  });
+
+  it('should handle class session not started error', async () => {
+    (db.execute as jest.Mock).mockResolvedValue({ rows: [] });
+    
+    const req = mockReq(1, ['member'], { 
+      params: { classId: '1' },
+      body: { direction: 'next' }
+    });
+    const res = mockRes();
+    
+    await ctrl.advanceProgress(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'CLASS_SESSION_NOT_STARTED' });
+  });
+});
+
+describe('submitPartial', () => {
+  it('should submit partial score successfully', async () => {
+    // Mock the session check and then the partial submission
+    (db.execute as jest.Mock)
+      .mockResolvedValueOnce({ rows: [{ started_at: new Date() }] }) // Session exists
+      .mockResolvedValueOnce({ rows: [{ reps: 10 }] }); // Return the same reps as input
+    
+    const req = mockReq(1, ['member'], { 
+      params: { classId: '1' },
+      body: { reps: 10 }
+    });
+    const res = mockRes();
+    
+    await ctrl.submitPartial(req, res);
+    
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      ok: true,
+      reps: 10
+    }));
+  });
+
+  it('should return 401 when user is not authenticated', async () => {
+    const req = mockReq();
+    const res = mockRes();
+    
+    await ctrl.submitPartial(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
+  });
+});
+
+describe('getRealtimeLeaderboard', () => {
+  it('should handle workout not found error', async () => {
+    (db.execute as jest.Mock).mockResolvedValue({ rows: [] });
+    
+    const req = mockReq(1, ['member'], { params: { classId: '1' } });
+    const res = mockRes();
+    
+    await ctrl.getRealtimeLeaderboard(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: 'WORKOUT_NOT_FOUND_FOR_CLASS' });
+  });
+
+  it('should handle database errors', async () => {
+    (db.execute as jest.Mock).mockRejectedValue(new Error('Database error'));
+    
+    const req = mockReq(1, ['member'], { params: { classId: '1' } });
+    const res = mockRes();
+    
+    await ctrl.getRealtimeLeaderboard(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'LEADERBOARD_FAILED' });
+  });
+});
+
+describe('getMyProgress', () => {
+  it('should return user progress successfully', async () => {
+    const mockProgress = { currentStep: 3, totalSteps: 5, completed: false };
+    
+    (db.execute as jest.Mock).mockResolvedValue({ rows: [mockProgress] });
+    
+    const req = mockReq(1, ['member'], { params: { classId: '1' } });
+    const res = mockRes();
+    
+    await ctrl.getMyProgress(req, res);
+    
+    expect(res.json).toHaveBeenCalledWith(mockProgress);
+  });
+
+  it('should return 401 when user is not authenticated', async () => {
+    const req = mockReq();
+    const res = mockRes();
+    
+    await ctrl.getMyProgress(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
+  });
+});
+
+describe('postIntervalScore', () => {
+  it('should return 401 when user is not authenticated', async () => {
+    const req = mockReq();
+    const res = mockRes();
+    
+    await ctrl.postIntervalScore(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
+  });
+
+  it('should handle session not found error', async () => {
+    (db.execute as jest.Mock).mockResolvedValue({ rows: [] });
+    
+    const req = mockReq(1, ['member'], { 
+      params: { classId: '1' },
+      body: { stepIndex: 2, reps: 15 }
+    });
+    const res = mockRes();
+    
+    await ctrl.postIntervalScore(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: 'SESSION_NOT_FOUND' });
+  });
+
+  it('should handle invalid step index', async () => {
+    (db.execute as jest.Mock).mockRejectedValue(new Error('INVALID_STEP_INDEX'));
+    
+    const req = mockReq(1, ['member'], { 
+      params: { classId: '1' },
+      body: { stepIndex: -1, reps: 10 }
+    });
+    const res = mockRes();
+    
+    await ctrl.postIntervalScore(req, res);
+    
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'INVALID_STEP_INDEX' });
+  });
+});
+
+describe('getIntervalLeaderboard', () => {
+  it('should return empty leaderboard when no data', async () => {
+    (db.execute as jest.Mock).mockResolvedValue({ rows: [] });
+    
+    const req = mockReq(1, ['member'], { params: { classId: '1' } });
+    const res = mockRes();
+    
+    await ctrl.getIntervalLeaderboard(req, res);
+    
+    expect(res.json).toHaveBeenCalledWith([]);
+  });
+
 });

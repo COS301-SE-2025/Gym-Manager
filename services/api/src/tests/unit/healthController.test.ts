@@ -37,8 +37,8 @@ describe('HealthController', () => {
       const healthyResult = {
         ok: true,
         uptime: 12345,
-        db: 'UP',
-        timestamp: '2024-01-01T00:00:00Z',
+        memory: 1024,
+        db: 'UP' as const,
       };
 
       mockHealthService.checkHealth.mockResolvedValue(healthyResult);
@@ -54,8 +54,8 @@ describe('HealthController', () => {
       const unhealthyResult = {
         ok: false,
         uptime: 12345,
-        db: 'DOWN',
-        timestamp: '2024-01-01T00:00:00Z',
+        memory: 1024,
+        db: 'DOWN' as const,
         error: 'Database connection failed',
       };
 

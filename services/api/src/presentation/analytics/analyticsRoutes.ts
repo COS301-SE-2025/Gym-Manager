@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AnalyticsController } from '../../controllers/analytics/analyticsController';
 import { AnalyticsService } from '../../services/analytics/analyticsService';
-import { AuthMiddleware } from '../../infrastructure/middleware/authMiddleware';
+import { AuthMiddleware, requireRole } from '../../infrastructure/middleware/authMiddleware';
 
 export class AnalyticsRoutes {
   private router: Router;
@@ -17,6 +17,10 @@ export class AnalyticsRoutes {
   }
 
   private setupRoutes(): void {
+    // Admin analytics routes
+    this.router.get('/logs', this.authMiddleware.isAuthenticated, requireRole('admin'), this.analyticsController.getLogs);
+    this.router.get('/summary-stats', this.authMiddleware.isAuthenticated, requireRole('admin'), this.analyticsController.getSummaryStats);
+
     // Coach analytics routes
     this.router.get('/coach', this.authMiddleware.isAuthenticated, this.analyticsController.getCoachAnalytics);
     

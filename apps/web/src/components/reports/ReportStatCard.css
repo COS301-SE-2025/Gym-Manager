@@ -1,0 +1,35 @@
+.report-stat-card {
+  flex: 1;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  padding: 1.25rem;
+  border: 1px solid #434343;
+}
+
+.stat-title {
+  color: #aaa;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  color: #fff;
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.stat-change {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.9rem;
+}
+
+.stat-change.increase {
+  color: #4caf50; /* Green for increase */
+}
+
+.stat-change.decrease {
+  color: #f44336; /* Red for decrease */
+}

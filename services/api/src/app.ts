@@ -55,7 +55,6 @@ export class App {
   }
 
   private setupRoutes(): void {
-
     
     // Get routes from dependency container
     const authRoutes = this.container.getAuthRoutes();
@@ -68,9 +67,8 @@ export class App {
     const analyticsRoutes = this.container.getAnalyticsRoutes();
     const paymentPackagesRoutes = this.container.getPaymentPackagesRoutes();
     
-
     const dailyLeaderboardRoutes = this.container.getDailyLeaderboardRoutes();
-
+    
     
     // Mount routes
     this.app.use(authRoutes.getRouter());
@@ -79,11 +77,7 @@ export class App {
     this.app.use(liveClassRoutes.getRouter());
     this.app.use(userSettingsRoutes.getRouter());
     this.app.use(healthRoutes.getRouter());
-    
-
     this.app.use(dailyLeaderboardRoutes.getRouter());
-
-    
     this.app.use('/members', memberRoutes.getRouter());
     this.app.use('/analytics', analyticsRoutes.getRouter());
     this.app.use('/payments', paymentPackagesRoutes.getRouter());
@@ -126,7 +120,7 @@ export class App {
       console.log('- /live/* - Live class endpoints');
       console.log('- /settings/* - User settings endpoints');
       console.log('- /members/* - Member management endpoints');
-      console.log('- /analytics/* - Analytics endpoints');
+      console.log('- /analytics/* - Analytics endpoints (coach, member, logs, summary-stats)');
       console.log('- /payments/* - Payment packages and financial analytics endpoints');
       console.log('- /health - Health check endpoint');
     });

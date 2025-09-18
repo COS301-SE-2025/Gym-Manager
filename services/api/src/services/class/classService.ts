@@ -13,6 +13,7 @@ import {
 import { ClassRepository } from '../../repositories/class/classRepository';
 import { UserRepository } from '../../repositories/auth/userRepository';
 import { IUserRepository } from '../../domain/interfaces/auth.interface';
+import { AnalyticsService } from '../analytics/analyticsService';
 import { MemberService } from '../member/memberService';
 import { MemberRepository } from '../../repositories/member/memberRepository';
 
@@ -23,12 +24,19 @@ import { MemberRepository } from '../../repositories/member/memberRepository';
 export class ClassService implements IClassService {
   private classRepository: IClassRepository;
   private userRepository: UserRepository;
+  private analyticsService: AnalyticsService;
   private memberService: MemberService;
 
-  constructor(classRepository?: IClassRepository, userRepository?: UserRepository, memberService?: MemberService) {
+  constructor(
+    classRepository?: IClassRepository,
+    userRepository?: UserRepository,
+    memberService?: MemberService,
+    analyticsService?: AnalyticsService,
+  ) {
     this.classRepository = classRepository || new ClassRepository();
     this.userRepository = userRepository || new UserRepository();
     this.memberService = memberService || new MemberService(new MemberRepository());
+    this.analyticsService = analyticsService || new AnalyticsService();
   }
 
   async getCoachAssignedClasses(coachId: number): Promise<Class[]> {
@@ -148,6 +156,18 @@ export class ClassService implements IClassService {
       // Insert booking
       await this.classRepository.insertBooking(classId, memberId, tx);
     });
+
+    // Log booking event
+    await this.analyticsService.addLog({
+      gymId: 1, // Assuming a single gym for now
+      userId: memberId,
+      eventType: 'class_booking',
+      properties: {
+        classId: classId,
+        memberId: memberId,
+      },
+      source: 'api',
+    });
   }
 
   async checkInToClass(classId: number, memberId: number): Promise<ClassAttendance> {
@@ -155,6 +175,19 @@ export class ClassService implements IClassService {
     if (!attendance) {
       throw new Error('Already checked in');
     }
+
+    // Log attendance event
+    await this.analyticsService.addLog({
+      gymId: 1, // Assuming a single gym for now
+      userId: memberId,
+      eventType: 'class_attendance',
+      properties: {
+        classId: classId,
+        memberId: memberId,
+      },
+      source: 'api',
+    });
+
     return attendance;
   }
 
@@ -177,6 +210,15 @@ export class ClassService implements IClassService {
 
       // Refund 1 credit to member's account (within transaction)
       await this.memberService.addCredits(memberId, 1, tx);
+    });
+
+    // Log cancellation event
+    await this.analyticsService.addLog({
+      gymId: 1,
+      userId: memberId,
+      eventType: 'class_cancellation',
+      properties: { classId, memberId },
+      source: 'api',
     });
   }
 

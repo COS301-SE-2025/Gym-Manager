@@ -13,6 +13,28 @@ export class AnalyticsController {
     this.analyticsService = analyticsService || new AnalyticsService();
   }
 
+  // Admin logs
+  getLogs = async (req: Request, res: Response) => {
+    try {
+      const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
+      const logs = await this.analyticsService.getLogs(startDate, endDate);
+      res.status(200).json(logs);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to retrieve logs' });
+    }
+  };
+
+  // Admin summary stats
+  getSummaryStats = async (req: Request, res: Response) => {
+    try {
+      const { period } = req.query as { period?: string };
+      const stats = await this.analyticsService.getSummaryStats(period);
+      res.status(200).json(stats);
+    } catch (error) {
+      res.status(500).json({ message: 'Failed to retrieve summary stats' });
+    }
+  };
+
   /**
    * Get coach analytics - average class attendance and workout popularity
    */

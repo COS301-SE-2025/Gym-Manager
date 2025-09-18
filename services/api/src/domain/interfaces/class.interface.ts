@@ -60,6 +60,7 @@ export interface IAdminService {
   removeRole(userId: number, role: string): Promise<void>;
   getRolesByUserId(userId: number): Promise<string[]>;
   getUserById(userId: number): Promise<any>;
+  updateUserRole(userId: number, newRole: string): Promise<{ ok: boolean; reason?: string }>;
   updateUserById(userId: number, updates: any): Promise<{ ok: boolean; reason?: string }>;
 }
 

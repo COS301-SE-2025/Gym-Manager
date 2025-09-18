@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { AuthController } from '../../controllers/auth/authController';
 import { AuthService } from '../../services/auth/authService';
 import { UserRepository } from '../../repositories/auth/userRepository';
@@ -18,6 +19,11 @@ import { AdminService } from '../../services/admin/adminService';
 import { AdminRepository } from '../../repositories/admin/adminRepository';
 import { AdminRoutes } from '../../presentation/admin/adminRoutes';
 
+// Analytics-related imports
+import { AnalyticsService } from '../../services/analytics/analyticsService';
+import { AnalyticsRepository } from '../../repositories/analytics/analyticsRepository';
+import { IAnalyticsRepository } from '../../domain/interfaces/analytics.interface';
+import { IAnalyticsService } from '../../domain/interfaces/analytics.interface';
 // Live class-related imports
 import { LiveClassController } from '../../controllers/liveClass/liveClassController';
 import { LiveClassService } from '../../services/liveClass/liveClassService';
@@ -52,7 +58,6 @@ import { MemberRoutes } from '../../presentation/member/memberRoutes';
 
 // Analytics-related imports
 import { AnalyticsController } from '../../controllers/analytics/analyticsController';
-import { AnalyticsService } from '../../services/analytics/analyticsService';
 import { AnalyticsRoutes } from '../../presentation/analytics/analyticsRoutes';
 
 // Payment Packages-related imports
@@ -102,17 +107,20 @@ export class DependencyContainer {
       this.services.get('userRepository'),
       this.services.get('jwtService'),
       this.services.get('passwordService'),
-      this.services.get('notificationService')
+      this.services.get('notificationService'),
+      this.services.get('analyticsService')
     ));
 
     this.services.set('classService', new ClassService(
       this.services.get('classRepository'),
       this.services.get('userRepository'),
-      this.services.get('memberService')
+      this.services.get('memberService'),
+      this.services.get('analyticsService')
     ));
 
     this.services.set('adminService', new AdminService(
-      this.services.get('adminRepository')
+      this.services.get('adminRepository'),
+      this.services.get('analyticsService')
     ));
 
     this.services.set('liveClassService', new LiveClassService(
@@ -131,7 +139,6 @@ export class DependencyContainer {
       this.services.get('notificationRepository')
     ));
 
-
     this.services.set('dailyLeaderboardService', new DailyLeaderboardService(
       this.services.get('dailyLeaderboardRepository')
     ));
@@ -141,9 +148,12 @@ export class DependencyContainer {
       this.services.get('paymentPackagesService')
     ));
 
-    this.services.set('analyticsService', new AnalyticsService());
+    // Analytics service
+    this.services.set('analyticsRepository', new AnalyticsRepository());
+    this.services.set('analyticsService', new AnalyticsService(
+      this.services.get('analyticsRepository')
+    ));
     this.services.set('paymentPackagesService', new PaymentPackagesService());
-
     // Controller layer
     this.services.set('authController', new AuthController(
       this.services.get('authService')

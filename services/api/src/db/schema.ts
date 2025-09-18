@@ -348,6 +348,16 @@ export const notificationReads = pgTable("notification_reads", {
 	primaryKey({ columns: [table.notificationId, table.userId], name: "notification_reads_pkey"}),
 ]);
 
+export const analyticsEvents = pgTable('analytics_events', {
+  id: serial('id').primaryKey(),
+  gymId: integer('gym_id').notNull(),
+  userId: integer('user_id'),
+  eventType: text('event_type').notNull(),
+  properties: jsonb('properties').default('{}'),
+  source: text('source'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
 // Payment Packages and Financial Analytics Tables
 export const paymentPackages = pgTable("payment_packages", {
 	packageId: serial("package_id").primaryKey(),

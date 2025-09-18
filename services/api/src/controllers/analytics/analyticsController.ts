@@ -87,4 +87,17 @@ export class AnalyticsController {
     }
   };
 
+  /**
+   * Get booking times analytics - average and most popular booking times
+   */
+  getBookingTimesAnalytics = async (req: Request, res: Response) => {
+    try {
+      const bookingTimes = await this.analyticsService.getBookingTimesAnalytics();
+      res.json(bookingTimes);
+    } catch (error: any) {
+      console.error('getBookingTimesAnalytics error:', error);
+      res.status(500).json({ error: 'Failed to fetch booking times analytics' });
+    }
+  };
+
 }

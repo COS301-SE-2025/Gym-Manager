@@ -40,6 +40,13 @@ export interface GymUtilizationData {
   }>;
 }
 
+export interface BookingTimesData {
+  hour: string;
+  averageBookings: number;
+  totalBookings: number;
+  popularityRank: number;
+}
+
 
 export class AnalyticsService {
   private analyticsRepository: IAnalyticsRepository;
@@ -401,6 +408,69 @@ export class AnalyticsService {
     };
   }
 
+  async getBookingTimesAnalytics(): Promise<BookingTimesData[]> {
+    // Get all time slots from 6am to 10pm (17 hours)
+    const timeSlots = [
+      '6am', '7am', '8am', '9am', '10am', '11am', '12pm', 
+      '1pm', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm', '8pm', '9pm', '10pm'
+    ];
+
+    // Get all bookings with their class times
+    const bookingsData = await db
+      .select({
+        scheduledTime: classes.scheduledTime,
+        scheduledDate: classes.scheduledDate,
+        bookingId: classbookings.bookingId,
+      })
+      .from(classbookings)
+      .innerJoin(classes, eq(classbookings.classId, classes.classId));
+
+    // Group bookings by hour
+    const bookingsByHour = new Map<string, number>();
+    const totalBookings = bookingsData.length;
+
+    bookingsData.forEach(booking => {
+      const time = booking.scheduledTime;
+      if (time) {
+        // Convert time to hour format (e.g., "09:00:00" -> "9am")
+        const hour = this.formatTimeToHour(time);
+        if (hour) {
+          bookingsByHour.set(hour, (bookingsByHour.get(hour) || 0) + 1);
+        }
+      }
+    });
+
+    // Calculate analytics for each time slot
+    const analytics = timeSlots.map((hour, index) => {
+      const totalBookingsForHour = bookingsByHour.get(hour) || 0;
+      const averageBookings = totalBookings > 0 ? totalBookingsForHour / totalBookings : 0;
+      
+      return {
+        hour,
+        averageBookings: Math.round(averageBookings * 100) / 100, // Round to 2 decimal places
+        totalBookings: totalBookingsForHour,
+        popularityRank: index + 1, // Will be sorted by total bookings later
+      };
+    });
+
+    // Sort by total bookings (descending) and update popularity rank
+    const sortedAnalytics = analytics.sort((a, b) => b.totalBookings - a.totalBookings);
+    return sortedAnalytics.map((item, index) => ({
+      ...item,
+      popularityRank: index + 1,
+    }));
+  }
+
+  private formatTimeToHour(time: string): string | null {
+    try {
+      const [hours, minutes] = time.split(':').map(Number);
+      const hour = hours % 12 || 12;
+      const ampm = hours < 12 ? 'am' : 'pm';
+      return `${hour}${ampm}`;
+    } catch {
+      return null;
+    }
+  }
 
   private getWeekStart(date: Date): Date {
     const day = date.getDay();

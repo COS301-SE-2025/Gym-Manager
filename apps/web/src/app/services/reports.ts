@@ -1,10 +1,12 @@
 import axios from 'axios';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 export const logService = {
   async getLogs(): Promise<any[]> {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/analytics/logs`, {
+      const response = await axios.get(`${API_BASE_URL}/analytics/logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data;
@@ -25,7 +27,7 @@ export const analyticsService = {
     try {
       const token = localStorage.getItem('authToken');
       const params = period ? { period } : {};
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/analytics/summary-stats`, {
+      const response = await axios.get(`${API_BASE_URL}/analytics/summary-stats`, {
         headers: { Authorization: `Bearer ${token}` },
         params,
       });
@@ -48,7 +50,7 @@ export const analyticsService = {
     try {
       const token = localStorage.getItem('authToken');
       const params = weekStartDate ? { weekStartDate } : {};
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/analytics/gym-utilization`, {
+      const response = await axios.get(`${API_BASE_URL}/analytics/gym-utilization`, {
         headers: { Authorization: `Bearer ${token}` },
         params,
       });
@@ -188,6 +190,19 @@ export const reportsService = {
         values,
         averageUtilizationByHour,
       };
+    }
+  },
+
+  getBookingTimesAnalytics: async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await axios.get(`${API_BASE_URL}/analytics/booking-times`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch booking times analytics:', error);
+      throw error;
     }
   },
 

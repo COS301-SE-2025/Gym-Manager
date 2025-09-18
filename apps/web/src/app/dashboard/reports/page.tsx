@@ -10,6 +10,7 @@ import ReportStatCard from '@/components/reports/ReportStatCard';
 import OperationsChart from '@/components/reports/OperationsChart';
 import AcquisitionChart from '@/components/reports/AcquisitionChart';
 import TimePeriodToggle from '@/components/reports/TimePeriodToggle';
+import BookingTimesChart from '@/components/reports/BookingTimesChart';
 import { reportsService } from '../../services/reports';
 import './reports.css';
 
@@ -107,6 +108,15 @@ export default function ReportsPage() {
               </div>
               <div className="card-content">
                 <OperationsChart period={selectedPeriod} />
+              </div>
+            </div>
+            <div className="management-card full-width-card">
+              <div className="card-title">
+                <h2>Popular Booking Times</h2>
+                <p className="card-subtitle">Most popular class booking times based on all-time data</p>
+              </div>
+              <div className="card-content">
+                <BookingTimesChart />
               </div>
             </div>
         <div className="management-card full-width-card">

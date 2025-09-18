@@ -1,13 +1,13 @@
 /**
  * userSettingsController.test.ts – unit tests for editSettings
  */
-import { editSettings } from '../../controllers/userSettingsController';
-import { db }            from '../../db/client';
+import { editSettings } from '../../../controllers/userSettingsController';
+import { db }            from '../../../db/client';
 import { Request, Response } from 'express';
-import { builder }       from '../builder';
+import { builder }       from '../../builder';
 
 // ─── DB stub ────────────────────────────────────────────────
-jest.mock('../../db/client', () => ({
+jest.mock('../../../db/client', () => ({
   db: { update: jest.fn() },
 }));
 

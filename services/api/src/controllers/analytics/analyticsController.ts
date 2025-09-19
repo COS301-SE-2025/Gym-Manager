@@ -58,6 +58,19 @@ export class AnalyticsController {
   };
 
   /**
+   * Get conversion funnel totals
+   */
+  getConversionFunnel = async (_req: Request, res: Response) => {
+    try {
+      const funnel = await this.analyticsService.getConversionFunnel();
+      res.json(funnel);
+    } catch (error: any) {
+      console.error('getConversionFunnel error:', error);
+      res.status(500).json({ error: 'Failed to fetch conversion funnel data' });
+    }
+  };
+
+  /**
    * Get coach analytics - average class attendance and workout popularity
    */
   getCoachAnalytics = async (req: AuthenticatedRequest, res: Response) => {

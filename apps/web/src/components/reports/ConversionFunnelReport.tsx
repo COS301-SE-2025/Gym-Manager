@@ -8,25 +8,7 @@ export default function ConversionFunnelReport() {
   const [funnel, setFunnel] = useState<any | null>(null);
 
   useEffect(() => {
-    // reportsService.getConversionFunnel().then(setFunnel).catch(console.error);
-
-    // Mock Data
-    const mockFunnelData = {
-      labels: ['Signed Up', 'Viewed Classes', 'Booked First Class', 'Attended First Class'],
-      datasets: [
-        {
-          label: 'Users',
-          data: [1000, 750, 400, 320],
-          backgroundColor: [
-            'rgba(54, 162, 235, 0.6)',
-            'rgba(75, 192, 192, 0.6)',
-            'rgba(153, 102, 255, 0.6)',
-            'rgba(216, 255, 62, 0.6)',
-          ],
-        },
-      ],
-    };
-    setTimeout(() => setFunnel(mockFunnelData), 500);
+    reportsService.getConversionFunnel().then(setFunnel).catch(console.error);
   }, []);
 
   if (!funnel) return <div>Loading conversion funnel…</div>;

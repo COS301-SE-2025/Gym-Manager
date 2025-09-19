@@ -676,6 +676,49 @@ export class AnalyticsService {
     return result;
   }
 
+  /**
+   * Conversion funnel totals across all time:
+   * 1) Users who signed up
+   * 2) Users who were approved
+   * 3) Users who made at least one booking
+   * 4) Users who attended at least one class
+   */
+  async getConversionFunnel(): Promise<{
+    signups: number;
+    approvals: number;
+    firstBookings: number;
+    attendances: number;
+  }> {
+    // Signups: total members in system (approved + pending)
+    const signupRows = await db
+      .select({ value: count(members.userId).as('value') })
+      .from(members)
+      .where(sql`${members.status} IN ('approved', 'pending')`);
+
+    // Approvals: members with approved status
+    const approvalsRows = await db
+      .select({ value: count(members.userId).as('value') })
+      .from(members)
+      .where(eq(members.status, 'approved'));
+
+    // First booking: distinct members who have at least one booking
+    const firstBookingRows = await db
+      .select({ value: sql<number>`COUNT(DISTINCT ${classbookings.memberId})`.as('value') })
+      .from(classbookings);
+
+    // Attendance: distinct members who have at least one attendance record
+    const attendanceRows = await db
+      .select({ value: sql<number>`COUNT(DISTINCT ${classattendance.memberId})`.as('value') })
+      .from(classattendance);
+
+    return {
+      signups: signupRows[0]?.value ?? 0,
+      approvals: approvalsRows[0]?.value ?? 0,
+      firstBookings: firstBookingRows[0]?.value ?? 0,
+      attendances: attendanceRows[0]?.value ?? 0,
+    };
+  }
+
   async getGymUtilization(weekStartDate?: string): Promise<GymUtilizationData> {
     // Default to current week if no date provided
     const startDate = weekStartDate ? new Date(weekStartDate) : this.getWeekStart(new Date());

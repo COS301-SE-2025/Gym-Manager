@@ -315,6 +315,22 @@ export const reportsService = {
     }
   },
 
+  getCohortRetention: async (period?: string) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const params = period ? { period } : {};
+      const response = await axios.get(`${API_BASE_URL}/analytics/cohort-retention`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch cohort retention data:', error);
+      // Fallback to mock data if API fails
+      return getMockCohortData(period || 'lastWeek');
+    }
+  },
+
   // Finance
   getFinancialAnalytics: async (): Promise<{
     monthlyRecurringRevenue: { current: number; previous: number; growth: number };

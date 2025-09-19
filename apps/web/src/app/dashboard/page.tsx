@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { toast } from 'sonner';
 import WeeklyCalendar from '../../components/WeeklyCalendar/WeeklyCalendar';
-import PendingApprovalTable from '../../components/PendingApprovalTable/page';
+import PendingApprovalTable from '../../components/tables/PendingApprovalTable/page';
 import { CalendarEvent, User } from '../../types/types';
 import { getDummyCalendarEvents, transformApiDataToEvents } from '../../utils/calendarHelpers';
 import { userRoleService } from '../services/roles';

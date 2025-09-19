@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import ReportStatCard from '@/components/reports/ReportStatCard';
 import { CustomChart } from '@/components/reports/Charts/CustomChartHolder/CustomChart';
 import { reportsService } from '@/app/services/reports';
-import './TimePeriodToggle.css';
+import '../TogglesAndFilters/TimePeriodToggle.css';
 
 type Granularity = 'monthly' | 'yearly' | 'all';
 

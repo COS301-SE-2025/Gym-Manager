@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { reportsService } from '../../app/services/reports';
+import { reportsService } from '@/app/services/reports';
 import './BookingTimesChart.css';
 
 interface BookingTimesData {

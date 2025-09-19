@@ -517,7 +517,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             ...(workout.workoutType === 'FOR_TIME' ? {
               number_of_rounds: parseInt(workout.numberOfRounds) || 1,
             } : {}),
-            ...(workout.workoutType === 'EMOM' || workout.workoutType === 'TABATA' ? {
+            ...(workout.workoutType === 'TABATA' ? {
               number_of_rounds: parseInt(workout.numberOfRounds) || 1,
             } : {}),
             ...(workout.workoutType === 'EMOM' ? {
@@ -779,7 +779,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             )}
 
             {/* Number of Rounds - Only show for certain workout types */}
-            {(currentWorkout.workoutType === 'EMOM' || currentWorkout.workoutType === 'TABATA' || currentWorkout.workoutType === 'FOR_TIME') && (
+            {(currentWorkout.workoutType === 'TABATA' || currentWorkout.workoutType === 'FOR_TIME') && (
               <View style={styles.settingRow}>
                 <Text style={styles.settingLabel}>Number of Rounds</Text>
                 <TextInput

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import UserTable from '@/components/UserTable/page';
+import UserTable from '@/components/tables/UserTable/page';
 import AddCoachModal from '@/components/modals/AddCoach/AddCoach';
 export default function MembersList() {
   const [showAddCoachModal, setShowAddCoachModal] = useState(false);

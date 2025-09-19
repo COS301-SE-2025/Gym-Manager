@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import BookingsReport from './BookingsReport';
-import AttendanceReport from './AttendanceReport';
-import FillRateReport from './FillRateReport';
-import CancellationRateReport from './CancellationRateReport';
-import ConversionFunnelReport from './ConversionFunnelReport';
-import CohortRetentionReport from './CohortRetentionReport';
-import LogsTab from './LogsTab';
+import BookingsReport from '../BookingsReport';
+import AttendanceReport from '../AttendanceReport';
+import FillRateReport from '../FillRateReport';
+import CancellationRateReport from '../CancellationRateReport';
+import ConversionFunnelReport from '../Charts/ConversionFunnelReport';
+import CohortRetentionReport from '../CohortRetentionReport';
+import LogsTab from '../Tabs/LogsTab';
 
 const TABS = [
   { key: 'bookings', label: 'Bookings' },

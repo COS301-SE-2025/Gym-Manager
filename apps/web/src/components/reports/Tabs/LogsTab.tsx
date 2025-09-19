@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { reportsService } from '@/app/services/reports';
-import LogsFilters from './LogsFilters';
+import LogsFilters from '../TogglesAndFilters/LogsFilters';
 
 // Helper function to format log messages based on event type
 const formatLogMessage = (log: any): string => {

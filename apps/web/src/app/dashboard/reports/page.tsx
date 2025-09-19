@@ -1,17 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import ConversionFunnelReport from '@/components/reports/ConversionFunnelReport';
+import ConversionFunnelReport from '@/components/reports/Charts/ConversionFunnelReport';
 import CohortRetentionReport from '@/components/reports/CohortRetentionReport';
-import LogsTab from '@/components/reports/LogsTab';
-import HeatMapReport from '@/components/reports/HeatMapReport';
+import LogsTab from '@/components/reports/Tabs/LogsTab';
+import HeatMapReport from '@/components/reports/Charts/HeatMapReport';
 import GymUtilizationReport from '@/components/reports/GymUtilizationReport';
 import ReportStatCard from '@/components/reports/ReportStatCard';
-import OperationsChart from '@/components/reports/OperationsChart';
-import AcquisitionChart from '@/components/reports/AcquisitionChart';
-import TimePeriodToggle from '@/components/reports/TimePeriodToggle';
-import FinanceTab from '@/components/reports/FinanceTab';
-import BookingTimesChart from '@/components/reports/BookingTimesChart';
+import OperationsChart from '@/components/reports/Charts/OperationsChart';
+import AcquisitionChart from '@/components/reports/Charts/AcquisitionChart';
+import TimePeriodToggle from '@/components/reports/TogglesAndFilters/TimePeriodToggle';
+import FinanceTab from '@/components/reports/Tabs/FinanceTab';
+import BookingTimesChart from '@/components/reports/Charts/BookingTimesChart';
 import { reportsService } from '../../services/reports';
 import './reports.css';
 

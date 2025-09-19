@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { CustomChart } from '@/components/Chart/CustomChart';
+import { CustomChart } from '@/components/reports/Charts/CustomChartHolder/CustomChart';
 import { reportsService } from '@/app/services/reports';
-import TimePeriodToggle from './TimePeriodToggle';
+import TimePeriodToggle from '../TogglesAndFilters/TimePeriodToggle';
 
 type Period = 'today' | 'lastWeek' | 'lastMonth' | 'lastYear' | 'all';
 

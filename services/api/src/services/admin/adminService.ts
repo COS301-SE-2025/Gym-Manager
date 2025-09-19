@@ -148,6 +148,28 @@ export class AdminService implements IAdminService {
       throw new Error('Invalid userId');
     }
 
+    // Check if this is a membership approval (status change to 'approved')
+    if (updates.status === 'approved') {
+      // Get current user to check if they are a member
+      const user = await this.adminRepository.getUserById(userId);
+      if (user && user.roles && user.roles.includes('member')) {
+        // Check current member status
+        const currentStatus = user.memberStatus || 'pending';
+        if (currentStatus !== 'approved') {
+          // This is a membership approval - log the event
+          await this.analyticsService.addLog({
+            gymId: 1, // Assuming a single gym for now
+            userId: null, // TODO: Add admin ID from request context
+            eventType: 'membership_approval',
+            properties: {
+              approvedUserId: userId,
+            },
+            source: 'api',
+          });
+        }
+      }
+    }
+
     return this.adminRepository.updateUserById(userId, updates);
   }
 

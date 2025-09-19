@@ -1,0 +1,229 @@
+/* Booking Times Chart Styles - Isolated from HeatmapGrid */
+.booking-times-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: transparent;
+  border: none;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 1rem;
+}
+
+.chart-title {
+  color: whitesmoke;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.chart-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  width: 100%;
+  height: 300px;
+  justify-content: center;
+}
+
+.y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding-right: 0.5rem;
+}
+
+.y-axis-label {
+  color: whitesmoke;
+  font-size: 0.9rem;
+  font-weight: 500;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+}
+
+.chart-content {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.bars-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 100%;
+  gap: 0.5rem;
+  padding: 0 0.5rem;
+}
+
+.bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  height: 100%;
+}
+
+.bar-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.bar {
+  width: 100%;
+  min-height: 20px;
+  border-radius: 4px 4px 0 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+.bar:hover {
+  transform: scale(1.05);
+  z-index: 10;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.bar-value {
+  color: #000;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.4);
+  position: absolute;
+  top: -20px;
+  white-space: nowrap;
+}
+
+.bar-label {
+  color: whitesmoke;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+  margin-top: 0.25rem;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+}
+
+.top-bar {
+  background: linear-gradient(135deg, rgba(216, 255, 62, 0.9), rgba(216, 255, 62, 0.7));
+  box-shadow: 0 2px 4px rgba(216, 255, 62, 0.3);
+}
+
+.regular-color {
+  background-color: rgba(255, 255, 255, 0.2);
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.top-color {
+  background: linear-gradient(135deg, rgba(216, 255, 62, 0.9), rgba(216, 255, 62, 0.7));
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: whitesmoke;
+  font-size: 0.875rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .booking-times-chart {
+    padding: 0.75rem;
+  }
+  
+  .chart-container {
+    height: 250px;
+  }
+  
+  .bar-value {
+    font-size: 0.7rem;
+  }
+  
+  .bar-label {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .booking-times-chart {
+    padding: 0.5rem;
+  }
+  
+  .chart-container {
+    height: 200px;
+    gap: 0.25rem;
+  }
+  
+  .bars-container {
+    gap: 0.25rem;
+  }
+  
+  .bar-value {
+    font-size: 0.65rem;
+    top: -18px;
+  }
+  
+  .bar-label {
+    font-size: 0.7rem;
+  }
+  
+  .chart-legend {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+  }
+}
+
+/* Ensure no interference with heatmap styles */
+.booking-times-chart * {
+  box-sizing: border-box;
+}
+
+.booking-times-chart .bar,
+.booking-times-chart .bar-group,
+.booking-times-chart .bars-container {
+  /* Reset any potential heatmap inheritance */
+  background-color: transparent;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.booking-times-chart .bar {
+  /* Override any heatmap cell styles */
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  position: relative !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  border-radius: 4px 4px 0 0 !important;
+  margin-bottom: 0.5rem !important;
+}

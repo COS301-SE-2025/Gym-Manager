@@ -24,6 +24,7 @@ export class AnalyticsRoutes {
     this.router.get('/acquisition-data', this.authMiddleware.isAuthenticated, requireRole('admin'), this.analyticsController.getUserAcquisitionData);
     this.router.get('/gym-utilization', this.authMiddleware.isAuthenticated, requireRole('admin'), this.analyticsController.getGymUtilization);
     this.router.get('/booking-times', this.authMiddleware.isAuthenticated, requireRole('admin'), this.analyticsController.getBookingTimesAnalytics);
+    this.router.get('/cohort-retention', this.authMiddleware.isAuthenticated, requireRole('admin'), this.analyticsController.getCohortRetention);
 
     // Coach analytics routes
     this.router.get('/coach', this.authMiddleware.isAuthenticated, this.analyticsController.getCoachAnalytics);

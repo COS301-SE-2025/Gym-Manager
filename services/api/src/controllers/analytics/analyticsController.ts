@@ -122,4 +122,18 @@ export class AnalyticsController {
     }
   };
 
+  /**
+   * Get cohort retention analytics - percentage of users retained over time
+   */
+  getCohortRetention = async (req: Request, res: Response) => {
+    try {
+      const { period } = req.query as { period?: string };
+      const cohortData = await this.analyticsService.getCohortRetention(period);
+      res.json(cohortData);
+    } catch (error: any) {
+      console.error('getCohortRetention error:', error);
+      res.status(500).json({ error: 'Failed to fetch cohort retention data' });
+    }
+  };
+
 }

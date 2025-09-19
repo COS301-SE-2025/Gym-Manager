@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export const logService = {
   async getLogs(): Promise<any[]> {
@@ -192,6 +192,38 @@ const getMockRevenueBreakdown = (period?: string) => {
   };
 };
 
+const getMockCohortData = (period: string) => {
+  if (period === 'lastMonth' || period === 'lastYear' || period === 'all') {
+    return {
+      labels: ['Month 0', 'Month 1', 'Month 2', 'Month 3', 'Month 6', 'Month 9', 'Month 12'],
+      datasets: [
+        {
+          label: '% Members Retained',
+          data: [100, 92, 80, 71, 65, 60],
+          borderColor: '#d8ff3e',
+          backgroundColor: 'rgba(216, 255, 62, 0.2)',
+          fill: true,
+          tension: 0.2,
+        },
+      ],
+    };
+  }
+  // weekly or other periods
+  return {
+    labels: ['Week 0', 'Week 1', 'Week 4', 'Week 8', 'Week 12', 'Week 24'],
+    datasets: [
+      {
+        label: '% Members Retained',
+        data: [100, 88, 75, 68, 60, 52],
+        borderColor: '#d8ff3e',
+        backgroundColor: 'rgba(216, 255, 62, 0.2)',
+        fill: true,
+        tension: 0.2,
+      },
+    ],
+  };
+};
+
 export const reportsService = {
   // getBookings: async () => (await api.get('/reports/bookings')).data,
 
@@ -312,6 +344,22 @@ export const reportsService = {
                        period === 'lastWeek' ? 'weekly' : 
                        period === 'lastMonth' ? 'monthly' : 'monthly';
       return getMockAcquisition(oldPeriod);
+    }
+  },
+
+  getCohortRetention: async (period?: string) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const params = period ? { period } : {};
+      const response = await axios.get(`${API_BASE_URL}/analytics/cohort-retention`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch cohort retention data:', error);
+      // Fallback to mock data if API fails
+      return getMockCohortData(period || 'lastWeek');
     }
   },
 

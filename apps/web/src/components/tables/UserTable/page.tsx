@@ -15,6 +15,8 @@ export default function UserTable({ role }: UserTableProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -22,14 +24,37 @@ export default function UserTable({ role }: UserTableProps) {
         setLoading(true);
         const data = await userRoleService.getUsersByRole(role);
         setUsers(data);
+        setCurrentPage(1);
       } catch (err) {
-        setError(axios.isAxiosError(err) ? err.message : 'An unknown error occurred');
+        setError(axios.isAxiosError(err) ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }
     };
     fetchUsers();
   }, [role]);
+
+  // page calculations
+  const totalPages = Math.ceil(users.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentUsers = users.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
 
   const renderUserRow = (user: User) => {
     switch (role) {
@@ -55,8 +80,7 @@ export default function UserTable({ role }: UserTableProps) {
             <td>{admin.authorisation}</td>
           </>
         );
-      case 'manager':
-        // Assuming managers have no additional fields in this context
+      case 'manager': // not used
         return null;
       default:
         return null;
@@ -67,7 +91,11 @@ export default function UserTable({ role }: UserTableProps) {
   if (error) return <div className="error">{error}</div>;
 
   return (
-    <div className="user-table-container">
+    <>
+      <div className="total-count">
+        {users.length} {users.length === 1 ? 'user' : 'users'} found
+      </div>
+      <div className="user-table-container">
       <table className="user-table">
         <thead>
           <tr>
@@ -84,7 +112,7 @@ export default function UserTable({ role }: UserTableProps) {
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => (
+          {currentUsers.map((user) => (
             <tr key={user.userId}>
               <td>{user.userId}</td>
               <td>{user.firstName}</td>
@@ -100,7 +128,41 @@ export default function UserTable({ role }: UserTableProps) {
             </tr>
           ))}
         </tbody>
-      </table>
-    </div>
+       </table>
+       
+       {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="pagination-controls">
+          <button 
+            onClick={handlePrevious} 
+            disabled={currentPage === 1}
+            className="pagination-btn"
+          >
+            Previous
+          </button>
+          
+          <div className="pagination-numbers">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => handlePageChange(page)}
+                className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
+          
+          <button 
+            onClick={handleNext} 
+            disabled={currentPage === totalPages}
+            className="pagination-btn"
+          >
+            Next
+          </button>
+        </div>
+      )}
+      </div>
+    </>
   );
 }

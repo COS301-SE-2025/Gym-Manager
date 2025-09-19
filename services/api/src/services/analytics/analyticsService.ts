@@ -1,5 +1,5 @@
 import { db } from '../../db/client';
-import { analyticsEvents, classes, classattendance, classbookings, workouts } from '../../db/schema';
+import { analyticsEvents, classes, classattendance, classbookings, workouts, users, members } from '../../db/schema';
 import { LogEntry, CreateLogEntry } from '../../domain/entities/analytics.entity';
 import { IAnalyticsRepository } from '../../domain/interfaces/analytics.interface';
 import { AnalyticsRepository } from '../../repositories/analytics/analyticsRepository';
@@ -976,7 +976,7 @@ export class AnalyticsService {
 
     // Count unique members who either booked or attended classes in this month
     const activeMembers = await db
-      .selectDistinct({ memberId: classbookings.memberId })
+      .select({ memberId: classbookings.memberId })
       .from(classbookings)
       .where(
         and(
@@ -985,6 +985,9 @@ export class AnalyticsService {
         )
       );
 
-    return activeMembers.length;
+    // Get unique member IDs
+    const uniqueMemberIds = new Set(activeMembers.map(m => m.memberId));
+
+    return uniqueMemberIds.size;
   }
 }

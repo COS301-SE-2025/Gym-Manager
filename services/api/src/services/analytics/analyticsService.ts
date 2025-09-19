@@ -838,26 +838,33 @@ export class AnalyticsService {
   async getCohortRetention(period?: string): Promise<CohortRetentionData> {
     const { startDate, endDate } = this.getDateRange(period);
     
-    // Get all members with their signup dates (using user creation as proxy for signup)
-    const members = await db
+    // Get all members with their first booking date as proxy for signup date
+    const membersWithFirstBooking = await db
       .select({
         userId: users.userId,
-        signupDate: users.createdAt,
         firstName: users.firstName,
         lastName: users.lastName,
+        firstBookingDate: sql<string>`MIN(${classbookings.bookedAt})`.as('firstBookingDate'),
       })
       .from(users)
       .innerJoin(members, eq(users.userId, members.userId))
-      .where(
-        and(
-          eq(members.status, 'approved'),
-          startDate ? gte(users.createdAt, new Date(startDate)) : undefined,
-          endDate ? lte(users.createdAt, new Date(endDate)) : undefined
-        )
-      )
-      .orderBy(users.createdAt);
+      .leftJoin(classbookings, eq(users.userId, classbookings.memberId))
+      .where(eq(members.status, 'approved'))
+      .groupBy(users.userId, users.firstName, users.lastName)
+      .orderBy(sql`MIN(${classbookings.bookedAt})`);
 
-    if (members.length === 0) {
+    // Filter out members who have never booked a class and apply date filtering
+    const activeMembers = membersWithFirstBooking.filter(m => {
+      if (!m.firstBookingDate) return false;
+      
+      const bookingDate = new Date(m.firstBookingDate);
+      if (startDate && bookingDate < new Date(startDate)) return false;
+      if (endDate && bookingDate > new Date(endDate)) return false;
+      
+      return true;
+    });
+
+    if (activeMembers.length === 0) {
       return {
         labels: [],
         datasets: []
@@ -867,8 +874,8 @@ export class AnalyticsService {
     // Group members by signup month
     const cohorts = new Map<string, Array<{ userId: number; signupDate: string }>>();
     
-    members.forEach(member => {
-      const signupDate = new Date(member.signupDate);
+    activeMembers.forEach(member => {
+      const signupDate = new Date(member.firstBookingDate!);
       const cohortKey = `${signupDate.getFullYear()}-${String(signupDate.getMonth() + 1).padStart(2, '0')}`;
       
       if (!cohorts.has(cohortKey)) {
@@ -876,7 +883,7 @@ export class AnalyticsService {
       }
       cohorts.get(cohortKey)!.push({
         userId: member.userId,
-        signupDate: member.signupDate
+        signupDate: member.firstBookingDate!
       });
     });
 

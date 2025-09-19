@@ -15,14 +15,20 @@ export default function ConversionFunnelReport() {
 
   return (
     <div>
-      <h3>Conversion Funnel</h3>
+      <h3>From signup to attending class</h3>
       <div style={{ height: 360 }}>
-        {/* conversion funnel often visualised as bar/pyramid — use bar for simplicity */}
+        {/* conversion funnel often visualised as bar/pyramid — used bar for simplicity */}
         <CustomChart
           type="bar"
           labels={funnel.labels}
           datasets={funnel.datasets}
-          options={{ indexAxis: 'y', responsive: true }}
+          options={{ indexAxis: 'y', 
+            responsive: true, 
+            plugins: {
+            legend: {
+              display: false
+            }
+          } }}
         />
       </div>
     </div>

@@ -9,12 +9,12 @@ export default function BookingsReport() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // reportsService.getBookings().then((d) => {
-    //   // Expect API shape { labels: string[], datasets: any[] }
-    //   setData(d);
-    // }).catch((e) => {
-    //   console.error('BookingsReport error', e);
-    // }).finally(() => setLoading(false));
+    reportsService.getBookings().then((d) => {
+      // Expect API shape { labels: string[], datasets: any[] }
+      setData(d);
+    }).catch((e) => {
+      console.error('BookingsReport error', e);
+    }).finally(() => setLoading(false));
 
     // Mock Data
     const mockBookingsData = {

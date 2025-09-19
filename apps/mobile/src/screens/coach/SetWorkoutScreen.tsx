@@ -521,7 +521,10 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
               number_of_rounds: parseInt(workout.numberOfRounds) || 1,
             } : {}),
             ...(workout.workoutType === 'EMOM' ? {
-              emom_repeats: workout.subRounds.map(sr => Math.max(1, parseInt(sr.repeats || '1') || 1)),
+              emom_repeats: workout.subRounds.map(sr => {
+                const n = parseInt((sr.repeats ?? '').trim() || '0');
+                return n > 0 ? n : 1;
+              }),
             } : {}),
             number_of_subrounds: workout.subRounds.length,
           },
@@ -883,11 +886,12 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                         <Text style={styles.settingLabel}>Repeats</Text>
                         <TextInput
                           style={styles.numberInput}
-                          value={String(subRound.repeats || '1')}
+                          value={subRound.repeats ?? '1'}
                           onChangeText={(value) => {
+                            const digits = value.replace(/[^0-9]/g, '');
                             setCurrentWorkout({
                               subRounds: currentWorkout.subRounds.map((sr) =>
-                                sr.id === subRound.id ? { ...sr, repeats: value } : sr
+                                sr.id === subRound.id ? { ...sr, repeats: digits } : sr
                               ),
                             });
                           }}

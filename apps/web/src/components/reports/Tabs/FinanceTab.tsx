@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import ReportStatCard from '@/components/reports/ReportStatCard';
-import { CustomChart } from '@/components/Chart/CustomChart';
+import { CustomChart } from '@/components/reports/Charts/CustomChartHolder/CustomChart';
 import { reportsService } from '@/app/services/reports';
 import './TimePeriodToggle.css';
 

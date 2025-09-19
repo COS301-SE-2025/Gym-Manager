@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CustomChart } from '@/components/Chart/CustomChart';
+import { CustomChart } from '@/components/reports/Charts/CustomChartHolder/CustomChart';
 import { reportsService } from '@/app/services/reports';
-import CohortTimePeriodToggle from './CohortTimePeriodToggle';
+import CohortTimePeriodToggle from './TogglesAndFilters/CohortTimePeriodToggle';
 
 type CohortPeriod = 'lastMonth' | 'lastYear' | 'all';
 

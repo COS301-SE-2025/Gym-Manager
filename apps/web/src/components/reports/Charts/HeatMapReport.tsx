@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import HeatmapGrid from './HeatmapGrid';
-import { reportsService } from '../../app/services/reports';
+import { reportsService } from '../../../app/services/reports';
 
 interface HeatmapData {
   x_labels: string[];

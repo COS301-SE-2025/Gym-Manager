@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import HeatmapGrid from './HeatmapGrid';
+import HeatmapGrid from './Charts/HeatmapGrid';
 import { reportsService } from '../../app/services/reports';
 
 interface UtilizationData {

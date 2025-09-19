@@ -61,6 +61,7 @@ interface SubRound {
   exercises: Exercise[];
   isExpanded: boolean;
   subroundNumber: number;
+  repeats?: string;
 }
 
 interface Workout {
@@ -93,6 +94,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           exercises: [],
           isExpanded: false,
           subroundNumber: 1,
+          repeats: '1',
         },
       ],
     },
@@ -253,6 +255,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           exercises: [],
           isExpanded: false,
           subroundNumber: currentWorkout.subRounds.length + 1,
+          repeats: '1',
         }
       ]
     });
@@ -360,6 +363,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
               exercises: exercises,
               isExpanded: false,
               subroundNumber: subroundCounter,
+              repeats: '1',
             });
             subroundCounter++;
           });
@@ -430,6 +434,10 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         const subRounds: SubRound[] = [];
         let subroundCounter = 1;
 
+        const existingType = ((classDetails as any)?.workoutType as string) || 'FOR_TIME';
+        const meta: any = (classDetails as any)?.workoutMetadata || {};
+        const emomRepeats: number[] = Array.isArray(meta.emom_repeats) ? meta.emom_repeats : [];
+
         roundsMap.forEach((subroundsMap, roundNum) => {
           subroundsMap.forEach((exercises, subroundNum) => {
             subRounds.push({
@@ -438,14 +446,13 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
               exercises: exercises,
               isExpanded: false,
               subroundNumber: subroundCounter,
+              repeats: String(emomRepeats[subroundCounter - 1] ?? 1),
             });
             subroundCounter++;
           });
         });
 
         // Update the workout with existing data + previously saved metadata
-        const existingType = ((classDetails as any)?.workoutType as string) || 'FOR_TIME';
-        const meta: any = (classDetails as any)?.workoutMetadata || {};
         const timeLimit = Number(meta.time_limit ?? 0);
         const minutes = Math.floor(timeLimit / 60);
         const seconds = Math.max(0, timeLimit % 60);
@@ -512,6 +519,9 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             } : {}),
             ...(workout.workoutType === 'EMOM' || workout.workoutType === 'TABATA' ? {
               number_of_rounds: parseInt(workout.numberOfRounds) || 1,
+            } : {}),
+            ...(workout.workoutType === 'EMOM' ? {
+              emom_repeats: workout.subRounds.map(sr => Math.max(1, parseInt(sr.repeats || '1') || 1)),
             } : {}),
             number_of_subrounds: workout.subRounds.length,
           },
@@ -868,6 +878,27 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                       </View>
                     ))}
                     
+                    {currentWorkout.workoutType === 'EMOM' && (
+                      <View style={styles.emomRepeatsRow}>
+                        <Text style={styles.settingLabel}>Repeats</Text>
+                        <TextInput
+                          style={styles.numberInput}
+                          value={String(subRound.repeats || '1')}
+                          onChangeText={(value) => {
+                            setCurrentWorkout({
+                              subRounds: currentWorkout.subRounds.map((sr) =>
+                                sr.id === subRound.id ? { ...sr, repeats: value } : sr
+                              ),
+                            });
+                          }}
+                          placeholder=""
+                          placeholderTextColor="#888"
+                          keyboardType="numeric"
+                          editable={!isSaving}
+                        />
+                      </View>
+                    )}
+
                     <TouchableOpacity 
                       style={styles.addExerciseButton}
                       onPress={() => addExercise(subRound.id)}
@@ -1241,6 +1272,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     minWidth: 100,
     textAlign: 'center',
+  },
+  emomRepeatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
   },
   subRoundContainer: {
     marginBottom: 12,

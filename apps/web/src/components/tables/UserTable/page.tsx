@@ -24,9 +24,9 @@ export default function UserTable({ role }: UserTableProps) {
         setLoading(true);
         const data = await userRoleService.getUsersByRole(role);
         setUsers(data);
-        setCurrentPage(1);
+        setCurrentPage(1); // Reset to first page when role changes
       } catch (err) {
-        setError(axios.isAxiosError(err) ? err.message : 'An error occurred');
+        setError(axios.isAxiosError(err) ? err.message : 'An unknown error occurred');
       } finally {
         setLoading(false);
       }
@@ -34,12 +34,13 @@ export default function UserTable({ role }: UserTableProps) {
     fetchUsers();
   }, [role]);
 
-  // page calculations
+  // Pagination calculations
   const totalPages = Math.ceil(users.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentUsers = users.slice(startIndex, endIndex);
 
+  // Pagination handlers
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -80,7 +81,8 @@ export default function UserTable({ role }: UserTableProps) {
             <td>{admin.authorisation}</td>
           </>
         );
-      case 'manager': // not used
+      case 'manager':
+        // Assuming managers have no additional fields in this context
         return null;
       default:
         return null;
@@ -92,76 +94,73 @@ export default function UserTable({ role }: UserTableProps) {
 
   return (
     <>
-      <div className="total-count">
-        {users.length} {users.length === 1 ? 'user' : 'users'} found
-      </div>
       <div className="user-table-container">
-      <table className="user-table">
-        <thead>
-          <tr>
-            <th>User ID</th>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            {role === 'member' && <th>Status</th>}
-            {role === 'member' && <th>Credits</th>}
-            {role === 'coach' && <th>Bio</th>}
-            {role === 'admin' && <th>Auth Level</th>}
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {currentUsers.map((user) => (
-            <tr key={user.userId}>
-              <td>{user.userId}</td>
-              <td>{user.firstName}</td>
-              <td>{user.lastName}</td>
-              <td>{user.email}</td>
-              <td>{user.phone}</td>
-              {renderUserRow(user)}
-              <td>
-                <Link href={`users/edit/${user.userId}`} className="edit-link">
-                  Manage
-                </Link>
-              </td>
+        <table className="user-table">
+          <thead>
+            <tr>
+              <th>User ID</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              {role === 'member' && <th>Status</th>}
+              {role === 'member' && <th>Credits</th>}
+              {role === 'coach' && <th>Bio</th>}
+              {role === 'admin' && <th>Auth Level</th>}
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-       </table>
-       
-       {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="pagination-controls">
-          <button 
-            onClick={handlePrevious} 
-            disabled={currentPage === 1}
-            className="pagination-btn"
-          >
-            Previous
-          </button>
-          
-          <div className="pagination-numbers">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => handlePageChange(page)}
-                className={`pagination-number ${currentPage === page ? 'active' : ''}`}
-              >
-                {page}
-              </button>
+          </thead>
+          <tbody>
+            {currentUsers.map((user) => (
+              <tr key={user.userId}>
+                <td>{user.userId}</td>
+                <td>{user.firstName}</td>
+                <td>{user.lastName}</td>
+                <td>{user.email}</td>
+                <td>{user.phone}</td>
+                {renderUserRow(user)}
+                <td>
+                  <Link href={`users/edit/${user.userId}`} className="edit-link">
+                    Manage
+                  </Link>
+                </td>
+              </tr>
             ))}
+          </tbody>
+        </table>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="pagination-controls">
+            <button 
+              onClick={handlePrevious} 
+              disabled={currentPage === 1}
+              className="pagination-btn"
+            >
+              Previous
+            </button>
+            
+            <div className="pagination-numbers">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+            
+            <button 
+              onClick={handleNext} 
+              disabled={currentPage === totalPages}
+              className="pagination-btn"
+            >
+              Next
+            </button>
           </div>
-          
-          <button 
-            onClick={handleNext} 
-            disabled={currentPage === totalPages}
-            className="pagination-btn"
-          >
-            Next
-          </button>
-        </div>
-      )}
+        )}
       </div>
     </>
   );

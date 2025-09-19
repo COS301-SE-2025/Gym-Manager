@@ -34,13 +34,12 @@ export default function UserTable({ role }: UserTableProps) {
     fetchUsers();
   }, [role]);
 
-  // Pagination calculations
+  //Pagination logic:
   const totalPages = Math.ceil(users.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentUsers = users.slice(startIndex, endIndex);
 
-  // Pagination handlers
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -57,33 +56,23 @@ export default function UserTable({ role }: UserTableProps) {
     }
   };
 
+  //user rows logic
   const renderUserRow = (user: User) => {
     switch (role) {
       case 'member':
         const member = user as Member;
-        return (
-          <>
-            <td>{member.status}</td>
-            <td>{member.credits}</td>
-          </>
-        );
+        return [
+          <td key="status">{member.status}</td>,
+          <td key="credits">{member.credits}</td>
+        ];
       case 'coach':
         const coach = user as Coach;
-        return (
-          <>
-            <td>{coach.bio}</td>
-          </>
-        );
+        return <td>{coach.bio}</td>;
       case 'admin':
         const admin = user as Admin;
-        return (
-          <>
-            <td>{admin.authorisation}</td>
-          </>
-        );
+        return <td>{admin.authorisation}</td>;
       case 'manager':
-        // Assuming managers have no additional fields in this context
-        return null;
+        return null; //manager role not used
       default:
         return null;
     }
@@ -118,7 +107,10 @@ export default function UserTable({ role }: UserTableProps) {
                 <td>{user.lastName}</td>
                 <td>{user.email}</td>
                 <td>{user.phone}</td>
-                {renderUserRow(user)}
+                {(() => {
+                  const rowContent = renderUserRow(user);
+                  return Array.isArray(rowContent) ? rowContent : rowContent;
+                })()}
                 <td>
                   <Link href={`users/edit/${user.userId}`} className="edit-link">
                     Manage

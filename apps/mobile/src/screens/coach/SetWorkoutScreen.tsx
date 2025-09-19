@@ -43,6 +43,8 @@ interface ClassDetails {
   coachFirstName?: string;
   coachLastName?: string;
   bookingsCount?: number;
+  workoutType?: string;
+  workoutMetadata?: any;
 }
 
 interface Exercise {
@@ -441,12 +443,27 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           });
         });
 
-        // Update the workout with existing data
+        // Update the workout with existing data + previously saved metadata
+        const existingType = ((classDetails as any)?.workoutType as string) || 'FOR_TIME';
+        const meta: any = (classDetails as any)?.workoutMetadata || {};
+        const timeLimit = Number(meta.time_limit ?? 0);
+        const minutes = Math.floor(timeLimit / 60);
+        const seconds = Math.max(0, timeLimit % 60);
+        const timeString = timeLimit
+          ? `00:${minutes.toString().padStart(2, '0')}:${seconds
+              .toString()
+              .padStart(2, '0')}`
+          : '00:00:00';
+
+        const roundsFromMeta = meta.number_of_rounds != null
+          ? String(meta.number_of_rounds)
+          : (currentWorkout.numberOfRounds || '1');
+
         setCurrentWorkout({
           workoutName: classDetails?.workoutName || 'Workout',
-          workoutType: 'FOR_TIME', // Default, can be updated
-          workoutTime: '00:15:00', // Default, can be updated
-          numberOfRounds: '1', // Default, can be updated
+          workoutType: (existingType as any),
+          workoutTime: timeString,
+          numberOfRounds: roundsFromMeta,
           subRounds: subRounds,
         });
       }

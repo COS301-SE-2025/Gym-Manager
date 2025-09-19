@@ -104,6 +104,24 @@ export const analyticsService = {
       throw error;
     }
   },
+
+  async getConversionFunnel(): Promise<{
+    signups: number;
+    approvals: number;
+    firstBookings: number;
+    attendances: number;
+  }> {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await axios.get(`${API_BASE_URL}/analytics/conversion-funnel`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch conversion funnel:', error);
+      throw error;
+    }
+  },
 };
 // MOCK DATA GENERATORS
 const getMockOperations = (period: string) => {
@@ -344,6 +362,51 @@ export const reportsService = {
                        period === 'lastWeek' ? 'weekly' : 
                        period === 'lastMonth' ? 'monthly' : 'monthly';
       return getMockAcquisition(oldPeriod);
+    }
+  },
+
+  getConversionFunnel: async () => {
+    try {
+      const funnel = await analyticsService.getConversionFunnel();
+      // Map to chart-friendly format and correct labels per requirement
+      return {
+        labels: ['Signed Up', 'Approved', 'Booked First Class', 'Attended First Class'],
+        datasets: [
+          {
+            label: 'Users',
+            data: [
+              funnel.signups,
+              funnel.approvals,
+              funnel.firstBookings,
+              funnel.attendances,
+            ],
+            backgroundColor: [
+              'rgba(54, 162, 235, 0.6)',
+              'rgba(75, 192, 192, 0.6)',
+              'rgba(153, 102, 255, 0.6)',
+              'rgba(216, 255, 62, 0.6)',
+            ],
+          },
+        ],
+      };
+    } catch (error) {
+      console.error('Failed to map conversion funnel:', error);
+      // Fallback to empty chart
+      return {
+        labels: ['Signed Up', 'Approved', 'Booked First Class', 'Attended First Class'],
+        datasets: [
+          {
+            label: 'Users',
+            data: [0, 0, 0, 0],
+            backgroundColor: [
+              'rgba(54, 162, 235, 0.6)',
+              'rgba(75, 192, 192, 0.6)',
+              'rgba(153, 102, 255, 0.6)',
+              'rgba(216, 255, 62, 0.6)',
+            ],
+          },
+        ],
+      };
     }
   },
 

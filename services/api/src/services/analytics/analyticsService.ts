@@ -47,6 +47,18 @@ export interface BookingTimesData {
   popularityRank: number;
 }
 
+export interface CohortRetentionData {
+  labels: string[];
+  datasets: Array<{
+    label: string;
+    data: number[];
+    borderColor: string;
+    backgroundColor: string;
+    fill: boolean;
+    tension: number;
+  }>;
+}
+
 
 export class AnalyticsService {
   private analyticsRepository: IAnalyticsRepository;
@@ -817,5 +829,162 @@ export class AnalyticsService {
     weekStart.setDate(diff);
     weekStart.setHours(0, 0, 0, 0);
     return weekStart;
+  }
+
+  /**
+   * Get cohort retention analytics - percentage of users retained over time
+   * Based on user signup month and their activity (class bookings/attendance) in subsequent months
+   */
+  async getCohortRetention(period?: string): Promise<CohortRetentionData> {
+    const { startDate, endDate } = this.getDateRange(period);
+    
+    // Get all members with their signup dates (using user creation as proxy for signup)
+    const members = await db
+      .select({
+        userId: users.userId,
+        signupDate: users.createdAt,
+        firstName: users.firstName,
+        lastName: users.lastName,
+      })
+      .from(users)
+      .innerJoin(members, eq(users.userId, members.userId))
+      .where(
+        and(
+          eq(members.status, 'approved'),
+          startDate ? gte(users.createdAt, new Date(startDate)) : undefined,
+          endDate ? lte(users.createdAt, new Date(endDate)) : undefined
+        )
+      )
+      .orderBy(users.createdAt);
+
+    if (members.length === 0) {
+      return {
+        labels: [],
+        datasets: []
+      };
+    }
+
+    // Group members by signup month
+    const cohorts = new Map<string, Array<{ userId: number; signupDate: string }>>();
+    
+    members.forEach(member => {
+      const signupDate = new Date(member.signupDate);
+      const cohortKey = `${signupDate.getFullYear()}-${String(signupDate.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!cohorts.has(cohortKey)) {
+        cohorts.set(cohortKey, []);
+      }
+      cohorts.get(cohortKey)!.push({
+        userId: member.userId,
+        signupDate: member.signupDate
+      });
+    });
+
+    // Calculate retention for each cohort
+    const cohortRetentionData = new Map<string, number[]>();
+    const allCohortKeys = Array.from(cohorts.keys()).sort();
+    
+    for (const [cohortKey, cohortMembers] of cohorts) {
+      const signupDate = new Date(cohortMembers[0].signupDate);
+      const retentionRates = [100]; // Month 0 is always 100%
+      
+      // Calculate retention for months 1, 2, 3, 6, 9, 12
+      const retentionMonths = [1, 2, 3, 6, 9, 12];
+      
+      for (const monthOffset of retentionMonths) {
+        const targetDate = new Date(signupDate);
+        targetDate.setMonth(targetDate.getMonth() + monthOffset);
+        
+        // Count active members in this month (those who booked or attended classes)
+        const activeMembers = await this.getActiveMembersInMonth(
+          cohortMembers.map(m => m.userId),
+          targetDate
+        );
+        
+        const retentionRate = cohortMembers.length > 0 
+          ? Math.round((activeMembers / cohortMembers.length) * 100)
+          : 0;
+        
+        retentionRates.push(retentionRate);
+      }
+      
+      cohortRetentionData.set(cohortKey, retentionRates);
+    }
+
+    // Generate labels based on period
+    let labels: string[];
+    if (period === 'lastMonth' || period === 'lastYear' || period === 'all') {
+      labels = ['Month 0', 'Month 1', 'Month 2', 'Month 3', 'Month 6', 'Month 9', 'Month 12'];
+    } else {
+      labels = ['Week 0', 'Week 1', 'Week 4', 'Week 8', 'Week 12', 'Week 24'];
+    }
+
+    // Calculate average retention across all cohorts
+    const averageRetention = labels.map((_, index) => {
+      let totalRetention = 0;
+      let cohortCount = 0;
+      
+      for (const retentionRates of cohortRetentionData.values()) {
+        if (retentionRates[index] !== undefined) {
+          totalRetention += retentionRates[index];
+          cohortCount++;
+        }
+      }
+      
+      return cohortCount > 0 ? Math.round(totalRetention / cohortCount) : 0;
+    });
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: '% Members Retained',
+          data: averageRetention,
+          borderColor: '#d8ff3e',
+          backgroundColor: 'rgba(216, 255, 62, 0.2)',
+          fill: true,
+          tension: 0.2,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Helper method to count active members in a specific month
+   * A member is considered active if they have booked or attended classes in that month
+   */
+  private async getActiveMembersInMonth(memberIds: number[], targetDate: Date): Promise<number> {
+    if (memberIds.length === 0) return 0;
+
+    const startOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
+    const endOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59);
+
+    // Find classes in the target month
+    const classesInMonth = await db
+      .select({ classId: classes.classId })
+      .from(classes)
+      .where(
+        and(
+          gte(classes.scheduledDate, startOfMonth.toISOString().slice(0, 10)),
+          lte(classes.scheduledDate, endOfMonth.toISOString().slice(0, 10))
+        )
+      );
+
+    if (classesInMonth.length === 0) return 0;
+
+    const classIds = classesInMonth.map(c => c.classId);
+
+    // Count unique members who either booked or attended classes in this month
+    const activeMembers = await db
+      .selectDistinct({ memberId: classbookings.memberId })
+      .from(classbookings)
+      .where(
+        and(
+          sql`${classbookings.memberId} IN (${sql.join(memberIds, sql`, `)})`,
+          sql`${classbookings.classId} IN (${sql.join(classIds, sql`, `)})`
+        )
+      );
+
+    return activeMembers.length;
   }
 }

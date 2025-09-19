@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { toast } from 'sonner';
 import WeeklyCalendar from '../../components/WeeklyCalendar/WeeklyCalendar';
-import PendingApprovalTable from '../../components/tables/PendingApprovalTable/page';
+import PendingApprovalTable from '@/components/tables/PendingApprovalTable/page';
 import { CalendarEvent, User } from '../../types/types';
 import { getDummyCalendarEvents, transformApiDataToEvents } from '../../utils/calendarHelpers';
 import { userRoleService } from '../services/roles';
@@ -53,7 +53,7 @@ export default function DashboardPage() {
               const newRefresh = r.data.refreshToken || refreshToken;
               localStorage.setItem('authToken', newToken);
               localStorage.setItem('refreshToken', newRefresh);
-              document.cookie = `authToken=${newToken}; path=/; max-age=3600; secure; samesite=strict`;
+              document.cookie = `authToken=${newToken}; path=/; max-age=21600; secure; samesite=strict`;
               document.cookie = `refreshToken=${newRefresh}; path=/; max-age=${60 * 60 * 24 * 30}; secure; samesite=strict`;
               originalRequest.headers = originalRequest.headers || {};
               originalRequest.headers.Authorization = `Bearer ${newToken}`;

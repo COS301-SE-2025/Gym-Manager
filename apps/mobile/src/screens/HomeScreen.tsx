@@ -15,7 +15,6 @@ import {
 import IconLogo from '../components/common/IconLogo';
 import BookingSheet from '../components/BookingSheet';
 import CancelSheet from '../components/CancelSheet';
-import { GamificationWidget } from '../components/gamification/GamificationWidget';
 import apiClient from '../utils/apiClient';
 import { getToken, getUser, User } from '../utils/authStorage';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -521,8 +520,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D8FF3E" />
         }
       >
-        {/* Gamification Widget */}
-        <GamificationWidget />
 
         {/* Live Class Banner */}
         {!isLoadingLiveClass && !liveClassError && liveClass && (

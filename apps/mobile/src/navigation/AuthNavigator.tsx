@@ -20,6 +20,10 @@ import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import ResolveAuthScreen from '../screens/auth/ResolveAuthScreen';
 import CoachLive from '../screens/coach/CoachLiveClassScreen';
 
+import { WorkoutData } from '../services/HealthService';
+import StatsScreen from '../screens/stats/StatsScreen';
+import WorkoutDetailsScreen from '../screens/stats/WorkoutDetailsScreen';
+
 import type { ApiLiveClassResponse } from '../screens/HomeScreen';
 import LeaderboardScreen from '../screens/home/LeaderboardScreen';
 
@@ -56,6 +60,8 @@ export type AuthStackParamList = {
   FAQ: undefined;
   Payment: undefined;
   MemberAnalytics: undefined;
+  Stats: undefined;
+  WorkoutDetails: { workout: WorkoutData };
 };
 
 
@@ -87,6 +93,15 @@ function MemberTabNavigator() {
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="trophy-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Stats"
+        component={StatsScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="analytics-outline" color={color} size={size} />
           ),
         }}
       />
@@ -142,6 +157,8 @@ export default function AuthNavigator() {
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="FAQ" component={FAQScreen} />
       <Stack.Screen name="Payment" component={PaymentScreen} />
+      <Stack.Screen name="Stats" component={StatsScreen} />
+      <Stack.Screen name="WorkoutDetails" component={WorkoutDetailsScreen} />
       <Stack.Screen name="MemberAnalytics" component={MemberAnalyticsScreen} />
     </Stack.Navigator>
   );

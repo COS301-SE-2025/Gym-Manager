@@ -45,15 +45,21 @@ export class LiveClassService implements ILiveClassService {
   }
 
   // --- Workout steps ---
+  // --- Workout steps ---
+// --- Workout steps ---
   async getWorkoutSteps(workoutId: number) {
     if (!Number.isFinite(workoutId) || workoutId <= 0) throw new Error('INVALID_WORKOUT_ID');
-    const rows = await this.repo.getFlattenRowsForWorkout(workoutId);
 
-    const steps: Step[] = rows.map((row: any, idx: number) => {
+    const rows = await this.repo.getFlattenRowsForWorkout(workoutId);
+    const workoutTypeRaw = await this.repo.getWorkoutType(workoutId);
+    const meta = await this.repo.getWorkoutMetadata(workoutId);
+    const workoutType = (workoutTypeRaw ?? 'FOR_TIME').toUpperCase();
+
+    const baseSteps: Step[] = rows.map((row: any, idx: number) => {
       const isReps = row.quantity_type === 'reps';
-      const isDur = row.quantity_type === 'duration';
+      const isDur  = row.quantity_type === 'duration';
       const reps = isReps ? Number(row.quantity) : undefined;
-      const dur = isDur ? Number(row.quantity) : undefined;
+      const dur  = isDur ? Number(row.quantity) : undefined;
       const label = isReps ? `${row.quantity}x ${row.name}` : `${row.name} ${row.quantity}s`;
       return {
         index: idx,
@@ -66,6 +72,49 @@ export class LiveClassService implements ILiveClassService {
       };
     });
 
+    // helper: expand a 1-round template N times
+    const expandByRoundsIfSingleRound = (stepsIn: Step[], repeats: number): Step[] => {
+      const uniqRounds = new Set(stepsIn.map(s => Number(s.round)));
+      if (repeats <= 1 || uniqRounds.size !== 1) {
+        return stepsIn.map((s, i) => ({ ...s, index: i }));
+      }
+      const baseRoundNo = Math.min(...Array.from(uniqRounds));
+      const template = stepsIn
+        .filter(s => Number(s.round) === baseRoundNo)
+        .sort((a, b) => a.subround - b.subround || a.index - b.index);
+
+      const out: Step[] = [];
+      let idx = 0;
+      for (let r = 1; r <= repeats; r++) {
+        for (const t of template) out.push({ ...t, round: r, index: idx++ });
+      }
+      return out;
+    };
+
+    let steps: Step[];
+
+    if (workoutType === 'EMOM') {
+      // 👇 Reindex by subround so each subround becomes the "round bucket"
+      const bySub: Record<number, Step[]> = {};
+      for (const s of baseSteps) {
+        const sr = Math.max(1, Number(s.subround || 1));
+        (bySub[sr] ??= []).push(s);
+      }
+      const out: Step[] = [];
+      let idx = 0;
+      for (const sr of Object.keys(bySub).map(Number).sort((a, b) => a - b)) {
+        const group = bySub[sr].sort((a, b) => a.index - b.index);
+        for (const t of group) out.push({ ...t, round: sr, index: idx++ });
+      }
+      steps = out;
+    } else if (['FOR_TIME', 'TABATA', 'INTERVAL'].includes(workoutType)) {
+      const repeats = Math.max(1, Number(meta?.number_of_rounds ?? 1));
+      steps = expandByRoundsIfSingleRound(baseSteps, repeats);
+    } else {
+      steps = baseSteps.map((s, i) => ({ ...s, index: i }));
+    }
+
+    // cum reps (used elsewhere; safe for EMOM)
     const stepsCumReps: number[] = [];
     let running = 0;
     for (const s of steps) {
@@ -73,9 +122,11 @@ export class LiveClassService implements ILiveClassService {
       stepsCumReps.push(running);
     }
 
-    const workoutType = await this.repo.getWorkoutType(workoutId);
-    return { steps, stepsCumReps, workoutType: workoutType ?? 'FOR_TIME' };
+    return { steps, stepsCumReps, workoutType };
   }
+
+
+
 
   // --- Submit score (coach batch or member single) ---
   async submitScore(userId: number, roles: string[] = [], body: any) {
@@ -96,23 +147,40 @@ export class LiveClassService implements ILiveClassService {
     return { success: true };
   }
 
-  // --- Coach session controls ---
+
   async startLiveClass(classId: number) {
     const cls = await this.repo.getClassMeta(classId);
     if (!cls) throw new Error('CLASS_NOT_FOUND');
     if (!cls.workout_id) throw new Error('WORKOUT_NOT_ASSIGNED');
 
     const workoutId: number = Number(cls.workout_id);
-    const { steps, stepsCumReps, workoutType } = await this.getWorkoutSteps(workoutId);
-    const timeCapSeconds = Number(cls.duration_minutes || 0) * 60;
 
+    // Get steps (already expanded for FOR TIME) + type
+    const { steps, stepsCumReps, workoutType } = await this.getWorkoutSteps(workoutId);
+
+    // Load metadata so we can pass it through AND apply time cap from metadata if present
     const meta = await this.repo.getWorkoutMetadata(workoutId);
-    await this.repo.upsertClassSession(classId, workoutId, timeCapSeconds, steps, stepsCumReps, workoutType, meta); // pass meta
+    const capFromMeta = Number(meta?.time_limit ?? 0) * 60;
+    const timeCapSeconds =
+      Number.isFinite(capFromMeta) && capFromMeta > 0
+        ? capFromMeta
+        : Number(cls.duration_minutes || 0) * 60;
+
+    await this.repo.upsertClassSession(
+      classId,
+      workoutId,
+      timeCapSeconds,
+      steps,
+      stepsCumReps,
+      workoutType,
+      meta
+    );
 
     await this.repo.seedLiveProgressForClass(classId);
     await this.repo.resetLiveProgressForClass(classId);
     return this.repo.getClassSession(classId);
   }
+
 
   async stopLiveClass(classId: number) {
     await this.repo.stopSession(classId);
@@ -217,22 +285,25 @@ export class LiveClassService implements ILiveClassService {
 
     await this.repo.assertMemberBooked(classId, userId);
 
-    const m = Math.max(0, Number(payload.minuteIndex || 0));
-    // If finished=false and no seconds provided, treat as 60 (full-minute penalty).
-    // If finished=true and no seconds provided, treat as 0 (instant, but you can tweak).
+    // planned minutes from metadata to keep inbound minuteIndex sane
+    const sessionRow = await this.repo.getClassSession(classId);
+    const planned = Array.isArray(sessionRow?.workout_metadata?.emom_repeats)
+      ? (sessionRow!.workout_metadata!.emom_repeats as any[]).map(Number).reduce((a, b) => a + b, 0)
+      : 0;
+
+    // clamp minute index within 0..planned-1 (if we know the plan)
+    let m = Math.max(0, Number(payload.minuteIndex || 0));
+    if (planned > 0) m = Math.min(m, planned - 1);
+
+    // ✅ allow 60 as the "not finished" penalty; finished minutes should be 0..59
     const sec =
       payload.finishSeconds == null
         ? (payload.finished ? 0 : 60)
-        : Math.max(0, Math.min(59, Number(payload.finishSeconds)));
+        : Math.max(0, Math.min(60, Number(payload.finishSeconds)));
 
-    await this.repo.upsertEmomMark(
-      classId,
-      userId,
-      m,
-      !!payload.finished,
-      sec
-    );
+    await this.repo.upsertEmomMark(classId, userId, m, !!payload.finished, sec);
   }
+
 
 
   async getCoachNote(classId: number) {
@@ -242,6 +313,17 @@ export class LiveClassService implements ILiveClassService {
     await this.repo.assertCoachOwnsClass(classId, coachId);
     await this.repo.setCoachNote(classId, text);
   }
+
+  async coachEmomSetTotalEndedOnly(classId: number, coachId: number, userId: number, totalSeconds: number) {
+    await this.repo.assertCoachOwnsClass(classId, coachId);
+    const sess = await this.repo.getClassSession(classId);
+    if (!sess) throw new Error('SESSION_NOT_FOUND');
+    if ((sess.status || '').toString() !== 'ended') throw new Error('NOT_ENDED');
+
+    await this.repo.assertMemberBooked(classId, userId);
+    await this.repo.upsertFinal(classId, userId, { seconds: Math.max(0, Number(totalSeconds || 0)), finished: true });
+  }
+
 
   // --- Coach edit: FOR_TIME finish ---
   async coachSetForTimeFinish(classId: number, coachId: number, userId: number, finishSeconds: number | null) {

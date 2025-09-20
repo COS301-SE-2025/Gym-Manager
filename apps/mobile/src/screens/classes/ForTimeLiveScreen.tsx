@@ -1,3 +1,4 @@
+// apps/mobile/src/screens/classes/ForTimeLiveScreen.tsx
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, Pressable, SafeAreaView, StatusBar,
@@ -25,6 +26,35 @@ function useNowSec() {
   return now;
 }
 
+function toEpochSecMaybe(ts: any): number {
+  if (!ts) return 0;
+  if (typeof ts === 'number') return ts;
+  const s = String(ts).replace(' ', 'T');
+  const hasTZ = /[zZ]|[+\-]\d{2}:\d{2}$/.test(s);
+  const iso = hasTZ ? s : s + 'Z';
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) ? Math.floor(ms/1000) : 0;
+}
+
+// "10 x Pushups"  or  "10 sec — Plank"
+function fmtStepLabel(step: any): string {
+  const qtyType = step?.quantityType ?? (typeof step?.reps === 'number' ? 'reps' : (typeof step?.duration === 'number' ? 'duration' : undefined));
+  if (qtyType === 'reps' && typeof step?.reps === 'number') {
+    return `${step.reps} x ${step?.name ?? '—'}`;
+  }
+  if (qtyType === 'duration' && typeof step?.duration === 'number') {
+    return `${step.duration} sec — ${step?.name ?? '—'}`;
+  }
+  return step?.name ?? '—';
+}
+
+function fmt(t: number) {
+  const s = Math.max(0, Math.floor(t));
+  const m = Math.floor(s / 60);
+  const ss = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+}
+
 export default function ForTimeLiveScreen() {
   const { params } = useRoute<R>();
   const classId = params.classId as number;
@@ -44,31 +74,30 @@ export default function ForTimeLiveScreen() {
     }, [])
   );
 
-  const session = useSession(classId);                // polls /live/:classId/session
-  const progress = useMyProgress(classId);            // polls /live/:classId/me
+  const session = useSession(classId);
+  const progress = useMyProgress(classId);
   
   const [scope, setScope] = useState<LbFilter>('ALL');
   const lb = useLeaderboardRealtime(classId, scope);
-
 
   const steps: any[] = (session?.steps as any[]) ?? [];
   const cum: number[] = (session?.steps_cum_reps as any[]) ?? [];
   const ready = Array.isArray(steps) && steps.length > 0;
 
-  // local, optimistic step index
+  // local, optimistic step index synced from server progress
   const [localIdx, setLocalIdx] = useState(0);
   useEffect(() => {
     if (!ready) return;
     setLocalIdx(Math.max(0, Math.min(steps.length, Number(progress.current_step ?? 0))));
   }, [ready, progress.current_step, steps.length]);
 
-  // pause-aware elapsed seconds
+  // pause-aware elapsed seconds (robust if epoch helpers missing)
   const nowSec = useNowSec();
-  const startedAtSec = Number((session as any)?.started_at_s ?? 0);
-  const pausedAtSec = Number((session as any)?.paused_at_s ?? 0);
-  const pauseAccum = Number((session as any)?.pause_accum_seconds ?? 0);
-  const extraPaused = session?.status === 'paused' && pausedAtSec ? Math.max(0, nowSec - pausedAtSec) : 0;
-  const elapsed = startedAtSec ? Math.max(0, (nowSec - startedAtSec) - (pauseAccum + extraPaused)) : 0;
+  const startedAtSec = Number((session as any)?.started_at_s ?? 0) || toEpochSecMaybe((session as any)?.started_at);
+  const pausedAtSec  = Number((session as any)?.paused_at_s  ?? 0) || toEpochSecMaybe((session as any)?.paused_at);
+  const pauseAccum   = Number((session as any)?.pause_accum_seconds ?? 0);
+  const extraPaused  = session?.status === 'paused' && pausedAtSec ? Math.max(0, nowSec - pausedAtSec) : 0;
+  const elapsed      = startedAtSec ? Math.max(0, (nowSec - startedAtSec) - (pauseAccum + extraPaused)) : 0;
 
   const cap = session?.time_cap_seconds ?? 0;
   const timeUp = cap > 0 && elapsed >= cap;
@@ -87,7 +116,6 @@ export default function ForTimeLiveScreen() {
     return within + (progress.dnf_partial_reps ?? 0);
   }, [ready, finished, localIdx, cum, progress.dnf_partial_reps, session?.workout_type]);
 
-  // Ask partial only if NOT finished and (time up OR coach stopped)
   const askPartial = ready && !finished && (timeUp || session?.status === 'ended');
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -180,8 +208,8 @@ export default function ForTimeLiveScreen() {
           <>
             <Text style={s.stepCounter}>{String(localIdx + 1).padStart(2,'0')} / {String(totalSteps).padStart(2,'0')}</Text>
             {!!scoreSoFar && <Text style={s.score}>{scoreSoFar} reps</Text>}
-            <Text style={s.current}>{current?.name ?? '—'}</Text>
-            <Text style={s.nextLabel}>Next: {next?.name ?? '—'}</Text>
+            <Text style={s.current}>{fmtStepLabel(current)}</Text>
+            <Text style={s.nextLabel}>Next: {fmtStepLabel(next)}</Text>
 
             <View style={[s.lb, { zIndex: 50, elevation: 6 }]} pointerEvents="auto">
               <Text style={s.lbTitle}>Leaderboard</Text>
@@ -260,14 +288,6 @@ export default function ForTimeLiveScreen() {
       </Modal>
     </SafeAreaView>
   );
-
-}
-
-function fmt(t: number) {
-  const s = Math.max(0, Math.floor(t));
-  const m = Math.floor(s / 60);
-  const ss = s % 60;
-  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
 }
 
 const s = StyleSheet.create({

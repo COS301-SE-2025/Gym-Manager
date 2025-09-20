@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, SafeAreaView, StatusBar,
-  ActivityIndicator, Animated,
-  TouchableOpacity
+  ActivityIndicator, Animated, TouchableOpacity
 } from 'react-native';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -29,11 +28,10 @@ const fmt = (t: number) => {
 };
 
 export default function EmomLiveScreen() {
-  const { params } = useRoute<R>();
-  const classId = params.classId as number;
+  const route = useRoute<R>();
+  const classId = Number(route.params.classId);
   const nav = useNavigation<any>();
 
-  // lock to LANDSCAPE while focused
   useFocusEffect(
     React.useCallback(() => {
       (async () => { try { await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_LEFT); } catch {} })();
@@ -41,20 +39,65 @@ export default function EmomLiveScreen() {
     }, [])
   );
 
+  if (!classId) {
+    return (
+      <SafeAreaView style={s.root}>
+        <StatusBar barStyle="light-content" backgroundColor="#0d150f" />
+        <View style={{ padding: 20 }}>
+          <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>Missing classId</Text>
+          <Text style={{ color: '#aaa', marginTop: 6 }}>
+            Ensure AuthStackParamList includes {'{ EmomLive: { classId: number } }'} and the navigator passes it.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const session = useSession(classId);
-  
+
   const [scope, setScope] = useState<LbFilter>('ALL');
   const lb = useLeaderboardRealtime(classId, scope);
 
+  // --- Steps with metadata fallback ---
+  const stepsFromSession: any[] = Array.isArray((session as any)?.steps) ? ((session as any).steps as any[]) : [];
 
-  const steps: any[] = (session?.steps as any[]) ?? [];
-  const ready = Array.isArray(steps) && steps.length > 0;
+  // Optional metadata fallback: workout_metadata.emom_rounds = [ [ex, ex...], [ex, ex...] ]
+  // Each ex can be a string or { name: string }
+  const metaRounds: any[] | null = Array.isArray((session as any)?.workout_metadata?.emom_rounds)
+    ? (session as any).workout_metadata.emom_rounds
+    : null;
+
+  const fallbackSteps: any[] = useMemo(() => {
+    if (!metaRounds) return [];
+    const built: any[] = [];
+    let idx = 0;
+    metaRounds.forEach((roundArr, rIdx) => {
+      if (!Array.isArray(roundArr)) return;
+      roundArr.forEach((ex: any, i: number) => {
+        const name = typeof ex === 'string' ? ex : String(ex?.name ?? '');
+        if (!name) return;
+        built.push({
+          index: idx++,
+          round: rIdx + 1,
+          subround: 1,
+          name,
+          duration: 60, // EMOM minute; UI doesn't rely on this, but handy to keep consistent
+        });
+      });
+    });
+    return built;
+  }, [metaRounds]);
+
+  const steps: any[] = stepsFromSession.length ? stepsFromSession : fallbackSteps;
+
+  // ✅ Consider the session "ready" when we have a session row; exercises will appear as soon as steps arrive or fallback builds them.
+  const ready = !!session;
 
   // group by round
   const rounds = useMemo(() => {
     const byRound: Record<number, any[]> = {};
     for (const s of steps) {
-      const r = Number(s.round ?? 1);
+      const r = Number((s as any)?.round ?? 1);
       byRound[r] ??= [];
       byRound[r].push(s);
     }
@@ -98,14 +141,14 @@ export default function EmomLiveScreen() {
   const totalInRound   = currentRound.length;
 
   // local within the current minute
-  const [localIdx, setLocalIdx] = useState(0);                 // step pointer (0..totalInRound)
+  const [localIdx, setLocalIdx] = useState(0);
   const [finishedThisMinute, setFinishedThisMinute] = useState(false);
   const sentForMinute = useRef<Set<number>>(new Set());
 
   const canAct =
     !!session?.class_id &&
     (session?.status === 'live' || session?.status === 'paused' || session?.status === 'ended') &&
-    ready;
+    (totalMinutes > 0);
 
   // submit mark helper
   const mark = useCallback(async (finished: boolean, mIdx: number, completed: number, total: number, finishSeconds?: number) => {
@@ -125,7 +168,7 @@ export default function EmomLiveScreen() {
       );
       sentForMinute.current.add(mIdx);
     } catch {
-      // no toast here; we’ll attempt again on next boundary/state change if needed
+      // retry on next tick / boundary if needed
     }
   }, [canAct, classId]);
 
@@ -216,7 +259,6 @@ export default function EmomLiveScreen() {
 
   const elapsedClamped = Math.min(elapsed, totalMinutes * 60 || elapsed);
 
-  // UI
   const lbTop = lb.slice(0, 6);
 
   return (
@@ -238,9 +280,18 @@ export default function EmomLiveScreen() {
         ) : (
           <>
             <Text style={s.stepCounter}>
-              Round {String(Math.min(minuteIdx + 1, totalMinutes)).padStart(2,'0')} / {String(totalMinutes).padStart(2,'0')}
+              {totalMinutes > 0 ? (
+                <>Round {String(Math.min(minuteIdx + 1, totalMinutes)).padStart(2,'0')} / {String(totalMinutes).padStart(2,'0')}</>
+              ) : (
+                <>Waiting for coach…</>
+              )}
             </Text>
-            <Text style={s.score}>{String(Math.min(localIdx, totalInRound)).padStart(2,'0')} / {String(totalInRound).padStart(2,'0')} exercises</Text>
+
+            <Text style={s.score}>
+              {totalInRound > 0
+                ? `${String(Math.min(localIdx, totalInRound)).padStart(2,'0')} / ${String(totalInRound).padStart(2,'0')} exercises`
+                : 'No exercises yet'}
+            </Text>
 
             {plannedDone ? (
               <>
@@ -279,7 +330,7 @@ export default function EmomLiveScreen() {
                 ))}
               </View>
 
-              {lb.slice(0, 6).map((r: any, i: number) => {
+              {lbTop.map((r: any, i: number) => {
                 const displayName =
                   (r.first_name || r.last_name)
                     ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
@@ -301,8 +352,8 @@ export default function EmomLiveScreen() {
 
       {/* press zones */}
       <View style={s.row}>
-        <Pressable style={s.back} android_ripple={{color:'#000'}} onPress={() => go(-1)} disabled={!ready || session?.status !== 'live' || plannedDone} />
-        <Pressable style={s.next} android_ripple={{color:'#0a0'}} onPress={() => go(1)} disabled={!ready || session?.status !== 'live' || plannedDone} />
+        <Pressable style={s.back} android_ripple={{color:'#000'}} onPress={() => go(-1)} disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0} />
+        <Pressable style={s.next} android_ripple={{color:'#0a0'}} onPress={() => go(1)} disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0} />
       </View>
 
       {/* PAUSE overlay */}
@@ -318,7 +369,6 @@ export default function EmomLiveScreen() {
       )}
     </SafeAreaView>
   );
-
 }
 
 const s = StyleSheet.create({

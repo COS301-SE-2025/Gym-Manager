@@ -245,7 +245,10 @@ export const classattendance = pgTable(
     memberId: integer('member_id').notNull(),
     markedAt: timestamp('marked_at', { mode: 'string' }).defaultNow(),
     score: integer().default(0),
-    scaling: varchar('scaling', { length: 10 }).default('rx').notNull(), 
+    scaling: varchar('scaling', { length: 10 }).default('rx').notNull(),
+    scoreSeconds: integer('score_seconds'),
+    scoreReps: integer('score_reps'),
+    finished: boolean('finished'),
   },
   (table) => [
     foreignKey({
@@ -410,3 +413,5 @@ export const userFinancialMetrics = pgTable("user_financial_metrics", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
 });
+
+

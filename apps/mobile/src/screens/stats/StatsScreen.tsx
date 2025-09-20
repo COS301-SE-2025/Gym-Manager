@@ -57,6 +57,47 @@ const StatsScreen = ({ navigation }: any) => {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
+    if (Platform.OS === 'ios') {
+      initializeHealthKit();
+    }
+  }, []);
+
+  const initializeHealthKit = async () => {
+    try {
+      const healthKit = NativeModules.RCTAppleHealthKit;
+      
+      if (healthKit && healthKit.initHealthKit) {
+        console.log('Attempting to initialize HealthKit...');
+        
+        const permissions = {
+          permissions: {
+            read: [
+              Constants.Permissions.Steps, 
+              Constants.Permissions.HeartRate,
+              Constants.Permissions.ActiveEnergyBurned,
+              Constants.Permissions.DistanceWalkingRunning
+            ],
+            write: [],
+          }
+        };
+
+        healthKit.initHealthKit(permissions, (error: string) => {
+          if (error) {
+            console.log('Error initializing HealthKit:', error);
+          } else {
+            console.log('HealthKit initialized successfully!');
+          }
+        });
+      } else {
+        console.log('HealthKit not available');
+      }
+    } catch (error) {
+      console.log('Error in initializeHealthKit:', error);
+    }
+  };
+
+
+  useEffect(() => {
     loadData();
   }, []);
 
@@ -95,15 +136,25 @@ const StatsScreen = ({ navigation }: any) => {
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
 
-      const todayOptions = {
+      const stepOptions = {
         startDate: startOfDay.toISOString(),
         endDate: endOfDay.toISOString(),
       };
 
+      const caloriesOptions = {
+        startDate: startOfDay.toISOString(),
+        endDate: endOfDay.toISOString(),
+      }
+
+      const distanceOptions = {
+        date: new Date().toISOString(),
+        unit: 'kilometer',
+      }
+
       console.log('Getting today\'s health metrics...');
       
       // Get today's steps
-      healthKit.getStepCount(todayOptions, (error: string, results: any) => {
+      healthKit.getStepCount(stepOptions, (error: string, results: any) => {
         if (error) {
           console.log('Error getting today\'s steps:', error);
         } else {
@@ -118,7 +169,7 @@ const StatsScreen = ({ navigation }: any) => {
       });
 
       // Get today's active energy (calories)
-      healthKit.getActiveEnergyBurned(todayOptions, (error: string, results: any) => {
+      healthKit.getActiveEnergyBurned(caloriesOptions, (error: string, results: any) => {
         if (error) {
           console.log('Error getting today\'s calories:', error);
         } else {
@@ -133,7 +184,7 @@ const StatsScreen = ({ navigation }: any) => {
       });
 
       // Get today's distance
-      healthKit.getDistanceWalkingRunning(todayOptions, (error: string, results: any) => {
+      healthKit.getDistanceWalkingRunning(distanceOptions, (error: string, results: any) => {
         if (error) {
           console.log('Error getting today\'s distance:', error);
         } else {
@@ -141,7 +192,7 @@ const StatsScreen = ({ navigation }: any) => {
           if (results && results.value !== undefined) {
             setTodayMetrics(prev => ({
               ...prev,
-              distance: Math.round(results.value * 100) / 100 // Round to 2 decimal places
+              distance: results.value
             }));
           }
         }

@@ -23,6 +23,12 @@ interface StepData {
   steps: number;
 }
 
+interface DailyMetrics {
+  steps: number;
+  calories: number;
+  distance: number; // in kilometers
+}
+
 interface AttendedClass {
   classId: number;
   workoutName: string;
@@ -39,7 +45,11 @@ interface AttendedClass {
 
 const StatsScreen = ({ navigation }: any) => {
   const [stepData, setStepData] = useState<StepData[]>([]);
-  const [todaySteps, setTodaySteps] = useState<number>(0);
+  const [todayMetrics, setTodayMetrics] = useState<DailyMetrics>({
+    steps: 0,
+    calories: 0,
+    distance: 0,
+  });
   const [weeklyTotal, setWeeklyTotal] = useState<number>(0);
   const [attendedClasses, setAttendedClasses] = useState<AttendedClass[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,14 +100,49 @@ const StatsScreen = ({ navigation }: any) => {
         endDate: endOfDay.toISOString(),
       };
 
-      console.log('Getting today\'s step count...');
+      console.log('Getting today\'s health metrics...');
+      
+      // Get today's steps
       healthKit.getStepCount(todayOptions, (error: string, results: any) => {
         if (error) {
           console.log('Error getting today\'s steps:', error);
         } else {
           console.log('Today\'s step results:', results);
           if (results && results.value !== undefined) {
-            setTodaySteps(Math.round(results.value));
+            setTodayMetrics(prev => ({
+              ...prev,
+              steps: Math.round(results.value)
+            }));
+          }
+        }
+      });
+
+      // Get today's active energy (calories)
+      healthKit.getActiveEnergyBurned(todayOptions, (error: string, results: any) => {
+        if (error) {
+          console.log('Error getting today\'s calories:', error);
+        } else {
+          console.log('Today\'s calorie results:', results);
+          if (results && results.value !== undefined) {
+            setTodayMetrics(prev => ({
+              ...prev,
+              calories: Math.round(results.value)
+            }));
+          }
+        }
+      });
+
+      // Get today's distance
+      healthKit.getDistanceWalkingRunning(todayOptions, (error: string, results: any) => {
+        if (error) {
+          console.log('Error getting today\'s distance:', error);
+        } else {
+          console.log('Today\'s distance results:', results);
+          if (results && results.value !== undefined) {
+            setTodayMetrics(prev => ({
+              ...prev,
+              distance: Math.round(results.value * 100) / 100 // Round to 2 decimal places
+            }));
           }
         }
       });
@@ -294,7 +339,7 @@ const StatsScreen = ({ navigation }: any) => {
 
   const getStepGoalProgress = () => {
     const dailyGoal = 10000; // 10,000 steps goal
-    return Math.min((todaySteps / dailyGoal) * 100, 100);
+    return Math.min((todayMetrics.steps / dailyGoal) * 100, 100);
   };
 
   const getAverageSteps = () => {
@@ -358,48 +403,51 @@ const StatsScreen = ({ navigation }: any) => {
         }
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Your Stats</Text>
+          <Text style={styles.title}>Today's Stats</Text>
           <TouchableOpacity onPress={loadData} style={styles.refreshButton}>
             <Ionicons name="refresh-outline" size={24} color="#D8FF3E" />
           </TouchableOpacity>
         </View>
 
-        {/* Today's Steps Card */}
-        <View style={styles.stepCard}>
-          <View style={styles.stepHeader}>
-            <Ionicons name="footsteps-outline" size={28} color="#D8FF3E" />
-            <Text style={styles.stepTitle}>Today's Steps</Text>
-          </View>
-          <Text style={styles.stepCount}>{todaySteps.toLocaleString()}</Text>
-          <Text style={styles.stepSubtext}>steps today</Text>
-          
-          {/* Progress bar */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { width: `${getStepGoalProgress()}%` }
-                ]} 
-              />
+        {/* Main Health Metrics */}
+        <View style={styles.metricsContainer}>
+          <View style={styles.metricCard}>
+            <View style={styles.metricHeader}>
+              <Ionicons name="footsteps-outline" size={24} color="#D8FF3E" />
+              <Text style={styles.metricLabel}>Steps</Text>
             </View>
-            <Text style={styles.progressText}>
-              {getStepGoalProgress().toFixed(0)}% of 10,000 daily goal
-            </Text>
+            <Text style={styles.metricValue}>{todayMetrics.steps.toLocaleString()}</Text>
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { width: `${getStepGoalProgress()}%` }
+                  ]} 
+                />
+              </View>
+              <Text style={styles.progressText}>
+                {getStepGoalProgress().toFixed(0)}% of goal
+              </Text>
+            </View>
           </View>
-        </View>
 
-        {/* Weekly Summary */}
-        <View style={styles.summaryContainer}>
-          <View style={styles.summaryCard}>
-            <Ionicons name="calendar-outline" size={24} color="#D8FF3E" />
-            <Text style={styles.summaryNumber}>{weeklyTotal.toLocaleString()}</Text>
-            <Text style={styles.summaryLabel}>This Week</Text>
+          <View style={styles.metricCard}>
+            <View style={styles.metricHeader}>
+              <Ionicons name="flame-outline" size={24} color="#D8FF3E" />
+              <Text style={styles.metricLabel}>Calories</Text>
+            </View>
+            <Text style={styles.metricValue}>{todayMetrics.calories.toLocaleString()}</Text>
+            <Text style={styles.metricSubtext}>Active energy</Text>
           </View>
-          <View style={styles.summaryCard}>
-            <Ionicons name="trending-up-outline" size={24} color="#D8FF3E" />
-            <Text style={styles.summaryNumber}>{getAverageSteps().toLocaleString()}</Text>
-            <Text style={styles.summaryLabel}>Daily Average</Text>
+
+          <View style={styles.metricCard}>
+            <View style={styles.metricHeader}>
+              <Ionicons name="location-outline" size={24} color="#D8FF3E" />
+              <Text style={styles.metricLabel}>Distance</Text>
+            </View>
+            <Text style={styles.metricValue}>{todayMetrics.distance}</Text>
+            <Text style={styles.metricSubtext}>km today</Text>
           </View>
         </View>
 
@@ -431,42 +479,6 @@ const StatsScreen = ({ navigation }: any) => {
             </View>
           )}
         </View>
-
-        {/* 7-Day Step History */}
-        {stepData.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>7-Day Step History</Text>
-            <View style={styles.stepHistoryContainer}>
-              {stepData.map((item, index) => {
-                const isToday = formatStepDate(item.date) === 'Today';
-                return (
-                  <View key={index} style={[
-                    styles.stepHistoryItem,
-                    index === stepData.length - 1 && styles.lastItem
-                  ]}>
-                    <Text style={[
-                      styles.stepHistoryDate,
-                      isToday && styles.todayText
-                    ]}>
-                      {formatStepDate(item.date)}
-                    </Text>
-                    <View style={styles.stepHistoryRight}>
-                      <Text style={[
-                        styles.stepHistoryCount,
-                        isToday && styles.todayStepCount
-                      ]}>
-                        {item.steps.toLocaleString()}
-                      </Text>
-                      {item.steps >= 10000 && (
-                        <Ionicons name="checkmark-circle" size={16} color="#4CAF50" style={styles.goalIcon} />
-                      )}
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        )}
 
         {/* No Data State */}
         {Platform.OS !== 'ios' && (
@@ -527,54 +539,56 @@ const styles = StyleSheet.create({
   refreshButton: {
     padding: 8,
   },
-  stepCard: {
+  metricsContainer: {
+    marginBottom: 24,
+  },
+  metricCard: {
     backgroundColor: '#2a2a2a',
     borderRadius: 16,
-    padding: 24,
-    marginBottom: 20,
-    alignItems: 'center',
+    padding: 20,
+    marginBottom: 12,
   },
-  stepHeader: {
+  metricHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  stepTitle: {
-    fontSize: 20,
+  metricLabel: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#fff',
     marginLeft: 8,
   },
-  stepCount: {
-    fontSize: 56,
+  metricValue: {
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#D8FF3E',
     marginBottom: 4,
   },
-  stepSubtext: {
-    fontSize: 16,
+  metricSubtext: {
+    fontSize: 14,
     color: '#888',
-    marginBottom: 20,
   },
   progressContainer: {
     width: '100%',
-    alignItems: 'center',
+    marginTop: 8,
   },
   progressBar: {
     width: '100%',
-    height: 8,
+    height: 6,
     backgroundColor: '#3a3a3a',
-    borderRadius: 4,
-    marginBottom: 8,
+    borderRadius: 3,
+    marginBottom: 6,
   },
   progressFill: {
     height: '100%',
     backgroundColor: '#D8FF3E',
-    borderRadius: 4,
+    borderRadius: 3,
   },
   progressText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#888',
+    textAlign: 'left',
   },
   summaryContainer: {
     flexDirection: 'row',

@@ -34,10 +34,19 @@ const WorkoutDetailScreen = ({ route, navigation }: WorkoutDetailScreenProps) =>
 
   const loadHeartRateData = async () => {
     try {
+      // Initialize HealthService first
+      await HealthService.initialize();
+      
       const startDate = new Date(workout.startDate);
       const endDate = new Date(workout.endDate);
       
+      console.log('Loading heart rate data for period:', {
+        start: startDate.toISOString(),
+        end: endDate.toISOString()
+      });
+      
       const hrData = await HealthService.getHeartRateData(startDate, endDate);
+      console.log('Heart rate data loaded:', hrData);
       setHeartRateData(hrData);
     } catch (error) {
       console.error('Error loading heart rate data:', error);

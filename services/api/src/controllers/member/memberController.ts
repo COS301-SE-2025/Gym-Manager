@@ -148,4 +148,29 @@ export class MemberController {
       }
     }
   };
+
+  /**
+   * Get member's attended classes
+   */
+  getAttendedClasses = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { userId } = req.params;
+      const userIdNum = parseInt(userId, 10);
+
+      if (isNaN(userIdNum)) {
+        res.status(400).json({ error: 'Invalid user ID' });
+        return;
+      }
+
+      const attendedClasses = await this.memberService.getAttendedClasses(userIdNum);
+      res.json(attendedClasses);
+    } catch (error: any) {
+      console.error('Error getting attended classes:', error);
+      if (error.message === 'Member not found') {
+        res.status(404).json({ error: 'Member not found' });
+      } else {
+        res.status(500).json({ error: 'Failed to get attended classes' });
+      }
+    }
+  };
 }

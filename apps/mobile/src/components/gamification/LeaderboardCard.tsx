@@ -32,12 +32,7 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
   };
 
   const getRankEmoji = (rank: number) => {
-    switch (rank) {
-      case 1: return '🥇';
-      case 2: return '🥈';
-      case 3: return '🥉';
-      default: return `#${rank}`;
-    }
+    return `#${rank}`;
   };
 
   return (
@@ -105,7 +100,7 @@ const styles = StyleSheet.create({
   mainStat: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#ff6b35',
+    color: '#D8FF3E',
     marginBottom: 2,
   },
   subStat: {

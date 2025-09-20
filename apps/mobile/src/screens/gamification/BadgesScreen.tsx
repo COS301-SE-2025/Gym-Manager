@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: '#ff6b35',
+    backgroundColor: '#D8FF3E',
   },
   tabText: {
     fontSize: 14,
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     color: '#888',
   },
   activeTabText: {
-    color: '#fff',
+    color: '#000',
   },
   listContainer: {
     paddingHorizontal: 20,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   },
   badgePoints: {
     fontSize: 14,
-    color: '#ff6b35',
+    color: '#D8FF3E',
     fontWeight: '600',
   },
   earnedIndicator: {

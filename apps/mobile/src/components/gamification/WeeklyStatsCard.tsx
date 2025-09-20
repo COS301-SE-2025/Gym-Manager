@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ff6b35',
+    color: '#D8FF3E',
     marginBottom: 4,
   },
   statLabel: {
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#ff6b35',
+    backgroundColor: '#D8FF3E',
     borderRadius: 4,
   },
   progressText: {

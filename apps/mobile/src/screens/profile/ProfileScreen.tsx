@@ -245,12 +245,12 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               <View>
                 <StreakCard 
                   streak={gamificationStats.userStreak} 
-                  onPress={() => navigation.navigate('GamificationScreen' as never)}
+                  onPress={() => navigation.navigate('MemberTabs', { screen: 'Progress' })}
                 />
                 
                 <TouchableOpacity
                   style={styles.settingItem}
-                  onPress={() => navigation.navigate('GamificationScreen' as never)}
+                  onPress={() => navigation.navigate('MemberTabs', { screen: 'Progress' })}
                 >
                   <View style={styles.settingLeft}>
                     <Ionicons name="trophy-outline" size={24} color="#D8FF3E" />

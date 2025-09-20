@@ -29,6 +29,9 @@ import FAQScreen from '../screens/home/FAQScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import PaymentScreen from '../screens/profile/PaymentScreen';
 import MemberAnalyticsScreen from '../screens/profile/MemberAnalyticsScreen';
+import GamificationScreen from '../screens/gamification/GamificationScreen';
+import BadgesScreen from '../screens/gamification/BadgesScreen';
+import GamificationLeaderboardScreen from '../screens/gamification/LeaderboardScreen';
 
 export type AuthStackParamList = {
   MemberTabs: undefined;
@@ -61,6 +64,40 @@ export type AuthStackParamList = {
 
 const Stack = createStackNavigator<AuthStackParamList>();
 const Tab = createBottomTabNavigator();
+const ProgressStack = createStackNavigator();
+
+function ProgressStackNavigator() {
+  return (
+    <ProgressStack.Navigator
+      screenOptions={{
+        headerShown: true,
+        headerStyle: { backgroundColor: '#1a1a1a' },
+        headerTintColor: '#D8FF3E',
+        headerTitleStyle: { fontWeight: 'bold', color: '#fff' },
+        headerBackTitleVisible: false,
+      }}
+    >
+      <ProgressStack.Screen 
+        name="GamificationMain" 
+        component={GamificationScreen}
+        options={{ 
+          title: 'Your Progress',
+          headerLeft: () => null, // Remove back button from main screen
+        }}
+      />
+      <ProgressStack.Screen 
+        name="BadgesScreen" 
+        component={BadgesScreen}
+        options={{ title: 'All Badges' }}
+      />
+      <ProgressStack.Screen 
+        name="LeaderboardScreen" 
+        component={GamificationLeaderboardScreen}
+        options={{ title: 'Leaderboard' }}
+      />
+    </ProgressStack.Navigator>
+  );
+}
 
 function MemberTabNavigator() {
   return (
@@ -84,6 +121,15 @@ function MemberTabNavigator() {
       <Tab.Screen
         name="Leaderboard"
         component={LeaderboardScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="podium-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Progress"
+        component={ProgressStackNavigator}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="trophy-outline" color={color} size={size} />

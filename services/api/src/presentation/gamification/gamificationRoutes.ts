@@ -1,14 +1,16 @@
 import { Router } from 'express';
 import { GamificationController } from '../../controllers/gamification/gamificationController';
-import { authMiddleware } from '../../infrastructure/middleware/authMiddleware';
+import { AuthMiddleware } from '../../infrastructure/middleware/authMiddleware';
 
 export class GamificationRoutes {
   private router: Router;
   private gamificationController: GamificationController;
+  private authMiddleware: AuthMiddleware;
 
   constructor(gamificationController: GamificationController) {
     this.router = Router();
     this.gamificationController = gamificationController;
+    this.authMiddleware = new AuthMiddleware();
     this.setupRoutes();
   }
 
@@ -24,28 +26,25 @@ export class GamificationRoutes {
       this.gamificationController.getPointsLeaderboard(req, res)
     );
 
-    // Protected routes (authentication required)
-    this.router.use(authMiddleware);
-
-    // User-specific gamification data
-    this.router.get('/stats', (req, res) => 
+    // User-specific gamification data (authentication required)
+    this.router.get('/stats', this.authMiddleware.isAuthenticated, (req, res) => 
       this.gamificationController.getGamificationStats(req, res)
     );
-    this.router.get('/streak', (req, res) => 
+    this.router.get('/streak', this.authMiddleware.isAuthenticated, (req, res) => 
       this.gamificationController.getUserStreak(req, res)
     );
-    this.router.get('/badges', (req, res) => 
+    this.router.get('/badges', this.authMiddleware.isAuthenticated, (req, res) => 
       this.gamificationController.getUserBadges(req, res)
     );
-    this.router.get('/activities', (req, res) => 
+    this.router.get('/activities', this.authMiddleware.isAuthenticated, (req, res) => 
       this.gamificationController.getUserActivities(req, res)
     );
 
-    // Activity recording
-    this.router.post('/activity', (req, res) => 
+    // Activity recording (authentication required)
+    this.router.post('/activity', this.authMiddleware.isAuthenticated, (req, res) => 
       this.gamificationController.recordActivity(req, res)
     );
-    this.router.post('/workout-completed', (req, res) => 
+    this.router.post('/workout-completed', this.authMiddleware.isAuthenticated, (req, res) => 
       this.gamificationController.recordWorkoutCompletion(req, res)
     );
   }

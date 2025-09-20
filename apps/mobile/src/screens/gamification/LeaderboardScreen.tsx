@@ -82,7 +82,7 @@ export default function LeaderboardScreen() {
           onPress={() => setActiveTab('streak')}
         >
           <Text style={[styles.tabText, activeTab === 'streak' && styles.activeTabText]}>
-            🔥 Streaks
+            Streaks
           </Text>
         </TouchableOpacity>
         
@@ -91,7 +91,7 @@ export default function LeaderboardScreen() {
           onPress={() => setActiveTab('points')}
         >
           <Text style={[styles.tabText, activeTab === 'points' && styles.activeTabText]}>
-            ⭐ Points
+            Points
           </Text>
         </TouchableOpacity>
       </View>
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: '#ff6b35',
+    backgroundColor: '#D8FF3E',
   },
   tabText: {
     fontSize: 14,
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     color: '#888',
   },
   activeTabText: {
-    color: '#fff',
+    color: '#000',
   },
   podiumContainer: {
     paddingHorizontal: 20,
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   },
   podiumValue: {
     fontSize: 10,
-    color: '#ff6b35',
+    color: '#D8FF3E',
     fontWeight: '600',
   },
   leaderboardContainer: {

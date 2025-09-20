@@ -1,5 +1,5 @@
-import { db } from '../../db/connection';
-import { userStreaks, userBadges, badgeDefinitions, userActivities, users } from '../../../drizzle/schema';
+import { db } from '../../db/client';
+import { userStreaks, userBadges, badgeDefinitions, userActivities, users } from '../../db/schema';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 import { IGamificationRepository } from '../../domain/interfaces/gamification.interface';
 import { BadgeDefinition, UserBadge, UserStreak, UserActivity } from '../../domain/entities/gamification.entity';

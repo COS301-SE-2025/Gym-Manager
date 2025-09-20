@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#ff6b35',
+    backgroundColor: '#D8FF3E',
     borderRadius: 3,
   },
 });

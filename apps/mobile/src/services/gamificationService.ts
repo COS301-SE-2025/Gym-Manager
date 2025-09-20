@@ -160,28 +160,11 @@ export class GamificationService {
   }
 
   getStreakEmoji(streak: number): string {
-    if (streak === 0) return '🔥';
-    if (streak < 7) return '🔥';
-    if (streak < 30) return '🔥🔥';
-    if (streak < 100) return '🔥🔥🔥';
-    return '🔥🔥🔥🔥';
+    return ''; // No emoji
   }
 
   getBadgeIcon(badgeType: string): string {
-    switch (badgeType) {
-      case 'streak':
-        return '🔥';
-      case 'attendance':
-        return '📅';
-      case 'achievement':
-        return '🏆';
-      case 'milestone':
-        return '🎯';
-      case 'special':
-        return '⭐';
-      default:
-        return '🏅';
-    }
+    return ''; // No emoji
   }
 
   formatStreakText(streak: number): string {

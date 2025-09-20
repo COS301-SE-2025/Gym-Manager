@@ -45,20 +45,20 @@ export default function GamificationScreen() {
 
   const handleStreakPress = () => {
     // Navigate to detailed streak screen
-    navigation.navigate('StreakDetails' as never);
+    navigation.navigate('GamificationScreen');
   };
 
   const handleBadgePress = (badge: any) => {
     // Navigate to badge details
-    navigation.navigate('BadgeDetails' as never, { badge } as never);
+    navigation.navigate('BadgesScreen');
   };
 
   const handleViewAllBadges = () => {
-    navigation.navigate('BadgesScreen' as never);
+    navigation.navigate('BadgesScreen');
   };
 
   const handleViewLeaderboard = () => {
-    navigation.navigate('LeaderboardScreen' as never);
+    navigation.navigate('LeaderboardScreen');
   };
 
   if (loading) {
@@ -89,7 +89,7 @@ export default function GamificationScreen() {
     >
       <View style={styles.header}>
         <Text style={styles.title}>Your Progress</Text>
-        <Text style={styles.subtitle}>Keep the momentum going! 🔥</Text>
+        <Text style={styles.subtitle}>Keep the momentum going!</Text>
       </View>
 
       {/* Streak Card */}
@@ -130,11 +130,11 @@ export default function GamificationScreen() {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         
         <TouchableOpacity style={styles.actionButton} onPress={handleViewLeaderboard}>
-          <Text style={styles.actionButtonText}>🏆 View Leaderboard</Text>
+          <Text style={styles.actionButtonText}>View Leaderboard</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.actionButton} onPress={handleViewAllBadges}>
-          <Text style={styles.actionButtonText}>🎖️ All Badges</Text>
+          <Text style={styles.actionButtonText}>All Badges</Text>
         </TouchableOpacity>
       </View>
 
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: 14,
-    color: '#ff6b35',
+    color: '#D8FF3E',
     fontWeight: '600',
   },
   emptyState: {

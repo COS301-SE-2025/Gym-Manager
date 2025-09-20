@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   },
   points: {
     fontSize: 14,
-    color: '#ff6b35',
+    color: '#D8FF3E',
     fontWeight: '600',
   },
   description: {

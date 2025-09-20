@@ -33,7 +33,7 @@ export const GamificationWidget: React.FC<GamificationWidgetProps> = ({ onPress 
     if (onPress) {
       onPress();
     } else {
-      navigation.navigate('GamificationScreen' as never);
+      navigation.navigate('MemberTabs', { screen: 'Progress' });
     }
   };
 
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: 14,
-    color: '#ff6b35',
+    color: '#D8FF3E',
     fontWeight: '600',
   },
   content: {
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#ff6b35',
+    color: '#D8FF3E',
   },
   statLabel: {
     fontSize: 10,

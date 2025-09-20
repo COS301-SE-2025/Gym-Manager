@@ -39,6 +39,7 @@ export type AuthStackParamList = {
   LiveClassEnd: { classId: number };
   AmrapLive: { classId: number };
   IntervalLive: { classId: number };
+  EmomLive: { classId: number };
 
   // Legacy
   LiveClass?: any;

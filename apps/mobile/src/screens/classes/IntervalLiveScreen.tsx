@@ -229,13 +229,11 @@ export default function IntervalLiveScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 26 }}>
-        {Object.keys(grouped).map(rKey => {
-          const r = Number(rKey);
+        {Object.keys(grouped).map(Number).sort((a, b) => a - b).map(r => {
           const subs = grouped[r];
           return (
             <View key={`round-${r}`} style={s.roundBox}>
-              {Object.keys(subs).map(srKey => {
-                const sr = Number(srKey);
+              {Object.keys(subs).map(Number).sort((a, b) => a - b).map(sr => {
                 const exs = subs[sr];
                 return (
                   <View key={`sub-${r}-${sr}`} style={s.subBox}>

@@ -148,7 +148,6 @@ const StatsScreen = ({ navigation }: any) => {
 
       const distanceOptions = {
         date: new Date().toISOString(),
-        unit: 'kilometer',
       }
 
       console.log('Getting today\'s health metrics...');
@@ -177,7 +176,7 @@ const StatsScreen = ({ navigation }: any) => {
           if (results && results.value !== undefined) {
             setTodayMetrics(prev => ({
               ...prev,
-              calories: Math.round(results.value)
+              calories: results.value.toFixed(2)
             }));
           }
         }
@@ -197,49 +196,6 @@ const StatsScreen = ({ navigation }: any) => {
           }
         }
       });
-
-      // Get last 7 days of step data
-      const last7Days = [];
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const startOfThisDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        const endOfThisDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
-
-        const options = {
-          startDate: startOfThisDay.toISOString(),
-          endDate: endOfThisDay.toISOString(),
-        };
-
-        // Wrap in promise to handle async properly
-        const stepPromise = new Promise<StepData>((resolve) => {
-          healthKit.getStepCount(options, (error: string, results: any) => {
-            if (error) {
-              console.log(`Error getting steps for ${date.toDateString()}:`, error);
-              resolve({
-                date: date.toISOString(),
-                steps: 0,
-              });
-            } else {
-              resolve({
-                date: date.toISOString(),
-                steps: results && results.value !== undefined ? Math.round(results.value) : 0,
-              });
-            }
-          });
-        });
-
-        last7Days.push(stepPromise);
-      }
-
-      // Wait for all step data to load
-      const stepResults = await Promise.all(last7Days);
-      console.log('7-day step data:', stepResults);
-      setStepData(stepResults);
-      
-      // Calculate weekly total
-      const total = stepResults.reduce((sum, day) => sum + day.steps, 0);
-      setWeeklyTotal(total);
 
     } catch (error) {
       console.error('Error loading step data:', error);
@@ -497,8 +453,8 @@ const StatsScreen = ({ navigation }: any) => {
               <Ionicons name="location-outline" size={24} color="#D8FF3E" />
               <Text style={styles.metricLabel}>Distance</Text>
             </View>
-            <Text style={styles.metricValue}>{todayMetrics.distance}</Text>
-            <Text style={styles.metricSubtext}>km today</Text>
+            <Text style={styles.metricValue}>{(todayMetrics.distance / 1000).toFixed(2)}</Text>
+            <Text style={styles.metricSubtext}>m today</Text>
           </View>
         </View>
 

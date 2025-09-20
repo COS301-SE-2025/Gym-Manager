@@ -60,6 +60,10 @@ export class LiveClassRoutes {
     this.router.post('/coach/live/:classId/ft/set-reps',   this.auth.isAuthenticated, this.coachOnly, this.controller.ftSetReps);
     this.router.post('/coach/live/:classId/amrap/set-total', this.auth.isAuthenticated, this.coachOnly, this.controller.amrapSetTotal);
     this.router.post('/coach/live/:classId/interval/set-total', this.auth.isAuthenticated, this.coachOnly, this.controller.intervalSetTotal);
+    this.router.post('/coach/live/:classId/emom/mark',this.auth.isAuthenticated,this.coachOnly,this.controller.coachPostEmomMark);
+
+  this.router.post('/coach/live/:classId/emom/set-total',this.auth.isAuthenticated,this.coachOnly,this.controller.emomSetTotal);
+
 
     // Member scaling
     this.router.get('/live/:classId/scaling',  this.auth.isAuthenticated, this.controller.getMyScaling);

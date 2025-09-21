@@ -486,27 +486,6 @@ const StatsScreen = ({ navigation }: any) => {
             </View>
           )}
         </View>
-
-        {/* No Data State */}
-        {Platform.OS !== 'ios' && (
-          <View style={styles.emptyState}>
-            <Ionicons name="phone-portrait-outline" size={48} color="#666" />
-            <Text style={styles.emptyStateText}>iOS Only Feature</Text>
-            <Text style={styles.emptyStateSubtext}>
-              Step tracking is only available on iOS devices with HealthKit
-            </Text>
-          </View>
-        )}
-
-        {Platform.OS === 'ios' && stepData.length === 0 && !isLoading && (
-          <View style={styles.emptyState}>
-            <Ionicons name="footsteps-outline" size={48} color="#666" />
-            <Text style={styles.emptyStateText}>No Step Data</Text>
-            <Text style={styles.emptyStateSubtext}>
-              Make sure you've granted permission to read step data in HealthKit
-            </Text>
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );

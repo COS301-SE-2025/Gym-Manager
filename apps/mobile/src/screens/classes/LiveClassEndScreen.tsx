@@ -1,11 +1,12 @@
-// src/screens/LiveClassEndScreen.tsx
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+// src/screens/classes/LiveClassEndScreen.tsx
+import React, { useMemo, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { useSession } from '../../hooks/useSession';
 import { useMyProgress } from '../../hooks/useMyProgress';
-import { useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
+import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
+import { getUser } from '../../utils/authStorage';
 
 type R = RouteProp<AuthStackParamList, 'LiveClassEnd'>;
 
@@ -19,19 +20,37 @@ function toMillis(ts: any): number {
   return Number.isFinite(ms) ? ms : 0;
 }
 
+function fmt(t: number) {
+  const s = Math.max(0, Math.floor(t));
+  const m = Math.floor(s / 60);
+  const ss = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+}
+
 export default function LiveClassEndScreen() {
   const { params } = useRoute<R>();
   const classId = params.classId as number;
 
   const session = useSession(classId);
   const prog = useMyProgress(classId);
-  const lb = useLeaderboardRealtime(classId);
 
-  // inside LiveClassEndScreen.tsx
-const type = (session?.workout_type ?? '').toUpperCase();
+  const [scope, setScope] = useState<LbFilter>('ALL');
+  const lb = useLeaderboardRealtime(classId, scope);
 
-const myScore = useMemo(() => {
-  if (!session) return '';
+  const [myUserId, setMyUserId] = useState<number | null>(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const me = await getUser();
+        if (me?.userId) setMyUserId(Number(me.userId));
+      } catch {}
+    })();
+  }, []);
+
+  const type = (session?.workout_type ?? '').toUpperCase();
+
+  const myScore = useMemo(() => {
+    if (!session) return '';
 
     // canonical server time if available (keeps end screen == leaderboard)
     const serverElapsed = prog?.elapsed_seconds != null ? Number(prog.elapsed_seconds) : null;
@@ -42,7 +61,7 @@ const myScore = useMemo(() => {
 
     const finishedSec =
       Number((prog as any)?.finished_at_s ?? 0) ||
-      (prog.finished_at ? Math.floor(toMillis(prog.finished_at) / 1000) : 0);
+      (prog?.finished_at ? Math.floor(toMillis(prog.finished_at) / 1000) : 0);
 
     // FOR_TIME shows time
     if (type === 'FOR_TIME' && (finishedSec || serverElapsed != null)) {
@@ -50,27 +69,43 @@ const myScore = useMemo(() => {
       return `Time: ${fmt(elapsed)}`;
     }
 
-    // AMRAP (and default reps fallback)
-    const cum: number[] = (session.steps_cum_reps as number[]) ?? [];
-    const within = (prog.current_step ?? 0) > 0 ? (cum[(prog.current_step! - 1)] ?? 0) : 0;
-
+    // AMRAP (reps)
     if (type === 'AMRAP') {
+      const cum: number[] = (session.steps_cum_reps as number[]) ?? [];
+      const within = (prog?.current_step ?? 0) > 0 ? (cum[(prog!.current_step! - 1)] ?? 0) : 0;
       const repsPerRound = cum.length ? cum[cum.length - 1] : 0;
       const serverTotal = (prog as any)?.total_reps as number | undefined;
       const total = serverTotal ?? (
-        (Number(prog.rounds_completed ?? 0) * repsPerRound) +
+        (Number(prog?.rounds_completed ?? 0) * repsPerRound) +
         within +
-        Number(prog.dnf_partial_reps ?? 0)
+        Number(prog?.dnf_partial_reps ?? 0)
       );
       return `${total} reps`;
     }
 
-    // Non-FOR_TIME fallback
-    const reps = within + Number(prog.dnf_partial_reps ?? 0);
+    // EMOM (cumulative time from leaderboard)
+    if (type === 'EMOM') {
+      const meRow = lb.find((r:any) => myUserId != null && String(r.user_id) === String(myUserId));
+      if (meRow?.elapsed_seconds != null) {
+        return `Time: ${fmt(Number(meRow.elapsed_seconds))}`;
+      }
+      return 'Time: —';
+    }
+
+    // TABATA / INTERVAL — reps from leaderboard
+    if (['TABATA','INTERVAL'].includes(type)) {
+      if (myUserId == null) return '—';
+      const mine = lb.find((r: any) => Number(r.user_id) === Number(myUserId));
+      const reps = Number(mine?.total_reps ?? 0);
+      return `${reps} reps`;
+    }
+
+    // Fallback (reps)
+    const cum: number[] = (session.steps_cum_reps as number[]) ?? [];
+    const within = (prog?.current_step ?? 0) > 0 ? (cum[(prog!.current_step! - 1)] ?? 0) : 0;
+    const reps = within + Number(prog?.dnf_partial_reps ?? 0);
     return `${reps} reps`;
-  }, [session, prog]);
-
-
+  }, [session, prog, lb, myUserId, type]);
 
   return (
     <SafeAreaView style={s.root}>
@@ -82,6 +117,24 @@ const myScore = useMemo(() => {
 
         <View style={s.lb}>
           <Text style={s.lbTitle}>Leaderboard</Text>
+
+          {/* RX/SC filter */}
+          <View style={{ flexDirection:'row', justifyContent:'center', gap:6, marginBottom:8 }}>
+            {(['ALL','RX','SC'] as const).map(opt => (
+              <TouchableOpacity
+                key={opt}
+                onPress={()=>setScope(opt)}
+                style={{
+                  paddingHorizontal:10, paddingVertical:6, borderRadius:999,
+                  backgroundColor: scope===opt ? '#2e3500' : '#1f1f1f',
+                  borderWidth:1, borderColor: scope===opt ? '#d8ff3e' : '#2a2a2a'
+                }}
+              >
+                <Text style={{ color: scope===opt ? '#d8ff3e' : '#9aa', fontWeight:'800' }}>{opt}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           {lb.map((r: any, i: number) => {
             const displayName =
               (r.first_name || r.last_name)
@@ -90,7 +143,9 @@ const myScore = useMemo(() => {
             return (
               <View key={`${r.user_id}-${i}`} style={s.row}>
                 <Text style={s.pos}>{i + 1}</Text>
-                <Text style={s.user}>{displayName}</Text>
+                <Text style={s.user}>
+                  {displayName} <Text style={{ color:'#9aa' }}>({(r.scaling ?? 'RX')})</Text>
+                </Text>
                 <Text style={s.score}>
                   {r.finished ? fmt(Number(r.elapsed_seconds ?? 0)) : `${Number(r.total_reps ?? 0)} reps`}
                 </Text>
@@ -101,13 +156,6 @@ const myScore = useMemo(() => {
       </View>
     </SafeAreaView>
   );
-}
-
-function fmt(t: number) {
-  const s = Math.max(0, Math.floor(t));
-  const m = Math.floor(s / 60);
-  const ss = s % 60;
-  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
 }
 
 const s = StyleSheet.create({

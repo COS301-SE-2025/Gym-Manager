@@ -10,13 +10,19 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 
 import ForTimeLive from '../screens/classes/ForTimeLiveScreen';
+import IntervalLive from '../screens/classes/IntervalLiveScreen';
 import AmrapLive from '../screens/classes/AmrapLiveScreen';
+import EmomLive from '../screens/classes/EmomLiveScreen';
 import Overview from '../screens/classes/OverviewScreen';
 import LiveClassEnd from '../screens/classes/LiveClassEndScreen';
 
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import ResolveAuthScreen from '../screens/auth/ResolveAuthScreen';
 import CoachLive from '../screens/coach/CoachLiveClassScreen';
+
+import { WorkoutData } from '../services/HealthService';
+import StatsScreen from '../screens/stats/StatsScreen';
+import WorkoutDetailsScreen from '../screens/stats/WorkoutDetailsScreen';
 
 import type { ApiLiveClassResponse } from '../screens/HomeScreen';
 import LeaderboardScreen from '../screens/home/LeaderboardScreen';
@@ -25,6 +31,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import FAQScreen from '../screens/home/FAQScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import PaymentScreen from '../screens/profile/PaymentScreen';
+import MemberAnalyticsScreen from '../screens/profile/MemberAnalyticsScreen';
 
 export type AuthStackParamList = {
   MemberTabs: undefined;
@@ -34,6 +42,7 @@ export type AuthStackParamList = {
   ForTimeLive: { classId: number };
   LiveClassEnd: { classId: number };
   AmrapLive: { classId: number };
+  IntervalLive: { classId: number };
 
   // Legacy
   LiveClass?: any;
@@ -49,6 +58,10 @@ export type AuthStackParamList = {
   Onboarding: undefined;
   ResolveAuth: undefined;
   FAQ: undefined;
+  Payment: undefined;
+  MemberAnalytics: undefined;
+  Stats: undefined;
+  WorkoutDetails: { workout: WorkoutData };
 };
 
 
@@ -80,6 +93,15 @@ function MemberTabNavigator() {
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="trophy-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Stats"
+        component={StatsScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="analytics-outline" color={color} size={size} />
           ),
         }}
       />
@@ -122,7 +144,9 @@ export default function AuthNavigator() {
 
       <Stack.Screen name="Overview" component={Overview} />
       <Stack.Screen name="ForTimeLive" component={ForTimeLive} />
+      <Stack.Screen name="EmomLive" component={EmomLive} />
       <Stack.Screen name="AmrapLive" component={AmrapLive} />
+      <Stack.Screen name="IntervalLive" component={IntervalLive} />
       <Stack.Screen name="LiveClassEnd" component={LiveClassEnd} />
       <Stack.Screen name="CoachLive" component={CoachLive} />
 
@@ -132,6 +156,10 @@ export default function AuthNavigator() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="FAQ" component={FAQScreen} />
+      <Stack.Screen name="Payment" component={PaymentScreen} />
+      <Stack.Screen name="Stats" component={StatsScreen} />
+      <Stack.Screen name="WorkoutDetails" component={WorkoutDetailsScreen} />
+      <Stack.Screen name="MemberAnalytics" component={MemberAnalyticsScreen} />
     </Stack.Navigator>
   );
 }

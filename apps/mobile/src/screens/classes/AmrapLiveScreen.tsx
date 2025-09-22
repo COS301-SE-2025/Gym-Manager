@@ -9,7 +9,7 @@ import { BlurView } from 'expo-blur';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
 import { useMyProgress } from '../../hooks/useMyProgress';
-import { useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
+import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
@@ -46,7 +46,10 @@ export default function AmrapLiveScreen() {
 
   const session = useSession(classId);                // realtime + light poll
   const progress = useMyProgress(classId);            // realtime + light poll
-  const lb = useLeaderboardRealtime(classId);
+
+  const [scope, setScope] = useState<LbFilter>('ALL');
+  const lb = useLeaderboardRealtime(classId, scope);
+
 
   const steps: any[] = (session?.steps as any[]) ?? [];
   const cum: number[] = (session?.steps_cum_reps as any[]) ?? [];
@@ -172,7 +175,7 @@ export default function AmrapLiveScreen() {
       </View>
 
       {/* centered content */}
-      <View pointerEvents="none" style={s.centerOverlay}>
+      <View pointerEvents="box-none" style={s.centerOverlay}>
         {!ready ? (
           <>
             <ActivityIndicator size="large" color="#D8FF3E" />
@@ -188,8 +191,26 @@ export default function AmrapLiveScreen() {
             <Text style={s.current}>{current?.name ?? '—'}</Text>
             <Text style={s.nextLabel}>Next: {next?.name ?? '—'}</Text>
 
-            <View style={s.lb}>
+            <View style={[s.lb, { zIndex: 50, elevation: 6 }]} pointerEvents="auto">
               <Text style={s.lbTitle}>Leaderboard</Text>
+
+              {/* RX/SC filter */}
+              <View style={{ flexDirection:'row', justifyContent:'center', gap:6, marginBottom:8 }}>
+                {(['ALL','RX','SC'] as const).map(opt => (
+                  <TouchableOpacity
+                    key={opt}
+                    onPress={()=>setScope(opt)}
+                    style={{
+                      paddingHorizontal:10, paddingVertical:6, borderRadius:999,
+                      backgroundColor: scope===opt ? '#2e3500' : '#1f1f1f',
+                      borderWidth:1, borderColor: scope===opt ? '#d8ff3e' : '#2a2a2a'
+                    }}
+                  >
+                    <Text style={{ color: scope===opt ? '#d8ff3e' : '#9aa', fontWeight:'800' }}>{opt}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
               {lb.slice(0, 6).map((r: any, i: number) => {
                 const displayName =
                   (r.first_name || r.last_name)
@@ -198,7 +219,9 @@ export default function AmrapLiveScreen() {
                 return (
                   <View key={`${r.user_id}-${i}`} style={s.lbRow}>
                     <Text style={s.lbPos}>{i+1}</Text>
-                    <Text style={s.lbUser}>{displayName}</Text>
+                    <Text style={s.lbUser}>
+                      {displayName} <Text style={{ color:'#9aa' }}>({(r.scaling ?? 'RX')})</Text>
+                    </Text>
                     <Text style={s.lbScore}>
                       {r.finished ? fmt(Number(r.elapsed_seconds ?? 0)) : `${Number(r.total_reps ?? 0)} reps`}
                     </Text>

@@ -40,7 +40,7 @@ export interface IClassRepository {
   countBookingsForClass(classId: number, tx?: any): Promise<number>;
   insertBooking(classId: number, memberId: number, tx?: any): Promise<void>;
   insertAttendance(classId: number, memberId: number): Promise<ClassAttendance | null>;
-  deleteBooking(classId: number, memberId: number): Promise<any>;
+  deleteBooking(classId: number, memberId: number, tx?: any): Promise<any>;
   hasOverlappingBooking(
     memberId: number,
     window: { scheduledDate: string; scheduledTime: string; durationMinutes: number },
@@ -60,6 +60,7 @@ export interface IAdminService {
   removeRole(userId: number, role: string): Promise<void>;
   getRolesByUserId(userId: number): Promise<string[]>;
   getUserById(userId: number): Promise<any>;
+  updateUserRole(userId: number, newRole: string): Promise<{ ok: boolean; reason?: string }>;
   updateUserById(userId: number, updates: any): Promise<{ ok: boolean; reason?: string }>;
 }
 

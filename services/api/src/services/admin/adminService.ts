@@ -1,10 +1,7 @@
 import { IAdminService, IAdminRepository } from '../../domain/interfaces/class.interface';
-import {
-  Class,
-  CreateClassRequest,
-  WeeklyScheduleInput
-} from '../../domain/entities/class.entity';
+import { Class, CreateClassRequest, WeeklyScheduleInput } from '../../domain/entities/class.entity';
 import { AdminRepository } from '../../repositories/admin/adminRepository';
+import { AnalyticsService } from '../analytics/analyticsService';
 
 /**
  * AdminService - Business Layer
@@ -12,16 +9,22 @@ import { AdminRepository } from '../../repositories/admin/adminRepository';
  */
 export class AdminService implements IAdminService {
   private adminRepository: IAdminRepository;
+  private analyticsService: AnalyticsService;
 
-  constructor(adminRepository?: IAdminRepository) {
+  constructor(adminRepository?: IAdminRepository, analyticsService?: AnalyticsService) {
     this.adminRepository = adminRepository || new AdminRepository();
+    this.analyticsService = analyticsService || new AnalyticsService();
   }
 
-  async createWeeklySchedule(request: { startDate: string; createdBy: number; weeklySchedule: WeeklyScheduleInput }): Promise<any[]> {
+  async createWeeklySchedule(request: {
+    startDate: string;
+    createdBy: number;
+    weeklySchedule: WeeklyScheduleInput;
+  }): Promise<any[]> {
     return this.adminRepository.createWeeklySchedule(
       request.startDate,
       request.createdBy,
-      request.weeklySchedule
+      request.weeklySchedule,
     );
   }
 
@@ -30,10 +33,25 @@ export class AdminService implements IAdminService {
   }
 
   async createClass(request: CreateClassRequest): Promise<Class> {
-    return this.adminRepository.createClass(request);
+    const newClass = await this.adminRepository.createClass(request);
+    await this.analyticsService.addLog({
+      gymId: 1, // Assuming a single gym for now
+      userId: request.createdBy,
+      eventType: 'class_creation',
+      properties: {
+        classId: newClass.classId,
+        scheduledDate: newClass.scheduledDate,
+        scheduledTime: newClass.scheduledTime,
+      },
+      source: 'api',
+    });
+    return newClass;
   }
 
-  async assignCoachToClass(classId: number, coachId: number): Promise<{ ok: boolean; reason?: string }> {
+  async assignCoachToClass(
+    classId: number,
+    coachId: number,
+  ): Promise<{ ok: boolean; reason?: string }> {
     if (!classId || !coachId) {
       throw new Error('classId and coachId are required');
     }
@@ -51,7 +69,22 @@ export class AdminService implements IAdminService {
       throw new Error('Invalid role');
     }
 
-    return this.adminRepository.assignUserToRole(userId, role);
+    const result = await this.adminRepository.assignUserToRole(userId, role);
+
+    if (result.ok) {
+      await this.analyticsService.addLog({
+        gymId: 1, // Assuming a single gym for now
+        userId: null, //add admin id
+        eventType: 'user_role_assignment',
+        properties: {
+          assignedUserId: userId,
+          role: role,
+        },
+        source: 'api',
+      });
+    }
+
+    return result;
   }
 
   async getAllMembers(): Promise<any[]> {
@@ -115,6 +148,79 @@ export class AdminService implements IAdminService {
       throw new Error('Invalid userId');
     }
 
+    // Check if this is a membership approval (status change to 'approved')
+    if (updates.status === 'approved') {
+      // Get current user to check if they are a member
+      const user = await this.adminRepository.getUserById(userId);
+      if (user && user.roles && user.roles.includes('member')) {
+        // Check current member status
+        const currentStatus = user.memberStatus || 'pending';
+        if (currentStatus !== 'approved') {
+          // This is a membership approval - log the event
+          await this.analyticsService.addLog({
+            gymId: 1, // Assuming a single gym for now
+            userId: null, // TODO: Add admin ID from request context
+            eventType: 'membership_approval',
+            properties: {
+              approvedUserId: userId,
+            },
+            source: 'api',
+          });
+        }
+      }
+    }
+
     return this.adminRepository.updateUserById(userId, updates);
+  }
+
+  async updateUserRole(userId: number, newRole: string): Promise<{ ok: boolean; reason?: string }> {
+    const allowedRoles = ['coach', 'member', 'admin', 'manager'];
+    if (!allowedRoles.includes(newRole)) {
+      throw new Error('Invalid role');
+    }
+
+    try {
+      const currentRoles = await this.adminRepository.getRolesByUserId(userId);
+      for (const role of currentRoles) {
+        await this.adminRepository.removeRole(userId, role);
+      }
+    } catch (error) {
+      // Ignore if user has no roles
+    }
+
+    const result = await this.adminRepository.assignUserToRole(userId, newRole);
+
+    if (result.ok) {
+      await this.analyticsService.addLog({
+        gymId: 1, // Assuming a single gym for now
+        userId: null, // TODO: Add admin ID
+        eventType: 'user_role_update',
+        properties: {
+          updatedUserId: userId,
+          newRole: newRole,
+        },
+        source: 'api',
+      });
+    }
+
+    return result;
+  }
+
+  async approveMembership(userId: number): Promise<{ ok: boolean; reason?: string }> {
+    const result = await this.adminRepository.assignUserToRole(userId, 'member');
+
+    if (result.ok) {
+      await this.analyticsService.addLog({
+        gymId: 1, // Assuming a single gym for now
+        userId: null,
+        eventType: 'membership_approval',
+        properties: {
+          approvedUserId: userId,
+        },
+        source: 'api',
+      });
+    }
+
+    return result;
   }
 }

@@ -1,16 +1,14 @@
-// src/db/client.ts
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema';
 import dotenv from 'dotenv';
 
-// Ensure dotenv is loaded as early as possible
 dotenv.config();
 
 console.log('--- DRIZZLE CLIENT DB CONNECTION ATTEMPT ---');
 
 const url =
-  process.env.DATABASE_URL // Production URL
+  process.env.DATABASE_URL 
   ?? `postgres://${process.env.PG_USER}:` +
      `${process.env.PG_PASSWORD}@` +
      `${process.env.PG_HOST}:${process.env.PG_PORT}/` +
@@ -22,7 +20,7 @@ const pool = new Pool({
 });
 
 pool.on('connect', () => {
-  console.log('Drizzle client pool successfully connected to PostgreSQL!');
+  
 });
 
 pool.on('error', (err) => {

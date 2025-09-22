@@ -1,6 +1,6 @@
 // src/screens/classes/OverviewScreen.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, StatusBar, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
@@ -19,6 +19,24 @@ type FlatStep = {
   subround: number;
 };
 
+async function setMyScaling(classId: number, scaling: 'RX' | 'SC') {
+  const token = await getToken();
+  await axios.post(`${config.BASE_URL}/live/${classId}/scaling`, { scaling }, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+async function getMyScaling(classId: number): Promise<'RX'|'SC'> {
+  const token = await getToken();
+  try {
+    const { data } = await axios.get(`${config.BASE_URL}/live/${classId}/scaling`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const s = (data?.scaling ?? 'RX').toUpperCase();
+    return s === 'SC' ? 'SC' : 'RX';
+  } catch { return 'RX'; }
+}
+
 export default function OverviewScreen() {
   const nav = useNavigation<any>();
   const { params } = useRoute<R>();
@@ -32,6 +50,17 @@ export default function OverviewScreen() {
   const preType: string | undefined = liveClassData?.class?.workoutType;
 
   const session = useSession(classId);
+
+  const [myScaling, setScaling] = useState<'RX'|'SC'>('RX');
+
+  useEffect(() => {
+    getMyScaling(classId).then(setScaling).catch(()=>{});
+  }, [classId]);
+
+  const chooseScaling = async (val: 'RX' | 'SC') => {
+    setScaling(val);
+    try { await setMyScaling(classId, val); } catch {}
+  };
 
   // --- fallback steps before session exists ---
   const [fallbackSteps, setFallbackSteps] = useState<FlatStep[]>([]);
@@ -73,7 +102,7 @@ export default function OverviewScreen() {
     (session?.workout_type as string) ||
     (preType as string) ||
     'FOR_TIME';
-
+ 
   const capSeconds: number =
     (Number(session?.time_cap_seconds ?? 0)) || preDurationSeconds;
 
@@ -89,6 +118,8 @@ export default function OverviewScreen() {
     if (session.status === 'live') {
       if (t === 'FOR_TIME') nav.replace('ForTimeLive', { classId });
       if (t === 'AMRAP')   nav.replace('AmrapLive',   { classId });
+      if (t == 'TABATA') nav.replace('IntervalLive', {classId});
+      if (t === 'EMOM')     nav.replace('EmomLive', { classId });
     }
     if (session.status === 'ended') {
       nav.replace('LiveClassEnd', { classId });
@@ -131,6 +162,23 @@ export default function OverviewScreen() {
           </Text>
         </View>
 
+        <View style={[s.typeRow, { marginTop: 6 }]}>
+          <Text style={{ color:'#aaa', marginRight:8, fontWeight:'800' }}>Scaling:</Text>
+          <TouchableOpacity
+            onPress={() => chooseScaling('RX')}
+            style={[s.pill, myScaling === 'RX' && s.pillActive]}
+          >
+            <Text style={[s.pillText, myScaling === 'RX' && s.pillTextActive]}>RX</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => chooseScaling('SC')}
+            style={[s.pill, myScaling === 'SC' && s.pillActive]}
+          >
+            <Text style={[s.pillText, myScaling === 'SC' && s.pillTextActive]}>Scaled</Text>
+          </TouchableOpacity>
+        </View>
+
+
         {steps.length === 0 ? (
           <View style={{ paddingVertical: 20 }}>
             <ActivityIndicator size="large" color="#D8FF3E" />
@@ -172,6 +220,7 @@ export default function OverviewScreen() {
   );
 }
 
+// === Returns Pill
 function TypePill({ label, active }: { label: string; active?: boolean }) {
   return (
     <View style={[s.pill, active && s.pillActive]}>
@@ -180,6 +229,7 @@ function TypePill({ label, active }: { label: string; active?: boolean }) {
   );
 }
 
+// === Formats number of seconds to HH:MM:SS format ===
 function fmtHMS(sec: number) {
   const t = Math.max(0, Math.floor(sec || 0));
   const h = Math.floor(t / 3600);
@@ -190,6 +240,7 @@ function fmtHMS(sec: number) {
   return h > 0 ? `${String(h).padStart(2, '0')}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+// === Styling ===
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#101010' },
   scroll: { padding: 16, paddingBottom: 40 },

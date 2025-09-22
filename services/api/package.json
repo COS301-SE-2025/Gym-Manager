@@ -13,9 +13,12 @@
     "format:fix": "prettier --write 'src/**/*.{ts,tsx,json,css,md}'",
     "prepare": "husky install",
     "test": "jest",
-    "test:services": "jest --runTestsByPath src/tests/unit/authService.test.ts src/tests/unit/notificationService.test.ts src/tests/unit/adminService.test.ts src/tests/unit/classService.test.ts src/tests/unit/healthService.test.ts src/tests/unit/liveClassService.test.ts",
+    "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:unit": "jest --coverage --testPathPattern=tests/unit"
+    "test:unit": "jest --coverage --testPathPattern=tests/unit",
+    "test:services": "jest --coverage --testPathPattern=tests/unit.*Service.test.ts",
+    "test:controllers": "jest --coverage --testPathPattern=tests/unit.*Controller.test.ts",
+    "test:ci": "jest --coverage --ci --watchAll=false"
   },
   "keywords": [],
   "author": "",

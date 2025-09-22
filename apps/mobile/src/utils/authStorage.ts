@@ -10,6 +10,7 @@ export interface User {
   email?: string;
   roles?: string[];
   id?: number;
+  userId?: number;
 }
 
 export const storeToken = async (token: string): Promise<void> => {

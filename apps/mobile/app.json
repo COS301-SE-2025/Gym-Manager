@@ -37,6 +37,9 @@
       "eas": {
         "projectId": "ffab9579-dee8-49ef-929a-4bad81952ed6"
       }
-    }
+    },
+    "plugins": [
+      "react-native-health"
+    ]
   }
 }

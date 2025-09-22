@@ -173,10 +173,11 @@ const StatsScreen = ({ navigation }: any) => {
           console.log('Error getting today\'s calories:', error);
         } else {
           console.log('Today\'s calorie results:', results);
-          if (results && results.value !== undefined) {
+          if (results && Array.isArray(results) && results.length > 0) {
+            const totalCalories = results.reduce((sum, item) => sum + (item.value || 0), 0);
             setTodayMetrics(prev => ({
               ...prev,
-              calories: results.value.toFixed(2)
+              calories: totalCalories.toFixed(2)
             }));
           }
         }
@@ -454,7 +455,7 @@ const StatsScreen = ({ navigation }: any) => {
               <Text style={styles.metricLabel}>Distance</Text>
             </View>
             <Text style={styles.metricValue}>{(todayMetrics.distance / 1000).toFixed(2)}</Text>
-            <Text style={styles.metricSubtext}>m today</Text>
+            <Text style={styles.metricSubtext}>km today</Text>
           </View>
         </View>
 

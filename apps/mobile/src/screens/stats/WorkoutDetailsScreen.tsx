@@ -171,138 +171,246 @@ const loadWorkoutData = async () => {
   }
 };
 
-  const getWorkoutSessions = async (healthKit: any, startDate: Date, endDate: Date): Promise<WorkoutSession[]> => {
-    return new Promise((resolve) => {
-      const options = {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-      };
+const getWorkoutSessions = async (healthKit: any, startDate: Date, endDate: Date): Promise<WorkoutSession[]> => {
+  return new Promise((resolve) => {
+    console.log('=== getWorkoutSessions START ===');
+    console.log('Start Date:', startDate.toISOString());
+    console.log('End Date:', endDate.toISOString());
+    
+    const options = {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    };
 
-      // Try multiple workout types that users might use for gym classes
-      const workoutTypes = [
-        Constants.Activities.FunctionalStrengthTraining,
-        Constants.Activities.HighIntensityIntervalTraining,
-        Constants.Activities.CrossTraining,
-        Constants.Activities.TraditionalStrengthTraining,
-        Constants.Activities.Running,
-        Constants.Activities.Walking
-      ];
+    console.log('Options being sent to HealthKit:', options);
 
-      let completedRequests = 0;
-      const allWorkouts: WorkoutSession[] = [];
+    // Try multiple workout types that users might use for gym classes
+    const workoutTypes = [
+      Constants.Activities.FunctionalStrengthTraining,
+      Constants.Activities.HighIntensityIntervalTraining,
+      Constants.Activities.CrossTraining,
+      Constants.Activities.TraditionalStrengthTraining,
+      Constants.Activities.Running,
+      Constants.Activities.Walking
+    ];
 
-      workoutTypes.forEach(workoutType => {
-        healthKit.getSamples({
-          type: workoutType,
-          startDate: options.startDate,
-          endDate: options.endDate,
-        }, (error: string, results: any[]) => {
-          completedRequests++;
-          
-          if (!error && results && results.length > 0) {
-            const workouts: WorkoutSession[] = results.map((workout: any) => ({
-              id: workout.uuid || `workout_${Date.now()}`,
+    console.log('Workout types being queried:', workoutTypes);
+
+    let completedRequests = 0;
+    const allWorkouts: WorkoutSession[] = [];
+
+    workoutTypes.forEach((workoutType, index) => {
+      console.log(`\n--- Querying workout type ${index + 1}/${workoutTypes.length}: ${workoutType} ---`);
+      
+      // Use getSamples for workout data
+      healthKit.getSamples({
+        type: workoutType,
+        startDate: options.startDate,
+        endDate: options.endDate,
+      }, (error: string, results: any[]) => {
+        completedRequests++;
+        
+        console.log(`\n--- Response for workout type ${workoutType} ---`);
+        console.log('Error:', error);
+        console.log('Results:', results);
+        console.log('Results length:', results ? results.length : 'null/undefined');
+        
+        if (!error && results && results.length > 0) {
+          console.log('Processing workout results...');
+          const workouts: WorkoutSession[] = results.map((workout: any, workoutIndex: number) => {
+            console.log(`\nWorkout ${workoutIndex + 1}:`, {
+              id: workout.id,
+              activityType: workout.activityType,
+              type: workout.type,
+              startDate: workout.startDate,
+              endDate: workout.endDate,
+              totalEnergyBurned: workout.totalEnergyBurned,
+              totalDistance: workout.totalDistance,
+              metadata: workout.metadata
+            });
+            
+            return {
+              id: workout.id || `workout_${Date.now()}`,
               type: mapWorkoutType(workout.activityType || workout.type),
               startDate: workout.startDate,
               endDate: workout.endDate,
               duration: calculateDuration(workout.startDate, workout.endDate),
               totalEnergyBurned: workout.totalEnergyBurned,
               totalDistance: workout.totalDistance,
-              source: workout.sourceName || 'Apple Health',
-            }));
-            allWorkouts.push(...workouts);
-          }
-
-          // When all requests are complete, resolve with unique workouts
-          if (completedRequests === workoutTypes.length) {
-            // Remove duplicates and resolve
-            const uniqueWorkouts = allWorkouts.filter((workout, index, self) => 
-              index === self.findIndex(w => w.id === workout.id)
-            );
-            resolve(uniqueWorkouts);
-          }
-        });
-      });
-    });
-  };
-
-  const getDetailedWorkoutStats = async (healthKit: any, workout: WorkoutSession): Promise<Omit<DetailedWorkoutStats, 'hasWorkout'>> => {
-    const startDate = new Date(workout.startDate);
-    const endDate = new Date(workout.endDate);
-
-    // Get all sample data during the workout
-    const [heartRateSamples, stepSamples, energySamples] = await Promise.all([
-      getHeartRateSamples(healthKit, startDate, endDate),
-      getStepCountSamples(healthKit, startDate, endDate),
-      getActiveEnergySamples(healthKit, startDate, endDate)
-    ]);
-
-    return calculateDetailedStats(workout, heartRateSamples, stepSamples, energySamples);
-  };
-
-  const getHeartRateSamples = async (healthKit: any, startDate: Date, endDate: Date): Promise<HeartRateData[]> => {
-    return new Promise((resolve) => {
-      const options = {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-      };
-
-      healthKit.getHeartRateSamples(options, (error: string, results: any[]) => {
-        if (error) {
-          console.log('Error getting heart rate samples:', error);
-          resolve([]);
-          return;
+              source: workout.metadata?.HKWasUserEntered ? 'User Entered' : 'Apple Health',
+            };
+          });
+          
+          console.log('Mapped workouts:', workouts);
+          allWorkouts.push(...workouts);
+        } else {
+          console.log('No workouts found for this type');
         }
 
-        const samples: HeartRateData[] = (results || []).map((hr: any) => ({
+        console.log(`Completed requests: ${completedRequests}/${workoutTypes.length}`);
+        console.log(`Total workouts found so far: ${allWorkouts.length}`);
+
+        // When all requests are complete, resolve with unique workouts
+        if (completedRequests === workoutTypes.length) {
+          console.log('\n=== ALL REQUESTS COMPLETE ===');
+          console.log('All workouts found:', allWorkouts);
+          
+          // Remove duplicates and resolve
+          const uniqueWorkouts = allWorkouts.filter((workout, index, self) => 
+            index === self.findIndex(w => w.id === workout.id)
+          );
+          
+          console.log('Unique workouts after deduplication:', uniqueWorkouts);
+          console.log('=== getWorkoutSessions END ===\n');
+          
+          resolve(uniqueWorkouts);
+        }
+      });
+    });
+  });
+};
+
+const getDetailedWorkoutStats = async (healthKit: any, workout: WorkoutSession): Promise<Omit<DetailedWorkoutStats, 'hasWorkout'>> => {
+  console.log('\n=== getDetailedWorkoutStats START ===');
+  console.log('Workout session:', workout);
+  
+  const startDate = new Date(workout.startDate);
+  const endDate = new Date(workout.endDate);
+  
+  console.log('Parsed dates:', {
+    start: startDate.toISOString(),
+    end: endDate.toISOString()
+  });
+
+  // Get all sample data during the workout
+  console.log('Fetching heart rate samples...');
+  const heartRateSamples = await getHeartRateSamples(healthKit, startDate, endDate);
+  console.log('Heart rate samples:', heartRateSamples);
+  
+  console.log('Fetching step samples...');
+  const stepSamples = await getStepCountSamples(healthKit, startDate, endDate);
+  console.log('Step samples:', stepSamples);
+  
+  console.log('Fetching energy samples...');
+  const energySamples = await getActiveEnergySamples(healthKit, startDate, endDate);
+  console.log('Energy samples:', energySamples);
+
+  const result = calculateDetailedStats(workout, heartRateSamples, stepSamples, energySamples);
+  console.log('Calculated detailed stats:', result);
+  console.log('=== getDetailedWorkoutStats END ===\n');
+  
+  return result;
+};
+
+const getHeartRateSamples = async (healthKit: any, startDate: Date, endDate: Date): Promise<HeartRateData[]> => {
+  return new Promise((resolve) => {
+    console.log('\n--- getHeartRateSamples START ---');
+    const options = {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    };
+    
+    console.log('Heart rate options:', options);
+
+    healthKit.getHeartRateSamples(options, (error: string, results: any[]) => {
+      console.log('Heart rate error:', error);
+      console.log('Heart rate results:', results);
+      console.log('Heart rate results length:', results ? results.length : 'null/undefined');
+      
+      if (error) {
+        console.log('Error getting heart rate samples:', error);
+        resolve([]);
+        return;
+      }
+
+      const samples: HeartRateData[] = (results || []).map((hr: any, index: number) => {
+        console.log(`Heart rate sample ${index + 1}:`, {
+          value: hr.value,
+          startDate: hr.startDate,
+          endDate: hr.endDate,
+          sourceName: hr.sourceName
+        });
+        
+        return {
           value: Math.round(hr.value),
           startDate: hr.startDate,
           endDate: hr.endDate || hr.startDate,
           source: hr.sourceName || 'Apple Health',
-        }));
-
-        resolve(samples);
+        };
       });
-    });
-  };
 
-  const getStepCountSamples = async (healthKit: any, startDate: Date, endDate: Date): Promise<any[]> => {
-    return new Promise((resolve) => {
-      const options = {
+      console.log('Mapped heart rate samples:', samples);
+      console.log('--- getHeartRateSamples END ---\n');
+      resolve(samples);
+    });
+  });
+};
+
+const getStepCountSamples = async (healthKit: any, startDate: Date, endDate: Date): Promise<any[]> => {
+  return new Promise((resolve) => {
+    console.log('\n--- getStepCountSamples START ---');
+    const options = {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    };
+    
+    console.log('Step count options:', options);
+    healthKit.getStepCount(options, (error: string, results: any) => {
+      console.log('Step count error:', error);
+      console.log('Step count results:', results);
+      
+      if (error) {
+        console.log('Error getting step count:', error);
+        resolve([]);
+        return;
+      }
+      const stepData = results ? [{
+        id: `step_${Date.now()}`,
+        value: results.value || 0,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-      };
+        metadata: results.metadata || {}
+      }] : [];
 
-      healthKit.getStepCountSamples(options, (error: string, results: any[]) => {
-        if (error) {
-          console.log('Error getting step samples:', error);
-          resolve([]);
-          return;
-        }
-
-        resolve(results || []);
-      });
+      console.log('Mapped step data:', stepData);
+      console.log('--- getStepCountSamples END ---\n');
+      resolve(stepData);
     });
-  };
+  });
+};
 
-  const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: Date): Promise<any[]> => {
-    return new Promise((resolve) => {
-      const options = {
+const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: Date): Promise<any[]> => {
+  return new Promise((resolve) => {
+    console.log('\n--- getActiveEnergySamples START ---');
+    const options = {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    };
+    
+    console.log('Energy options:', options);
+    healthKit.getActiveEnergyBurned(options, (error: string, results: any) => {
+      console.log('Energy error:', error);
+      console.log('Energy results:', results);
+      
+      if (error) {
+        console.log('Error getting active energy:', error);
+        resolve([]);
+        return;
+      }
+      const energyData = results ? [{
+        id: `energy_${Date.now()}`,
+        value: results.value || 0,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-      };
+        metadata: results.metadata || {}
+      }] : [];
 
-      healthKit.getActiveEnergyBurnedSamples(options, (error: string, results: any[]) => {
-        if (error) {
-          console.log('Error getting energy samples:', error);
-          resolve([]);
-          return;
-        }
-
-        resolve(results || []);
-      });
+      console.log('Mapped energy data:', energyData);
+      console.log('--- getActiveEnergySamples END ---\n');
+      resolve(energyData);
     });
-  };
+  });
+};
 
   const calculateDetailedStats = (workout: WorkoutSession, hrSamples: HeartRateData[], stepSamples: any[], energySamples: any[]) => {
     // Heart Rate Analysis
@@ -510,19 +618,19 @@ const loadWorkoutData = async () => {
           <View style={styles.zonesContainer}>
             <Text style={styles.zonesTitle}>Heart Rate Zones</Text>
             <View style={styles.zonesGrid}>
-              <View style={[styles.zoneItem, { backgroundColor: '#4CAF50' }]}>
+              <View style={[styles.zoneItem, { backgroundColor: `rgba(216, 255, 62, ${getZoneOpacity(stats.heartRate.zones.resting, stats.heartRate.zones)})` }]}>
                 <Text style={styles.zonePercentage}>{stats.heartRate.zones.resting}%</Text>
                 <Text style={styles.zoneLabel}>Resting</Text>
               </View>
-              <View style={[styles.zoneItem, { backgroundColor: '#8BC34A' }]}>
+              <View style={[styles.zoneItem, { backgroundColor: `rgba(216, 255, 62, ${getZoneOpacity(stats.heartRate.zones.fatBurn, stats.heartRate.zones)})` }]}>
                 <Text style={styles.zonePercentage}>{stats.heartRate.zones.fatBurn}%</Text>
                 <Text style={styles.zoneLabel}>Fat Burn</Text>
               </View>
-              <View style={[styles.zoneItem, { backgroundColor: '#FF9800' }]}>
+              <View style={[styles.zoneItem, { backgroundColor: `rgba(216, 255, 62, ${getZoneOpacity(stats.heartRate.zones.cardio, stats.heartRate.zones)})` }]}>
                 <Text style={styles.zonePercentage}>{stats.heartRate.zones.cardio}%</Text>
                 <Text style={styles.zoneLabel}>Cardio</Text>
               </View>
-              <View style={[styles.zoneItem, { backgroundColor: '#F44336' }]}>
+              <View style={[styles.zoneItem, { backgroundColor: `rgba(216, 255, 62, ${getZoneOpacity(stats.heartRate.zones.peak, stats.heartRate.zones)})` }]}>
                 <Text style={styles.zonePercentage}>{stats.heartRate.zones.peak}%</Text>
                 <Text style={styles.zoneLabel}>Peak</Text>
               </View>
@@ -570,6 +678,15 @@ const loadWorkoutData = async () => {
       </View>
     </ScrollView>
   );
+
+  const getZoneOpacity = (zonePercentage: number, allZones: { resting: number; fatBurn: number; cardio: number; peak: number }): number => {
+    const maxPercentage = Math.max(allZones.resting, allZones.fatBurn, allZones.cardio, allZones.peak);
+    if (zonePercentage === maxPercentage) {
+      return 1.0;
+    }
+    const opacity = Math.max(0.2, zonePercentage / maxPercentage);
+    return opacity;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -772,15 +889,17 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginHorizontal: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(216, 255, 62, 0.3)', 
   },
   zonePercentage: {
-    color: 'white',
+    color: '#D8FF3E', 
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   zoneLabel: {
-    color: 'white',
+    color: '#D8FF3E', 
     fontSize: 12,
     fontWeight: '500',
   },

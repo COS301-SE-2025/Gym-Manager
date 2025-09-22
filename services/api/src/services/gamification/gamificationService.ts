@@ -7,7 +7,11 @@ export class GamificationService implements IGamificationService {
 
   // Streak management
   async updateUserStreak(userId: number, activityDate: Date): Promise<UserStreak> {
+    // console.log(`🔄 updateUserStreak called for user ${userId}, date: ${activityDate.toISOString()}`);
+    
     const existingStreak = await this.gamificationRepository.findUserStreak(userId);
+    // console.log(`📊 Existing streak:`, existingStreak);
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -101,8 +105,10 @@ export class GamificationService implements IGamificationService {
     const userBadges = await this.gamificationRepository.findUserBadges(userId);
     const userWorkoutCount = await this.gamificationRepository.getUserWorkoutCount(userId);
     const userWorkoutHistory = await this.gamificationRepository.getUserWorkoutHistory(userId, 30);
+    const userAttendanceHistory = await this.gamificationRepository.getUserClassAttendanceHistory(userId, 30);
 
     const newBadges: UserBadge[] = [];
+    let totalBadgePoints = 0;
 
     for (const badgeDef of badgeDefinitions) {
       // Check if user already has this badge
@@ -110,7 +116,7 @@ export class GamificationService implements IGamificationService {
       if (hasBadge) continue;
 
       // Check if user meets criteria
-      if (await this.checkBadgeCriteria(badgeDef, userStreak, userWorkoutCount, userWorkoutHistory, activityData)) {
+      if (await this.checkBadgeCriteria(badgeDef, userStreak, userWorkoutCount, userWorkoutHistory, userAttendanceHistory, activityData)) {
         const newBadge = await this.gamificationRepository.createUserBadge({
           userId,
           badgeId: badgeDef.badgeId,
@@ -118,6 +124,24 @@ export class GamificationService implements IGamificationService {
         });
         newBadge.badge = badgeDef;
         newBadges.push(newBadge);
+        
+        // Award points for earning the badge
+        const badgePoints = this.calculateBadgePoints(badgeDef);
+        totalBadgePoints += badgePoints;
+      }
+    }
+
+    // Update user's total points and level if any badges were earned
+    if (totalBadgePoints > 0 && newBadges.length > 0) {
+      const currentStreak = await this.gamificationRepository.findUserStreak(userId);
+      if (currentStreak) {
+        const newTotalPoints = currentStreak.totalPoints + totalBadgePoints;
+        const newLevel = this.calculateLevel(newTotalPoints);
+        
+        await this.gamificationRepository.updateUserStreak(userId, {
+          totalPoints: newTotalPoints,
+          level: newLevel,
+        });
       }
     }
 
@@ -129,6 +153,7 @@ export class GamificationService implements IGamificationService {
     userStreak: UserStreak | null,
     userWorkoutCount: number,
     userWorkoutHistory: Array<{ date: Date; count: number }>,
+    userAttendanceHistory: Array<{ date: Date; timeOfDay: string; classId: number }>,
     activityData: ActivityData
   ): Promise<boolean> {
     const criteria = badgeDef.criteria as BadgeCriteria;
@@ -147,10 +172,10 @@ export class GamificationService implements IGamificationService {
         return userWorkoutCount >= (criteria.total_workouts || 100);
       
       case 'Early Bird':
-        return await this.checkMorningWorkouts(userWorkoutHistory, criteria.morning_workouts || 5);
+        return await this.checkMorningWorkouts(userAttendanceHistory, criteria.morning_workouts || 5);
       
       case 'Night Owl':
-        return await this.checkEveningWorkouts(userWorkoutHistory, criteria.evening_workouts || 5);
+        return await this.checkEveningWorkouts(userAttendanceHistory, criteria.evening_workouts || 5);
       
       case 'Consistency King':
         return await this.checkConsistency(userWorkoutHistory, criteria.weeks_consistent || 4);
@@ -166,16 +191,14 @@ export class GamificationService implements IGamificationService {
     }
   }
 
-  private async checkMorningWorkouts(workoutHistory: Array<{ date: Date; count: number }>, required: number): Promise<boolean> {
-    // This would need to be enhanced with actual workout time data
-    // For now, we'll use a simplified check
-    return workoutHistory.length >= required;
+  private async checkMorningWorkouts(attendanceHistory: Array<{ date: Date; timeOfDay: string; classId: number }>, required: number): Promise<boolean> {
+    const morningWorkouts = attendanceHistory.filter(attendance => attendance.timeOfDay === 'morning');
+    return morningWorkouts.length >= required;
   }
 
-  private async checkEveningWorkouts(workoutHistory: Array<{ date: Date; count: number }>, required: number): Promise<boolean> {
-    // This would need to be enhanced with actual workout time data
-    // For now, we'll use a simplified check
-    return workoutHistory.length >= required;
+  private async checkEveningWorkouts(attendanceHistory: Array<{ date: Date; timeOfDay: string; classId: number }>, required: number): Promise<boolean> {
+    const eveningWorkouts = attendanceHistory.filter(attendance => attendance.timeOfDay === 'evening');
+    return eveningWorkouts.length >= required;
   }
 
   private async checkConsistency(workoutHistory: Array<{ date: Date; count: number }>, requiredWeeks: number): Promise<boolean> {
@@ -231,6 +254,57 @@ export class GamificationService implements IGamificationService {
     await this.checkAndAwardBadges(userId, activityData);
 
     return activity;
+  }
+
+  // Class attendance tracking - new method for attendance-based gamification
+  async recordClassAttendance(userId: number, classId: number, attendanceDate: Date = new Date()): Promise<{ streak: UserStreak; newBadges: UserBadge[] }> {
+    // console.log(`🎮 recordClassAttendance called for user ${userId}, class ${classId}`);
+    
+    // Update user streak based on class attendance
+    // console.log(`📈 Updating user streak...`);
+    const updatedStreak = await this.updateUserStreak(userId, attendanceDate);
+    // console.log(`✅ Streak updated:`, {
+    //   currentStreak: updatedStreak.currentStreak,
+    //   totalPoints: updatedStreak.totalPoints,
+    //   level: updatedStreak.level
+    // });
+
+    // Create activity data for badge checking
+    const activityData: ActivityData = {
+      classId,
+      timeOfDay: this.getTimeOfDay(attendanceDate),
+    };
+
+    // Check for new badges
+    // console.log(`🏆 Checking for new badges...`);
+    const newBadges = await this.checkAndAwardBadges(userId, activityData);
+    // console.log(`✅ Badge check complete, new badges: ${newBadges.length}`);
+
+    // Record the attendance as an activity for tracking
+    // console.log(`📝 Recording activity...`);
+    await this.gamificationRepository.createUserActivity({
+      userId,
+      activityType: 'class_attendance',
+      activityData,
+      pointsEarned: this.calculateAttendancePoints(updatedStreak.currentStreak),
+    });
+    // console.log(`✅ Activity recorded`);
+
+    return { streak: updatedStreak, newBadges };
+  }
+
+  private getTimeOfDay(date: Date): 'morning' | 'afternoon' | 'evening' {
+    const hour = date.getHours();
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    return 'evening';
+  }
+
+  private calculateAttendancePoints(currentStreak: number): number {
+    // Base points for attendance + streak bonus
+    const basePoints = 10;
+    const streakBonus = Math.min(currentStreak * 2, 50); // Cap streak bonus at 50 points
+    return basePoints + streakBonus;
   }
 
   private calculateActivityPoints(activityType: string, activityData: ActivityData): number {
@@ -312,6 +386,32 @@ export class GamificationService implements IGamificationService {
     // Level 1: 0-99 points, Level 2: 100-299 points, Level 3: 300-599 points, etc.
     if (points < 100) return 1;
     return Math.floor(Math.sqrt(points / 50)) + 1;
+  }
+
+  private calculateBadgePoints(badgeDef: BadgeDefinition): number {
+    // Award points based on badge rarity/difficulty
+    switch (badgeDef.name) {
+      case 'First Steps':
+        return 25; // Easy first badge
+      case 'Week Warrior':
+        return 50; // 7-day streak
+      case 'Month Master':
+        return 100; // 30-day streak
+      case 'Century Club':
+        return 200; // 100 workouts
+      case 'Early Bird':
+        return 75; // Morning workouts
+      case 'Night Owl':
+        return 75; // Evening workouts
+      case 'Consistency King':
+        return 150; // 4 weeks consistent
+      case 'Iron Will':
+        return 300; // 50-day streak
+      case 'Legend':
+        return 500; // 365-day streak
+      default:
+        return 50; // Default points for unknown badges
+    }
   }
 
   getPointsToNextLevel(currentLevel: number): number {

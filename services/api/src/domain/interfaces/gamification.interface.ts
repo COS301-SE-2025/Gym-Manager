@@ -15,6 +15,9 @@ export interface IGamificationService {
   recordActivity(userId: number, activityType: string, activityData: ActivityData): Promise<UserActivity>;
   getUserActivities(userId: number, limit?: number): Promise<UserActivity[]>;
   
+  // Class attendance tracking
+  recordClassAttendance(userId: number, classId: number, attendanceDate?: Date): Promise<{ streak: UserStreak; newBadges: UserBadge[] }>;
+  
   // Stats and analytics
   getGamificationStats(userId: number): Promise<GamificationStats>;
   calculateLevel(points: number): number;
@@ -47,4 +50,5 @@ export interface IGamificationRepository {
   getPointsLeaderboard(limit?: number): Promise<Array<{ user: { userId: number; firstName: string; lastName: string }; streak: UserStreak }>>;
   getUserWorkoutCount(userId: number, startDate?: Date, endDate?: Date): Promise<number>;
   getUserWorkoutHistory(userId: number, days?: number): Promise<Array<{ date: Date; count: number }>>;
+  getUserClassAttendanceHistory(userId: number, days?: number): Promise<Array<{ date: Date; timeOfDay: string; classId: number }>>;
 }

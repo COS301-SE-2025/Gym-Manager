@@ -1,5 +1,5 @@
 import { db } from '../../db/client';
-import { userStreaks, userBadges, badgeDefinitions, userActivities, users } from '../../db/schema';
+import { userStreaks, userBadges, badgeDefinitions, userActivities, users, classattendance, classes, members } from '../../db/schema';
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
 import { IGamificationRepository } from '../../domain/interfaces/gamification.interface';
 import { BadgeDefinition, UserBadge, UserStreak, UserActivity } from '../../domain/entities/gamification.entity';
@@ -59,8 +59,11 @@ export class GamificationRepository implements IGamificationRepository {
   }
 
   async updateUserStreak(userId: number, updates: Partial<UserStreak>): Promise<UserStreak> {
+    // console.log(`💾 updateUserStreak repository called for user ${userId}`);
+    // console.log(`📝 Updates:`, updates);
+
     const updateData: any = {};
-    
+
     if (updates.currentStreak !== undefined) updateData.currentStreak = updates.currentStreak;
     if (updates.longestStreak !== undefined) updateData.longestStreak = updates.longestStreak;
     if (updates.lastActivityDate !== undefined) updateData.lastActivityDate = updates.lastActivityDate?.toISOString().split('T')[0];
@@ -69,11 +72,15 @@ export class GamificationRepository implements IGamificationRepository {
     if (updates.totalPoints !== undefined) updateData.totalPoints = updates.totalPoints;
     if (updates.level !== undefined) updateData.level = updates.level;
 
+    // console.log(`🗄️ Database update data:`, updateData);
+
     const result = await db
       .update(userStreaks)
       .set(updateData)
       .where(eq(userStreaks.userId, userId))
       .returning();
+
+    // console.log(`✅ Database update result:`, result);
 
     const streak = result[0];
     return {
@@ -292,6 +299,8 @@ export class GamificationRepository implements IGamificationRepository {
       })
       .from(userStreaks)
       .innerJoin(users, eq(userStreaks.userId, users.userId))
+      .innerJoin(members, eq(users.userId, members.userId))
+      .where(eq(members.publicVisibility, true))
       .orderBy(desc(userStreaks.currentStreak))
       .limit(limit);
 
@@ -333,6 +342,8 @@ export class GamificationRepository implements IGamificationRepository {
       })
       .from(userStreaks)
       .innerJoin(users, eq(userStreaks.userId, users.userId))
+      .innerJoin(members, eq(users.userId, members.userId))
+      .where(eq(members.publicVisibility, true))
       .orderBy(desc(userStreaks.totalPoints))
       .limit(limit);
 
@@ -355,25 +366,20 @@ export class GamificationRepository implements IGamificationRepository {
   async getUserWorkoutCount(userId: number, startDate?: Date, endDate?: Date): Promise<number> {
     let query = db
       .select({ count: sql<number>`count(*)` })
-      .from(userActivities)
-      .where(and(
-        eq(userActivities.userId, userId),
-        eq(userActivities.activityType, 'workout_completed')
-      ));
+      .from(classattendance)
+      .where(eq(classattendance.memberId, userId));
 
     if (startDate) {
       query = query.where(and(
-        eq(userActivities.userId, userId),
-        eq(userActivities.activityType, 'workout_completed'),
-        gte(userActivities.createdAt, startDate.toISOString())
+        eq(classattendance.memberId, userId),
+        gte(classattendance.markedAt, startDate.toISOString())
       ));
     }
 
     if (endDate) {
       query = query.where(and(
-        eq(userActivities.userId, userId),
-        eq(userActivities.activityType, 'workout_completed'),
-        lte(userActivities.createdAt, endDate.toISOString())
+        eq(classattendance.memberId, userId),
+        lte(classattendance.markedAt, endDate.toISOString())
       ));
     }
 
@@ -387,21 +393,48 @@ export class GamificationRepository implements IGamificationRepository {
 
     const results = await db
       .select({
-        date: sql<Date>`DATE(${userActivities.createdAt})`,
+        date: sql<Date>`DATE(${classattendance.markedAt})`,
         count: sql<number>`count(*)`
       })
-      .from(userActivities)
+      .from(classattendance)
       .where(and(
-        eq(userActivities.userId, userId),
-        eq(userActivities.activityType, 'workout_completed'),
-        gte(userActivities.createdAt, startDate.toISOString())
+        eq(classattendance.memberId, userId),
+        gte(classattendance.markedAt, startDate.toISOString())
       ))
-      .groupBy(sql`DATE(${userActivities.createdAt})`)
-      .orderBy(sql`DATE(${userActivities.createdAt})`);
+      .groupBy(sql`DATE(${classattendance.markedAt})`)
+      .orderBy(sql`DATE(${classattendance.markedAt})`);
 
     return results.map(row => ({
       date: new Date(row.date),
       count: row.count
+    }));
+  }
+
+  async getUserClassAttendanceHistory(userId: number, days: number = 30): Promise<Array<{ date: Date; timeOfDay: string; classId: number }>> {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const results = await db
+      .select({
+        date: sql<Date>`DATE(${classattendance.markedAt})`,
+        timeOfDay: sql<string>`CASE 
+          WHEN EXTRACT(HOUR FROM ${classattendance.markedAt}) < 12 THEN 'morning'
+          WHEN EXTRACT(HOUR FROM ${classattendance.markedAt}) < 17 THEN 'afternoon'
+          ELSE 'evening'
+        END`,
+        classId: classattendance.classId
+      })
+      .from(classattendance)
+      .where(and(
+        eq(classattendance.memberId, userId),
+        gte(classattendance.markedAt, startDate.toISOString())
+      ))
+      .orderBy(sql`DATE(${classattendance.markedAt})`);
+
+    return results.map(row => ({
+      date: new Date(row.date),
+      timeOfDay: row.timeOfDay,
+      classId: row.classId
     }));
   }
 }

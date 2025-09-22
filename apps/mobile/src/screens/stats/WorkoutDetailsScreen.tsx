@@ -14,6 +14,7 @@ import { NativeModules, Platform } from 'react-native';
 
 const { Constants } = require('react-native-health');
 const { width } = Dimensions.get('window');
+import { LineChart } from 'react-native-chart-kit';
 
 interface WorkoutData {
   id: string;
@@ -577,6 +578,86 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
     </View>
   );
 
+  const HeartRateGraph = ({ heartRateSamples }: { heartRateSamples: HeartRateData[] }) => {
+    if (heartRateSamples.length === 0) {
+      return (
+        <View style={styles.graphContainer}>
+          <Text style={styles.graphTitle}>Heart Rate During Workout</Text>
+          <View style={styles.noDataContainer}>
+            <Text style={styles.noDataText}>No heart rate data available</Text>
+          </View>
+        </View>
+      );
+    }
+  
+    // Convert heart rate samples to chart data
+    const chartData = {
+      labels: heartRateSamples.map((_, index) => {
+        // Show time labels every 5 samples to avoid crowding
+        if (index % 5 === 0) {
+          const date = new Date(heartRateSamples[index].startDate);
+          return date.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+        }
+        return '';
+      }),
+      datasets: [{
+        data: heartRateSamples.map(hr => hr.value),
+        color: (opacity = 1) => `rgba(216, 255, 62, ${opacity})`, // App color
+        strokeWidth: 2
+      }]
+    };
+  
+    const chartConfig = {
+      backgroundColor: '#2a2a2a',
+      backgroundGradientFrom: '#2a2a2a',
+      backgroundGradientTo: '#2a2a2a',
+      decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(216, 255, 62, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+    style: {
+      borderRadius: 16
+    },
+    propsForDots: {
+      r: '3',
+      strokeWidth: '2',
+      stroke: '#D8FF3E'
+    },
+    propsForBackgroundLines: {
+      strokeDasharray: '5,5',
+      stroke: 'rgba(255, 255, 255, 0.1)'
+    }
+  };
+
+  return (
+    <View style={styles.graphContainer}>
+      <Text style={styles.graphTitle}>Heart Rate During Workout</Text>
+      <View style={styles.chartWrapper}>
+        <LineChart
+          data={chartData}
+          width={width - 40} // Account for padding
+          height={200}
+          chartConfig={chartConfig}
+          bezier // Smooth curves
+          style={styles.chart}
+        />
+      </View>
+      <View style={styles.graphStats}>
+        <Text style={styles.graphStatText}>
+          Min: {Math.min(...heartRateSamples.map(hr => hr.value))} BPM
+        </Text>
+        <Text style={styles.graphStatText}>
+          Max: {Math.max(...heartRateSamples.map(hr => hr.value))} BPM
+        </Text>
+        <Text style={styles.graphStatText}>
+        Samples: {heartRateSamples.length}
+        </Text>
+      </View>
+    </View>
+  );
+};
   const DetailedWorkoutStats = ({ stats }: { stats: DetailedWorkoutStats }) => (
     <ScrollView style={styles.statsContainer}>
       {/* Workout Header */}
@@ -612,6 +693,8 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
             <Text style={styles.statLabel}>Readings</Text>
           </View>
         </View>
+
+        <HeartRateGraph heartRateSamples={stats.heartRate?.samples ? [] : []} />
 
         {/* Heart Rate Zones */}
         {stats.heartRate?.zones && (
@@ -902,6 +985,43 @@ const styles = StyleSheet.create({
     color: '#D8FF3E', 
     fontSize: 12,
     fontWeight: '500',
+  },
+  graphContainer: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+  },
+  graphTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  chartWrapper: {
+    alignItems: 'center',
+  },
+  chart: {
+    marginVertical: 8,
+    borderRadius: 16,
+  },
+  graphStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  graphStatText: {
+    color: '#D8FF3E',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  noDataContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  noDataText: {
+    color: '#888',
+    fontSize: 14,
   },
 });
 

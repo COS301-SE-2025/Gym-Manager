@@ -434,8 +434,11 @@ export class LiveClassRepository implements ILiveClassRepository {
       from totals t
       left join public.users u
         on u.user_id = t.user_id
+      left join public.members m
+        on m.user_id = t.user_id
       left join public.classattendance ca
         on ca.class_id = ${classId} and ca.member_id = t.user_id
+      where m.public_visibility = true
       order by t.total_reps desc, u.first_name asc nulls last
     `);
     return rows;
@@ -479,7 +482,9 @@ export class LiveClassRepository implements ILiveClassRepository {
         coalesce(ca.scaling, 'RX') as scaling
       from calc c
       join public.users u on u.user_id = c.user_id
+      join public.members m on m.user_id = c.user_id
       left join public.classattendance ca on ca.class_id = c.class_id and ca.member_id = c.user_id
+      where m.public_visibility = true
       order by total_reps desc, u.first_name asc
     `);
     return rows;
@@ -520,7 +525,9 @@ export class LiveClassRepository implements ILiveClassRepository {
         coalesce(ca.scaling, 'RX') as scaling
       from base b
       join public.users u on u.user_id = b.user_id
+      join public.members m on m.user_id = b.user_id
       left join public.classattendance ca on ca.class_id = b.class_id and ca.member_id = b.user_id
+      where m.public_visibility = true
       order by
         case when b.finished_at is not null then 0 else 1 end,
         elapsed_seconds asc nulls last,
@@ -660,6 +667,8 @@ export class LiveClassRepository implements ILiveClassRepository {
         null::int as total_reps
       from totals t
       left join public.users u on u.user_id = t.user_id
+      left join public.members m on m.user_id = t.user_id
+      where m.public_visibility = true
       order by t.total_time asc, u.first_name asc nulls last;
     `);
     return rows;

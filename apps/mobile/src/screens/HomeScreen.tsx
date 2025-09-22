@@ -520,6 +520,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D8FF3E" />
         }
       >
+
         {/* Live Class Banner */}
         {!isLoadingLiveClass && !liveClassError && liveClass && (
           <TouchableOpacity

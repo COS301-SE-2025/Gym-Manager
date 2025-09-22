@@ -12,9 +12,13 @@ import { eq, and, gt, gte, or, sql } from 'drizzle-orm';
 import { AuthenticatedRequest } from '../infrastructure/middleware/authMiddleware';
 import { ClassRepository } from '../repositories/class/classRepository';
 import UserRepository from '../repositories/user.repository';
+import { GamificationService } from '../services/gamification/gamificationService';
+import { GamificationRepository } from '../repositories/gamification/gamificationRepository';
 
 const classRepo = new ClassRepository();
 const userRepo = new UserRepository();
+const gamificationRepo = new GamificationRepository();
+const gamificationService = new GamificationService(gamificationRepo);
 
 /**
  * GET /coach/assigned
@@ -329,9 +333,22 @@ export const checkInToClass = async (req: Request, res: Response) => {
   if (!classId || !memberId) return res.status(400).json({ error: 'classId and memberId are required' });
 
   try {
+    // Insert attendance record
     const attendance = await classRepo.insertAttendance(classId, memberId);
     if (!attendance) return res.status(409).json({ error: 'Already checked in' });
-    return res.status(201).json({ success: true, attendance });
+
+    // Update gamification system (streaks, badges, points)
+    const gamificationResult = await gamificationService.recordClassAttendance(memberId, classId, new Date());
+
+    return res.status(201).json({ 
+      success: true, 
+      attendance,
+      gamification: {
+        streak: gamificationResult.streak,
+        newBadges: gamificationResult.newBadges,
+        pointsEarned: gamificationResult.streak.totalPoints
+      }
+    });
   } catch (err) {
     console.error('checkInToClass error:', err);
     return res.status(500).json({ error: 'Failed to check in, class not booked' });

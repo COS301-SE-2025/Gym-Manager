@@ -11,6 +11,12 @@ import {
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { AuthenticatedRequest } from '../infrastructure/middleware/authMiddleware';
 import { users } from '../db/schema';
+import { GamificationService } from '../services/gamification/gamificationService';
+import { GamificationRepository } from '../repositories/gamification/gamificationRepository';
+
+// Initialize gamification service
+const gamificationRepo = new GamificationRepository();
+const gamificationService = new GamificationService(gamificationRepo);
 
 // GET /leaderboard/:classId  — final leaderboard (for completed class sessions)
 export const getLeaderboard = async (req: Request, res: Response) => {
@@ -175,8 +181,11 @@ export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
       return res.status(403).json({ success: false, error: 'NOT_CLASS_COACH' });
     }
     const rows = req.body.scores as { userId: number; score: number }[];
+    const gamificationResults = [];
+    
     for (const row of rows) {
       if (typeof row.userId !== 'number' || typeof row.score !== 'number' || row.score < 0) continue;
+      
       await db
         .insert(classattendance)
         .values({
@@ -188,8 +197,29 @@ export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
           target: [classattendance.classId, classattendance.memberId],
           set: { score: row.score },
         });
+
+      // Trigger gamification updates for each member
+      try {
+        const gamificationResult = await gamificationService.recordClassAttendance(row.userId, classId, new Date());
+        gamificationResults.push({
+          userId: row.userId,
+          streak: gamificationResult.streak,
+          newBadges: gamificationResult.newBadges
+        });
+      } catch (gamificationError) {
+        console.error(`Gamification update failed for user ${row.userId}:`, gamificationError);
+        gamificationResults.push({
+          userId: row.userId,
+          error: 'Failed to update gamification'
+        });
+      }
     }
-    return res.json({ success: true, updated: rows.length });
+    
+    return res.json({ 
+      success: true, 
+      updated: rows.length,
+      gamification: gamificationResults
+    });
   }
 
   // Member submitting own score
@@ -210,7 +240,7 @@ export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
     return res.status(403).json({ success: false, error: 'NOT_BOOKED' });
   }
   // Upsert member's own score
-  await db
+  const attendanceResult = await db
     .insert(classattendance)
     .values({
       classId,
@@ -220,8 +250,33 @@ export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
     .onConflictDoUpdate({
       target: [classattendance.classId, classattendance.memberId],
       set: { score },
+    })
+    .returning();
+
+  // Trigger gamification updates for class completion
+  try {
+    console.log(`🎯 Triggering gamification for user ${userId}, class ${classId}`);
+    const gamificationResult = await gamificationService.recordClassAttendance(userId, classId, new Date());
+    console.log(`✅ Gamification result:`, {
+      streak: gamificationResult.streak.currentStreak,
+      totalPoints: gamificationResult.streak.totalPoints,
+      newBadges: gamificationResult.newBadges.length
     });
-  return res.json({ success: true });
+    
+    return res.json({ 
+      success: true, 
+      gamification: {
+        streak: gamificationResult.streak,
+        newBadges: gamificationResult.newBadges,
+        pointsEarned: gamificationResult.streak.totalPoints
+      }
+    });
+  } catch (gamificationError) {
+    console.error('❌ Gamification update failed:', gamificationError);
+    console.error('Error details:', gamificationError.stack);
+    // Still return success for the score submission even if gamification fails
+    return res.json({ success: true, gamificationError: 'Failed to update gamification' });
+  }
 };
 
 // ===== Helpers for live classes =====

@@ -1,12 +1,15 @@
 // src/screens/classes/LiveClassEndScreen.tsx
 import React, { useMemo, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSession } from '../../hooks/useSession';
 import { useMyProgress } from '../../hooks/useMyProgress';
 import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { getUser } from '../../utils/authStorage';
+import { useImmersiveBars } from '../../hooks/useImmersiveBars';
+
 
 type R = RouteProp<AuthStackParamList, 'LiveClassEnd'>;
 
@@ -28,7 +31,9 @@ function fmt(t: number) {
 }
 
 export default function LiveClassEndScreen() {
+  useImmersiveBars(true);
   const { params } = useRoute<R>();
+  const nav = useNavigation<any>();
   const classId = params.classId as number;
 
   const session = useSession(classId);
@@ -107,6 +112,13 @@ export default function LiveClassEndScreen() {
     return `${reps} reps`;
   }, [session, prog, lb, myUserId, type]);
 
+  const goHomeSmart = () => {
+    // Try a few common home routes, then fall back to stack top
+    try { nav.navigate('Home'); return; } catch {}
+    try { nav.navigate('Root'); return; } catch {}
+    nav.popToTop();
+  };
+
   return (
     <SafeAreaView style={s.root}>
       <StatusBar barStyle="light-content" backgroundColor="#111" />
@@ -114,6 +126,12 @@ export default function LiveClassEndScreen() {
         <Text style={s.title}>Nice work! 🎉</Text>
         <Text style={s.sub}>Your score</Text>
         <Text style={s.big}>{myScore}</Text>
+
+        {/* Back to Home */}
+        <TouchableOpacity style={[s.btnPrimary, { marginTop: 12 }]} onPress={goHomeSmart}>
+          <Ionicons name="home-outline" size={20} color="#111" />
+          <Text style={[s.btnPrimaryText, { marginLeft: 8 }]}>Back to Home</Text>
+        </TouchableOpacity>
 
         <View style={s.lb}>
           <Text style={s.lbTitle}>Leaderboard</Text>
@@ -164,6 +182,17 @@ const s = StyleSheet.create({
   title:{ color:'#d8ff3e', fontWeight:'900', fontSize:28 },
   sub:{ color:'#9aa', marginTop:8 },
   big:{ color:'#fff', fontWeight:'900', fontSize:36, marginTop:4 },
+
+  btnPrimary:{
+    backgroundColor:'#d8ff3e',
+    padding:14,
+    borderRadius:10,
+    alignItems:'center',
+    flexDirection:'row',
+    justifyContent:'center'
+  },
+  btnPrimaryText:{ color:'#111', fontWeight:'900' },
+
   lb:{ backgroundColor:'#1a1a1a', borderRadius:14, padding:14, marginTop:20 },
   lbTitle:{ color:'#fff', fontWeight:'800', marginBottom:8 },
   row:{ flexDirection:'row', alignItems:'center', paddingVertical:6 },

@@ -1,12 +1,18 @@
 // apps/mobile/src/screens/classes/OverviewScreen.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, StatusBar, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
+import { useImmersiveBars } from '../../hooks/useImmersiveBars';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
+import { Platform } from 'react-native';
+
 
 type R = RouteProp<AuthStackParamList, 'Overview'>;
 
@@ -61,6 +67,8 @@ function fmtHMS(sec: number) {
 }
 
 export default function OverviewScreen() {
+  useImmersiveBars();
+
   const nav = useNavigation<any>();
   const { params } = useRoute<R>();
   const classId = params.classId as number;
@@ -178,10 +186,33 @@ export default function OverviewScreen() {
   const inferredRounds = Object.keys(grouped).length;
   const roundCount = declaredRounds > 0 ? declaredRounds : inferredRounds;
 
+  const goBackSmart = () => {
+    try {
+      if (typeof nav.canGoBack === 'function' && nav.canGoBack()) {
+        nav.goBack();
+        return;
+      }
+    } catch {}
+    // Fallback: attempt a home-like route, otherwise reset stack
+    try { nav.navigate('Home'); return; } catch {}
+    try { nav.navigate('Root'); return; } catch {}
+    nav.popToTop();
+  };
+
+  const edges = Platform.OS === 'android'
+  ? ['left','right','bottom']
+  : ['top','left','right','bottom'];
+
   return (
-    <SafeAreaView style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#111" />
+    <SafeAreaView style={s.root} edges={edges}>
+      <ExpoStatusBar style="light" hidden={Platform.OS === 'android'} />
       <ScrollView contentContainerStyle={s.scroll}>
+
+        {/* Back button */}
+        <TouchableOpacity style={s.backBtn} onPress={goBackSmart} accessibilityLabel="Back">
+          <Ionicons name="chevron-back" size={20} color="#d8ff3e" />
+          <Text style={s.backText}>Back</Text>
+        </TouchableOpacity>
 
         <View style={s.headerBadge}>
           <Text style={s.headerText}>LIVE CLASS</Text>
@@ -269,6 +300,15 @@ function TypePill({ label, active }: { label: string; active?: boolean }) {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#101010' },
   scroll: { padding: 16, paddingBottom: 40 },
+
+  backBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 10,
+  },
+  backText: { color: '#d8ff3e', fontWeight: '900' },
 
   headerBadge: {
     backgroundColor: '#d8ff3e',

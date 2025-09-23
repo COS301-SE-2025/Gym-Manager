@@ -3,13 +3,14 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
   RefreshControl,
   Dimensions,
   TouchableOpacity,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { CoachStackParamList } from '../../navigation/CoachNavigator';
 import axios from 'axios';
@@ -102,7 +103,8 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton}
@@ -123,7 +125,8 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton}
@@ -142,7 +145,8 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -217,7 +221,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 8,
     paddingBottom: 20,
   },
   backButton: {

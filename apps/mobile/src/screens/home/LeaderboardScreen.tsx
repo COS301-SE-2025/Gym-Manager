@@ -4,14 +4,15 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   RefreshControl,
   ActivityIndicator,
   Pressable,
   Modal,
   Dimensions,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
@@ -212,7 +213,8 @@ const LeaderboardScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
       {/* Compact Premium Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Daily Leaderboard</Text>

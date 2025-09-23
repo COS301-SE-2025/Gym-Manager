@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   TextInput,
@@ -14,6 +13,7 @@ import {
   Platform,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackScreenProps } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet from '@gorhom/bottom-sheet';
@@ -575,7 +575,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#D8FF3E" />
@@ -587,7 +587,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
   if (error || !classDetails) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
         <View style={styles.header}>
           <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
@@ -626,7 +626,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
 
       {/* Header */}
@@ -1043,7 +1043,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 8,
     paddingBottom: 20,
   },
   backButton: {

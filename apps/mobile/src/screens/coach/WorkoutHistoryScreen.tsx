@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, StatusBar, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import apiClient from '../../utils/apiClient';
 import CoachHistorySheet from '../../components/CoachHistorySheet';
 
@@ -93,7 +94,7 @@ export default function WorkoutHistoryScreen() {
     };
   
     return (
-      <SafeAreaView style={s.container}>
+      <SafeAreaView style={s.container} edges={['top', 'left', 'right']}>
         <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
         <View style={s.header}>
           <Text style={s.headerTitle}>Workout History</Text>
@@ -129,7 +130,7 @@ export default function WorkoutHistoryScreen() {
   
   const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#1a1a1a' },
-    header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
+    header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
     headerTitle: { color: 'white', fontSize: 18, fontWeight: '700' },
     card: { backgroundColor: '#2a2a2a', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#232323' },
     cardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },

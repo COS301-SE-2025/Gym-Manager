@@ -14,7 +14,6 @@ import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardReal
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type R = RouteProp<AuthStackParamList, 'ForTimeLive'>;
@@ -75,6 +74,7 @@ export default function ForTimeLiveScreen() {
       };
     }, [])
   );
+
 
   const session = useSession(classId);
   const progress = useMyProgress(classId);
@@ -191,9 +191,9 @@ export default function ForTimeLiveScreen() {
   const scaleIn = pausedAnim.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] });
 
   return (
-    <SafeAreaProvider>
-    <SafeAreaView style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#0d150f" />
+    <View style={s.root}>
+      <StatusBar hidden={true} />
+      <SafeAreaView style={s.safeArea} edges={['left', 'right']}>
 
       {/* single timer */}
       <View pointerEvents="none" style={s.topOverlay}>
@@ -289,13 +289,14 @@ export default function ForTimeLiveScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
-    </SafeAreaProvider>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0d150f' },
+  safeArea: { flex: 1 },
   row: { flex: 1, flexDirection: 'row' },
   back: { flex: 1, backgroundColor: '#2b0f0f' },
   next: { flex: 3, backgroundColor: '#0f1a13' },

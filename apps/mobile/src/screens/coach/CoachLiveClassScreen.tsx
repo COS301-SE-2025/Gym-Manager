@@ -1,10 +1,11 @@
 // apps/mobile/src/screens/coach/CoachLiveClassScreen.tsx
 import React, { useMemo, useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, StatusBar,
+  View, Text, StyleSheet, StatusBar,
   TouchableOpacity, TextInput, Modal, ScrollView
 } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
@@ -30,6 +31,7 @@ function fmt(seconds: number) {
 export default function CoachLiveClassScreen() {
   const { params } = useRoute<R>();
   const classId = params.classId as number;
+  const nav = useNavigation<any>();
 
   const session = useSession(classId);
   const type = (session?.workout_type ?? '').toUpperCase();
@@ -158,10 +160,29 @@ export default function CoachLiveClassScreen() {
     return false;
   }, [lb, type]);
 
+  const goBackSmart = () => {
+    try {
+      if (typeof nav.canGoBack === 'function' && nav.canGoBack()) {
+        nav.goBack();
+        return;
+      }
+    } catch {}
+    // Fallback: attempt a home-like route, otherwise reset stack
+    try { nav.navigate('Home'); return; } catch {}
+    try { nav.navigate('Root'); return; } catch {}
+    nav.popToTop();
+  };
+
   return (
-    <SafeAreaView style={s.root}>
+    <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#111" />
       <ScrollView contentContainerStyle={s.pad}>
+        {/* Back button */}
+        <TouchableOpacity style={s.backBtn} onPress={goBackSmart} accessibilityLabel="Back">
+          <Ionicons name="chevron-back" size={20} color="#d8ff3e" />
+          <Text style={s.backText}>Back</Text>
+        </TouchableOpacity>
+
         <Text style={s.title}>Coach Controls</Text>
         <Text style={s.meta}>Class #{classId}</Text>
         <Text style={s.meta}>Status: {session?.status ?? '—'}</Text>
@@ -438,7 +459,17 @@ export default function CoachLiveClassScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#101010' },
-  pad: { padding: 18 },
+  pad: { padding: 18, paddingTop: 8 },
+
+  backBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 10,
+  },
+  backText: { color: '#d8ff3e', fontWeight: '900' },
+
   title: { color: '#d8ff3e', fontSize: 24, fontWeight: '900' },
   meta: { color: '#9aa', marginTop: 4 },
   section: { color: '#fff', marginTop: 16, fontWeight: '800' },

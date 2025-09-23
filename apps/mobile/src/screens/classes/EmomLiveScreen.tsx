@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, SafeAreaView, StatusBar,
+  View, Text, StyleSheet, Pressable, StatusBar,
   ActivityIndicator, Animated, TouchableOpacity
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { BlurView } from 'expo-blur';
@@ -30,7 +31,6 @@ const fmt = (t: number) => {
 };
 
 export default function EmomLiveScreen() {
-  useImmersiveBars(true);
   const route = useRoute<R>();
   const classId = Number(route.params.classId);
   const nav = useNavigation<any>();
@@ -44,15 +44,17 @@ export default function EmomLiveScreen() {
 
   if (!classId) {
     return (
-      <SafeAreaView style={s.root}>
-        <StatusBar barStyle="light-content" backgroundColor="#0d150f" />
-        <View style={{ padding: 20 }}>
-          <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>Missing classId</Text>
-          <Text style={{ color: '#aaa', marginTop: 6 }}>
-            Ensure AuthStackParamList includes {'{ EmomLive: { classId: number } }'} and the navigator passes it.
-          </Text>
-        </View>
-      </SafeAreaView>
+      <View style={s.root}>
+        <StatusBar hidden={true} />
+        <SafeAreaView style={s.safeArea} edges={['left', 'right']}>
+          <View style={{ padding: 20 }}>
+            <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>Missing classId</Text>
+            <Text style={{ color: '#aaa', marginTop: 6 }}>
+              Ensure AuthStackParamList includes {'{ EmomLive: { classId: number } }'} and the navigator passes it.
+            </Text>
+          </View>
+        </SafeAreaView>
+      </View>
     );
   }
 
@@ -265,8 +267,9 @@ export default function EmomLiveScreen() {
   const lbTop = lb.slice(0, 6);
 
   return (
-    <SafeAreaView style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#0d150f" />
+    <View style={s.root}>
+      <StatusBar hidden={true} />
+      <SafeAreaView style={s.safeArea} edges={['left', 'right']}>
 
       {/* timer */}
       <View pointerEvents="none" style={s.topOverlay}>
@@ -370,12 +373,14 @@ export default function EmomLiveScreen() {
           </Animated.View>
         </View>
       )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0d150f' },
+  safeArea: { flex: 1 },
   row: { flex: 1, flexDirection: 'row' },
   back: { flex: 1, backgroundColor: '#2b0f0f' },
   next: { flex: 3, backgroundColor: '#0f1a13' },

@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView,
+  View, Text, StyleSheet, StatusBar, ScrollView,
   TextInput, TouchableOpacity, ActivityIndicator, Animated
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
@@ -37,7 +38,6 @@ function fmtClock(sec: number) {
  * - when done=true: timer is clamped; we deliberately DO NOT disable inputs
  */
 function useIntervalTicker(session: any | null) {
-  useImmersiveBars(true);
   const nowSec = useNowSec();
 
   const startedAtSec = Number((session as any)?.started_at_s ?? 0);
@@ -196,8 +196,9 @@ export default function IntervalLiveScreen() {
   const next    = ready && nextIdx >= 0 ? steps[nextIdx] : undefined;
 
   return (
-    <SafeAreaView style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#101010" />
+    <View style={s.root}>
+      <StatusBar hidden={true} />
+      <SafeAreaView style={s.safeArea} edges={['left', 'right']}>
 
       <View style={s.topHeader}>
         <Text style={s.timer}>{fmtClock(displayElapsed)}</Text>
@@ -367,13 +368,15 @@ export default function IntervalLiveScreen() {
           </Animated.View>
         </View>
       )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 
 }
 
 const s = StyleSheet.create({
   root: { flex:1, backgroundColor:'#101010' },
+  safeArea: { flex: 1 },
 
   topHeader: { paddingTop:8, alignItems:'center' },
   timer: { color:'#e6e6e6', fontWeight:'900', fontSize:30, letterSpacing:2 },

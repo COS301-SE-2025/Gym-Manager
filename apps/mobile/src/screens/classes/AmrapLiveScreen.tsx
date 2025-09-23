@@ -1,8 +1,9 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, SafeAreaView, StatusBar,
+  View, Text, StyleSheet, Pressable, StatusBar,
   Modal, TextInput, TouchableOpacity, ActivityIndicator, Animated
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { BlurView } from 'expo-blur';
@@ -28,7 +29,6 @@ function useNowSec() {
 }
 
 export default function AmrapLiveScreen() {
-  useImmersiveBars(true);
 
   const { params } = useRoute<R>();
   const classId = params.classId as number;
@@ -170,8 +170,9 @@ export default function AmrapLiveScreen() {
   const next     = ready ? steps[(localIdx + 1) % Math.max(1, stepCount)] : undefined;
 
   return (
-    <SafeAreaView style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#0d150f" />
+    <View style={s.root}>
+      <StatusBar hidden={true} />
+      <SafeAreaView style={s.safeArea} edges={['left', 'right']}>
 
       {/* single timer */}
       <View pointerEvents="none" style={s.topOverlay}>
@@ -270,7 +271,8 @@ export default function AmrapLiveScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -283,6 +285,7 @@ function fmt(t: number) {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0d150f' },
+  safeArea: { flex: 1 },
   row: { flex: 1, flexDirection: 'row' },
   back: { flex: 1, backgroundColor: '#2b0f0f' },
   next: { flex: 3, backgroundColor: '#0f1a13' },

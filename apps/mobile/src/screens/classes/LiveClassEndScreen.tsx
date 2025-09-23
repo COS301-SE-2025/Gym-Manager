@@ -1,6 +1,7 @@
 // src/screens/classes/LiveClassEndScreen.tsx
 import React, { useMemo, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSession } from '../../hooks/useSession';
@@ -31,7 +32,7 @@ function fmt(t: number) {
 }
 
 export default function LiveClassEndScreen() {
-  useImmersiveBars(true);
+  useImmersiveBars();
   const { params } = useRoute<R>();
   const nav = useNavigation<any>();
   const classId = params.classId as number;
@@ -112,26 +113,32 @@ export default function LiveClassEndScreen() {
     return `${reps} reps`;
   }, [session, prog, lb, myUserId, type]);
 
-  const goHomeSmart = () => {
-    // Try a few common home routes, then fall back to stack top
+  const goBackSmart = () => {
+    try {
+      if (typeof nav.canGoBack === 'function' && nav.canGoBack()) {
+        nav.goBack();
+        return;
+      }
+    } catch {}
+    // Fallback: attempt a home-like route, otherwise reset stack
     try { nav.navigate('Home'); return; } catch {}
     try { nav.navigate('Root'); return; } catch {}
     nav.popToTop();
   };
 
   return (
-    <SafeAreaView style={s.root}>
+    <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#111" />
       <View style={s.pad}>
+        {/* Back button */}
+        <TouchableOpacity style={s.backBtn} onPress={goBackSmart} accessibilityLabel="Back">
+          <Ionicons name="chevron-back" size={20} color="#d8ff3e" />
+          <Text style={s.backText}>Back</Text>
+        </TouchableOpacity>
+
         <Text style={s.title}>Nice work! 🎉</Text>
         <Text style={s.sub}>Your score</Text>
         <Text style={s.big}>{myScore}</Text>
-
-        {/* Back to Home */}
-        <TouchableOpacity style={[s.btnPrimary, { marginTop: 12 }]} onPress={goHomeSmart}>
-          <Ionicons name="home-outline" size={20} color="#111" />
-          <Text style={[s.btnPrimaryText, { marginLeft: 8 }]}>Back to Home</Text>
-        </TouchableOpacity>
 
         <View style={s.lb}>
           <Text style={s.lbTitle}>Leaderboard</Text>
@@ -178,7 +185,17 @@ export default function LiveClassEndScreen() {
 
 const s = StyleSheet.create({
   root:{ flex:1, backgroundColor:'#101010' },
-  pad:{ flex:1, padding:20 },
+  pad:{ flex:1, padding:20, paddingTop: 8 },
+
+  backBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 10,
+  },
+  backText: { color: '#d8ff3e', fontWeight: '900' },
+
   title:{ color:'#d8ff3e', fontWeight:'900', fontSize:28 },
   sub:{ color:'#9aa', marginTop:8 },
   big:{ color:'#fff', fontWeight:'900', fontSize:36, marginTop:4 },

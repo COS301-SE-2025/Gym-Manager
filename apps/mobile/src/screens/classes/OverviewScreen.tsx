@@ -196,7 +196,7 @@ export default function OverviewScreen() {
 
   return (
     <SafeAreaProvider>
-    <SafeAreaView style={s.root}>
+    <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#111" />
       <ScrollView contentContainerStyle={s.scroll}>
 
@@ -292,7 +292,7 @@ function TypePill({ label, active }: { label: string; active?: boolean }) {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#101010' },
-  scroll: { padding: 16, paddingBottom: 40 },
+  scroll: { padding: 16, paddingBottom: 40, paddingTop: 8 },
 
   backBtn: {
     alignSelf: 'flex-start',

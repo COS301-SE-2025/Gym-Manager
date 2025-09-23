@@ -202,6 +202,109 @@ export const createWorkout = async (req: AuthenticatedRequest, res: Response) =>
   }
 };
 
+export const updateWorkout = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const workoutId = Number(req.params.workoutId);
+  if (!Number.isFinite(workoutId)) {
+    return res.status(400).json({ error: 'Invalid workout ID' });
+  }
+
+  const {
+    workoutName,
+    type,
+    metadata,
+    rounds: roundsInput,
+  } = req.body as {
+    workoutName?: string;
+    type?: string;
+    metadata?: Record<string, unknown>;
+    rounds?: RoundInput[];
+  };
+
+  // ----- BASIC VALIDATION ----- (same as createWorkout)
+  if (!workoutName || !workoutName.trim()) {
+    return res.status(400).json({ error: 'workoutName is required' });
+  }
+  if (!type || !WORKOUT_TYPES.includes(type as WorkoutType)) {
+    return res
+      .status(400)
+      .json({ error: `type must be one of ${WORKOUT_TYPES.join(', ')}` });
+  }
+  if (typeof metadata !== 'object' || metadata === null) {
+    return res.status(400).json({ error: 'metadata must be an object' });
+  }
+  if (!Array.isArray(roundsInput) || roundsInput.length === 0) {
+    return res.status(400).json({ error: 'rounds must be a non-empty array' });
+  }
+
+  for (const r of roundsInput) {
+    if (typeof r.roundNumber !== 'number' || !Array.isArray(r.subrounds)) {
+      return res
+        .status(400)
+        .json({ error: 'each round needs roundNumber & subrounds[]' });
+    }
+    for (const sr of r.subrounds) {
+      if (
+        typeof sr.subroundNumber !== 'number' ||
+        !Array.isArray(sr.exercises) ||
+        sr.exercises.length === 0
+      ) {
+        return res
+          .status(400)
+          .json({
+            error:
+              'each subround needs subroundNumber & a non-empty exercises[]',
+          });
+      }
+      for (const ex of sr.exercises) {
+        if (
+          (ex.exerciseId == null && !ex.exerciseName) ||
+          (ex.exerciseId != null && ex.exerciseName)
+        ) {
+          return res
+            .status(400)
+            .json({
+              error:
+                'each exercise must have exactly one of exerciseId or exerciseName',
+            });
+        }
+        if (
+          typeof ex.position !== 'number' ||
+          !QUANTITY_TYPES.includes(ex.quantityType) ||
+          typeof ex.quantity !== 'number'
+        ) {
+          return res
+            .status(400)
+            .json({
+              error:
+                'exercise entries need position:number, quantityType:(reps|duration), quantity:number',
+            });
+        }
+      }
+    }
+  }
+
+  try {
+    const updatedWorkoutId = await classRepo.updateWorkout(
+      workoutId,
+      { workoutName: workoutName.trim(), type: type as WorkoutType, metadata },
+      roundsInput,
+    );
+
+    return res.json({
+      success: true,
+      workoutId: updatedWorkoutId,
+      message: 'Workout updated with rounds, subrounds & exercises.',
+    });
+  } catch (err: any) {
+    console.error('updateWorkout error:', err);
+    return res.status(400).json({ error: err.message || 'Update failed' });
+  }
+};
+
 /**
  * GET /classes  (member view of upcoming classes)
  */

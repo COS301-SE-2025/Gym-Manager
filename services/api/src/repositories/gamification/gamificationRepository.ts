@@ -406,6 +406,35 @@ export class GamificationRepository implements IGamificationRepository {
     }));
   }
 
+  // Get workout history for the current week (Monday to Sunday)
+  async getUserWeeklyWorkoutHistory(userId: number): Promise<Array<{ date: Date; count: number }>> {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday is 0, so make it 6 days from Monday
+    
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - daysFromMonday);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const results = await db
+      .select({
+        date: sql<Date>`DATE(${classattendance.markedAt})`,
+        count: sql<number>`count(*)`
+      })
+      .from(classattendance)
+      .where(and(
+        eq(classattendance.memberId, userId),
+        gte(classattendance.markedAt, weekStart.toISOString())
+      ))
+      .groupBy(sql`DATE(${classattendance.markedAt})`)
+      .orderBy(sql`DATE(${classattendance.markedAt})`);
+
+    return results.map(row => ({
+      date: new Date(row.date),
+      count: row.count
+    }));
+  }
+
   async getUserClassAttendanceHistory(userId: number, days: number = 30): Promise<Array<{ date: Date; timeOfDay: string; classId: number }>> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);

@@ -7,10 +7,7 @@ export class GamificationService implements IGamificationService {
 
   // Streak management
   async updateUserStreak(userId: number, activityDate: Date): Promise<UserStreak> {
-    // console.log(`🔄 updateUserStreak called for user ${userId}, date: ${activityDate.toISOString()}`);
-    
     const existingStreak = await this.gamificationRepository.findUserStreak(userId);
-    // console.log(`📊 Existing streak:`, existingStreak);
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -329,7 +326,8 @@ export class GamificationService implements IGamificationService {
     const userStreak = await this.gamificationRepository.findUserStreak(userId);
     const recentBadges = await this.gamificationRepository.findUserBadges(userId, 5);
     const allBadges = await this.gamificationRepository.findUserBadges(userId);
-    const userWorkoutHistory = await this.gamificationRepository.getUserWorkoutHistory(userId, 7);
+    const userWeeklyHistory = await this.gamificationRepository.getUserWeeklyWorkoutHistory(userId);
+
 
     if (!userStreak) {
       // Create initial streak if none exists
@@ -341,14 +339,12 @@ export class GamificationService implements IGamificationService {
         totalPoints: 0,
         level: 1,
       });
-      return this.buildGamificationStats(newStreak, [], 0, userWorkoutHistory);
+      return this.buildGamificationStats(newStreak, [], 0, userWeeklyHistory);
     }
 
     const totalBadges = allBadges.length;
-    const workoutsThisWeek = userWorkoutHistory.reduce((sum, day) => sum + day.count, 0);
-    const pointsThisWeek = userWorkoutHistory.length * 10; // Simplified calculation
 
-    return this.buildGamificationStats(userStreak, recentBadges, totalBadges, userWorkoutHistory);
+    return this.buildGamificationStats(userStreak, recentBadges, totalBadges, userWeeklyHistory);
   }
 
   private buildGamificationStats(
@@ -361,7 +357,13 @@ export class GamificationService implements IGamificationService {
     const nextLevel = currentLevel + 1;
     const pointsToNext = this.getPointsToNextLevel(currentLevel);
     const pointsInCurrent = userStreak.totalPoints - this.getPointsForLevel(currentLevel - 1);
-    const workoutsThisWeek = weeklyHistory.reduce((sum, day) => sum + day.count, 0);
+    
+    // Calculate workouts this week (last 7 days)
+    const workoutsThisWeek = weeklyHistory.reduce((sum, day) => sum + Number(day.count), 0);
+    
+    // Calculate points this week based on actual workouts completed
+    const pointsThisWeek = workoutsThisWeek * 10;
+
 
     return {
       userStreak,
@@ -375,7 +377,7 @@ export class GamificationService implements IGamificationService {
       },
       weeklyStats: {
         workoutsThisWeek,
-        pointsThisWeek: workoutsThisWeek * 10,
+        pointsThisWeek,
         streakDays: userStreak.currentStreak,
       },
     };

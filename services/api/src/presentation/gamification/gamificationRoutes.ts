@@ -47,6 +47,7 @@ export class GamificationRoutes {
     this.router.post('/workout-completed', this.authMiddleware.isAuthenticated, (req, res) => 
       this.gamificationController.recordWorkoutCompletion(req, res)
     );
+
   }
 
   public getRouter(): Router {

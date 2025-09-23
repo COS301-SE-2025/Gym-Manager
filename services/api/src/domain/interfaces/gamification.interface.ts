@@ -50,5 +50,6 @@ export interface IGamificationRepository {
   getPointsLeaderboard(limit?: number): Promise<Array<{ user: { userId: number; firstName: string; lastName: string }; streak: UserStreak }>>;
   getUserWorkoutCount(userId: number, startDate?: Date, endDate?: Date): Promise<number>;
   getUserWorkoutHistory(userId: number, days?: number): Promise<Array<{ date: Date; count: number }>>;
+  getUserWeeklyWorkoutHistory(userId: number): Promise<Array<{ date: Date; count: number }>>;
   getUserClassAttendanceHistory(userId: number, days?: number): Promise<Array<{ date: Date; timeOfDay: string; classId: number }>>;
 }

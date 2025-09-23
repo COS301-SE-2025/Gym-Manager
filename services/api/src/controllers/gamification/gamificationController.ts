@@ -210,4 +210,5 @@ export class GamificationController {
     if (hour < 18) return 'afternoon';
     return 'evening';
   }
+
 }

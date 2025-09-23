@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  SafeAreaView,
   StatusBar,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import TrainwiseLogo from '../../components/common/TrainwiseLogo';
 import axios from 'axios';
@@ -217,7 +217,7 @@ export default function LoginScreen() {
   const isFormValid = !errors.email && !errors.password && email.trim() && password.trim();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
 
       {/* Logo */}
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 60,
+    marginTop: 40,
     marginBottom: 80,
   },
   formContainer: {

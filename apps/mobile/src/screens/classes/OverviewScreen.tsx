@@ -1,12 +1,15 @@
-// src/screens/classes/OverviewScreen.tsx
+// apps/mobile/src/screens/classes/OverviewScreen.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, StatusBar, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, StatusBar, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type R = RouteProp<AuthStackParamList, 'Overview'>;
 
@@ -17,6 +20,7 @@ type FlatStep = {
   duration?: number;
   round: number;
   subround: number;
+  quantityType?: 'reps' | 'duration';
 };
 
 async function setMyScaling(classId: number, scaling: 'RX' | 'SC') {
@@ -37,11 +41,34 @@ async function getMyScaling(classId: number): Promise<'RX'|'SC'> {
   } catch { return 'RX'; }
 }
 
+// format helper:  "10 x Pushups"  or  "10 sec – Plank"
+function fmtExerciseLabel(step: FlatStep) {
+  const qtyType = (step.quantityType ?? (step.reps != null ? 'reps' : (step.duration != null ? 'duration' : undefined)));
+  if (qtyType === 'reps' && typeof step.reps === 'number') {
+    return `${step.reps} x ${step.name}`;
+  }
+  if (qtyType === 'duration' && typeof step.duration === 'number') {
+    return `${step.duration} sec — ${step.name}`;
+  }
+  return step.name;
+}
+
+function fmtHMS(sec: number) {
+  const t = Math.max(0, Math.floor(sec || 0));
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const s = t % 60;
+  const mm = String(m).padStart(2, '0');
+  const ss = String(s).padStart(2, '0');
+  return h > 0 ? `${String(h).padStart(2, '0')}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
 export default function OverviewScreen() {
   const nav = useNavigation<any>();
   const { params } = useRoute<R>();
   const classId = params.classId as number;
 
+  // from navigation prefetch (used only as fallback hints)
   const liveClassData: any = (params as any).liveClassData ?? {};
   const preWorkoutId: number | undefined = liveClassData?.class?.workoutId;
   const preWorkoutName: string | undefined = liveClassData?.class?.workoutName;
@@ -52,29 +79,21 @@ export default function OverviewScreen() {
   const session = useSession(classId);
 
   const [myScaling, setScaling] = useState<'RX'|'SC'>('RX');
-
-  useEffect(() => {
-    getMyScaling(classId).then(setScaling).catch(()=>{});
-  }, [classId]);
+  useEffect(() => { getMyScaling(classId).then(setScaling).catch(()=>{}); }, [classId]);
 
   const chooseScaling = async (val: 'RX' | 'SC') => {
     setScaling(val);
     try { await setMyScaling(classId, val); } catch {}
   };
 
-  // --- fallback steps before session exists ---
-  const [fallbackSteps, setFallbackSteps] = useState<FlatStep[]>([]);
+  // ---- ALWAYS load builder steps for accurate round/subround & quantity type ----
+  const [builderSteps, setBuilderSteps] = useState<FlatStep[]>([]);
+  const [builderMeta, setBuilderMeta] = useState<{ number_of_rounds?: number; number_of_subrounds?: number; duration_seconds?: number; time_limit?: number } | null>(null);
   const [fallbackLoading, setFallbackLoading] = useState(false);
 
   useEffect(() => {
-    const shouldLoadFallback =
-      (Array.isArray(session?.steps) ? session?.steps?.length === 0 : true) &&
-      typeof preWorkoutId === 'number' &&
-      fallbackSteps.length === 0 &&
-      !fallbackLoading;
-
-    if (!shouldLoadFallback) return;
-
+    if (!preWorkoutId) return;
+    let stop = false;
     (async () => {
       try {
         setFallbackLoading(true);
@@ -83,20 +102,40 @@ export default function OverviewScreen() {
           `${config.BASE_URL}/workout/${preWorkoutId}/steps`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        if (Array.isArray(data?.steps)) {
-          setFallbackSteps(data.steps as FlatStep[]);
-        }
+        if (stop) return;
+        // Expect { steps: FlatStep[], metadata?: {...} }
+        const steps: FlatStep[] = Array.isArray(data?.steps) ? data.steps : [];
+        setBuilderSteps(steps.map((s,i) => ({
+          index: typeof s.index === 'number' ? s.index : i,
+          name: s.name,
+          reps: typeof s.reps === 'number' ? s.reps : (s as any)?.quantity,
+          duration: typeof s.duration === 'number' ? s.duration : undefined,
+          round: Number(s.round ?? (s as any).roundNumber ?? 1),
+          subround: Number(s.subround ?? (s as any).subroundNumber ?? 1),
+          quantityType: (s as any)?.quantityType ?? (typeof s.reps === 'number' ? 'reps' : (typeof s.duration === 'number' ? 'duration' : undefined))
+        })));
+        const meta = (data?.metadata && typeof data.metadata === 'object') ? data.metadata : null;
+        setBuilderMeta(meta);
       } catch { /* noop */ }
-      finally {
-        setFallbackLoading(false);
-      }
+      finally { setFallbackLoading(false); }
     })();
-  }, [session?.steps, preWorkoutId, fallbackSteps.length, fallbackLoading]);
+    return () => { stop = true; };
+  }, [preWorkoutId]);
 
-  const steps: FlatStep[] =
-    (Array.isArray(session?.steps) && session!.steps!.length > 0
-      ? (session!.steps as any[])
-      : fallbackSteps) as FlatStep[];
+  // Prefer builder data for display (it has the quantity types). If missing, fall back to session.steps.
+  const displaySteps: FlatStep[] = useMemo(() => {
+    if (builderSteps.length > 0) return builderSteps;
+    const ssteps = (Array.isArray(session?.steps) ? session!.steps! : []) as any[];
+    return ssteps.map((s, i) => ({
+      index: i,
+      name: s?.name ?? `Step ${i+1}`,
+      reps: typeof s?.reps === 'number' ? s.reps : undefined,
+      duration: typeof s?.duration === 'number' ? s.duration : undefined,
+      round: Number(s?.round ?? 1),
+      subround: Number(s?.subround ?? 1),
+      quantityType: s?.quantityType
+    })) as FlatStep[];
+  }, [builderSteps, session?.steps]);
 
   const workoutType: string =
     (session?.workout_type as string) ||
@@ -104,13 +143,16 @@ export default function OverviewScreen() {
     'FOR_TIME';
  
   const capSeconds: number =
-    (Number(session?.time_cap_seconds ?? 0)) || preDurationSeconds;
+    Number(builderMeta?.time_limit ?? 0) * 60 ||  // workout time limit in minutes, convert to seconds
+    Number(builderMeta?.duration_seconds ?? 0) ||
+    Number(session?.time_cap_seconds ?? 0) ||
+    preDurationSeconds;
 
   const workoutName: string =
     (preWorkoutName as string) ||
     'Workout';
 
-  // route when class goes live
+  // route when class goes live / ends
   useEffect(() => {
     if (!session?.status) return;
     const t = (workoutType || '').toUpperCase();
@@ -118,31 +160,54 @@ export default function OverviewScreen() {
     if (session.status === 'live') {
       if (t === 'FOR_TIME') nav.replace('ForTimeLive', { classId });
       if (t === 'AMRAP')   nav.replace('AmrapLive',   { classId });
-      if (t == 'TABATA') nav.replace('IntervalLive', {classId});
-      if (t === 'EMOM')     nav.replace('EmomLive', { classId });
+      if (t == 'TABATA')   nav.replace('IntervalLive', { classId });
+      if (t === 'EMOM')    nav.replace('EmomLive', { classId });
     }
     if (session.status === 'ended') {
       nav.replace('LiveClassEnd', { classId });
     }
   }, [session?.status, workoutType, nav, classId]);
 
-  // group steps
+  // group by round/subround for UI
   const grouped = useMemo(() => {
     const byRound: Record<number, Record<number, FlatStep[]>> = {};
-    for (const s of steps) {
+    for (const s of displaySteps) {
       byRound[s.round] = byRound[s.round] || {};
       byRound[s.round][s.subround] = byRound[s.round][s.subround] || [];
       byRound[s.round][s.subround].push(s);
     }
     return byRound;
-  }, [steps]);
+  }, [displaySteps]);
 
-  const roundCount = Object.keys(grouped).length;
+  // show declared number_of_rounds if present in builder metadata; otherwise, inferred unique rounds
+  const declaredRounds = Number(builderMeta?.number_of_rounds ?? 0);
+  const inferredRounds = Object.keys(grouped).length;
+  const roundCount = declaredRounds > 0 ? declaredRounds : inferredRounds;
+
+  const goBackSmart = () => {
+    try {
+      if (typeof nav.canGoBack === 'function' && nav.canGoBack()) {
+        nav.goBack();
+        return;
+      }
+    } catch {}
+    // Fallback: attempt a home-like route, otherwise reset stack
+    try { nav.navigate('Home'); return; } catch {}
+    try { nav.navigate('Root'); return; } catch {}
+    nav.popToTop();
+  };
 
   return (
-    <SafeAreaView style={s.root}>
+    <SafeAreaProvider>
+    <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#111" />
       <ScrollView contentContainerStyle={s.scroll}>
+
+        {/* Back button */}
+        <TouchableOpacity style={s.backBtn} onPress={goBackSmart} accessibilityLabel="Back">
+          <Ionicons name="chevron-back" size={20} color="#d8ff3e" />
+          <Text style={s.backText}>Back</Text>
+        </TouchableOpacity>
 
         <View style={s.headerBadge}>
           <Text style={s.headerText}>LIVE CLASS</Text>
@@ -178,12 +243,11 @@ export default function OverviewScreen() {
           </TouchableOpacity>
         </View>
 
-
-        {steps.length === 0 ? (
+        {(displaySteps.length === 0 && fallbackLoading) ? (
           <View style={{ paddingVertical: 20 }}>
             <ActivityIndicator size="large" color="#D8FF3E" />
             <Text style={{ color: '#888', marginTop: 8, textAlign: 'center' }}>
-              Waiting for workout…
+              Loading workout…
             </Text>
           </View>
         ) : (
@@ -199,7 +263,7 @@ export default function OverviewScreen() {
                     <View key={`sub-${r}-${sr}`} style={s.subroundBox}>
                       {exs.map((e) => (
                         <Text key={`step-${e.index}`} style={s.exerciseText}>
-                          {e.name}
+                          {fmtExerciseLabel(e)}
                         </Text>
                       ))}
                     </View>
@@ -217,10 +281,10 @@ export default function OverviewScreen() {
         ) : null}
       </ScrollView>
     </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
-// === Returns Pill
 function TypePill({ label, active }: { label: string; active?: boolean }) {
   return (
     <View style={[s.pill, active && s.pillActive]}>
@@ -229,21 +293,18 @@ function TypePill({ label, active }: { label: string; active?: boolean }) {
   );
 }
 
-// === Formats number of seconds to HH:MM:SS format ===
-function fmtHMS(sec: number) {
-  const t = Math.max(0, Math.floor(sec || 0));
-  const h = Math.floor(t / 3600);
-  const m = Math.floor((t % 3600) / 60);
-  const s = t % 60;
-  const mm = String(m).padStart(2, '0');
-  const ss = String(s).padStart(2, '0');
-  return h > 0 ? `${String(h).padStart(2, '0')}:${mm}:${ss}` : `${mm}:${ss}`;
-}
-
-// === Styling ===
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#101010' },
-  scroll: { padding: 16, paddingBottom: 40 },
+  scroll: { padding: 16, paddingBottom: 40, paddingTop: 8 },
+
+  backBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 10,
+  },
+  backText: { color: '#d8ff3e', fontWeight: '900' },
 
   headerBadge: {
     backgroundColor: '#d8ff3e',

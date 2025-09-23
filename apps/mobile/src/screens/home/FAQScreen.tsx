@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const faqs = [
   {
@@ -53,7 +54,8 @@ const faqs = [
 const FAQScreen = () => {
   const navigation = useNavigation();
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={28} color="#D8FF3E" />
@@ -76,13 +78,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
-    paddingTop: 20,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
     paddingHorizontal: 10,
+    paddingTop: 8,
   },
   backButton: {
     marginRight: 10,

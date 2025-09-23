@@ -337,6 +337,15 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           });
         });
 
+        // Extract metadata from the workout data first
+        const metadata = workoutData.metadata || {};
+        const emomRepeats: number[] = Array.isArray(metadata.emom_repeats) ? metadata.emom_repeats : [];
+        const timeLimit = Number(metadata.time_limit ?? 0);
+        const minutes = timeLimit; // time_limit stores minutes directly
+        const roundsFromMeta = metadata.number_of_rounds != null
+          ? String(metadata.number_of_rounds)
+          : '1';
+
         // Convert to workout structure
         const subRounds: SubRound[] = [];
         let subroundCounter = 1;
@@ -349,19 +358,11 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
               exercises: exercises,
               isExpanded: false,
               subroundNumber: subroundCounter,
-              repeats: '1',
+              repeats: String(emomRepeats[subroundCounter - 1] ?? 1),
             });
             subroundCounter++;
           });
         });
-
-        // Extract metadata from the workout data
-        const metadata = workoutData.metadata || {};
-        const timeLimit = Number(metadata.time_limit ?? 0);
-        const minutes = timeLimit; // time_limit stores minutes directly
-        const roundsFromMeta = metadata.number_of_rounds != null
-          ? String(metadata.number_of_rounds)
-          : '1';
 
         // Update the workout with loaded metadata
         setCurrentWorkout({

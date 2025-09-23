@@ -2,3 +2,6 @@ html,
 body {
   background-color: #1e1e1e;
 }
+
+/* Import react-big-calendar styles globally to prevent HMR issues */
+@import 'react-big-calendar/lib/css/react-big-calendar.css';

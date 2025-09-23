@@ -88,7 +88,7 @@ export default function OverviewScreen() {
 
   // ---- ALWAYS load builder steps for accurate round/subround & quantity type ----
   const [builderSteps, setBuilderSteps] = useState<FlatStep[]>([]);
-  const [builderMeta, setBuilderMeta] = useState<{ number_of_rounds?: number; number_of_subrounds?: number } | null>(null);
+  const [builderMeta, setBuilderMeta] = useState<{ number_of_rounds?: number; number_of_subrounds?: number; duration_seconds?: number; time_limit?: number } | null>(null);
   const [fallbackLoading, setFallbackLoading] = useState(false);
 
   useEffect(() => {
@@ -143,7 +143,10 @@ export default function OverviewScreen() {
     'FOR_TIME';
  
   const capSeconds: number =
-    Number(session?.time_cap_seconds ?? 0) || preDurationSeconds;
+    Number(builderMeta?.time_limit ?? 0) * 60 ||  // workout time limit in minutes, convert to seconds
+    Number(builderMeta?.duration_seconds ?? 0) ||
+    Number(session?.time_cap_seconds ?? 0) ||
+    preDurationSeconds;
 
   const workoutName: string =
     (preWorkoutName as string) ||

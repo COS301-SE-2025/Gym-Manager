@@ -191,6 +191,7 @@ describe('LiveClassController', () => {
           { index: 0, name: '10x Burpee', reps: 10, round: 1, subround: 1 },
         ],
         stepsCumReps: [10],
+        metadata: { time_limit: 20, number_of_rounds: 3 },
       };
 
       mockRequest.params = { workoutId: workoutId.toString() };

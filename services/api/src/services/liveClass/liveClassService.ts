@@ -122,7 +122,7 @@ export class LiveClassService implements ILiveClassService {
       stepsCumReps.push(running);
     }
 
-    return { steps, stepsCumReps, workoutType };
+    return { steps, stepsCumReps, workoutType, metadata: meta };
   }
 
 

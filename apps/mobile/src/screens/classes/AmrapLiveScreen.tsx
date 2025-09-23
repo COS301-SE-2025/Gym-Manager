@@ -13,6 +13,8 @@ import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardReal
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
+import { useImmersiveBars } from '../../hooks/useImmersiveBars';
+
 
 type R = RouteProp<AuthStackParamList, 'AmrapLive'>;
 
@@ -26,6 +28,8 @@ function useNowSec() {
 }
 
 export default function AmrapLiveScreen() {
+  useImmersiveBars(true);
+
   const { params } = useRoute<R>();
   const classId = params.classId as number;
   const nav = useNavigation<any>();

@@ -11,6 +11,8 @@ import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
 import { BlurView } from 'expo-blur';
+import { useImmersiveBars } from '../../hooks/useImmersiveBars';
+
 
 type R = RouteProp<AuthStackParamList, 'IntervalLive'>;
 
@@ -35,6 +37,7 @@ function fmtClock(sec: number) {
  * - when done=true: timer is clamped; we deliberately DO NOT disable inputs
  */
 function useIntervalTicker(session: any | null) {
+  useImmersiveBars(true);
   const nowSec = useNowSec();
 
   const startedAtSec = Number((session as any)?.started_at_s ?? 0);

@@ -1,6 +1,6 @@
 // apps/mobile/src/screens/classes/OverviewScreen.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, StatusBar, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
@@ -8,11 +8,8 @@ import { useSession } from '../../hooks/useSession';
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
-import { useImmersiveBars } from '../../hooks/useImmersiveBars';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
-import { Platform } from 'react-native';
-
 
 type R = RouteProp<AuthStackParamList, 'Overview'>;
 
@@ -67,8 +64,6 @@ function fmtHMS(sec: number) {
 }
 
 export default function OverviewScreen() {
-  useImmersiveBars();
-
   const nav = useNavigation<any>();
   const { params } = useRoute<R>();
   const classId = params.classId as number;
@@ -199,13 +194,10 @@ export default function OverviewScreen() {
     nav.popToTop();
   };
 
-  const edges = Platform.OS === 'android'
-  ? ['left','right','bottom']
-  : ['top','left','right','bottom'];
-
   return (
-    <SafeAreaView style={s.root} edges={edges}>
-      <ExpoStatusBar style="light" hidden={Platform.OS === 'android'} />
+    <SafeAreaProvider>
+    <SafeAreaView style={s.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#111" />
       <ScrollView contentContainerStyle={s.scroll}>
 
         {/* Back button */}
@@ -286,6 +278,7 @@ export default function OverviewScreen() {
         ) : null}
       </ScrollView>
     </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 

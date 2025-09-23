@@ -23,6 +23,11 @@
       "edgeToEdgeEnabled": true,
       "package": "com.amadeusfidos.mobile"
     },
+    "androidStatusBar": {
+      "hidden": true,
+      "translucent": true,
+      "backgroundColor": "#000000"
+    },
     "web": {
       "favicon": "./assets/favicon.png"
     },

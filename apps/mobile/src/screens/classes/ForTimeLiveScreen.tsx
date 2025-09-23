@@ -1,7 +1,7 @@
 // apps/mobile/src/screens/classes/ForTimeLiveScreen.tsx
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, SafeAreaView, StatusBar,
+  View, Text, StyleSheet, Pressable, StatusBar,
   Modal, TextInput, TouchableOpacity, ActivityIndicator, Animated
 } from 'react-native';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -14,6 +14,8 @@ import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardReal
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type R = RouteProp<AuthStackParamList, 'ForTimeLive'>;
 
@@ -189,6 +191,7 @@ export default function ForTimeLiveScreen() {
   const scaleIn = pausedAnim.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] });
 
   return (
+    <SafeAreaProvider>
     <SafeAreaView style={s.root}>
       <StatusBar barStyle="light-content" backgroundColor="#0d150f" />
 
@@ -287,6 +290,7 @@ export default function ForTimeLiveScreen() {
         </View>
       </Modal>
     </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 

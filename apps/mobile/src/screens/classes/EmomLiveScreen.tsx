@@ -12,6 +12,8 @@ import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardReal
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
+import { useImmersiveBars } from '../../hooks/useImmersiveBars';
+
 
 type R = RouteProp<AuthStackParamList, 'EmomLive'>;
 
@@ -28,6 +30,7 @@ const fmt = (t: number) => {
 };
 
 export default function EmomLiveScreen() {
+  useImmersiveBars(true);
   const route = useRoute<R>();
   const classId = Number(route.params.classId);
   const nav = useNavigation<any>();

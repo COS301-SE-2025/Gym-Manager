@@ -142,7 +142,7 @@ export class GamificationService {
     const pointsForCurrentLevel = this.getPointsForLevel(currentLevel - 1);
     const pointsForNextLevel = this.getPointsForLevel(currentLevel);
     const pointsInCurrent = totalPoints - pointsForCurrentLevel;
-    const pointsToNext = pointsForNextLevel - totalPoints;
+    const pointsToNext = Math.max(0, pointsForNextLevel - totalPoints); // Ensure non-negative
     const progressPercentage = Math.min(100, (pointsInCurrent / (pointsForNextLevel - pointsForCurrentLevel)) * 100);
 
     return {
@@ -155,7 +155,8 @@ export class GamificationService {
   }
 
   private getPointsForLevel(level: number): number {
-    if (level <= 1) return 100;
+    if (level <= 0) return 0;
+    if (level === 1) return 100;
     return level * 100;
   }
 

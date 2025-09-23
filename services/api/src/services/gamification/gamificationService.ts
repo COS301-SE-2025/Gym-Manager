@@ -355,8 +355,10 @@ export class GamificationService implements IGamificationService {
   ): GamificationStats {
     const currentLevel = userStreak.level;
     const nextLevel = currentLevel + 1;
-    const pointsToNext = this.getPointsToNextLevel(currentLevel);
-    const pointsInCurrent = userStreak.totalPoints - this.getPointsForLevel(currentLevel - 1);
+    const pointsForCurrentLevel = this.getPointsForLevel(currentLevel - 1);
+    const pointsForNextLevel = this.getPointsForLevel(currentLevel);
+    const pointsInCurrent = userStreak.totalPoints - pointsForCurrentLevel;
+    const pointsToNext = Math.max(0, pointsForNextLevel - userStreak.totalPoints);
     
     // Calculate workouts this week (last 7 days)
     const workoutsThisWeek = weeklyHistory.reduce((sum, day) => sum + Number(day.count), 0);
@@ -417,12 +419,14 @@ export class GamificationService implements IGamificationService {
   }
 
   getPointsToNextLevel(currentLevel: number): number {
+    const currentLevelPoints = this.getPointsForLevel(currentLevel - 1);
     const nextLevelPoints = this.getPointsForLevel(currentLevel);
-    return nextLevelPoints;
+    return nextLevelPoints - currentLevelPoints;
   }
 
   private getPointsForLevel(level: number): number {
-    if (level <= 1) return 100;
+    if (level <= 0) return 0;
+    if (level === 1) return 100;
     return level * 100;
   }
 

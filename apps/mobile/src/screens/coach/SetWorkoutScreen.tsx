@@ -855,7 +855,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                           style={styles.repsInput}
                           value={exercise.reps}
                           onChangeText={(value) => updateExercise(subRound.id, exercise.id, 'reps', value)}
-                          placeholder="No. of reps"
+                          placeholder={currentWorkout.workoutType === 'TABATA' ? 'No of secs' : 'No. of reps'}
                           placeholderTextColor="#888"
                           keyboardType="numeric"
                           editable={!isSaving}

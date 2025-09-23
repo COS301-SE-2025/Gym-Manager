@@ -4,13 +4,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   Dimensions,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { useFocusEffect, CompositeNavigationProp } from '@react-navigation/native';
@@ -259,7 +259,7 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
 
       {/* Header */}
@@ -355,7 +355,7 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#1a1a1a' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 30 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 30 },
   welcomeContainer: { flex: 1, marginLeft: 12 },
   welcomeText: { color: 'white', fontSize: 18, fontWeight: '600', marginBottom: 4 },
   switchButton: {

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 
 const { width, height } = Dimensions.get('window');
@@ -51,7 +51,6 @@ interface OnboardingScreenProps {
 const OnboardingScreen = ({ navigation }: OnboardingScreenProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
-  const insets = useSafeAreaInsets();
 
   const handleGetStarted = async () => {
     try {
@@ -76,8 +75,8 @@ const OnboardingScreen = ({ navigation }: OnboardingScreenProps) => {
   );
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       <FlatList
         ref={flatListRef}
         data={onboardingSlides}
@@ -104,7 +103,7 @@ const OnboardingScreen = ({ navigation }: OnboardingScreenProps) => {
           <Text style={styles.buttonText}>Get Started</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

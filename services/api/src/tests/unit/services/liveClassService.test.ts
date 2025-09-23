@@ -161,14 +161,17 @@ describe('LiveClassService', () => {
 
       mockRepo.getFlattenRowsForWorkout.mockResolvedValue(mockRows);
       mockRepo.getWorkoutType.mockResolvedValue('AMRAP');
+      mockRepo.getWorkoutMetadata.mockResolvedValue({ time_limit: 20, number_of_rounds: 3 });
 
       const result = await service.getWorkoutSteps(workoutId);
 
       expect(mockRepo.getFlattenRowsForWorkout).toHaveBeenCalledWith(workoutId);
       expect(mockRepo.getWorkoutType).toHaveBeenCalledWith(workoutId);
+      expect(mockRepo.getWorkoutMetadata).toHaveBeenCalledWith(workoutId);
       expect(result.workoutType).toBe('AMRAP');
       expect(result.steps).toHaveLength(2);
       expect(result.stepsCumReps).toEqual([10, 15]);
+      expect(result.metadata).toEqual({ time_limit: 20, number_of_rounds: 3 });
       expect(result.steps[0]).toEqual({
         index: 0,
         name: '10x Burpee',
@@ -188,6 +191,7 @@ describe('LiveClassService', () => {
 
       mockRepo.getFlattenRowsForWorkout.mockResolvedValue(mockRows);
       mockRepo.getWorkoutType.mockResolvedValue('FOR_TIME');
+      mockRepo.getWorkoutMetadata.mockResolvedValue({ time_limit: 15 });
 
       const result = await service.getWorkoutSteps(workoutId);
 
@@ -201,6 +205,7 @@ describe('LiveClassService', () => {
         target_reps: undefined,
       });
       expect(result.stepsCumReps).toEqual([0]);
+      expect(result.metadata).toEqual({ time_limit: 15 });
     });
 
     it('should throw error for invalid workout ID', async () => {

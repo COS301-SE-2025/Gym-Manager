@@ -10,6 +10,20 @@ export interface Step {
   target_reps?: number;
 }
 
+
+export type WorkoutMetadata = {
+  // EMOM
+  emom_repeats?: number[];           // e.g. [1,3,2]
+  number_of_subrounds?: number;      // optional
+  emom_rounds?: Array<Array<string | { name: string }>>; // optional fallback used by the app
+
+  // Common/other workout knobs
+  time_limit?: number;               // minutes, optional
+
+  // allow future keys without typing churn
+  [key: string]: unknown;
+}
+
 export interface LiveSession {
   class_id: number;
   workout_id: number;
@@ -25,4 +39,6 @@ export interface LiveSession {
   steps: Step[];
   steps_cum_reps: number[];
   workout_type: WorkoutType | string;
+  workout_metadata?: WorkoutMetadata;
+
 }

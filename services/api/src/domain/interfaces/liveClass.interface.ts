@@ -24,6 +24,7 @@ export interface ILiveClassService {
 }
 
 export interface ILiveClassRepository {
+  upsertFinal: any;
   persistScoresFromLive(classId: number): unknown;
   upsertScaling(classId: number, userId: number, scaling: string): unknown;
   getScaling(classId: number, userId: number): "RX" | "SC" | PromiseLike<"RX" | "SC">;

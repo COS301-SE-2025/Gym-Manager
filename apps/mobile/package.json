@@ -36,14 +36,15 @@
     "react-native-keychain": "^10.0.0",
     "react-native-paper": "^5.14.5",
     "react-native-reanimated": "^3.17.5",
-    "react-native-safe-area-context": "^5.4.0",
+    "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "^4.10.0",
     "react-native-svg": "^15.11.2",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-vector-icons": "^10.2.0",
     "react-redux": "^9.2.0",
     "yup": "^1.6.1",
-    "expo-blur": "~14.1.5"
+    "expo-blur": "~14.1.5",
+    "expo-navigation-bar": "~4.2.8"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

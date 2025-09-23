@@ -249,7 +249,7 @@ export class GamificationRepository implements IGamificationRepository {
       activityType: userActivity.activityType,
       activityData: userActivity.activityData as any,
       pointsEarned: userActivity.pointsEarned,
-      createdAt: new Date(userActivity.createdAt),
+      createdAt: new Date(userActivity.createdAt || new Date()),
     };
   }
 
@@ -272,7 +272,7 @@ export class GamificationRepository implements IGamificationRepository {
       activityType: activity.activityType,
       activityData: activity.activityData as any,
       pointsEarned: activity.pointsEarned,
-      createdAt: new Date(activity.createdAt),
+      createdAt: new Date(activity.createdAt || new Date()),
     }));
   }
 
@@ -364,24 +364,20 @@ export class GamificationRepository implements IGamificationRepository {
   }
 
   async getUserWorkoutCount(userId: number, startDate?: Date, endDate?: Date): Promise<number> {
-    let query = db
-      .select({ count: sql<number>`count(*)` })
-      .from(classattendance)
-      .where(eq(classattendance.memberId, userId));
+    const conditions = [eq(classattendance.memberId, userId)];
 
     if (startDate) {
-      query = query.where(and(
-        eq(classattendance.memberId, userId),
-        gte(classattendance.markedAt, startDate.toISOString())
-      ));
+      conditions.push(gte(classattendance.markedAt, startDate.toISOString()));
     }
 
     if (endDate) {
-      query = query.where(and(
-        eq(classattendance.memberId, userId),
-        lte(classattendance.markedAt, endDate.toISOString())
-      ));
+      conditions.push(lte(classattendance.markedAt, endDate.toISOString()));
     }
+
+    const query = db
+      .select({ count: sql<number>`count(*)` })
+      .from(classattendance)
+      .where(and(...conditions));
 
     const result = await query;
     return result[0]?.count || 0;

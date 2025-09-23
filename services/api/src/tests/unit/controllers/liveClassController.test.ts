@@ -232,7 +232,14 @@ describe('LiveClassController', () => {
         score: 100,
       };
 
-      const expectedResult = { success: true };
+      const expectedResult = { 
+        success: true, 
+        gamification: {
+          streak: { totalPoints: 100, currentStreak: 1, longestStreak: 1, lastActivityDate: new Date() },
+          newBadges: [],
+          pointsEarned: 100
+        }
+      } as any;
 
       mockRequest.body = scoreData;
       mockService.submitScore.mockResolvedValue(expectedResult);

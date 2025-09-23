@@ -273,7 +273,7 @@ export const submitScore = async (req: AuthenticatedRequest, res: Response) => {
     });
   } catch (gamificationError) {
     console.error('❌ Gamification update failed:', gamificationError);
-    console.error('Error details:', gamificationError.stack);
+    console.error('Error details:', gamificationError instanceof Error ? gamificationError.stack : gamificationError);
     // Still return success for the score submission even if gamification fails
     return res.json({ success: true, gamificationError: 'Failed to update gamification' });
   }

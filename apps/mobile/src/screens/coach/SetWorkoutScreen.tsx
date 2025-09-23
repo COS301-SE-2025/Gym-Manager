@@ -106,6 +106,16 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
   const [showWorkoutTypeDropdown, setShowWorkoutTypeDropdown] = useState(false);
   const [showWorkoutSelectSheet, setShowWorkoutSelectSheet] = useState(false);
 
+  // Helper function to clean exercise names by removing reps and duration info
+  const cleanExerciseName = (rawName: string): string => {
+    return rawName
+      .replace(/^\d+\s*x\s*/i, '') // Remove "10x " prefix
+      .replace(/\s+\d+\s*s\s*$/i, '') // Remove " 20s" suffix
+      .replace(/\s+\d+\s*sec\s*$/i, '') // Remove " 20sec" suffix
+      .replace(/\s+\d+\s*seconds?\s*$/i, '') // Remove " 20second" or " 20seconds" suffix
+      .trim();
+  };
+
   useEffect(() => {
     (async () => {
       const u = await getUser();
@@ -291,6 +301,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
       // Fetch workout details
       const response = await apiClient.get(`/workout/${workoutId}/steps`);
+      console.log('handleLoadWorkout');  
       const workoutData = response.data;
 
       // Parse the workout data and populate the form
@@ -313,9 +324,9 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             subroundsMap.set(subroundNum, []);
           }
           
-          // Extract clean exercise name by removing reps information
+          // Extract clean exercise name by removing reps and duration information
           const rawName = step.name || step.title || step.exerciseName || 'Exercise';
-          const cleanName = rawName.replace(/^\d+\s*x\s*/i, '').trim();
+          const cleanName = cleanExerciseName(rawName);
           
           subroundsMap.get(subroundNum)!.push({
             id: Date.now().toString() + Math.random(),
@@ -344,12 +355,20 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           });
         });
 
-        // Update the workout
+        // Extract metadata from the workout data
+        const metadata = workoutData.metadata || {};
+        const timeLimit = Number(metadata.time_limit ?? 0);
+        const minutes = timeLimit; // time_limit stores minutes directly
+        const roundsFromMeta = metadata.number_of_rounds != null
+          ? String(metadata.number_of_rounds)
+          : '1';
+
+        // Update the workout with loaded metadata
         setCurrentWorkout({
           workoutName: workoutName,
-          workoutType: 'FOR_TIME', // Default, can be updated
-          workoutMinutes: 15, // Default, can be updated
-          numberOfRounds: '1', // Default, can be updated
+          workoutType: (workoutData.workoutType as any) || 'FOR_TIME',
+          workoutMinutes: minutes,
+          numberOfRounds: roundsFromMeta,
           subRounds: subRounds,
         });
 
@@ -392,9 +411,9 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             subroundsMap.set(subroundNum, []);
           }
           
-          // Extract clean exercise name by removing reps information
+          // Extract clean exercise name by removing reps and duration information
           const rawName = step.name || step.title || step.exerciseName || 'Exercise';
-          const cleanName = rawName.replace(/^\d+\s*x\s*/i, '').trim();
+          const cleanName = cleanExerciseName(rawName);
           
           subroundsMap.get(subroundNum)!.push({
             id: Date.now().toString() + Math.random(),
@@ -409,9 +428,10 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         const subRounds: SubRound[] = [];
         let subroundCounter = 1;
 
-        const existingType = ((classDetails as any)?.workoutType as string) || 'FOR_TIME';
-        const meta: any = (classDetails as any)?.workoutMetadata || {};
-        const emomRepeats: number[] = Array.isArray(meta.emom_repeats) ? meta.emom_repeats : [];
+        // Extract metadata from the workout data
+        const metadata = workoutData.metadata || {};
+        const existingType = workoutData.workoutType || 'FOR_TIME';
+        const emomRepeats: number[] = Array.isArray(metadata.emom_repeats) ? metadata.emom_repeats : [];
 
         roundsMap.forEach((subroundsMap, roundNum) => {
           subroundsMap.forEach((exercises, subroundNum) => {
@@ -428,11 +448,11 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         });
 
         // Update the workout with existing data + previously saved metadata
-        const timeLimit = Number(meta.time_limit ?? 0);
-        const minutes = timeLimit; // time_limit now stores minutes directly
+        const timeLimit = Number(metadata.time_limit ?? 0);
+        const minutes = timeLimit; // time_limit stores minutes directly
 
-        const roundsFromMeta = meta.number_of_rounds != null
-          ? String(meta.number_of_rounds)
+        const roundsFromMeta = metadata.number_of_rounds != null
+          ? String(metadata.number_of_rounds)
           : (currentWorkout.numberOfRounds || '1');
 
         setCurrentWorkout({

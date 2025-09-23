@@ -45,6 +45,16 @@ export class LiveClassController {
     try {
       const workoutId = Number(req.params.workoutId);
       const out = await this.service.getWorkoutSteps(workoutId);
+      
+      // Debug: Log the response being sent to frontend
+      console.log('=== GET WORKOUT STEPS DEBUG (LiveClassController) ===');
+      console.log('Workout ID:', workoutId);
+      console.log('Full response:', JSON.stringify(out, null, 2));
+      console.log('Steps count:', out.steps?.length || 0);
+      console.log('Workout type:', out.workoutType);
+      console.log('Metadata:', out.metadata);
+      console.log('==================================================');
+      
       return res.json(out);
     } catch (e: any) {
       if (e.message === 'INVALID_WORKOUT_ID') return res.status(400).json({ error: e.message });

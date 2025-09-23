@@ -163,6 +163,15 @@ export class LiveClassRepository implements ILiveClassRepository {
     return (rows[0] as { type: string })?.type ?? null;
   }
 
+  async getWorkoutTypeAndMetadata(workoutId: number): Promise<{ type: string | null; metadata: any }> {
+    const { rows } = await globalDb.execute(sql`select type, metadata from public.workouts where workout_id=${workoutId} limit 1`);
+    const row = rows[0] as { type: string; metadata: any };
+    return {
+      type: row?.type ?? null,
+      metadata: row?.metadata ?? {}
+    };
+  }
+
   // --- Coach controls ---
   async getClassMeta(classId: number) {
     const cls = await globalDb.execute(sql`

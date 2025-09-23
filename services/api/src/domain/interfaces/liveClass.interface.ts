@@ -36,6 +36,7 @@ export interface ILiveClassRepository {
 
   getFlattenRowsForWorkout(workoutId: number): Promise<any[]>;
   getWorkoutType(workoutId: number): Promise<string | null>;
+  getWorkoutTypeAndMetadata(workoutId: number): Promise<{ type: string | null; metadata: any }>;
 
   getClassMeta(classId: number): Promise<any>;
   getWorkoutMetadata(workoutId: number): Promise<any>

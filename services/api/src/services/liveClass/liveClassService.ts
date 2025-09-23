@@ -79,8 +79,8 @@ export class LiveClassService implements ILiveClassService {
       stepsCumReps.push(running);
     }
 
-    const workoutType = await this.repo.getWorkoutType(workoutId);
-    return { steps, stepsCumReps, workoutType: workoutType ?? 'FOR_TIME' };
+    const { type: workoutType, metadata } = await this.repo.getWorkoutTypeAndMetadata(workoutId);
+    return { steps, stepsCumReps, workoutType: workoutType ?? 'FOR_TIME', metadata };
   }
 
   // --- Submit score (coach batch or member single) ---

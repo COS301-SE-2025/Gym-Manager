@@ -273,19 +273,19 @@ export default function EmomLiveScreen() {
 
       {/* timer */}
       <View pointerEvents="none" style={s.topOverlay}>
-        <Text style={s.timeTop}>{fmt(elapsedClamped)}</Text>
+        <Text style={s.timeTop} pointerEvents="none">{fmt(elapsedClamped)}</Text>
       </View>
 
       {/* centered content */}
       <View pointerEvents="box-none" style={s.centerOverlay}>
         {!ready ? (
           <>
-            <ActivityIndicator size="large" color="#D8FF3E" />
-            <Text style={{ color: '#a5a5a5', marginTop: 10, fontWeight: '700' }}>Getting class ready…</Text>
+            <ActivityIndicator size="large" color="#D8FF3E" pointerEvents="none" />
+            <Text style={{ color: '#a5a5a5', marginTop: 10, fontWeight: '700' }} pointerEvents="none">Getting class ready…</Text>
           </>
         ) : (
           <>
-            <Text style={s.stepCounter}>
+            <Text style={s.stepCounter} pointerEvents="none">
               {totalMinutes > 0 ? (
                 <>Round {String(Math.min(minuteIdx + 1, totalMinutes)).padStart(2,'0')} / {String(totalMinutes).padStart(2,'0')}</>
               ) : (
@@ -293,7 +293,7 @@ export default function EmomLiveScreen() {
               )}
             </Text>
 
-            <Text style={s.score}>
+            <Text style={s.score} pointerEvents="none">
               {totalInRound > 0
                 ? `${String(Math.min(localIdx, totalInRound)).padStart(2,'0')} / ${String(totalInRound).padStart(2,'0')} exercises`
                 : 'No exercises yet'}
@@ -301,26 +301,26 @@ export default function EmomLiveScreen() {
 
             {plannedDone ? (
               <>
-                <Text style={s.current}>CLASS ENDED</Text>
-                <Text style={s.nextLabel}>Great work — leaderboard updating…</Text>
+                <Text style={s.current} pointerEvents="none">CLASS ENDED</Text>
+                <Text style={s.nextLabel} pointerEvents="none">Great work — leaderboard updating…</Text>
               </>
             ) : finishedThisMinute ? (
               <>
-                <Text style={s.current}>WAIT FOR NEXT ROUND</Text>
-                <Text style={s.nextLabel}>Starts at {fmt((minuteIdx + 1) * 60)}</Text>
+                <Text style={s.current} pointerEvents="none">WAIT FOR NEXT ROUND</Text>
+                <Text style={s.nextLabel} pointerEvents="none">Starts at {fmt((minuteIdx + 1) * 60)}</Text>
               </>
             ) : (
               <>
-                <Text style={s.current}>{current?.name ?? '—'}</Text>
-                <Text style={s.nextLabel}>Next: {next?.name ?? '—'}</Text>
+                <Text style={s.current} pointerEvents="none">{current?.name ?? '—'}</Text>
+                <Text style={s.nextLabel} pointerEvents="none">Next: {next?.name ?? '—'}</Text>
               </>
             )}
 
-            <View style={[s.lb, { zIndex: 50, elevation: 6 }]} pointerEvents="auto">
-              <Text style={s.lbTitle}>Leaderboard</Text>
+            <View style={[s.lb, { zIndex: 50, elevation: 6 }]} pointerEvents="box-none">
+              <Text style={s.lbTitle} pointerEvents="none">Leaderboard</Text>
 
               {/* RX/SC filter */}
-              <View style={{ flexDirection:'row', justifyContent:'center', gap:6, marginBottom:8 }}>
+              <View style={{ flexDirection:'row', justifyContent:'center', gap:6, marginBottom:8 }} pointerEvents="auto">
                 {(['ALL','RX','SC'] as const).map(opt => (
                   <TouchableOpacity
                     key={opt}
@@ -342,12 +342,12 @@ export default function EmomLiveScreen() {
                     ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
                     : (r.name ?? `User ${r.user_id}`);
                 return (
-                  <View key={`${r.user_id}-${i}`} style={s.lbRow}>
-                    <Text style={s.lbPos}>{i+1}</Text>
-                    <Text style={s.lbUser}>
-                      {displayName} <Text style={{ color:'#9aa' }}>({(r.scaling ?? 'RX')})</Text>
+                  <View key={`${r.user_id}-${i}`} style={s.lbRow} pointerEvents="none">
+                    <Text style={s.lbPos} pointerEvents="none">{i+1}</Text>
+                    <Text style={s.lbUser} pointerEvents="none">
+                      {displayName} <Text style={{ color:'#9aa' }} pointerEvents="none">({(r.scaling ?? 'RX')})</Text>
                     </Text>
-                    <Text style={s.lbScore}>{fmt(Number(r.elapsed_seconds ?? 0))}</Text>
+                    <Text style={s.lbScore} pointerEvents="none">{fmt(Number(r.elapsed_seconds ?? 0))}</Text>
                   </View>
                 );
               })}

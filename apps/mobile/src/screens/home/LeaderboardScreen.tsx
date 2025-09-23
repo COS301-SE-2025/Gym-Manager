@@ -1,5 +1,5 @@
 // apps/mobile/src/screens/home/LeaderboardScreen.tsx
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -53,15 +53,25 @@ const LeaderboardScreen = () => {
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [selectedScaling, setSelectedScaling] = useState<ScalingType>('all');
   const [showScalingDropdown, setShowScalingDropdown] = useState(false); // Changed from modal to dropdown
+  const loadingRef = useRef(false);
 
-  const fetchDailyLeaderboard = async (date: string, scaling: ScalingType = 'all') => {
+  const fetchDailyLeaderboard = async (date: string, scaling: ScalingType = 'all', isInitialLoad = false) => {
+    // Prevent multiple simultaneous calls
+    if (loadingRef.current) return;
+    
     try {
-      setLoading(true);
+      loadingRef.current = true;
+      if (isInitialLoad) {
+        setLoading(true);
+      }
       setError('');
       
       const token = await getToken();
       if (!token) {
         setError('Not authenticated');
+        if (isInitialLoad) {
+          setLoading(false);
+        }
         return;
       }
 
@@ -86,17 +96,24 @@ const LeaderboardScreen = () => {
       console.error('Error fetching daily leaderboard:', error);
       setError(error.response?.data?.error || 'Network error');
     } finally {
-      setLoading(false);
+      loadingRef.current = false;
+      if (isInitialLoad) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchDailyLeaderboard(selectedDate, selectedScaling);
+    fetchDailyLeaderboard(selectedDate, selectedScaling, true);
   }, [selectedDate, selectedScaling]);
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    fetchDailyLeaderboard(selectedDate, selectedScaling);
+    try {
+      await fetchDailyLeaderboard(selectedDate, selectedScaling, false);
+    } finally {
+      setRefreshing(false);
+    }
   }, [selectedDate, selectedScaling]);
 
   const navigateDate = useCallback((direction: 'prev' | 'next') => {
@@ -115,8 +132,8 @@ const LeaderboardScreen = () => {
     
     const newDateString = newDate.toISOString().slice(0, 10);
     setSelectedDate(newDateString);
-    fetchDailyLeaderboard(newDateString, selectedScaling);
-  }, [selectedDate, selectedScaling, fetchDailyLeaderboard]);
+    fetchDailyLeaderboard(newDateString, selectedScaling, true);
+  }, [selectedDate, selectedScaling]);
 
   const handleScalingSelect = (scaling: ScalingType) => {
     setSelectedScaling(scaling);

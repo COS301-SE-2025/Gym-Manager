@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { toast } from 'sonner';
 import WeeklyCalendar from '../../components/WeeklyCalendar/WeeklyCalendar';
-import PendingApprovalTable from '../../components/PendingApprovalTable/page';
+import PendingApprovalTable from '@/components/tables/PendingApprovalTable/page';
 import { CalendarEvent, User } from '../../types/types';
 import { getDummyCalendarEvents, transformApiDataToEvents } from '../../utils/calendarHelpers';
 import { userRoleService } from '../services/roles';
@@ -53,7 +53,7 @@ export default function DashboardPage() {
               const newRefresh = r.data.refreshToken || refreshToken;
               localStorage.setItem('authToken', newToken);
               localStorage.setItem('refreshToken', newRefresh);
-              document.cookie = `authToken=${newToken}; path=/; max-age=3600; secure; samesite=strict`;
+              document.cookie = `authToken=${newToken}; path=/; max-age=21600; secure; samesite=strict`;
               document.cookie = `refreshToken=${newRefresh}; path=/; max-age=${60 * 60 * 24 * 30}; secure; samesite=strict`;
               originalRequest.headers = originalRequest.headers || {};
               originalRequest.headers.Authorization = `Bearer ${newToken}`;
@@ -426,43 +426,53 @@ export default function DashboardPage() {
               padding: '20px',
               width: '500px',
               maxHeight: '80%',
+              display: 'flex',
+              flexDirection: 'column',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <h2 style={{ color: 'white', marginBottom: '10px' }}>All Notifications</h2>
-            {allNotifications.length === 0 ? (
-              <p style={{ color: '#aaa' }}>No notifications found.</p>
-            ) : (
-              allNotifications.map((n) => (
-                <div
-                  key={n.notification_id}
-                  style={{
-                    backgroundColor: '#333',
-                    padding: '10px',
-                    marginBottom: '8px',
-                    borderRadius: '4px',
-                  }}
-                >
-                  <strong>{n.title}</strong>
-                  <p style={{ fontSize: '12px', color: '#ccc' }}>{n.message}</p>
-                  <button
-                    onClick={() => deleteNotification(n.notification_id)}
+            <div
+              style={{
+                overflowY: 'auto',
+                flex: 1,
+                paddingRight: '8px',
+              }}
+            >
+              {allNotifications.length === 0 ? (
+                <p style={{ color: '#aaa' }}>No notifications found.</p>
+              ) : (
+                allNotifications.map((n) => (
+                  <div
+                    key={n.notification_id}
                     style={{
-                      backgroundColor: 'red',
-                      color: 'white',
-                      border: 'none',
+                      backgroundColor: '#333',
+                      padding: '10px',
+                      marginBottom: '8px',
                       borderRadius: '4px',
-                      padding: '4px 8px',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      marginTop: '6px',
                     }}
                   >
-                    Delete
-                  </button>
-                </div>
-              ))
-            )}
+                    <strong>{n.title}</strong>
+                    <p style={{ fontSize: '12px', color: '#ccc' }}>{n.message}</p>
+                    <button
+                      onClick={() => deleteNotification(n.notification_id)}
+                      style={{
+                        backgroundColor: 'red',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '4px 8px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        marginTop: '6px',
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}

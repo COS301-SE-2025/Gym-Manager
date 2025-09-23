@@ -66,6 +66,7 @@ export class App {
     const memberRoutes = this.container.getMemberRoutes();
     const analyticsRoutes = this.container.getAnalyticsRoutes();
     const paymentPackagesRoutes = this.container.getPaymentPackagesRoutes();
+    const gamificationRoutes = this.container.getGamificationRoutes();
     
     const dailyLeaderboardRoutes = this.container.getDailyLeaderboardRoutes();
     
@@ -81,6 +82,7 @@ export class App {
     this.app.use('/members', memberRoutes.getRouter());
     this.app.use('/analytics', analyticsRoutes.getRouter());
     this.app.use('/payments', paymentPackagesRoutes.getRouter());
+    this.app.use('/gamification', gamificationRoutes.getRouter());
     
     // Health check
     this.app.get('/health', (req, res) => {
@@ -122,6 +124,7 @@ export class App {
       console.log('- /members/* - Member management endpoints');
       console.log('- /analytics/* - Analytics endpoints (coach, member, logs, summary-stats)');
       console.log('- /payments/* - Payment packages and financial analytics endpoints');
+      console.log('- /gamification/* - Gamification endpoints (streaks, badges, leaderboards)');
       console.log('- /health - Health check endpoint');
     });
   }

@@ -2,14 +2,20 @@ import { ILiveClassService, ILiveClassRepository, LiveSession, Step } from '../.
 import { LiveClassRepository } from '../../repositories/liveClass/liveClassRepository';
 import { IUserRepository } from '../../domain/interfaces/auth.interface';
 import { UserRepository } from '../../repositories/auth/userRepository';
+import { GamificationService } from '../gamification/gamificationService';
+import { GamificationRepository } from '../../repositories/gamification/gamificationRepository';
 
 export class LiveClassService implements ILiveClassService {
   private repo: ILiveClassRepository;
   private userRepo: IUserRepository;
+  private gamificationService: GamificationService;
 
-  constructor(repo?: ILiveClassRepository, userRepo?: IUserRepository) {
+  constructor(repo?: ILiveClassRepository, userRepo?: IUserRepository, gamificationService?: GamificationService) {
     this.repo = repo || new LiveClassRepository();
     this.userRepo = userRepo || new UserRepository();
+    this.gamificationService = gamificationService || new GamificationService(new GamificationRepository());
+    
+    // console.log(`🏗️ LiveClassService initialized with gamification service:`, !!this.gamificationService);
   }
 
   // --- Session ---
@@ -130,13 +136,37 @@ export class LiveClassService implements ILiveClassService {
 
   // --- Submit score (coach batch or member single) ---
   async submitScore(userId: number, roles: string[] = [], body: any) {
+    // console.log(`🎮 LiveClassService.submitScore called for user ${userId}`);
+    // console.log(`📝 Body:`, body);
+    // console.log(`👤 Roles:`, roles);
+    
     const classId = body?.classId;
     if (!Number.isFinite(classId)) throw new Error('CLASS_ID_REQUIRED');
 
     if (roles.includes('coach') && Array.isArray(body?.scores)) {
       await this.repo.assertCoachOwnsClass(classId, userId);
       const updated = await this.repo.upsertScoresBatch(classId, body.scores);
-      return { success: true, updated };
+      
+      // Trigger gamification updates for each member
+      const gamificationResults = [];
+      for (const scoreRow of body.scores) {
+        try {
+          const gamificationResult = await this.gamificationService.recordClassAttendance(scoreRow.userId, classId, new Date());
+          gamificationResults.push({
+            userId: scoreRow.userId,
+            streak: gamificationResult.streak,
+            newBadges: gamificationResult.newBadges
+          });
+        } catch (gamificationError) {
+          console.error(`Gamification update failed for user ${scoreRow.userId}:`, gamificationError);
+          gamificationResults.push({
+            userId: scoreRow.userId,
+            error: 'Failed to update gamification'
+          });
+        }
+      }
+      
+      return { success: true, updated, gamification: gamificationResults };
     }
 
     if (!roles.includes('member')) throw new Error('ROLE_NOT_ALLOWED');
@@ -144,7 +174,22 @@ export class LiveClassService implements ILiveClassService {
     if (!Number.isFinite(score) || score < 0) throw new Error('SCORE_REQUIRED');
     await this.repo.assertMemberBooked(classId, userId);
     await this.repo.upsertMemberScore(classId, userId, score);
-    return { success: true };
+    
+    // Trigger gamification updates for member
+    try {
+      const gamificationResult = await this.gamificationService.recordClassAttendance(userId, classId, new Date());
+      return { 
+        success: true, 
+        gamification: {
+          streak: gamificationResult.streak,
+          newBadges: gamificationResult.newBadges,
+          pointsEarned: gamificationResult.streak.totalPoints
+        }
+      };
+    } catch (gamificationError) {
+      console.error('Gamification update failed:', gamificationError);
+      return { success: true, gamificationError: 'Failed to update gamification' };
+    }
   }
 
 
@@ -183,10 +228,30 @@ export class LiveClassService implements ILiveClassService {
 
 
   async stopLiveClass(classId: number) {
+    // console.log(`🛑 stopLiveClass called for class ${classId}`);
+    
     await this.repo.stopSession(classId);
     // ⬇️ persist final scores for history
     try {
       await this.repo.persistScoresFromLive(classId);
+      // console.log(`✅ Scores persisted for class ${classId}`);
+      
+      // Trigger gamification for all participants
+      // console.log(`🎮 Triggering gamification for all participants...`);
+      // Get all participants who had attendance records created
+      const participants = await this.getParticipantsForClass(classId);
+      for (const participant of participants) {
+        try {
+          const gamificationResult = await this.gamificationService.recordClassAttendance(participant.userId, classId, new Date());
+          // console.log(`✅ Gamification for user ${participant.userId}:`, {
+          //   streak: gamificationResult.streak.currentStreak,
+          //   totalPoints: gamificationResult.streak.totalPoints,
+          //   newBadges: gamificationResult.newBadges.length
+          // });
+        } catch (gamificationError) {
+          console.error(`❌ Gamification failed for user ${participant.userId}:`, gamificationError);
+        }
+      }
     } catch (e) {
       // don't blow up stop on a persistence hiccup; log and move on
       console.error('persistScoresFromLive failed', e);
@@ -418,9 +483,38 @@ export class LiveClassService implements ILiveClassService {
   }
 
   async setMyScaling(classId: number, userId: number, scaling: 'RX'|'SC'): Promise<void> {
+    // console.log(`🎯 setMyScaling called for user ${userId}, class ${classId}, scaling: ${scaling}`);
+    
     // user must be booked to set scaling
     await this.repo.assertMemberBooked(classId, userId);
     await this.repo.upsertScaling(classId, userId, scaling);
+    
+    // Trigger gamification updates for class attendance
+    try {
+      // console.log(`🎮 Triggering gamification for scaling update...`);
+      const gamificationResult = await this.gamificationService.recordClassAttendance(userId, classId, new Date());
+      // console.log(`✅ Gamification result for scaling:`, {
+      //   streak: gamificationResult.streak.currentStreak,
+      //   totalPoints: gamificationResult.streak.totalPoints,
+      //   newBadges: gamificationResult.newBadges.length
+      // });
+    } catch (gamificationError) {
+      console.error('❌ Gamification update failed for scaling:', gamificationError);
+    }
+  }
+
+  private async getParticipantsForClass(classId: number): Promise<Array<{ userId: number }>> {
+    // Get all users who have attendance records for this class
+    const { db } = await import('../../db/client');
+    const { classattendance } = await import('../../db/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    const participants = await db
+      .select({ userId: classattendance.memberId })
+      .from(classattendance)
+      .where(eq(classattendance.classId, classId));
+    
+    return participants.map(p => ({ userId: p.userId }));
   }
 
 

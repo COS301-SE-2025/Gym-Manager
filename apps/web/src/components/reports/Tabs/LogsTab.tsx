@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { reportsService } from '@/app/services/reports';
-import LogsFilters from './LogsFilters';
+import LogsFilters from '../TogglesAndFilters/LogsFilters';
 
 // Helper function to format log messages based on event type
 const formatLogMessage = (log: any): string => {
@@ -32,6 +32,9 @@ const formatLogMessage = (log: any): string => {
     
     case 'membership_approval':
       return `Approved membership for user ID: ${properties?.approvedUserId}${userId ? ` by user ID: ${userId}` : ' (performed by system)'}.`;
+    
+    case 'user_signup':
+      return `User (ID: ${userId}) signed up with email: ${properties?.email} and roles: ${properties?.roles?.join(', ') || 'member'}.`;
     
     default:
       return `${eventType} event occurred${userId ? ` for user ID: ${userId}` : ''}.`;

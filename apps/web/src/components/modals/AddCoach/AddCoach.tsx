@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import axios from 'axios';
+import './style.css';
 
 export default function AddCoachModal({ onClose }: { onClose: () => void }) {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;

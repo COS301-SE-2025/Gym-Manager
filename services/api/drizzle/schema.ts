@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm"
 
 export const membershipStatus = pgEnum("membership_status", ['pending', 'approved', 'suspended', 'cancelled'])
 export const userRole = pgEnum("user_role", ['member', 'coach', 'admin', 'manager'])
+export const badgeType = pgEnum("badge_type", ['streak', 'attendance', 'achievement', 'milestone', 'special'])
 
 
 export const coaches = pgTable("coaches", {
@@ -430,4 +431,77 @@ export const userFinancialMetrics = pgTable("user_financial_metrics", {
 		name: "user_financial_metrics_member_id_fkey"
 	}),
 	uniqueIndex("uq_user_financial_metrics_member").using("btree", table.memberId.asc().nullsLast().op("int4_ops")),
+]);
+
+// Gamification Tables
+export const badgeDefinitions = pgTable("badge_definitions", {
+	badgeId: serial("badge_id").primaryKey().notNull(),
+	name: text().notNull(),
+	description: text().notNull(),
+	iconName: text("icon_name").notNull(),
+	badgeType: badgeType("badge_type").notNull(),
+	criteria: jsonb().notNull(),
+	pointsValue: integer("points_value").default(0).notNull(),
+	isActive: boolean("is_active").default(true).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	index("idx_badge_definitions_type").using("btree", table.badgeType.asc().nullsLast().op("text_ops")),
+	index("idx_badge_definitions_active").using("btree", table.isActive.asc().nullsLast().op("bool_ops")),
+]);
+
+export const userBadges = pgTable("user_badges", {
+	userBadgeId: serial("user_badge_id").primaryKey().notNull(),
+	userId: integer("user_id").notNull(),
+	badgeId: integer("badge_id").notNull(),
+	earnedAt: timestamp("earned_at", { mode: 'string' }).defaultNow().notNull(),
+	isDisplayed: boolean("is_displayed").default(true).notNull(),
+}, (table) => [
+	index("idx_user_badges_user_id").using("btree", table.userId.asc().nullsLast().op("int4_ops")),
+	index("idx_user_badges_badge_id").using("btree", table.badgeId.asc().nullsLast().op("int4_ops")),
+	foreignKey({
+		columns: [table.userId],
+		foreignColumns: [users.userId],
+		name: "user_badges_user_id_fkey"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.badgeId],
+		foreignColumns: [badgeDefinitions.badgeId],
+		name: "user_badges_badge_id_fkey"
+	}).onDelete("cascade"),
+	unique("user_badges_user_id_badge_id_key").on(table.userId, table.badgeId),
+]);
+
+export const userStreaks = pgTable("user_streaks", {
+	userId: integer("user_id").primaryKey().notNull(),
+	currentStreak: integer("current_streak").default(0).notNull(),
+	longestStreak: integer("longest_streak").default(0).notNull(),
+	lastActivityDate: date("last_activity_date"),
+	streakStartDate: date("streak_start_date"),
+	totalWorkouts: integer("total_workouts").default(0).notNull(),
+	totalPoints: integer("total_points").default(0).notNull(),
+	level: integer().default(1).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	foreignKey({
+		columns: [table.userId],
+		foreignColumns: [users.userId],
+		name: "user_streaks_user_id_fkey"
+	}).onDelete("cascade"),
+]);
+
+export const userActivities = pgTable("user_activities", {
+	activityId: serial("activity_id").primaryKey().notNull(),
+	userId: integer("user_id").notNull(),
+	activityType: text("activity_type").notNull(),
+	activityData: jsonb("activity_data"),
+	pointsEarned: integer("points_earned").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	index("idx_user_activities_user_id").using("btree", table.userId.asc().nullsLast().op("int4_ops")),
+	index("idx_user_activities_created_at").using("btree", table.createdAt.asc().nullsLast().op("timestamptz_ops")),
+	foreignKey({
+		columns: [table.userId],
+		foreignColumns: [users.userId],
+		name: "user_activities_user_id_fkey"
+	}).onDelete("cascade"),
 ]);

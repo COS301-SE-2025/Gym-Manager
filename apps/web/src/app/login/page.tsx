@@ -29,7 +29,7 @@ export default function LoginPage() {
         localStorage.setItem('refreshToken', response.data.refreshToken);
         document.cookie = `refreshToken=${response.data.refreshToken}; path=/; max-age=${60 * 60 * 24 * 30}; secure; samesite=strict`;
       }
-      document.cookie = `authToken=${response.data.token}; path=/; max-age=3600; secure; samesite=strict`;
+      document.cookie = `authToken=${response.data.token}; path=/; max-age=21600; secure; samesite=strict`;
       router.push('/dashboard');
     } catch (err) {
       console.error('Login error:', err);

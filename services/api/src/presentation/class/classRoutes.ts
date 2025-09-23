@@ -24,6 +24,7 @@ export class ClassRoutes {
     this.router.get('/coach/classes-with-workouts', this.authMiddleware.isAuthenticated, this.classController.getCoachClassesWithWorkouts);
     this.router.post('/coach/assign-workout', this.authMiddleware.isAuthenticated, this.classController.assignWorkoutToClass);
     this.router.post('/coach/create-workout', this.authMiddleware.isAuthenticated, this.classController.createWorkout);
+    this.router.put('/coach/update-workout/:workoutId', this.authMiddleware.isAuthenticated, this.classController.updateWorkout);
 
     // Member routes (require authentication)
     this.router.get('/classes', this.authMiddleware.isAuthenticated, this.classController.getAllClasses);

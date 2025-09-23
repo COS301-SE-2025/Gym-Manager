@@ -16,6 +16,8 @@ import { IUserRepository } from '../../domain/interfaces/auth.interface';
 import { AnalyticsService } from '../analytics/analyticsService';
 import { MemberService } from '../member/memberService';
 import { MemberRepository } from '../../repositories/member/memberRepository';
+import { GamificationService } from '../gamification/gamificationService';
+import { GamificationRepository } from '../../repositories/gamification/gamificationRepository';
 
 /**
  * ClassService - Business Layer
@@ -26,17 +28,20 @@ export class ClassService implements IClassService {
   private userRepository: UserRepository;
   private analyticsService: AnalyticsService;
   private memberService: MemberService;
+  private gamificationService: GamificationService;
 
   constructor(
     classRepository?: IClassRepository,
     userRepository?: UserRepository,
     memberService?: MemberService,
     analyticsService?: AnalyticsService,
+    gamificationService?: GamificationService,
   ) {
     this.classRepository = classRepository || new ClassRepository();
     this.userRepository = userRepository || new UserRepository();
     this.memberService = memberService || new MemberService(new MemberRepository());
     this.analyticsService = analyticsService || new AnalyticsService();
+    this.gamificationService = gamificationService || new GamificationService(new GamificationRepository());
   }
 
   async getCoachAssignedClasses(coachId: number): Promise<Class[]> {
@@ -64,6 +69,14 @@ export class ClassService implements IClassService {
 
     const { rounds, ...workoutInfo } = workoutData;
     return this.classRepository.createWorkout(workoutInfo, rounds);
+  }
+
+  async updateWorkout(workoutId: number, workoutData: CreateWorkoutRequest): Promise<number> {
+    // Validate workout data
+    this.validateWorkoutData(workoutData);
+
+    const { rounds, ...workoutInfo } = workoutData;
+    return this.classRepository.updateWorkout(workoutId, workoutInfo, rounds);
   }
 
   async getAllClasses(userId: number): Promise<ClassWithWorkout[]> {
@@ -175,6 +188,9 @@ export class ClassService implements IClassService {
     if (!attendance) {
       throw new Error('Already checked in');
     }
+
+    // Update gamification system (streaks, badges, points)
+    await this.gamificationService.recordClassAttendance(memberId, classId, new Date());
 
     // Log attendance event
     await this.analyticsService.addLog({

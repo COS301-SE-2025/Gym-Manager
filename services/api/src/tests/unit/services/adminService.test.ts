@@ -1,4 +1,5 @@
 import { AdminService } from '../../../services/admin/adminService';
+import { AnalyticsService } from '../../../services/analytics/analyticsService';
 
 describe('AdminService', () => {
   it('assignCoachToClass validates inputs and calls repository', async () => {
@@ -104,6 +105,77 @@ describe('AdminService', () => {
     const svc = new AdminService(mockRepo);
 
     const result = await svc.getUserById(1);
+    expect(result).toEqual({ ok: true });
+  });
+
+  it('updateUserById logs membership approval event when status changes to approved', async () => {
+    const mockRepo = { 
+      getUserById: jest.fn().mockResolvedValue({ 
+        userId: 1, 
+        roles: ['member'], 
+        memberStatus: 'pending' 
+      }),
+      updateUserById: jest.fn().mockResolvedValue({ ok: true })
+    } as any;
+    
+    const mockAnalyticsService = { addLog: jest.fn() } as any;
+    const svc = new AdminService(mockRepo, mockAnalyticsService);
+
+    const result = await svc.updateUserById(1, { status: 'approved' });
+
+    expect(mockRepo.getUserById).toHaveBeenCalledWith(1);
+    expect(mockAnalyticsService.addLog).toHaveBeenCalledWith({
+      gymId: 1,
+      userId: null,
+      eventType: 'membership_approval',
+      properties: {
+        approvedUserId: 1,
+      },
+      source: 'api',
+    });
+    expect(mockRepo.updateUserById).toHaveBeenCalledWith(1, { status: 'approved' });
+    expect(result).toEqual({ ok: true });
+  });
+
+  it('updateUserById does not log membership approval when user is not a member', async () => {
+    const mockRepo = { 
+      getUserById: jest.fn().mockResolvedValue({ 
+        userId: 1, 
+        roles: ['admin'], 
+        memberStatus: null 
+      }),
+      updateUserById: jest.fn().mockResolvedValue({ ok: true })
+    } as any;
+    
+    const mockAnalyticsService = { addLog: jest.fn() } as any;
+    const svc = new AdminService(mockRepo, mockAnalyticsService);
+
+    const result = await svc.updateUserById(1, { status: 'approved' });
+
+    expect(mockRepo.getUserById).toHaveBeenCalledWith(1);
+    expect(mockAnalyticsService.addLog).not.toHaveBeenCalled();
+    expect(mockRepo.updateUserById).toHaveBeenCalledWith(1, { status: 'approved' });
+    expect(result).toEqual({ ok: true });
+  });
+
+  it('updateUserById does not log membership approval when member is already approved', async () => {
+    const mockRepo = { 
+      getUserById: jest.fn().mockResolvedValue({ 
+        userId: 1, 
+        roles: ['member'], 
+        memberStatus: 'approved' 
+      }),
+      updateUserById: jest.fn().mockResolvedValue({ ok: true })
+    } as any;
+    
+    const mockAnalyticsService = { addLog: jest.fn() } as any;
+    const svc = new AdminService(mockRepo, mockAnalyticsService);
+
+    const result = await svc.updateUserById(1, { status: 'approved' });
+
+    expect(mockRepo.getUserById).toHaveBeenCalledWith(1);
+    expect(mockAnalyticsService.addLog).not.toHaveBeenCalled();
+    expect(mockRepo.updateUserById).toHaveBeenCalledWith(1, { status: 'approved' });
     expect(result).toEqual({ ok: true });
   });
 

@@ -116,6 +116,52 @@ export class ClassController {
     }
   };
 
+  updateWorkout = async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const workoutId = Number(req.params.workoutId);
+    if (!Number.isFinite(workoutId)) {
+      return res.status(400).json({ error: 'Invalid workout ID' });
+    }
+
+    const {
+      workoutName,
+      type,
+      metadata,
+      rounds: roundsInput,
+    } = req.body as CreateWorkoutRequest;
+
+    try {
+      const workoutData: CreateWorkoutRequest = {
+        workoutName,
+        type,
+        metadata,
+        rounds: roundsInput,
+      };
+
+      const updatedWorkoutId = await this.classService.updateWorkout(workoutId, workoutData);
+
+      return res.json({
+        success: true,
+        workoutId: updatedWorkoutId,
+        message: 'Workout updated with rounds, subrounds & exercises.',
+      });
+    } catch (error: any) {
+      console.error('updateWorkout error:', error);
+      
+      if (error.message.includes('is required') || 
+          error.message.includes('must be') || 
+          error.message.includes('needs') ||
+          error.message.includes('each')) {
+        return res.status(400).json({ error: error.message });
+      }
+
+      return res.status(400).json({ error: error.message || 'Update failed' });
+    }
+  };
+
   getAllClasses = async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Unauthorized' });

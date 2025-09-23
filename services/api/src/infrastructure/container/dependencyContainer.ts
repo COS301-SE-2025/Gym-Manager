@@ -65,6 +65,12 @@ import { PaymentPackagesController } from '../../controllers/paymentPackages/pay
 import { PaymentPackagesService } from '../../services/paymentPackages/paymentPackagesService';
 import { PaymentPackagesRoutes } from '../../presentation/paymentPackages/paymentPackagesRoutes';
 
+// Gamification-related imports
+import { GamificationController } from '../../controllers/gamification/gamificationController';
+import { GamificationService } from '../../services/gamification/gamificationService';
+import { GamificationRepository } from '../../repositories/gamification/gamificationRepository';
+import { GamificationRoutes } from '../../presentation/gamification/gamificationRoutes';
+
 /**
  * Dependency Container - Infrastructure Layer
  * Manages dependency injection and object creation
@@ -100,6 +106,7 @@ export class DependencyContainer {
     this.services.set('notificationRepository', new NotificationRepository());
     this.services.set('dailyLeaderboardRepository', new DailyLeaderboardRepository());
     this.services.set('memberRepository', new MemberRepository());
+    this.services.set('gamificationRepository', new GamificationRepository());
 
 
     // Service layer
@@ -146,6 +153,10 @@ export class DependencyContainer {
     this.services.set('memberService', new MemberService(
       this.services.get('memberRepository'),
       this.services.get('paymentPackagesService')
+    ));
+
+    this.services.set('gamificationService', new GamificationService(
+      this.services.get('gamificationRepository')
     ));
 
     // Analytics service
@@ -196,6 +207,10 @@ export class DependencyContainer {
       this.services.get('paymentPackagesService')
     ));
 
+    this.services.set('gamificationController', new GamificationController(
+      this.services.get('gamificationService')
+    ));
+
     // Presentation layer
     this.services.set('authRoutes', new AuthRoutes());
     this.services.set('classRoutes', new ClassRoutes());
@@ -211,6 +226,9 @@ export class DependencyContainer {
 
     this.services.set('analyticsRoutes', new AnalyticsRoutes());
     this.services.set('paymentPackagesRoutes', new PaymentPackagesRoutes());
+    this.services.set('gamificationRoutes', new GamificationRoutes(
+      this.services.get('gamificationController')
+    ));
   }
 
   get<T>(serviceName: string): T {
@@ -320,5 +338,9 @@ export class DependencyContainer {
 
   getPaymentPackagesRoutes(): PaymentPackagesRoutes {
     return this.get<PaymentPackagesRoutes>('paymentPackagesRoutes');
+  }
+
+  getGamificationRoutes(): GamificationRoutes {
+    return this.get<GamificationRoutes>('gamificationRoutes');
   }
 }

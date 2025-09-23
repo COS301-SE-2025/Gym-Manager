@@ -43,6 +43,8 @@ interface ClassDetails {
   coachFirstName?: string;
   coachLastName?: string;
   bookingsCount?: number;
+  workoutType?: string;
+  workoutMetadata?: any;
 }
 
 interface Exercise {
@@ -59,13 +61,14 @@ interface SubRound {
   exercises: Exercise[];
   isExpanded: boolean;
   subroundNumber: number;
+  repeats?: string;
 }
 
 interface Workout {
   id: string;
   workoutName: string;
   workoutType: WorkoutType;
-  workoutTime: string;
+  workoutMinutes: number;
   numberOfRounds: string;
   subRounds: SubRound[];
 }
@@ -82,7 +85,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       id: '1',
       workoutName: 'Workout',
       workoutType: 'FOR_TIME',
-      workoutTime: '00:00:00',
+      workoutMinutes: 0,
       numberOfRounds: '',
       subRounds: [
         {
@@ -91,6 +94,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           exercises: [],
           isExpanded: false,
           subroundNumber: 1,
+          repeats: '1',
         },
       ],
     },
@@ -100,14 +104,17 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showWorkoutTypeDropdown, setShowWorkoutTypeDropdown] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [selectedMinutes, setSelectedMinutes] = useState(0);
-  const [selectedSeconds, setSelectedSeconds] = useState(0);
   const [showWorkoutSelectSheet, setShowWorkoutSelectSheet] = useState(false);
-  
-  // Bottom sheet refs
-  const timePickerBottomSheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => ['50%'], []);
+
+  // Helper function to clean exercise names by removing reps and duration info
+  const cleanExerciseName = (rawName: string): string => {
+    return rawName
+      .replace(/^\d+\s*x\s*/i, '') // Remove "10x " prefix
+      .replace(/\s+\d+\s*s\s*$/i, '') // Remove " 20s" suffix
+      .replace(/\s+\d+\s*sec\s*$/i, '') // Remove " 20sec" suffix
+      .replace(/\s+\d+\s*seconds?\s*$/i, '') // Remove " 20second" or " 20seconds" suffix
+      .trim();
+  };
 
   useEffect(() => {
     (async () => {
@@ -251,6 +258,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           exercises: [],
           isExpanded: false,
           subroundNumber: currentWorkout.subRounds.length + 1,
+          repeats: '1',
         }
       ]
     });
@@ -285,24 +293,6 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
     setCurrentWorkout({ workoutType: type });
   };
 
-  const handleTimeChange = (minutes: number, seconds: number) => {
-    setSelectedMinutes(minutes);
-    setSelectedSeconds(seconds);
-    const timeString = `00:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    setCurrentWorkout({ workoutTime: timeString });
-  };
-
-  const showTimePickerModal = useCallback(() => {
-    // Parse current time to set initial values
-    const [hours, minutes, seconds] = currentWorkout.workoutTime.split(':').map(Number);
-    setSelectedMinutes(minutes || 0);
-    setSelectedSeconds(seconds || 0);
-    setShowTimePicker(true);
-  }, [currentWorkout.workoutTime]);
-
-  const handleTimePickerClose = useCallback(() => {
-    setShowTimePicker(false);
-  }, []);
 
   const handleLoadWorkout = async (workoutId: number, workoutName: string) => {
     try {
@@ -311,6 +301,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
       // Fetch workout details
       const response = await apiClient.get(`/workout/${workoutId}/steps`);
+      console.log('handleLoadWorkout');  
       const workoutData = response.data;
 
       // Parse the workout data and populate the form
@@ -333,9 +324,9 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             subroundsMap.set(subroundNum, []);
           }
           
-          // Extract clean exercise name by removing reps information
+          // Extract clean exercise name by removing reps and duration information
           const rawName = step.name || step.title || step.exerciseName || 'Exercise';
-          const cleanName = rawName.replace(/^\d+\s*x\s*/i, '').trim();
+          const cleanName = cleanExerciseName(rawName);
           
           subroundsMap.get(subroundNum)!.push({
             id: Date.now().toString() + Math.random(),
@@ -345,6 +336,15 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             notes: step.notes || '',
           });
         });
+
+        // Extract metadata from the workout data first
+        const metadata = workoutData.metadata || {};
+        const emomRepeats: number[] = Array.isArray(metadata.emom_repeats) ? metadata.emom_repeats : [];
+        const timeLimit = Number(metadata.time_limit ?? 0);
+        const minutes = timeLimit; // time_limit stores minutes directly
+        const roundsFromMeta = metadata.number_of_rounds != null
+          ? String(metadata.number_of_rounds)
+          : '1';
 
         // Convert to workout structure
         const subRounds: SubRound[] = [];
@@ -358,17 +358,18 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
               exercises: exercises,
               isExpanded: false,
               subroundNumber: subroundCounter,
+              repeats: String(emomRepeats[subroundCounter - 1] ?? 1),
             });
             subroundCounter++;
           });
         });
 
-        // Update the workout
+        // Update the workout with loaded metadata
         setCurrentWorkout({
           workoutName: workoutName,
-          workoutType: 'FOR_TIME', // Default, can be updated
-          workoutTime: '00:15:00', // Default, can be updated
-          numberOfRounds: '1', // Default, can be updated
+          workoutType: (workoutData.workoutType as any) || 'FOR_TIME',
+          workoutMinutes: minutes,
+          numberOfRounds: roundsFromMeta,
           subRounds: subRounds,
         });
 
@@ -411,9 +412,9 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             subroundsMap.set(subroundNum, []);
           }
           
-          // Extract clean exercise name by removing reps information
+          // Extract clean exercise name by removing reps and duration information
           const rawName = step.name || step.title || step.exerciseName || 'Exercise';
-          const cleanName = rawName.replace(/^\d+\s*x\s*/i, '').trim();
+          const cleanName = cleanExerciseName(rawName);
           
           subroundsMap.get(subroundNum)!.push({
             id: Date.now().toString() + Math.random(),
@@ -428,6 +429,11 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         const subRounds: SubRound[] = [];
         let subroundCounter = 1;
 
+        // Extract metadata from the workout data
+        const metadata = workoutData.metadata || {};
+        const existingType = workoutData.workoutType || 'FOR_TIME';
+        const emomRepeats: number[] = Array.isArray(metadata.emom_repeats) ? metadata.emom_repeats : [];
+
         roundsMap.forEach((subroundsMap, roundNum) => {
           subroundsMap.forEach((exercises, subroundNum) => {
             subRounds.push({
@@ -436,17 +442,25 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
               exercises: exercises,
               isExpanded: false,
               subroundNumber: subroundCounter,
+              repeats: String(emomRepeats[subroundCounter - 1] ?? 1),
             });
             subroundCounter++;
           });
         });
 
-        // Update the workout with existing data
+        // Update the workout with existing data + previously saved metadata
+        const timeLimit = Number(metadata.time_limit ?? 0);
+        const minutes = timeLimit; // time_limit stores minutes directly
+
+        const roundsFromMeta = metadata.number_of_rounds != null
+          ? String(metadata.number_of_rounds)
+          : (currentWorkout.numberOfRounds || '1');
+
         setCurrentWorkout({
           workoutName: classDetails?.workoutName || 'Workout',
-          workoutType: 'FOR_TIME', // Default, can be updated
-          workoutTime: '00:15:00', // Default, can be updated
-          numberOfRounds: '1', // Default, can be updated
+          workoutType: (existingType as any),
+          workoutMinutes: minutes,
+          numberOfRounds: roundsFromMeta,
           subRounds: subRounds,
         });
       }
@@ -480,7 +494,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         }
       }
 
-      // Create all workouts
+      // Create or update workouts
       const createdWorkoutIds = [];
       for (const workout of workouts) {
         const workoutData = {
@@ -488,10 +502,19 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           type: workout.workoutType,
           metadata: {
             ...(workout.workoutType === 'FOR_TIME' || workout.workoutType === 'AMRAP' ? {
-              time_limit: parseInt(workout.workoutTime.split(':')[0]) * 60 + parseInt(workout.workoutTime.split(':')[1]) || 0,
+              time_limit: workout.workoutMinutes,
             } : {}),
-            ...(workout.workoutType === 'EMOM' || workout.workoutType === 'TABATA' ? {
+            ...(workout.workoutType === 'FOR_TIME' ? {
               number_of_rounds: parseInt(workout.numberOfRounds) || 1,
+            } : {}),
+            ...(workout.workoutType === 'TABATA' ? {
+              number_of_rounds: parseInt(workout.numberOfRounds) || 1,
+            } : {}),
+            ...(workout.workoutType === 'EMOM' ? {
+              emom_repeats: workout.subRounds.map(sr => {
+                const n = parseInt((sr.repeats ?? '').trim() || '0');
+                return n > 0 ? n : 1;
+              }),
             } : {}),
             number_of_subrounds: workout.subRounds.length,
           },
@@ -514,17 +537,34 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           ],
         };
 
-        console.log(`Creating workout: ${workout.workoutName}`, workoutData);
+        if (editMode && classDetails?.workoutId) {
+          // Update existing workout
+          console.log(`Updating workout: ${workout.workoutName}`, workoutData);
 
-        const createResponse = await apiClient.post(
-          `/coach/create-workout`,
-          workoutData,
-        );
+          const updateResponse = await apiClient.put(
+            `/coach/update-workout/${classDetails.workoutId}`,
+            workoutData,
+          );
 
-        if (createResponse.data.success) {
-          createdWorkoutIds.push(createResponse.data.workoutId);
+          if (updateResponse.data.success) {
+            createdWorkoutIds.push(updateResponse.data.workoutId);
+          } else {
+            throw new Error(`Failed to update workout: ${workout.workoutName}`);
+          }
         } else {
-          throw new Error(`Failed to create workout: ${workout.workoutName}`);
+          // Create new workout
+          console.log(`Creating workout: ${workout.workoutName}`, workoutData);
+
+          const createResponse = await apiClient.post(
+            `/coach/create-workout`,
+            workoutData,
+          );
+
+          if (createResponse.data.success) {
+            createdWorkoutIds.push(createResponse.data.workoutId);
+          } else {
+            throw new Error(`Failed to create workout: ${workout.workoutName}`);
+          }
         }
       }
 
@@ -541,9 +581,10 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         );
 
         if (assignResponse.data.success) {
+          const action = editMode ? 'Updated' : 'Created';
           Alert.alert(
             'Success!',
-            `Created ${workouts.length} workout(s) and assigned to the class successfully.`,
+            `${action} ${workouts.length} workout(s) and assigned to the class successfully.`,
             [
               {
                 text: 'OK',
@@ -728,25 +769,24 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             {/* Time - Only show for certain workout types */}
             {(currentWorkout.workoutType === 'FOR_TIME' || currentWorkout.workoutType === 'AMRAP') && (
               <View style={styles.settingRow}>
-                <Text style={styles.settingLabel}>Duration (MM:SS)</Text>
-                <TouchableOpacity
-                  style={styles.timeInput}
-                  onPress={showTimePickerModal}
-                  disabled={isSaving}
-                >
-                  <Text style={styles.timeInputText}>
-                    {(() => {
-                      const [hours, minutes, seconds] = currentWorkout.workoutTime.split(':').map(Number);
-                      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                    })()}
-                  </Text>
-                  <Ionicons name="time-outline" size={16} color="#888" />
-                </TouchableOpacity>
+                <Text style={styles.settingLabel}>Duration (Minutes)</Text>
+                <TextInput
+                  style={styles.numberInput}
+                  value={currentWorkout.workoutMinutes.toString()}
+                  onChangeText={(value) => {
+                    const minutes = parseInt(value) || 0;
+                    setCurrentWorkout({ workoutMinutes: minutes });
+                  }}
+                  placeholder="0"
+                  placeholderTextColor="#888"
+                  keyboardType="numeric"
+                  editable={!isSaving}
+                />
               </View>
             )}
 
             {/* Number of Rounds - Only show for certain workout types */}
-            {(currentWorkout.workoutType === 'EMOM' || currentWorkout.workoutType === 'TABATA') && (
+            {(currentWorkout.workoutType === 'TABATA' || currentWorkout.workoutType === 'FOR_TIME') && (
               <View style={styles.settingRow}>
                 <Text style={styles.settingLabel}>Number of Rounds</Text>
                 <TextInput
@@ -822,7 +862,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                           style={styles.repsInput}
                           value={exercise.reps}
                           onChangeText={(value) => updateExercise(subRound.id, exercise.id, 'reps', value)}
-                          placeholder="No. of reps"
+                          placeholder={currentWorkout.workoutType === 'TABATA' ? 'No of secs' : 'No. of reps'}
                           placeholderTextColor="#888"
                           keyboardType="numeric"
                           editable={!isSaving}
@@ -848,6 +888,28 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                       </View>
                     ))}
                     
+                    {currentWorkout.workoutType === 'EMOM' && (
+                      <View style={styles.emomRepeatsRow}>
+                        <Text style={styles.settingLabel}>Repeats</Text>
+                        <TextInput
+                          style={styles.numberInput}
+                          value={subRound.repeats ?? '1'}
+                          onChangeText={(value) => {
+                            const digits = value.replace(/[^0-9]/g, '');
+                            setCurrentWorkout({
+                              subRounds: currentWorkout.subRounds.map((sr) =>
+                                sr.id === subRound.id ? { ...sr, repeats: digits } : sr
+                              ),
+                            });
+                          }}
+                          placeholder=""
+                          placeholderTextColor="#888"
+                          keyboardType="numeric"
+                          editable={!isSaving}
+                        />
+                      </View>
+                    )}
+
                     <TouchableOpacity 
                       style={styles.addExerciseButton}
                       onPress={() => addExercise(subRound.id)}
@@ -904,125 +966,6 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         </View>
       </View>
 
-      {/* Premium Time Picker Modal */}
-      <Modal
-        visible={showTimePicker}
-        transparent
-        animationType="fade"
-        onRequestClose={handleTimePickerClose}
-      >
-        <View style={styles.timePickerOverlay}>
-          <View style={styles.timePickerModal}>
-            {/* Header */}
-            <View style={styles.timePickerHeader}>
-              <Text style={styles.timePickerTitle}>Set Workout Duration</Text>
-              <TouchableOpacity 
-                style={styles.timePickerCloseButton}
-                onPress={handleTimePickerClose}
-              >
-                <Ionicons name="close" size={24} color="#888" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Time Display */}
-            <View style={styles.timeDisplayContainer}>
-              <Text style={styles.timeDisplayLabel}>Duration</Text>
-              <View style={styles.timeDisplay}>
-                <Text style={styles.timeDisplayText}>
-                  {selectedMinutes.toString().padStart(2, '0')}:{selectedSeconds.toString().padStart(2, '0')}
-                </Text>
-              </View>
-            </View>
-
-            {/* Time Picker Content */}
-            <View style={styles.timePickerContent}>
-              {/* Minutes Column */}
-              <View style={styles.timePickerColumn}>
-                <Text style={styles.timePickerLabel}>Minutes</Text>
-                <View style={styles.timePickerScrollContainer}>
-                  <ScrollView 
-                    style={styles.timePickerScrollView}
-                    showsVerticalScrollIndicator={false}
-                    snapToInterval={50}
-                    decelerationRate="fast"
-                  >
-                    {Array.from({ length: 60 }, (_, i) => (
-                      <TouchableOpacity
-                        key={i}
-                        style={[
-                          styles.timePickerItem,
-                          selectedMinutes === i && styles.timePickerItemSelected
-                        ]}
-                        onPress={() => handleTimeChange(i, selectedSeconds)}
-                      >
-                        <Text style={[
-                          styles.timePickerItemText,
-                          selectedMinutes === i && styles.timePickerItemTextSelected
-                        ]}>
-                          {i.toString().padStart(2, '0')}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              </View>
-
-              {/* Separator */}
-              <View style={styles.timePickerSeparator}>
-                <Text style={styles.timePickerSeparatorText}>:</Text>
-              </View>
-
-              {/* Seconds Column */}
-              <View style={styles.timePickerColumn}>
-                <Text style={styles.timePickerLabel}>Seconds</Text>
-                <View style={styles.timePickerScrollContainer}>
-                  <ScrollView 
-                    style={styles.timePickerScrollView}
-                    showsVerticalScrollIndicator={false}
-                    snapToInterval={50}
-                    decelerationRate="fast"
-                  >
-                    {Array.from({ length: 60 }, (_, i) => (
-                      <TouchableOpacity
-                        key={i}
-                        style={[
-                          styles.timePickerItem,
-                          selectedSeconds === i && styles.timePickerItemSelected
-                        ]}
-                        onPress={() => handleTimeChange(selectedMinutes, i)}
-                      >
-                        <Text style={[
-                          styles.timePickerItemText,
-                          selectedSeconds === i && styles.timePickerItemTextSelected
-                        ]}>
-                          {i.toString().padStart(2, '0')}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              </View>
-            </View>
-
-            {/* Action Buttons */}
-            <View style={styles.timePickerActions}>
-              <TouchableOpacity 
-                style={styles.timePickerCancelButton}
-                onPress={handleTimePickerClose}
-              >
-                <Text style={styles.timePickerCancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.timePickerDoneButton}
-                onPress={handleTimePickerClose}
-              >
-                <Text style={styles.timePickerDoneButtonText}>Done</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       {/* Workout Select Sheet */}
       <WorkoutSelectSheet
@@ -1196,22 +1139,6 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     fontWeight: '600',
   },
-  timeInput: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minWidth: 100,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  timeInputText: {
-    color: 'white',
-    fontSize: 14,
-    textAlign: 'center',
-    flex: 1,
-  },
   numberInput: {
     backgroundColor: '#2a2a2a',
     borderRadius: 8,
@@ -1221,6 +1148,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     minWidth: 100,
     textAlign: 'center',
+  },
+  emomRepeatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
   },
   subRoundContainer: {
     marginBottom: 12,
@@ -1479,169 +1412,4 @@ const styles = StyleSheet.create({
     // Container for the current workout's content
   },
 
-  // Bottom sheet styles
-  bottomSheetBackground: {
-    backgroundColor: '#2a2a2a',
-  },
-  bottomSheetIndicator: {
-    backgroundColor: '#666',
-  },
-
-  // Premium Time Picker Modal Styles
-  timePickerOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  timePickerModal: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 20,
-    padding: 24,
-    width: '100%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 20,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 20,
-  },
-  timePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  timePickerTitle: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  timePickerCloseButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1a1a1a',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  timeDisplayContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  timeDisplayLabel: {
-    color: '#888',
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  timeDisplay: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    minWidth: 120,
-    alignItems: 'center',
-  },
-  timeDisplayText: {
-    color: '#D8FF3E',
-    fontSize: 32,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'ios' ? 'SF Mono' : 'monospace',
-  },
-  timePickerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 32,
-  },
-  timePickerColumn: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  timePickerLabel: {
-    color: '#888',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 16,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  timePickerScrollContainer: {
-    height: 200,
-    width: 120,
-    borderRadius: 12,
-    backgroundColor: '#1a1a1a',
-    overflow: 'hidden',
-  },
-  timePickerScrollView: {
-    flex: 1,
-  },
-  timePickerSeparator: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 80,
-    paddingHorizontal: 8,
-  },
-  timePickerSeparatorText: {
-    color: '#D8FF3E',
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  timePickerItem: {
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-    marginVertical: 2,
-    marginHorizontal: 4,
-  },
-  timePickerItemSelected: {
-    backgroundColor: '#D8FF3E',
-  },
-  timePickerItemText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '500',
-  },
-  timePickerItemTextSelected: {
-    color: '#1a1a1a',
-    fontWeight: '700',
-  },
-  timePickerActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  timePickerCancelButton: {
-    flex: 1,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#444',
-  },
-  timePickerCancelButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  timePickerDoneButton: {
-    flex: 1,
-    backgroundColor: '#D8FF3E',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  timePickerDoneButtonText: {
-    color: '#1a1a1a',
-    fontSize: 16,
-    fontWeight: '700',
-  },
 });

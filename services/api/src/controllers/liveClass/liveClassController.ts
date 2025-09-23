@@ -45,6 +45,16 @@ export class LiveClassController {
     try {
       const workoutId = Number(req.params.workoutId);
       const out = await this.service.getWorkoutSteps(workoutId);
+      
+      // Debug: Log the response being sent to frontend
+      console.log('=== GET WORKOUT STEPS DEBUG (LiveClassController) ===');
+      console.log('Workout ID:', workoutId);
+      console.log('Full response:', JSON.stringify(out, null, 2));
+      console.log('Steps count:', out.steps?.length || 0);
+      console.log('Workout type:', out.workoutType);
+      console.log('Metadata:', out.metadata);
+      console.log('==================================================');
+      
       return res.json(out);
     } catch (e: any) {
       if (e.message === 'INVALID_WORKOUT_ID') return res.status(400).json({ error: e.message });
@@ -55,9 +65,19 @@ export class LiveClassController {
   submitScore = async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user) return res.status(401).json({ success: false, error: 'UNAUTHORIZED' });
+      
+      // console.log(`🎯 LiveClassController.submitScore called for user ${req.user.userId}`);
+      // console.log(`📝 Request body:`, req.body);
+      // console.log(`👤 User roles:`, req.user.roles);
+      
       const out = await this.service.submitScore(req.user.userId, req.user.roles, req.body);
+      
+      // console.log(`✅ LiveClassController.submitScore result:`, out);
       return res.json(out);
     } catch (e: any) {
+      console.error(`❌ LiveClassController.submitScore error:`, e.message);
+      console.error(`❌ Error stack:`, e.stack);
+      
       const msg = e.message || '';
       if (['CLASS_ID_REQUIRED','NOT_CLASS_COACH','ROLE_NOT_ALLOWED','NOT_BOOKED','SCORE_REQUIRED'].includes(msg))
         return res.status(msg === 'CLASS_ID_REQUIRED' || msg === 'SCORE_REQUIRED' ? 400 : 403).json({ success: false, error: msg });

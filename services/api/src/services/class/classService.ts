@@ -71,6 +71,14 @@ export class ClassService implements IClassService {
     return this.classRepository.createWorkout(workoutInfo, rounds);
   }
 
+  async updateWorkout(workoutId: number, workoutData: CreateWorkoutRequest): Promise<number> {
+    // Validate workout data
+    this.validateWorkoutData(workoutData);
+
+    const { rounds, ...workoutInfo } = workoutData;
+    return this.classRepository.updateWorkout(workoutId, workoutInfo, rounds);
+  }
+
   async getAllClasses(userId: number): Promise<ClassWithWorkout[]> {
     // Any authenticated user can list upcoming classes
     const now = new Date();

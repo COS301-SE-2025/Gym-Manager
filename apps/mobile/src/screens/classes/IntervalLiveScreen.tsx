@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, StatusBar, ScrollView,
+  View, Text, StyleSheet, StatusBar, ScrollView,
   TextInput, TouchableOpacity, ActivityIndicator, Animated
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
@@ -11,6 +12,8 @@ import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
 import { BlurView } from 'expo-blur';
+import { useImmersiveBars } from '../../hooks/useImmersiveBars';
+
 
 type R = RouteProp<AuthStackParamList, 'IntervalLive'>;
 
@@ -193,8 +196,9 @@ export default function IntervalLiveScreen() {
   const next    = ready && nextIdx >= 0 ? steps[nextIdx] : undefined;
 
   return (
-    <SafeAreaView style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#101010" />
+    <View style={s.root}>
+      <StatusBar hidden={true} />
+      <SafeAreaView style={s.safeArea} edges={['left', 'right']}>
 
       <View style={s.topHeader}>
         <Text style={s.timer}>{fmtClock(displayElapsed)}</Text>
@@ -229,13 +233,11 @@ export default function IntervalLiveScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 26 }}>
-        {Object.keys(grouped).map(rKey => {
-          const r = Number(rKey);
+        {Object.keys(grouped).map(Number).sort((a, b) => a - b).map(r => {
           const subs = grouped[r];
           return (
             <View key={`round-${r}`} style={s.roundBox}>
-              {Object.keys(subs).map(srKey => {
-                const sr = Number(srKey);
+              {Object.keys(subs).map(Number).sort((a, b) => a - b).map(sr => {
                 const exs = subs[sr];
                 return (
                   <View key={`sub-${r}-${sr}`} style={s.subBox}>
@@ -366,13 +368,15 @@ export default function IntervalLiveScreen() {
           </Animated.View>
         </View>
       )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 
 }
 
 const s = StyleSheet.create({
   root: { flex:1, backgroundColor:'#101010' },
+  safeArea: { flex: 1 },
 
   topHeader: { paddingTop:8, alignItems:'center' },
   timer: { color:'#e6e6e6', fontWeight:'900', fontSize:30, letterSpacing:2 },

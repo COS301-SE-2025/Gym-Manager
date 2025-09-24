@@ -1,8 +1,9 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, SafeAreaView, StatusBar,
+  View, Text, StyleSheet, Pressable, StatusBar,
   Modal, TextInput, TouchableOpacity, ActivityIndicator, Animated
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { BlurView } from 'expo-blur';
@@ -13,6 +14,8 @@ import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardReal
 import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
+import { useImmersiveBars } from '../../hooks/useImmersiveBars';
+
 
 type R = RouteProp<AuthStackParamList, 'AmrapLive'>;
 
@@ -26,6 +29,7 @@ function useNowSec() {
 }
 
 export default function AmrapLiveScreen() {
+
   const { params } = useRoute<R>();
   const classId = params.classId as number;
   const nav = useNavigation<any>();
@@ -166,36 +170,37 @@ export default function AmrapLiveScreen() {
   const next     = ready ? steps[(localIdx + 1) % Math.max(1, stepCount)] : undefined;
 
   return (
-    <SafeAreaView style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#0d150f" />
+    <View style={s.root}>
+      <StatusBar hidden={true} />
+      <SafeAreaView style={s.safeArea} edges={['left', 'right']}>
 
       {/* single timer */}
       <View pointerEvents="none" style={s.topOverlay}>
-        <Text style={s.timeTop}>{fmt(elapsed)}</Text>
+        <Text style={s.timeTop} pointerEvents="none">{fmt(elapsed)}</Text>
       </View>
 
       {/* centered content */}
       <View pointerEvents="box-none" style={s.centerOverlay}>
         {!ready ? (
           <>
-            <ActivityIndicator size="large" color="#D8FF3E" />
-            <Text style={{ color: '#a5a5a5', marginTop: 10, fontWeight: '700' }}>Getting class ready…</Text>
+            <ActivityIndicator size="large" color="#D8FF3E" pointerEvents="none" />
+            <Text style={{ color: '#a5a5a5', marginTop: 10, fontWeight: '700' }} pointerEvents="none">Getting class ready…</Text>
           </>
         ) : (
           <>
-            <Text style={s.stepCounter}>
+            <Text style={s.stepCounter} pointerEvents="none">
               {String(localIdx + 1).padStart(2,'0')} / {String(stepCount).padStart(2,'0')}
               {typeof progress.rounds_completed === 'number' ? `   •   Rounds: ${progress.rounds_completed}` : ''}
             </Text>
-            {!!scoreSoFar && <Text style={s.score}>{scoreSoFar} reps</Text>}
-            <Text style={s.current}>{current?.name ?? '—'}</Text>
-            <Text style={s.nextLabel}>Next: {next?.name ?? '—'}</Text>
+            {!!scoreSoFar && <Text style={s.score} pointerEvents="none">{scoreSoFar} reps</Text>}
+            <Text style={s.current} pointerEvents="none">{current?.name ?? '—'}</Text>
+            <Text style={s.nextLabel} pointerEvents="none">Next: {next?.name ?? '—'}</Text>
 
-            <View style={[s.lb, { zIndex: 50, elevation: 6 }]} pointerEvents="auto">
-              <Text style={s.lbTitle}>Leaderboard</Text>
+            <View style={[s.lb, { zIndex: 50, elevation: 6 }]} pointerEvents="box-none">
+              <Text style={s.lbTitle} pointerEvents="none">Leaderboard</Text>
 
               {/* RX/SC filter */}
-              <View style={{ flexDirection:'row', justifyContent:'center', gap:6, marginBottom:8 }}>
+              <View style={{ flexDirection:'row', justifyContent:'center', gap:6, marginBottom:8 }} pointerEvents="auto">
                 {(['ALL','RX','SC'] as const).map(opt => (
                   <TouchableOpacity
                     key={opt}
@@ -217,12 +222,12 @@ export default function AmrapLiveScreen() {
                     ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
                     : (r.name ?? `User ${r.user_id}`);
                 return (
-                  <View key={`${r.user_id}-${i}`} style={s.lbRow}>
-                    <Text style={s.lbPos}>{i+1}</Text>
-                    <Text style={s.lbUser}>
-                      {displayName} <Text style={{ color:'#9aa' }}>({(r.scaling ?? 'RX')})</Text>
+                  <View key={`${r.user_id}-${i}`} style={s.lbRow} pointerEvents="none">
+                    <Text style={s.lbPos} pointerEvents="none">{i+1}</Text>
+                    <Text style={s.lbUser} pointerEvents="none">
+                      {displayName} <Text style={{ color:'#9aa' }} pointerEvents="none">({(r.scaling ?? 'RX')})</Text>
                     </Text>
-                    <Text style={s.lbScore}>
+                    <Text style={s.lbScore} pointerEvents="none">
                       {r.finished ? fmt(Number(r.elapsed_seconds ?? 0)) : `${Number(r.total_reps ?? 0)} reps`}
                     </Text>
                   </View>
@@ -266,7 +271,8 @@ export default function AmrapLiveScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -279,6 +285,7 @@ function fmt(t: number) {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0d150f' },
+  safeArea: { flex: 1 },
   row: { flex: 1, flexDirection: 'row' },
   back: { flex: 1, backgroundColor: '#2b0f0f' },
   next: { flex: 3, backgroundColor: '#0f1a13' },

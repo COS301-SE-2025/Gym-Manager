@@ -17,7 +17,7 @@ export class LiveClassController {
       return res.json(session);
     } catch (e: any) {
       if (e.message === 'INVALID_CLASS_ID') return res.status(400).json({ error: e.message });
-      return res.status(500).json({ error: 'SESSION_FETCH_FAILED' });
+      return res.status(500).json({ error: e.message});
     }
   };
 
@@ -45,6 +45,16 @@ export class LiveClassController {
     try {
       const workoutId = Number(req.params.workoutId);
       const out = await this.service.getWorkoutSteps(workoutId);
+      
+      // Debug: Log the response being sent to frontend
+      console.log('=== GET WORKOUT STEPS DEBUG (LiveClassController) ===');
+      console.log('Workout ID:', workoutId);
+      console.log('Full response:', JSON.stringify(out, null, 2));
+      console.log('Steps count:', out.steps?.length || 0);
+      console.log('Workout type:', out.workoutType);
+      console.log('Metadata:', out.metadata);
+      console.log('==================================================');
+      
       return res.json(out);
     } catch (e: any) {
       if (e.message === 'INVALID_WORKOUT_ID') return res.status(400).json({ error: e.message });
@@ -390,4 +400,25 @@ export class LiveClassController {
       return res.status(code).json({ error: msg || 'SCALING_SAVE_FAILED' });
     }
   };
+
+  // inside LiveClassController
+
+  emomSetTotal = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId      = Number(req.params.classId);
+      const userId       = Number(req.body?.userId);
+      const totalSeconds = Math.max(0, Number(req.body?.totalSeconds ?? 0));
+      await this.service.coachEmomSetTotalEndedOnly(classId, req.user!.userId, userId, totalSeconds);
+      return res.json({ ok: true });
+    } catch (e: any) {
+      const msg  = e.message || '';
+      const code = msg === 'SESSION_NOT_FOUND' ? 404
+                : msg === 'NOT_ENDED'        ? 409
+                : msg === 'NOT_BOOKED'       ? 403
+                : msg === 'NOT_CLASS_COACH'  ? 403
+                : 500;
+      return res.status(code).json({ error: msg || 'EMOM_SET_TOTAL_FAILED' });
+    }
+  };
+
 }

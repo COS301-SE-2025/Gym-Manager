@@ -24,6 +24,7 @@ export interface ILiveClassService {
 }
 
 export interface ILiveClassRepository {
+  upsertFinal: any;
   persistScoresFromLive(classId: number): unknown;
   upsertScaling(classId: number, userId: number, scaling: string): unknown;
   getScaling(classId: number, userId: number): "RX" | "SC" | PromiseLike<"RX" | "SC">;
@@ -36,6 +37,7 @@ export interface ILiveClassRepository {
 
   getFlattenRowsForWorkout(workoutId: number): Promise<any[]>;
   getWorkoutType(workoutId: number): Promise<string | null>;
+  getWorkoutTypeAndMetadata(workoutId: number): Promise<{ type: string | null; metadata: any }>;
 
   getClassMeta(classId: number): Promise<any>;
   getWorkoutMetadata(workoutId: number): Promise<any>

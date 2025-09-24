@@ -1,12 +1,16 @@
 // src/screens/classes/LiveClassEndScreen.tsx
 import React, { useMemo, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { View, Text, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSession } from '../../hooks/useSession';
 import { useMyProgress } from '../../hooks/useMyProgress';
 import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { getUser } from '../../utils/authStorage';
+import { useImmersiveBars } from '../../hooks/useImmersiveBars';
+
 
 type R = RouteProp<AuthStackParamList, 'LiveClassEnd'>;
 
@@ -28,7 +32,9 @@ function fmt(t: number) {
 }
 
 export default function LiveClassEndScreen() {
+  useImmersiveBars();
   const { params } = useRoute<R>();
+  const nav = useNavigation<any>();
   const classId = params.classId as number;
 
   const session = useSession(classId);
@@ -107,10 +113,29 @@ export default function LiveClassEndScreen() {
     return `${reps} reps`;
   }, [session, prog, lb, myUserId, type]);
 
+  const goBackSmart = () => {
+    try {
+      if (typeof nav.canGoBack === 'function' && nav.canGoBack()) {
+        nav.goBack();
+        return;
+      }
+    } catch {}
+    // Fallback: attempt a home-like route, otherwise reset stack
+    try { nav.navigate('Home'); return; } catch {}
+    try { nav.navigate('Root'); return; } catch {}
+    nav.popToTop();
+  };
+
   return (
-    <SafeAreaView style={s.root}>
+    <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#111" />
       <View style={s.pad}>
+        {/* Back button */}
+        <TouchableOpacity style={s.backBtn} onPress={goBackSmart} accessibilityLabel="Back">
+          <Ionicons name="chevron-back" size={20} color="#d8ff3e" />
+          <Text style={s.backText}>Back</Text>
+        </TouchableOpacity>
+
         <Text style={s.title}>Nice work! 🎉</Text>
         <Text style={s.sub}>Your score</Text>
         <Text style={s.big}>{myScore}</Text>
@@ -160,10 +185,31 @@ export default function LiveClassEndScreen() {
 
 const s = StyleSheet.create({
   root:{ flex:1, backgroundColor:'#101010' },
-  pad:{ flex:1, padding:20 },
+  pad:{ flex:1, padding:20, paddingTop: 8 },
+
+  backBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 10,
+  },
+  backText: { color: '#d8ff3e', fontWeight: '900' },
+
   title:{ color:'#d8ff3e', fontWeight:'900', fontSize:28 },
   sub:{ color:'#9aa', marginTop:8 },
   big:{ color:'#fff', fontWeight:'900', fontSize:36, marginTop:4 },
+
+  btnPrimary:{
+    backgroundColor:'#d8ff3e',
+    padding:14,
+    borderRadius:10,
+    alignItems:'center',
+    flexDirection:'row',
+    justifyContent:'center'
+  },
+  btnPrimaryText:{ color:'#111', fontWeight:'900' },
+
   lb:{ backgroundColor:'#1a1a1a', borderRadius:14, padding:14, marginTop:20 },
   lbTitle:{ color:'#fff', fontWeight:'800', marginBottom:8 },
   row:{ flexDirection:'row', alignItems:'center', paddingVertical:6 },

@@ -3,6 +3,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AuthNavigator from './src/navigation/AuthNavigator';
+import { useEffect } from 'react';
+
 
 export default function App() {
   return (

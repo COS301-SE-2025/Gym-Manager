@@ -20,7 +20,7 @@ export default function LeaderboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'streak' | 'points'>('streak');
 
-  const loadLeaderboards = async () => {
+  const loadLeaderboards = async (isInitialLoad = false) => {
     try {
       const [streakData, pointsData] = await Promise.all([
         gamificationService.getStreakLeaderboard(20),
@@ -32,18 +32,23 @@ export default function LeaderboardScreen() {
       console.error('Error loading leaderboards:', error);
       Alert.alert('Error', 'Failed to load leaderboard data');
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (isInitialLoad) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    loadLeaderboards();
+    loadLeaderboards(true);
   }, []);
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    loadLeaderboards();
+    try {
+      await loadLeaderboards(false);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const getCurrentLeaderboard = () => {
@@ -154,7 +159,11 @@ export default function LeaderboardScreen() {
           renderItem={renderLeaderboardItem}
           keyExtractor={(item, index) => `${activeTab}-${index}`}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              tintColor="#D8FF3E"
+            />
           }
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}

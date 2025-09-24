@@ -9,7 +9,7 @@ import { CalendarEvent, User } from '../../types/types';
 import { getDummyCalendarEvents, transformApiDataToEvents } from '../../utils/calendarHelpers';
 import { userRoleService } from '../services/roles';
 import ClassCreationModal from '@/components/modals/CreateClass/CreateClass';
-import AssignCoachModal from '@/components/modals/AssignCoach/AssignCoach';
+import ClassDetailsModal from '@/components/modals/AssignCoach/AssignCoach';
 import { ClassResource } from '@/components/modals/AssignCoach/AssignCoach';
 import Link from 'next/link';
 import axios from 'axios';
@@ -509,7 +509,7 @@ export default function DashboardPage() {
           setIsClassModalOpen(false);
         }}
       />
-      <AssignCoachModal
+      <ClassDetailsModal
         isOpen={assignModalOpen}
         onClose={() => setAssignModalOpen(false)}
         classInfo={selectedClassInfo}

@@ -93,10 +93,56 @@ const WorkoutDetailScreen = ({ route, navigation }: WorkoutDetailScreenProps) =>
   const { workout } = route.params;
   const [workoutStats, setWorkoutStats] = useState<DetailedWorkoutStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [calculatedEffortLevel, setCalculatedEffortLevel] = useState<number | null>(null);
 
   useEffect(() => {
     loadWorkoutData();
   }, []);
+
+  // Calculate effort level based on heart rate zones and duration
+  const calculateEffortLevel = (stats: DetailedWorkoutStats): number => {
+    if (!stats.heartRate?.zones || !stats.workout?.duration) {
+      return 1; // Default to very easy if no data
+    }
+
+    const zones = stats.heartRate.zones;
+    const duration = stats.workout.duration; // in minutes
+    
+    // Calculate weighted effort score based on time spent in each zone
+    const zoneWeights = {
+      resting: 0.1,    // Very light effort
+      fatBurn: 0.3,   // Light effort  
+      cardio: 0.7,    // Moderate effort
+      peak: 1.0       // High effort
+    };
+
+    // Calculate total time in each zone (assuming percentages of total duration)
+    const totalZoneTime = zones.resting + zones.fatBurn + zones.cardio + zones.peak;
+    
+    if (totalZoneTime === 0) return 1;
+
+    const restingTime = (zones.resting / totalZoneTime) * duration;
+    const fatBurnTime = (zones.fatBurn / totalZoneTime) * duration;
+    const cardioTime = (zones.cardio / totalZoneTime) * duration;
+    const peakTime = (zones.peak / totalZoneTime) * duration;
+
+    // Calculate weighted effort score
+    const effortScore = 
+      (restingTime * zoneWeights.resting) +
+      (fatBurnTime * zoneWeights.fatBurn) +
+      (cardioTime * zoneWeights.cardio) +
+      (peakTime * zoneWeights.peak);
+
+    // Normalize effort score to 1-5 scale based on duration
+    const normalizedScore = effortScore / duration;
+    
+    // Map to effort levels (1-5)
+    if (normalizedScore <= 0.2) return 1;      // Very Easy
+    if (normalizedScore <= 0.4) return 2;      // Easy  
+    if (normalizedScore <= 0.6) return 3;      // Moderate
+    if (normalizedScore <= 0.8) return 4;      // Hard
+    return 5;                                  // Very Hard
+  };
 
 
 const loadWorkoutData = async () => {
@@ -193,7 +239,13 @@ const loadWorkoutData = async () => {
     }
     const trackedWorkout = workoutSessions[0]; 
     const detailedStats = await getDetailedWorkoutStats(healthKit, trackedWorkout);
-    setWorkoutStats({ hasWorkout: true, ...detailedStats });
+    const fullStats = { hasWorkout: true, ...detailedStats };
+    setWorkoutStats(fullStats);
+
+    // Calculate effort level based on heart rate data
+    const effortLevel = calculateEffortLevel(fullStats);
+    setCalculatedEffortLevel(effortLevel);
+    console.log('Calculated effort level:', effortLevel);
 
   } catch (error) {
     console.error('Error loading workout data:', error);
@@ -515,13 +567,15 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
         resolve([]);
         return;
       }
-      const energyData = results ? [{
-        id: `energy_${Date.now()}`,
-        value: results.value || 0,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        metadata: results.metadata || {}
-      }] : [];
+      // HealthKit returns an array of energy samples, process them correctly
+      const energyData = results && Array.isArray(results) && results.length > 0 ? 
+        results.map((sample: any, index: number) => ({
+          id: `energy_${Date.now()}_${index}`,
+          value: sample.value || 0,
+          startDate: sample.startDate || startDate.toISOString(),
+          endDate: sample.endDate || endDate.toISOString(),
+          metadata: sample.metadata || {}
+        })) : [];
 
       console.log('Mapped energy data:', energyData);
       console.log('--- getActiveEnergySamples END ---\n');
@@ -543,9 +597,9 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
     // Energy Analysis
     const totalEnergy = energySamples.reduce((sum, energy) => sum + (energy.value || 0), 0);
     const energyStats: EnergyStats = {
-      totalCalories: Math.round(totalEnergy),
-      averagePerMinute: workout.duration > 0 ? Math.round(totalEnergy / workout.duration) : 0,
-      peakBurningRate: energySamples.length > 0 ? Math.max(...energySamples.map(e => e.value || 0)) : 0
+      totalCalories: Math.round(totalEnergy * 100) / 100, // Round to 2 decimal places
+      averagePerMinute: workout.duration > 0 ? Math.round((totalEnergy / workout.duration) * 100) / 100 : 0, // Round to 2 decimal places
+      peakBurningRate: energySamples.length > 0 ? Math.round(Math.max(...energySamples.map(e => e.value || 0)) * 100) / 100 : 0 // Round to 2 decimal places
     };
 
     // Activity Analysis
@@ -803,6 +857,59 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
     </View>
   );
 };
+  const EffortLevelGraph = ({ calculatedLevel }: { 
+    calculatedLevel: number | null; 
+  }) => {
+    const effortLevels = [
+      { level: 1, label: 'Very Easy' },
+      { level: 2, label: 'Easy' },
+      { level: 3, label: 'Moderate' },
+      { level: 4, label: 'Hard' },
+      { level: 5, label: 'Very Hard' },
+    ];
+
+    const getBarHeight = (level: number) => {
+      return 20 + (level * 12); // More subtle height progression
+    };
+
+    return (
+      <View style={styles.effortContainer}>
+        {/* Visual Bars */}
+        <View style={styles.effortBarsContainer}>
+          {effortLevels.map((effort) => (
+            <View
+              key={effort.level}
+              style={styles.effortBarWrapper}
+            >
+              <View 
+                style={[
+                  styles.effortBar,
+                  { 
+                    height: getBarHeight(effort.level),
+                    backgroundColor: calculatedLevel === effort.level ? '#D8FF3E' : 'rgba(255, 255, 255, 0.4)',
+                  }
+                ]}
+              />
+              <View style={styles.effortDot} />
+            </View>
+          ))}
+        </View>
+
+        {/* Calculated Effort Display */}
+        {calculatedLevel && (
+          <View style={styles.selectedEffortContainer}>
+            <View style={styles.selectedEffortBadge}>
+              <Text style={styles.selectedEffortNumber}>{calculatedLevel}</Text>
+            </View>
+            <Text style={styles.selectedEffortLabel}>
+              {effortLevels.find(e => e.level === calculatedLevel)?.label || 'Unknown'}
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   const DetailedWorkoutStats = ({ stats }: { stats: DetailedWorkoutStats }) => (
     <ScrollView style={styles.statsContainer}>
       {/* Workout Header */}
@@ -872,15 +979,15 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
         <Text style={styles.sectionTitle}>Energy</Text>
         <View style={styles.energyGrid}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.energy?.totalCalories || 0}</Text>
+            <Text style={styles.statValue}>{(stats.energy?.totalCalories || 0).toFixed(2)}</Text>
             <Text style={styles.statLabel}>Total Calories</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.energy?.averagePerMinute || 0}</Text>
+            <Text style={styles.statValue}>{(stats.energy?.averagePerMinute || 0).toFixed(2)}</Text>
             <Text style={styles.statLabel}>Cal/Min</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.energy?.peakBurningRate || 0}</Text>
+            <Text style={styles.statValue}>{(stats.energy?.peakBurningRate || 0).toFixed(2)}</Text>
             <Text style={styles.statLabel}>Peak Rate</Text>
           </View>
         </View>
@@ -903,6 +1010,14 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
             <Text style={styles.statLabel}>Distance (km)</Text>
           </View>
         </View>
+      </View>
+
+      {/* Effort Level Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Effort Level</Text>
+        <EffortLevelGraph 
+          calculatedLevel={calculatedEffortLevel}
+        />
       </View>
     </ScrollView>
   );
@@ -1168,6 +1283,66 @@ const styles = StyleSheet.create({
   noDataText: {
     color: '#888',
     fontSize: 14,
+  },
+  // Effort Level Styles - Apple Watch Design
+  effortContainer: {
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  effortBarsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    height: 100,
+    marginBottom: 30,
+    gap: 20,
+  },
+  effortBarWrapper: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    flex: 1,
+    maxWidth: 40,
+  },
+  effortBar: {
+    width: 55,
+    borderRadius: 12.5,
+    marginBottom: 12,
+  },
+  effortDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+  },
+  selectedEffortContainer: {
+    backgroundColor: 'rgba(216, 255, 62, 0.15)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(216, 255, 62, 0.3)',
+  },
+  selectedEffortBadge: {
+    backgroundColor: '#D8FF3E',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  selectedEffortNumber: {
+    color: '#1a1a1a',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  selectedEffortLabel: {
+    color: '#D8FF3E',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 

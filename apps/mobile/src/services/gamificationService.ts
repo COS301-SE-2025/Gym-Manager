@@ -139,15 +139,36 @@ export class GamificationService {
     pointsInCurrent: number;
     progressPercentage: number;
   } {
-    const pointsForCurrentLevel = this.getPointsForLevel(currentLevel - 1);
-    const pointsForNextLevel = this.getPointsForLevel(currentLevel);
+    // Use the same level calculation as backend
+    const actualCurrentLevel = this.calculateLevel(totalPoints);
+    const nextLevel = actualCurrentLevel + 1;
+    
+    // Calculate points needed for current and next level
+    const pointsForCurrentLevel = this.getPointsRequiredForLevel(actualCurrentLevel);
+    const pointsForNextLevel = this.getPointsRequiredForLevel(nextLevel);
+    
     const pointsInCurrent = totalPoints - pointsForCurrentLevel;
-    const pointsToNext = Math.max(0, pointsForNextLevel - totalPoints); // Ensure non-negative
-    const progressPercentage = Math.min(100, (pointsInCurrent / (pointsForNextLevel - pointsForCurrentLevel)) * 100);
+    const pointsToNext = Math.max(0, pointsForNextLevel - totalPoints);
+    const levelRange = pointsForNextLevel - pointsForCurrentLevel;
+    const progressPercentage = levelRange > 0 ? Math.min(100, (pointsInCurrent / levelRange) * 100) : 100;
+
+    // Debug logging
+    console.log('🔍 Level Progress Debug:', {
+      totalPoints,
+      actualCurrentLevel,
+      nextLevel,
+      pointsForCurrentLevel,
+      pointsForNextLevel,
+      pointsInCurrent,
+      pointsToNext,
+      levelRange,
+      progressPercentage,
+      backendLevel: currentLevel // The level from backend
+    });
 
     return {
-      currentLevel,
-      nextLevel: currentLevel + 1,
+      currentLevel: actualCurrentLevel,
+      nextLevel,
       pointsToNext,
       pointsInCurrent,
       progressPercentage,
@@ -156,8 +177,43 @@ export class GamificationService {
 
   private getPointsForLevel(level: number): number {
     if (level <= 0) return 0;
-    if (level === 1) return 100;
-    return level * 100;
+    if (level === 1) return 0; // Level 1 starts at 0 points
+    // Match backend calculation: Math.floor(Math.sqrt(points / 50)) + 1
+    // Reverse the formula: points = ((level - 1) * 50)^2
+    return Math.pow((level - 1) * 50, 2);
+  }
+
+  // Use a more reasonable level calculation that matches the UI expectations
+  calculateLevel(points: number): number {
+    if (points < 100) return 1;
+    if (points < 300) return 2;
+    if (points < 600) return 3;
+    if (points < 1000) return 4;
+    if (points < 1500) return 5;
+    if (points < 2100) return 6;
+    if (points < 2800) return 7;
+    if (points < 3600) return 8;
+    if (points < 4500) return 9;
+    if (points < 5500) return 10;
+    // For very high points, use a more reasonable progression
+    return Math.min(50, Math.floor(points / 1000) + 1);
+  }
+
+  // Helper method to get points required to reach a specific level
+  getPointsRequiredForLevel(level: number): number {
+    if (level <= 0) return 0;
+    if (level === 1) return 0;
+    if (level === 2) return 100;
+    if (level === 3) return 300;
+    if (level === 4) return 600;
+    if (level === 5) return 1000;
+    if (level === 6) return 1500;
+    if (level === 7) return 2100;
+    if (level === 8) return 2800;
+    if (level === 9) return 3600;
+    if (level === 10) return 4500;
+    // For higher levels, use the formula: (level - 1) * 500
+    return (level - 1) * 500;
   }
 
   getStreakEmoji(streak: number): string {

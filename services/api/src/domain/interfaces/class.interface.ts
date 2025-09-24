@@ -19,6 +19,7 @@ export interface IClassService {
   getCoachClassesWithWorkouts(coachId: number): Promise<ClassWithWorkout[]>;
   assignWorkoutToClass(coachId: number, classId: number, workoutId: number): Promise<void>;
   createWorkout(workoutData: CreateWorkoutRequest): Promise<number>;
+  updateWorkout(workoutId: number, workoutData: CreateWorkoutRequest): Promise<number>;
   getAllClasses(userId: number): Promise<ClassWithWorkout[]>;
   getMemberClasses(memberId: number): Promise<ClassWithWorkout[]>;
   getMemberUnbookedClasses(memberId: number): Promise<ClassWithWorkout[]>;
@@ -32,6 +33,7 @@ export interface IClassRepository {
   findAssignedClassesWithWorkoutsByCoach(coachId: number): Promise<ClassWithWorkout[]>;
   updateWorkoutForClass(classId: number, workoutId: number): Promise<void>;
   createWorkout(workoutData: Omit<Workout, 'workoutId'>, rounds: any[]): Promise<number>;
+  updateWorkout(workoutId: number, workoutData: Omit<Workout, 'workoutId'>, rounds: any[]): Promise<number>;
   getUpcomingClassesForMembers(condition: any): Promise<ClassWithWorkout[]>;
   getBookedClassesForMember(memberId: number, condition: any): Promise<ClassWithWorkout[]>;
   getUnbookedClassesForMember(memberId: number, condition: any): Promise<ClassWithWorkout[]>;

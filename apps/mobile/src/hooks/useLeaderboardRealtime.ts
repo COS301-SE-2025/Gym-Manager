@@ -36,10 +36,10 @@ export function useLeaderboardRealtime(classId: number, filter: LbFilter = 'ALL'
     refresh();
 
     const ch = supabase.channel(`lb-${classId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'class_sessions',       filter: `class_id=eq.${classId}`}, refresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_progress',        filter: `class_id=eq.${classId}`}, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'class_sessions', filter: `class_id=eq.${classId}`}, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_progress', filter: `class_id=eq.${classId}`}, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'live_interval_scores', filter: `class_id=eq.${classId}`}, refresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'classattendance',      filter: `class_id=eq.${classId}`}, refresh) // NEW: watch scaling & final scores
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'classattendance', filter: `class_id=eq.${classId}`}, refresh) // NEW: watch scaling & final scores
       .subscribe();
 
     const poll = setInterval(refresh, 2500);

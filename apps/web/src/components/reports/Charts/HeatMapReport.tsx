@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import HeatmapGrid from './HeatmapGrid';
-import { reportsService } from '../../app/services/reports';
+import { reportsService } from '../../../app/services/reports';
 
 interface HeatmapData {
   x_labels: string[];
@@ -85,13 +85,18 @@ export default function HeatMapReport() {
     try {
       const utilizationData = await reportsService.getGymUtilization(weekStartDate);
       // Extract only the heat map data, not the business hours data
-      setData({
-        x_labels: utilizationData.x_labels,
-        y_labels: utilizationData.y_labels,
-        values: utilizationData.values
-      });
+      if (utilizationData) { //check needed for eslint
+        setData({
+          x_labels: utilizationData.x_labels,
+          y_labels: utilizationData.y_labels,
+          values: utilizationData.values
+        });
+      } else {
+        setData(null); //undefined data
+      }
     } catch (error) {
       console.error('Failed to fetch gym utilization data:', error);
+      setData(null);
     } finally {
       setLoading(false);
     }

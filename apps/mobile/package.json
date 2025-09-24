@@ -48,7 +48,9 @@
     "react-native-url-polyfill": "^2.0.0",
     "react-native-vector-icons": "^10.2.0",
     "react-redux": "^9.2.0",
-    "yup": "^1.6.1"
+    "yup": "^1.6.1",
+    "expo-blur": "~14.1.5",
+    "expo-navigation-bar": "~4.2.8"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

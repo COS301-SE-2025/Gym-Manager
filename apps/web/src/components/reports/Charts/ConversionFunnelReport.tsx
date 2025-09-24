@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CustomChart } from '@/components/Chart/CustomChart';
+import { CustomChart } from '@/components/reports/Charts/CustomChartHolder/CustomChart';
 import { reportsService } from '@/app/services/reports';
 
 export default function ConversionFunnelReport() {
@@ -15,14 +15,20 @@ export default function ConversionFunnelReport() {
 
   return (
     <div>
-      <h3>Conversion Funnel</h3>
+      <h3>From signup to attending class</h3>
       <div style={{ height: 360 }}>
-        {/* conversion funnel often visualised as bar/pyramid — use bar for simplicity */}
+        {/* conversion funnel often visualised as bar/pyramid — used bar for simplicity */}
         <CustomChart
           type="bar"
           labels={funnel.labels}
           datasets={funnel.datasets}
-          options={{ indexAxis: 'y', responsive: true }}
+          options={{ indexAxis: 'y', 
+            responsive: true, 
+            plugins: {
+            legend: {
+              display: false
+            }
+          } }}
         />
       </div>
     </div>

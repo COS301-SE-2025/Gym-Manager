@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   TouchableOpacity,
@@ -12,6 +11,7 @@ import {
   Linking,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import IconLogo from '../../components/common/IconLogo';
 import { getUser, User, removeToken, removeUser } from '../../utils/authStorage';
@@ -20,6 +20,9 @@ import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { CoachStackParamList } from '../../navigation/CoachNavigator';
 import { getUserSettings, updateUserVisibility } from '../../services/userSettings';
 import { supabase } from '../../lib/supabase';
+import { StreakCard } from '../../components/gamification/StreakCard';
+import { gamificationService } from '../../services/gamificationService';
+import { GamificationStats } from '../../types/gamification';
 
 type ProfileScreenNavigationProp = StackNavigationProp<AuthStackParamList & CoachStackParamList>;
 
@@ -32,6 +35,8 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [gamificationStats, setGamificationStats] = useState<GamificationStats | null>(null);
+  const [isLoadingGamification, setIsLoadingGamification] = useState(false);
 
   const isCoach = !!currentUser?.roles?.includes('coach');
   const isMember = !!currentUser?.roles?.includes('member');
@@ -60,6 +65,19 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         } else {
           // Hide switch and avoid calling settings routes for coach-only users
           setIsLeaderboardPublic(null);
+        }
+
+        // Load gamification stats for members
+        if (isMember) {
+          try {
+            setIsLoadingGamification(true);
+            const stats = await gamificationService.getGamificationStats();
+            setGamificationStats(stats);
+          } catch (error) {
+            console.error('Failed to load gamification stats:', error);
+          } finally {
+            setIsLoadingGamification(false);
+          }
         }
       } catch (error) {
         console.error('Failed to load user data:', error);
@@ -186,7 +204,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
 
       {/* Header */}
@@ -212,6 +230,47 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             </View>
           </View>
         </View>
+
+        {/* Gamification Section - Only for members */}
+        {isMember && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Progress</Text>
+            
+            {isLoadingGamification ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#D8FF3E" />
+                <Text style={styles.loadingText}>Loading your progress...</Text>
+              </View>
+            ) : gamificationStats ? (
+              <View>
+                <StreakCard 
+                  streak={gamificationStats.userStreak} 
+                  onPress={() => navigation.navigate('MemberTabs', { screen: 'Progress' })}
+                />
+                
+                <TouchableOpacity
+                  style={styles.settingItem}
+                  onPress={() => navigation.navigate('MemberTabs', { screen: 'Progress' })}
+                >
+                  <View style={styles.settingLeft}>
+                    <Ionicons name="trophy-outline" size={24} color="#D8FF3E" />
+                    <View style={styles.settingText}>
+                      <Text style={styles.settingTitle}>View All Progress</Text>
+                      <Text style={styles.settingDescription}>
+                        See badges, leaderboards, and detailed stats
+                      </Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={24} color="#888" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.emptyStateContainer}>
+                <Text style={styles.emptyStateText}>Start working out to see your progress!</Text>
+              </View>
+            )}
+          </View>
+        )}
 
                 {/* Settings Section */}
                 <View style={styles.section}>
@@ -361,7 +420,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#232323',
   },
@@ -506,5 +566,17 @@ const styles = StyleSheet.create({
   },
   switchLoader: {
     marginRight: 8,
+  },
+  emptyStateContainer: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  emptyStateText: {
+    color: '#888',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

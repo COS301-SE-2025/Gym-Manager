@@ -25,6 +25,11 @@
       "edgeToEdgeEnabled": true,
       "package": "com.trainwise.gymmanager"
     },
+    "androidStatusBar": {
+      "hidden": true,
+      "translucent": true,
+      "backgroundColor": "#000000"
+    },
     "web": {
       "favicon": "./assets/favicon.png"
     },

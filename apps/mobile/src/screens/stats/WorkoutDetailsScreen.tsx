@@ -74,6 +74,7 @@ interface DetailedWorkoutStats {
   hasWorkout: boolean;
   workout?: WorkoutSession;
   heartRate?: HeartRateStats;
+  heartRateSamples?: HeartRateData[];
   energy?: EnergyStats;
   activity?: ActivityStats;
   duration?: number;
@@ -342,6 +343,7 @@ const getDetailedWorkoutStats = async (healthKit: any, workout: WorkoutSession):
         },
         samples: 0
       },
+      heartRateSamples: [],
       energy: {
         totalCalories: 0,
         averagePerMinute: 0,
@@ -376,6 +378,7 @@ const getDetailedWorkoutStats = async (healthKit: any, workout: WorkoutSession):
         },
         samples: 0
       },
+      heartRateSamples: [],
       energy: {
         totalCalories: 0,
         averagePerMinute: 0,
@@ -556,6 +559,7 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
     return {
       workout,
       heartRate: heartRateStats,
+      heartRateSamples: hrSamples,
       energy: energyStats,
       activity: activityStats,
       duration: workout.duration
@@ -711,10 +715,23 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
   
     // Convert heart rate samples to chart data
     const chartData = {
-      labels: heartRateSamples.map((_, index) => {
-        // Show time labels every 5 samples to avoid crowding
-        if (index % 5 === 0) {
-          const date = new Date(heartRateSamples[index].startDate);
+      labels: heartRateSamples.map((sample, index) => {
+        const totalSamples = heartRateSamples.length;
+        // Show labels only at beginning, middle, and end
+        if (index === 0) {
+          const date = new Date(sample.startDate);
+          return date.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+        } else if (index === Math.floor(totalSamples / 2)) {
+          const date = new Date(sample.startDate);
+          return date.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+        } else if (index === totalSamples - 1) {
+          const date = new Date(sample.startDate);
           return date.toLocaleTimeString('en-US', { 
             hour: '2-digit', 
             minute: '2-digit' 
@@ -734,20 +751,24 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
       backgroundGradientFrom: '#2a2a2a',
       backgroundGradientTo: '#2a2a2a',
       decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(216, 255, 62, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-    style: {
-      borderRadius: 16
-    },
-    propsForDots: {
-      r: '3',
-      strokeWidth: '2',
-      stroke: '#D8FF3E'
-    },
-    propsForBackgroundLines: {
-      strokeDasharray: '5,5',
-      stroke: 'rgba(255, 255, 255, 0.1)'
-    }
+      color: (opacity = 1) => `rgba(216, 255, 62, ${opacity})`,
+      labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`, // Restore white labels
+      style: {
+        borderRadius: 16
+      },
+      propsForDots: {
+        r: '3',
+        strokeWidth: '2',
+        stroke: '#D8FF3E'
+      },
+      propsForBackgroundLines: {
+        strokeDasharray: '5,5',
+        stroke: 'rgba(255, 255, 255, 0.1)'
+      },
+      withHorizontalLabels: true,  // Show x-axis labels (beginning, middle, end)
+      withVerticalLabels: true,    // Show y-axis labels (heart rate values)
+      withInnerLines: true,        // Keep grid lines
+      withOuterLines: false        // Remove outer border lines
   };
 
   return (
@@ -813,7 +834,7 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
           </View>
         </View>
 
-        <HeartRateGraph heartRateSamples={stats.heartRate?.samples ? [] : []} />
+        <HeartRateGraph heartRateSamples={stats.heartRateSamples || []} />
 
         {/* Heart Rate Zones */}
         {stats.heartRate?.zones && (

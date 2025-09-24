@@ -23,7 +23,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.amadeusfidos.mobile"
+      "package": "com.trainwise.gymmanager"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,8 +32,6 @@
       "EXPO_PUBLIC_SUPABASE_URL": "https://uajwqpocubnhrotapire.supabase.co",
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhandxcG9jdWJuaHJvdGFwaXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NjI0MzcsImV4cCI6MjA2OTUzODQzN30.BVefkikNJHoPh5JJKTkTEaQu_bAO5eSxx-ZYNiqZZm0"
     },
-    "plugins": [
-      "react-native-health"
-    ]
+    "plugins": []
   }
 }

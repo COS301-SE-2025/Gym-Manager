@@ -45,12 +45,17 @@ export class LiveClassRepository implements ILiveClassRepository {
   }
 
   // --- Final leaderboard ---
+// repositories/liveClass/liveClassRepository.ts
   async getFinalLeaderboard(classId: number) {
     const leaderboard = await globalDb
       .select({
         classId: classattendance.classId,
         memberId: classattendance.memberId,
-        score: classattendance.score,
+        score: classattendance.score,                 // legacy/compat
+        scoreSeconds: classattendance.scoreSeconds,   // time for FT/EMOM
+        scoreReps: classattendance.scoreReps,         // reps for DNFs / AMRAP / INTERVAL / TABATA
+        finished: classattendance.finished,           // true when time-based finish
+        scaling: classattendance.scaling,             // RX/SC
         markedAt: classattendance.markedAt,
         firstName: users.firstName,
         lastName: users.lastName,
@@ -58,11 +63,11 @@ export class LiveClassRepository implements ILiveClassRepository {
       .from(classattendance)
       .innerJoin(users, eq(classattendance.memberId, users.userId))
       .innerJoin(members, eq(users.userId, members.userId))
-      .where(and(eq(classattendance.classId, Number(classId)), eq(members.publicVisibility, true)))
-      .orderBy(desc(classattendance.score));
+      .where(and(eq(classattendance.classId, Number(classId)), eq(members.publicVisibility, true)));
 
     return leaderboard;
   }
+
 
   // --- Discovery for coach ---
   async getLiveClassForCoach(userId: number) {
@@ -721,6 +726,8 @@ export class LiveClassRepository implements ILiveClassRepository {
     return rows;
   }
 
+
+
   // --- My progress ---
   // repositories/liveClass/liveClassRepository.ts
   async getMyProgress(classId: number, userId: number) {
@@ -800,15 +807,18 @@ export class LiveClassRepository implements ILiveClassRepository {
   async intervalLeaderboard(classId: number) {
     const { rows } = await globalDb.execute(sql`
       select s.user_id,
-             sum(s.reps) as total_reps,
-             u.first_name,
-             u.last_name
+            sum(s.reps)::int as total_reps,
+            u.first_name,
+            u.last_name
       from public.live_interval_scores s
-      join public.users u on u.user_id = s.user_id
+      join public.users u    on u.user_id = s.user_id
+      join public.members m  on m.user_id = s.user_id
       where s.class_id = ${classId}
+        and coalesce(m.public_visibility, true) = true
       group by s.user_id, u.first_name, u.last_name
-      order by sum(s.reps) desc, u.first_name asc
+      order by sum(s.reps) desc, u.first_name asc nulls last
     `);
+
     return rows.map((r: any) => ({
       user_id: r.user_id,
       total_reps: Number(r.total_reps ?? 0),
@@ -817,6 +827,7 @@ export class LiveClassRepository implements ILiveClassRepository {
       last_name: r.last_name,
     }));
   }
+
 
   // --- Scores ---
   async assertCoachOwnsClass(classId: number, coachId: number) {

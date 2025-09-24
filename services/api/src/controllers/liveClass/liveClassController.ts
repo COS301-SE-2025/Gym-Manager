@@ -91,11 +91,15 @@ export class LiveClassController {
       const session = await this.service.startLiveClass(classId);
       return res.json({ ok: true, session });
     } catch (e: any) {
-      if (e.message === 'CLASS_NOT_FOUND') return res.status(404).json({ error: e.message });
+      if (e.message === 'CLASS_NOT_FOUND')      return res.status(404).json({ error: e.message });
       if (e.message === 'WORKOUT_NOT_ASSIGNED') return res.status(400).json({ error: e.message });
+      if (e.message === 'ALREADY_ENDED')        return res.status(409).json({ error: e.message });
+      if (e.message === 'ALREADY_STARTED')      return res.status(409).json({ error: e.message });
       return res.status(500).json({ error: 'START_LIVE_FAILED' });
     }
   };
+
+
 
   stopLiveClass = async (req: AuthenticatedRequest, res: Response) => {
     try {

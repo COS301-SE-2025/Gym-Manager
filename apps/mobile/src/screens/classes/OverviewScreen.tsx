@@ -41,7 +41,6 @@ async function getMyScaling(classId: number): Promise<'RX'|'SC'> {
   } catch { return 'RX'; }
 }
 
-// format helper:  "10 x Pushups"  or  "10 sec – Plank"
 function fmtExerciseLabel(step: FlatStep) {
   const qtyType = (step.quantityType ?? (step.reps != null ? 'reps' : (step.duration != null ? 'duration' : undefined)));
   if (qtyType === 'reps' && typeof step.reps === 'number') {
@@ -88,7 +87,7 @@ export default function OverviewScreen() {
 
   // ---- ALWAYS load builder steps for accurate round/subround & quantity type ----
   const [builderSteps, setBuilderSteps] = useState<FlatStep[]>([]);
-  const [builderMeta, setBuilderMeta] = useState<{ number_of_rounds?: number; number_of_subrounds?: number; duration_seconds?: number; time_limit?: number } | null>(null);
+  const [builderMeta, setBuilderMeta] = useState<{ number_of_rounds?: number; number_of_subrounds?: number; duration_seconds?: number; time_limit?: number; emom_repeats?: number[]; tabata_total_seconds?: number } | null>(null);
   const [fallbackLoading, setFallbackLoading] = useState(false);
 
   useEffect(() => {
@@ -103,7 +102,6 @@ export default function OverviewScreen() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (stop) return;
-        // Expect { steps: FlatStep[], metadata?: {...} }
         const steps: FlatStep[] = Array.isArray(data?.steps) ? data.steps : [];
         setBuilderSteps(steps.map((s,i) => ({
           index: typeof s.index === 'number' ? s.index : i,
@@ -122,7 +120,6 @@ export default function OverviewScreen() {
     return () => { stop = true; };
   }, [preWorkoutId]);
 
-  // Prefer builder data for display (it has the quantity types). If missing, fall back to session.steps.
   const displaySteps: FlatStep[] = useMemo(() => {
     if (builderSteps.length > 0) return builderSteps;
     const ssteps = (Array.isArray(session?.steps) ? session!.steps! : []) as any[];
@@ -141,12 +138,35 @@ export default function OverviewScreen() {
     (session?.workout_type as string) ||
     (preType as string) ||
     'FOR_TIME';
- 
-  const capSeconds: number =
-    Number(builderMeta?.time_limit ?? 0) * 60 ||  // workout time limit in minutes, convert to seconds
-    Number(builderMeta?.duration_seconds ?? 0) ||
-    Number(session?.time_cap_seconds ?? 0) ||
-    preDurationSeconds;
+
+
+  const capSeconds: number = useMemo(() => {
+    const t = (workoutType || '').toUpperCase();
+
+    // EMOM: total repeats × 60
+    if (t === 'EMOM' && builderMeta?.emom_repeats && Array.isArray(builderMeta.emom_repeats)) {
+      const totalRepeats = builderMeta.emom_repeats.reduce((sum, n) => sum + (Number(n) || 0), 0);
+      return totalRepeats * 60;
+    }
+
+    // TABATA / INTERVAL: sum durations of *every* step
+    if (t === 'TABATA' || t === 'INTERVAL') {
+      const stepsToSum = (builderSteps.length > 0 ? builderSteps : (Array.isArray(session?.steps) ? session!.steps! : [])) as Array<{ duration?: number }>;
+      const sum = stepsToSum.reduce((acc, s) => acc + (Number(s?.duration) || 0), 0);
+      if (sum > 0) return sum;
+      // fallback only if builder lacks per-step durations
+      return Number(builderMeta?.duration_seconds || 0) ||
+             Number(session?.time_cap_seconds || 0) ||
+             preDurationSeconds;
+    }
+
+    // FOR_TIME / AMRAP etc.
+    return Number(builderMeta?.time_limit ?? 0) * 60 ||
+           Number(builderMeta?.duration_seconds ?? 0) ||
+           Number(session?.time_cap_seconds ?? 0) ||
+           preDurationSeconds;
+  }, [workoutType, builderMeta, builderSteps, session?.steps, session?.time_cap_seconds, preDurationSeconds]);
+
 
   const workoutName: string =
     (preWorkoutName as string) ||
@@ -179,7 +199,6 @@ export default function OverviewScreen() {
     return byRound;
   }, [displaySteps]);
 
-  // show declared number_of_rounds if present in builder metadata; otherwise, inferred unique rounds
   const declaredRounds = Number(builderMeta?.number_of_rounds ?? 0);
   const inferredRounds = Object.keys(grouped).length;
   const roundCount = declaredRounds > 0 ? declaredRounds : inferredRounds;
@@ -191,7 +210,6 @@ export default function OverviewScreen() {
         return;
       }
     } catch {}
-    // Fallback: attempt a home-like route, otherwise reset stack
     try { nav.navigate('Home'); return; } catch {}
     try { nav.navigate('Root'); return; } catch {}
     nav.popToTop();
@@ -199,7 +217,7 @@ export default function OverviewScreen() {
 
   return (
     <SafeAreaProvider>
-    <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={s.root} edges={['top', 'left', 'right'] as const}>
       <StatusBar barStyle="light-content" backgroundColor="#111" />
       <ScrollView contentContainerStyle={s.scroll}>
 
@@ -260,13 +278,18 @@ export default function OverviewScreen() {
                   const sr = Number(srKey);
                   const exs = sub[sr];
                   return (
-                    <View key={`sub-${r}-${sr}`} style={s.subroundBox}>
-                      {exs.map((e) => (
-                        <Text key={`step-${e.index}`} style={s.exerciseText}>
-                          {fmtExerciseLabel(e)}
-                        </Text>
-                      ))}
-                    </View>
+                     <View key={`sub-${r}-${sr}`} style={s.subroundBox}>
+                       {workoutType.toUpperCase() === 'EMOM' && builderMeta?.emom_repeats && Array.isArray(builderMeta.emom_repeats) && builderMeta.emom_repeats[sr - 1] && (
+                         <View style={s.multiplierContainer}>
+                           <Text style={s.multiplierText}>×{builderMeta.emom_repeats[sr - 1]}</Text>
+                         </View>
+                       )}
+                       {exs.map((e) => (
+                         <Text key={`step-${e.index}`} style={s.exerciseText}>
+                           {fmtExerciseLabel(e)}
+                         </Text>
+                       ))}
+                     </View>
                   );
                 })}
               </View>
@@ -337,6 +360,19 @@ const s = StyleSheet.create({
   subroundBox: {
     borderWidth: 1.5, borderColor: '#EAE2C6', borderRadius: 12,
     paddingVertical: 12, paddingHorizontal: 12, marginBottom: 12, backgroundColor: 'transparent'
+  },
+  multiplierContainer: {
+    backgroundColor: '#2e3500',
+    borderWidth: 1,
+    borderColor: '#d8ff3e',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4
+  },
+  multiplierText: {
+    color: '#d8ff3e',
+    fontWeight: '900',
+    fontSize: 12
   },
   exerciseText: { color: '#ddd', paddingVertical: 4 },
 

@@ -12,9 +12,12 @@ import { useSession } from '../../hooks/useSession';
 import { useMyProgress } from '../../hooks/useMyProgress';
 import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
+import { getToken, getUser } from '../../utils/authStorage';
 import config from '../../config';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { HypeToast } from '../../components/HypeToast';
+import { useLeaderboardHype } from '../../hooks/useLeaderboardHype';
+
 
 type R = RouteProp<AuthStackParamList, 'ForTimeLive'>;
 
@@ -81,6 +84,25 @@ export default function ForTimeLiveScreen() {
   
   const [scope, setScope] = useState<LbFilter>('ALL');
   const lb = useLeaderboardRealtime(classId, scope);
+
+  // More reliable user ID detection using the same method as useMyProgress
+  const [myUserId, setMyUserId] = useState<number | null>(null);
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const user = await getUser();
+      const userId = user?.userId || user?.id;
+      setMyUserId(userId || null);
+    };
+    fetchUserId();
+  }, []);
+
+  const hypeOptedOut =
+    (session as any)?.workout_metadata?.hype_opt_out === true ||
+    (progress as any)?.hype_opt_out === true ||
+    false;
+
+  const hype = useLeaderboardHype(lb, myUserId || undefined, hypeOptedOut);
+
 
   const steps: any[] = (session?.steps as any[]) ?? [];
   const cum: number[] = (session?.steps_cum_reps as any[]) ?? [];
@@ -200,6 +222,8 @@ export default function ForTimeLiveScreen() {
         <Text style={s.timeTop} pointerEvents="none">{fmt(elapsed)}</Text>
       </View>
 
+      <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />
+
       {/* centered content */}
       <View pointerEvents="box-none" style={s.centerOverlay}>
         {!ready ? (
@@ -234,7 +258,7 @@ export default function ForTimeLiveScreen() {
                 ))}
               </View>
 
-              {lb.slice(0, 6).map((r: any, i: number) => {
+              {lb.slice(0, 3).map((r: any, i: number) => {
                 const displayName =
                   (r.first_name || r.last_name)
                     ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
@@ -292,6 +316,7 @@ export default function ForTimeLiveScreen() {
       </SafeAreaView>
     </View>
   );
+
 }
 
 const s = StyleSheet.create({

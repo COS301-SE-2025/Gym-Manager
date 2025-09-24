@@ -211,4 +211,23 @@ export class GamificationController {
     return 'evening';
   }
 
+  // add this method in the class
+  async getCharacterLevel(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+      const userId = req.user.userId;
+
+      const data = await this.gamificationService.getCharacterLevel(userId);
+
+      res.json({
+        success: true,
+        data,
+      });
+    } catch (err) {
+      console.error('Error getting character level:', err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+
 }

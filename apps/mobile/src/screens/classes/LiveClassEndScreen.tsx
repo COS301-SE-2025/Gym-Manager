@@ -9,7 +9,6 @@ import { useMyProgress } from '../../hooks/useMyProgress';
 import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { getUser } from '../../utils/authStorage';
-import { useImmersiveBars } from '../../hooks/useImmersiveBars';
 
 
 type R = RouteProp<AuthStackParamList, 'LiveClassEnd'>;
@@ -32,7 +31,6 @@ function fmt(t: number) {
 }
 
 export default function LiveClassEndScreen() {
-  useImmersiveBars();
   const { params } = useRoute<R>();
   const nav = useNavigation<any>();
   const classId = params.classId as number;

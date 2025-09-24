@@ -438,4 +438,19 @@ export class GamificationService implements IGamificationService {
   async getPointsLeaderboard(limit: number = 10): Promise<Array<{ user: { userId: number; firstName: string; lastName: string }; streak: UserStreak }>> {
     return await this.gamificationRepository.getPointsLeaderboard(limit);
   }
+
+  async getCharacterLevel(userId: number): Promise<{ level: 1|2|3|4|5; workoutsAttended: number }> {
+    // Count *attended* classes from classattendance
+    const workoutsAttended = await this.gamificationRepository.getUserWorkoutCount(userId);
+
+    // Map counts -> level (1,5,20,50,100)
+    let level: 1|2|3|4|5 = 1;
+    if (workoutsAttended >= 100) level = 5;
+    else if (workoutsAttended >= 50) level = 4;
+    else if (workoutsAttended >= 20) level = 3;
+    else if (workoutsAttended >= 5)  level = 2;
+
+    return { level, workoutsAttended };
+  }
+
 }

@@ -97,7 +97,7 @@ const WorkoutDetailScreen = ({ route, navigation }: WorkoutDetailScreenProps) =>
     loadWorkoutData();
   }, []);
 
-  // Fix for the date validation issue
+
 const loadWorkoutData = async () => {
   if (Platform.OS !== 'ios') {
     console.log('Workout tracking only available on iOS');
@@ -112,27 +112,47 @@ const loadWorkoutData = async () => {
       setIsLoading(false);
       return;
     }
-
-    // Validate and create dates safely
     console.log('Raw workout data:', { 
       startDate: workout.startDate, 
       endDate: workout.endDate,
       type: typeof workout.startDate 
     });
-
-    // Handle different date formats
     let startDate: Date;
     let endDate: Date;
 
     try {
-      // If the dates are already Date objects or valid ISO strings
       startDate = new Date(workout.startDate);
       endDate = new Date(workout.endDate);
       
-      // Check if dates are valid
+      // Add validation for date validity and range
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         throw new Error('Invalid date values');
       }
+      
+      // Check if dates are too far in the past (HealthKit limitation)
+      const now = new Date();
+      const sixMonthsAgo = new Date(now.getTime() - (6 * 30 * 24 * 60 * 60 * 1000)); // 6 months ago
+      
+      if (startDate < sixMonthsAgo) {
+        console.log('Workout date is too far in the past for HealthKit');
+        setWorkoutStats({ hasWorkout: false });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if end date is before start date
+      if (endDate <= startDate) {
+        console.log('End date is before or equal to start date');
+        setWorkoutStats({ hasWorkout: false });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Add a small buffer to the date range to ensure we capture the workout
+      const bufferMinutes = 5; // 5 minutes buffer
+      startDate = new Date(startDate.getTime() - (bufferMinutes * 60 * 1000));
+      endDate = new Date(endDate.getTime() + (bufferMinutes * 60 * 1000));
+      
     } catch (dateError) {
       console.error('Date parsing error:', dateError);
       console.error('Invalid date values:', { 
@@ -148,19 +168,14 @@ const loadWorkoutData = async () => {
       start: startDate.toISOString(),
       end: endDate.toISOString()
     });
-
-    // First, check if user tracked a workout during this time
     const workoutSessions = await getWorkoutSessions(healthKit, startDate, endDate);
     
     if (workoutSessions.length === 0) {
-      // No workout tracked - show message
       setWorkoutStats({ hasWorkout: false });
       setIsLoading(false);
       return;
     }
-
-    // User tracked a workout - get detailed stats
-    const trackedWorkout = workoutSessions[0]; // Use the first/primary workout
+    const trackedWorkout = workoutSessions[0]; 
     const detailedStats = await getDetailedWorkoutStats(healthKit, trackedWorkout);
     setWorkoutStats({ hasWorkout: true, ...detailedStats });
 
@@ -181,11 +196,10 @@ const getWorkoutSessions = async (healthKit: any, startDate: Date, endDate: Date
     const options = {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
+      includeManuallyAdded: false, // Only get automatic workout data
     };
 
     console.log('Options being sent to HealthKit:', options);
-
-    // Try multiple workout types that users might use for gym classes
     const workoutTypes = [
       Constants.Activities.FunctionalStrengthTraining,
       Constants.Activities.HighIntensityIntervalTraining,
@@ -202,12 +216,11 @@ const getWorkoutSessions = async (healthKit: any, startDate: Date, endDate: Date
 
     workoutTypes.forEach((workoutType, index) => {
       console.log(`\n--- Querying workout type ${index + 1}/${workoutTypes.length}: ${workoutType} ---`);
-      
-      // Use getSamples for workout data
       healthKit.getSamples({
         type: workoutType,
         startDate: options.startDate,
         endDate: options.endDate,
+        includeManuallyAdded: options.includeManuallyAdded,
       }, (error: string, results: any[]) => {
         completedRequests++;
         
@@ -215,6 +228,17 @@ const getWorkoutSessions = async (healthKit: any, startDate: Date, endDate: Date
         console.log('Error:', error);
         console.log('Results:', results);
         console.log('Results length:', results ? results.length : 'null/undefined');
+        
+        // Handle specific HealthKit errors
+        if (error) {
+          if (error.includes('date out of range') || error.includes('out of range')) {
+            console.log('Date out of range error - this workout may be too old for HealthKit');
+          } else if (error.includes('permission')) {
+            console.log('Permission error - HealthKit permissions may not be granted');
+          } else {
+            console.log('Other HealthKit error:', error);
+          }
+        }
         
         if (!error && results && results.length > 0) {
           console.log('Processing workout results...');
@@ -309,6 +333,7 @@ const getHeartRateSamples = async (healthKit: any, startDate: Date, endDate: Dat
     const options = {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
+      includeManuallyAdded: false,
     };
     
     console.log('Heart rate options:', options);
@@ -353,6 +378,7 @@ const getStepCountSamples = async (healthKit: any, startDate: Date, endDate: Dat
     const options = {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
+      includeManuallyAdded: false,
     };
     
     console.log('Step count options:', options);
@@ -386,6 +412,7 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
     const options = {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
+      includeManuallyAdded: false,
     };
     
     console.log('Energy options:', options);

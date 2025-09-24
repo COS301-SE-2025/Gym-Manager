@@ -1,6 +1,6 @@
 import { db } from '../../db/client';
-import { members, users } from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { members, users, classattendance, classes, workouts, coaches } from '../../db/schema';
+import { eq, desc } from 'drizzle-orm';
 
 export class MemberRepository {
   /**
@@ -126,5 +126,33 @@ export class MemberRepository {
     }
 
     return result[0];
+  }
+
+  /**
+   * Get member's attended classes with full details
+   */
+  async getAttendedClasses(userId: number) {
+    const result = await db
+      .select({
+        classId: classes.classId,
+        workoutName: workouts.workoutName,
+        scheduledDate: classes.scheduledDate,
+        scheduledTime: classes.scheduledTime,
+        durationMinutes: classes.durationMinutes,
+        coachFirstName: users.firstName,
+        coachLastName: users.lastName,
+        attendedAt: classattendance.markedAt,
+        score: classattendance.score,
+        scaling: classattendance.scaling,
+      })
+      .from(classattendance)
+      .innerJoin(classes, eq(classattendance.classId, classes.classId))
+      .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
+      .leftJoin(coaches, eq(classes.coachId, coaches.userId))
+      .leftJoin(users, eq(coaches.userId, users.userId))
+      .where(eq(classattendance.memberId, userId))
+      .orderBy(desc(classattendance.markedAt));
+
+    return result;
   }
 }

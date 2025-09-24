@@ -17,6 +17,19 @@ export interface MemberProfile {
   publicVisibility: boolean;
 }
 
+export interface AttendedClass {
+  classId: number;
+  workoutName: string | null;
+  scheduledDate: string;
+  scheduledTime: string;
+  durationMinutes: number;
+  coachFirstName: string | null;
+  coachLastName: string | null;
+  attendedAt: string | null;
+  score?: number | null;
+  scaling: string;
+}
+
 export class MemberService {
   private memberRepository: MemberRepository;
   private paymentPackagesService: PaymentPackagesService;
@@ -150,5 +163,12 @@ export class MemberService {
    */
   async addCredits(userId: number, credits: number, tx?: any): Promise<number> {
     return await this.memberRepository.addCredits(userId, credits, tx);
+  }
+
+  /**
+   * Get member's attended classes with details
+   */
+  async getAttendedClasses(userId: number): Promise<AttendedClass[]> {
+    return await this.memberRepository.getAttendedClasses(userId);
   }
 }

@@ -7,10 +7,10 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
-  Image,
   useWindowDimensions,
   PixelRatio,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
 import { GamificationStats } from '../../types/gamification';
 import { gamificationService } from '../../services/gamificationService';
@@ -20,13 +20,13 @@ import { WeeklyStatsCard } from '../../components/gamification/WeeklyStatsCard';
 
 const SPRITE_PX = 23 as const;
 
-// Static requires so Metro bundles the sprites
+// Static requires so Metro bundles the animated sprites
 const CHARACTER_SOURCES: Record<1 | 2 | 3 | 4 | 5, any> = {
-  1: require('../../../assets/character_level_1.png'),
-  2: require('../../../assets/character_level_2.png'),
-  3: require('../../../assets/character_level_3.png'),
-  4: require('../../../assets/character_level_4.png'),
-  5: require('../../../assets/character_level_5.png'),
+  1: require('../../../assets/character_level_1.gif'),
+  2: require('../../../assets/character_level_2.gif'),
+  3: require('../../../assets/character_level_3.gif'),
+  4: require('../../../assets/character_level_4.gif'),
+  5: require('../../../assets/character_level_5.gif'),
 };
 
 export default function GamificationScreen() {
@@ -136,8 +136,10 @@ export default function GamificationScreen() {
           source={CHARACTER_SOURCES[spriteKey]}
           // Use a dp size that is an exact integer multiple of 23px in physical pixels
           style={{ width: spriteSizeDp, height: spriteSizeDp }}
-          // Center avoids any additional resampling; we're already giving it the exact size we want.
-          resizeMode="center"
+          // expo-image uses 'contain' instead of 'center' for similar behavior
+          contentFit="contain"
+          // Enable animation for GIFs
+          allowDownscaling={false}
         />
         <Text style={styles.heroLevel}>Level {actualLevel}</Text>
         <Text style={styles.heroSub}>{workoutsAttended} classes completed</Text>

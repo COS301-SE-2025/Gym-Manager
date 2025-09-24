@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { UserBadge } from '../../types/gamification';
 import { gamificationService } from '../../services/gamificationService';
 
@@ -10,13 +11,16 @@ interface BadgeCardProps {
 }
 
 export const BadgeCard: React.FC<BadgeCardProps> = ({ badge, onPress, compact = false }) => {
-  const badgeIcon = gamificationService.getBadgeIcon(badge.badge?.badgeType || 'achievement');
+  const badgeIconName = gamificationService.getBadgeIcon(
+    badge.badge?.badgeType || 'achievement',
+    badge.badge?.name
+  );
   const earnedDate = new Date(badge.earnedAt).toLocaleDateString();
 
   if (compact) {
     return (
       <TouchableOpacity style={styles.compactContainer} onPress={onPress} activeOpacity={0.7}>
-        <Text style={styles.compactIcon}>{badgeIcon}</Text>
+        <Ionicons name={badgeIconName as any} size={24} color="#D8FF3E" style={styles.compactIcon} />
         <View style={styles.compactContent}>
           <Text style={styles.compactName} numberOfLines={1}>
             {badge.badge?.name || 'Unknown Badge'}
@@ -30,7 +34,7 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ badge, onPress, compact = 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.header}>
-        <Text style={styles.icon}>{badgeIcon}</Text>
+        <Ionicons name={badgeIconName as any} size={32} color="#D8FF3E" style={styles.icon} />
         <View style={styles.badgeInfo}>
           <Text style={styles.name}>{badge.badge?.name || 'Unknown Badge'}</Text>
           <Text style={styles.points}>+{badge.badge?.pointsValue || 0} pts</Text>
@@ -71,7 +75,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   compactIcon: {
-    fontSize: 24,
     marginRight: 12,
   },
   compactContent: {
@@ -93,7 +96,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   icon: {
-    fontSize: 32,
     marginRight: 16,
   },
   badgeInfo: {

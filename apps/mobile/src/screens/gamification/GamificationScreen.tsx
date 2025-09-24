@@ -84,7 +84,11 @@ export default function GamificationScreen() {
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl 
+          refreshing={refreshing} 
+          onRefresh={onRefresh}
+          tintColor="#D8FF3E"
+        />
       }
     >
       <View style={styles.header}>

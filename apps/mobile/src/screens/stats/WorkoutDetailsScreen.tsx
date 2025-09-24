@@ -148,6 +148,7 @@ const WorkoutDetailScreen = ({ route, navigation }: WorkoutDetailScreenProps) =>
 const loadWorkoutData = async () => {
   if (Platform.OS !== 'ios') {
     console.log('Workout tracking only available on iOS');
+    setWorkoutStats({ hasWorkout: false });
     setIsLoading(false);
     return;
   }
@@ -714,6 +715,28 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
   };
 
   const renderContent = () => {
+    // Android compatibility check
+    if (Platform.OS === 'android') {
+      return (
+        <View style={styles.androidMessageContainer}>
+          <View style={styles.androidMessageCard}>
+            <Ionicons name="phone-portrait-outline" size={48} color="#D8FF3E" />
+            <Text style={styles.androidMessageTitle}>Workout Details Unavailable</Text>
+            <Text style={styles.androidMessageText}>
+              Detailed workout analytics are currently only available on iOS devices. 
+              Android support is coming soon!
+            </Text>
+            <View style={styles.androidMessageFooter}>
+              <Ionicons name="information-circle-outline" size={16} color="#888" />
+              <Text style={styles.androidMessageFooterText}>
+                iOS users can view heart rate graphs, effort levels, and detailed metrics
+              </Text>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
     if (isLoading) {
       return (
         <View style={styles.loadingContainer}>
@@ -1343,6 +1366,53 @@ const styles = StyleSheet.create({
     color: '#D8FF3E',
     fontSize: 16,
     fontWeight: '500',
+  },
+  // Android compatibility styles
+  androidMessageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  androidMessageCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    maxWidth: 350,
+    borderWidth: 1,
+    borderColor: '#3a3a3a',
+  },
+  androidMessageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#D8FF3E',
+    marginTop: 20,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  androidMessageText: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  androidMessageFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#3a3a3a',
+  },
+  androidMessageFooterText: {
+    fontSize: 14,
+    color: '#888',
+    marginLeft: 8,
+    flex: 1,
   },
 });
 

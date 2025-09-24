@@ -441,6 +441,30 @@ const StatsScreen = ({ navigation }: any) => {
     </TouchableOpacity>
   );
 
+  // Android compatibility check
+  if (Platform.OS === 'android') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.androidMessageContainer}>
+          <View style={styles.androidMessageCard}>
+            <Ionicons name="phone-portrait-outline" size={48} color="#D8FF3E" />
+            <Text style={styles.androidMessageTitle}>Stats Coming Soon</Text>
+            <Text style={styles.androidMessageText}>
+              Health tracking and detailed stats are currently only available on iOS devices. 
+              We're working on bringing this feature to Android soon!
+            </Text>
+            <View style={styles.androidMessageFooter}>
+              <Ionicons name="information-circle-outline" size={16} color="#888" />
+              <Text style={styles.androidMessageFooterText}>
+                iOS users can track steps, calories, heart rate, and workout analytics
+              </Text>
+            </View>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -798,6 +822,53 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     paddingHorizontal: 20,
+  },
+  // Android compatibility styles
+  androidMessageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  androidMessageCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    maxWidth: 350,
+    borderWidth: 1,
+    borderColor: '#3a3a3a',
+  },
+  androidMessageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#D8FF3E',
+    marginTop: 20,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  androidMessageText: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  androidMessageFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#3a3a3a',
+  },
+  androidMessageFooterText: {
+    fontSize: 14,
+    color: '#888',
+    marginLeft: 8,
+    flex: 1,
   },
 });
 

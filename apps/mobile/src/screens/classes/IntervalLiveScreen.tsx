@@ -19,6 +19,10 @@ type R = RouteProp<AuthStackParamList, 'IntervalLive'>;
 
 const isRestStep = (step: any) => /\brest\b/i.test(String(step?.name ?? ''));
 
+const isTimeOnlyStep = (step: any) =>
+  String(step?.quantityType ?? '').toLowerCase() === 'duration';
+
+
 function useNowSec() {
   const [now, setNow] = useState(Math.floor(Date.now() / 1000));
   useEffect(() => { const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 250); return () => clearInterval(id); }, []);
@@ -105,15 +109,17 @@ export default function IntervalLiveScreen() {
 
   const setInput = (i: number, v: string) => setInputs(prev => ({ ...prev, [i]: v }));
 
-  // required = all TIMED, NON-REST steps
+  // required = all TIMED, NON-REST, reps-only steps
   const requiredIdx = useMemo(() => {
     const arr: number[] = [];
     for (const s of steps) {
       const i = Number(s.index ?? 0);
-      if (Number(s.duration ?? 0) > 0 && !isRestStep(s)) arr.push(i);
+      const timed = Number(s.duration ?? 0) > 0;
+      if (timed && !isRestStep(s) && !isTimeOnlyStep(s)) arr.push(i);
     }
     return arr;
   }, [steps]);
+
 
   const allFilled    = requiredIdx.every(i => (inputs[i] ?? '').trim() !== '');
   const allSubmitted = requiredIdx.every(i => !!submitted[i]);
@@ -130,7 +136,7 @@ export default function IntervalLiveScreen() {
   // ✓ handler: validate -> POST -> mark submitted
   const submit = useCallback(async (stepIndex: number) => {
     const step = steps?.[stepIndex];
-    if (!canSubmit || isRestStep(step)) return;
+    if (!canSubmit || isRestStep(step) || isTimeOnlyStep(step)) return;
 
     const raw = inputs[stepIndex];
     const valid = validateNumber(raw);
@@ -245,6 +251,7 @@ export default function IntervalLiveScreen() {
                       const i = Number(e.index);
                       const isLive = !done && i === liveIdx;
                       const rest = isRestStep(e);
+                      const timeOnly = !rest && isTimeOnlyStep(e);
                       const showError = !!errors[i];
                       return (
                         <View key={`step-${i}`} style={[s.row, isLive && s.rowLive]}>
@@ -252,8 +259,10 @@ export default function IntervalLiveScreen() {
                             <Text style={[s.exName, isLive && s.exNameLive]}>{e.name}</Text>
                           </View>
 
-                          {rest ? (
-                            <View style={s.restPill}><Text style={s.restPillText}>REST</Text></View>
+                          {rest || timeOnly ? (
+                            <View style={s.restPill}>
+                              <Text style={s.restPillText}>{rest ? 'REST' : 'TIME'}</Text>
+                            </View>
                           ) : (
                             <>
                               <TextInput

@@ -7,6 +7,9 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
+  Image,
+  useWindowDimensions,
+  PixelRatio,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { GamificationStats } from '../../types/gamification';
@@ -15,8 +18,21 @@ import { StreakCard } from '../../components/gamification/StreakCard';
 import { BadgeCard } from '../../components/gamification/BadgeCard';
 import { WeeklyStatsCard } from '../../components/gamification/WeeklyStatsCard';
 
+const SPRITE_PX = 23 as const;
+
+// Static requires so Metro bundles the sprites
+const CHARACTER_SOURCES: Record<1 | 2 | 3 | 4 | 5, any> = {
+  1: require('../../../assets/character_level_1.png'),
+  2: require('../../../assets/character_level_2.png'),
+  3: require('../../../assets/character_level_3.png'),
+  4: require('../../../assets/character_level_4.png'),
+  5: require('../../../assets/character_level_5.png'),
+};
+
 export default function GamificationScreen() {
   const navigation = useNavigation();
+  const { width } = useWindowDimensions();
+
   const [stats, setStats] = useState<GamificationStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,12 +60,10 @@ export default function GamificationScreen() {
   };
 
   const handleStreakPress = () => {
-    // Navigate to detailed streak screen
     navigation.navigate('GamificationScreen');
   };
 
   const handleBadgePress = (badge: any) => {
-    // Navigate to badge details
     navigation.navigate('BadgesScreen');
   };
 
@@ -60,6 +74,30 @@ export default function GamificationScreen() {
   const handleViewLeaderboard = () => {
     navigation.navigate('LeaderboardScreen');
   };
+
+  // Compute a dp size that maps to an exact integer *physical pixel* multiple of 23,
+  // which keeps the pixel art perfectly crisp on all densities.
+  const spriteSizeDp = (() => {
+    // Allow the sprite to be large but keep some margin and a reasonable max height.
+    const maxWidthDp = Math.max(0, width - 40);
+    const maxHeightDp = 320;
+
+    const pr = PixelRatio.get();
+    const maxWidthPx = Math.floor(maxWidthDp * pr);
+    const maxHeightPx = Math.floor(maxHeightDp * pr);
+
+    // integer physical pixels per source pixel, at least 1
+    const k = Math.max(
+      1,
+      Math.min(
+        Math.floor(maxWidthPx / SPRITE_PX),
+        Math.floor(maxHeightPx / SPRITE_PX)
+      )
+    );
+
+    // convert back to dp for the style width/height
+    return (SPRITE_PX * k) / pr;
+  })();
 
   if (loading) {
     return (
@@ -80,6 +118,11 @@ export default function GamificationScreen() {
     );
   }
 
+  // Pull level from user_streaks; default to 1 if missing, cap sprite at 5
+  const actualLevel = Math.max(1, Number(stats?.userStreak?.level ?? 1));
+  const spriteKey = (Math.min(5, actualLevel) as 1 | 2 | 3 | 4 | 5);
+  const workoutsAttended = Number(stats?.userStreak?.totalWorkouts ?? 0);
+
   return (
     <ScrollView
       style={styles.container}
@@ -87,6 +130,19 @@ export default function GamificationScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
+      {/* Pixel-art hero (top of screen) */}
+      <View style={styles.heroBox}>
+        <Image
+          source={CHARACTER_SOURCES[spriteKey]}
+          // Use a dp size that is an exact integer multiple of 23px in physical pixels
+          style={{ width: spriteSizeDp, height: spriteSizeDp }}
+          // Center avoids any additional resampling; we're already giving it the exact size we want.
+          resizeMode="center"
+        />
+        <Text style={styles.heroLevel}>Level {actualLevel}</Text>
+        <Text style={styles.heroSub}>{workoutsAttended} classes completed</Text>
+      </View>
+
       <View style={styles.header}>
         <Text style={styles.title}>Your Progress</Text>
         <Text style={styles.subtitle}>Keep the momentum going!</Text>
@@ -106,7 +162,7 @@ export default function GamificationScreen() {
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>
-        
+
         {stats.recentBadges.length > 0 ? (
           stats.recentBadges.map((badge) => (
             <BadgeCard
@@ -128,11 +184,11 @@ export default function GamificationScreen() {
       {/* Quick Actions */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
-        
+
         <TouchableOpacity style={styles.actionButton} onPress={handleViewLeaderboard}>
           <Text style={styles.actionButtonText}>View Leaderboard</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.actionButton} onPress={handleViewAllBadges}>
           <Text style={styles.actionButtonText}>All Badges</Text>
         </TouchableOpacity>
@@ -148,6 +204,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
+
+  // HERO
+  heroBox: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 28,
+    paddingBottom: 12,
+  },
+  heroLevel: {
+    marginTop: 8,
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  heroSub: {
+    marginTop: 4,
+    color: '#9aa',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -183,7 +260,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    paddingTop: 40,
+    paddingTop: 20, // slightly reduced since hero is above
   },
   title: {
     fontSize: 28,

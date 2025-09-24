@@ -177,6 +177,20 @@ export class GamificationService {
     if (points < 1000) return `${points} pts`;
     return `${(points / 1000).toFixed(1)}k pts`;
   }
+  
+  async getCharacter(): Promise<{ level: 1|2|3|4|5; workoutsAttended: number }> {
+    try {
+      const response = await apiClient.get<{ success: boolean; data: { level: 1|2|3|4|5; workoutsAttended: number } }>(
+        `${this.baseUrl}/character`
+      );
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching character progress:', error);
+      throw error;
+    }
+  }
+
+
 }
 
 // Export singleton instance

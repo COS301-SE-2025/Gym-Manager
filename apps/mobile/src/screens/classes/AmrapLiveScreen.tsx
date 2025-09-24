@@ -12,9 +12,10 @@ import { useSession } from '../../hooks/useSession';
 import { useMyProgress } from '../../hooks/useMyProgress';
 import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
+import { getToken, getUser } from '../../utils/authStorage';
 import config from '../../config';
-import { useImmersiveBars } from '../../hooks/useImmersiveBars';
+import { HypeToast } from '../../components/HypeToast';
+import { useLeaderboardHype } from '../../hooks/useLeaderboardHype';
 
 
 type R = RouteProp<AuthStackParamList, 'AmrapLive'>;
@@ -54,6 +55,36 @@ export default function AmrapLiveScreen() {
   const [scope, setScope] = useState<LbFilter>('ALL');
   const lb = useLeaderboardRealtime(classId, scope);
 
+  // More reliable user ID detection using the same method as useMyProgress
+  const [myUserId, setMyUserId] = useState<number | null>(null);
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const user = await getUser();
+      const userId = user?.userId || user?.id;
+      setMyUserId(userId || null);
+    };
+    fetchUserId();
+  }, []);
+
+  // Member can opt-out; default ON
+  const hypeOptedOut =
+    (session as any)?.workout_metadata?.hype_opt_out === true ||
+    (progress as any)?.hype_opt_out === true ||
+    false;
+
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 AmrapLiveScreen Debug:', {
+      myUserId,
+      hypeOptedOut,
+      progressKeys: Object.keys(progress || {}),
+      sessionKeys: Object.keys(session || {}),
+      lbLength: lb.length
+    });
+  }, [myUserId, hypeOptedOut, progress, session, lb.length]);
+
+  // Hype hook
+  const hype = useLeaderboardHype(lb, myUserId || undefined, hypeOptedOut);
 
   const steps: any[] = (session?.steps as any[]) ?? [];
   const cum: number[] = (session?.steps_cum_reps as any[]) ?? [];
@@ -178,6 +209,9 @@ export default function AmrapLiveScreen() {
       <View pointerEvents="none" style={s.topOverlay}>
         <Text style={s.timeTop} pointerEvents="none">{fmt(elapsed)}</Text>
       </View>
+      {/* hype banner */}
+      <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />
+
 
       {/* centered content */}
       <View pointerEvents="box-none" style={s.centerOverlay}>
@@ -216,7 +250,7 @@ export default function AmrapLiveScreen() {
                 ))}
               </View>
 
-              {lb.slice(0, 6).map((r: any, i: number) => {
+              {lb.slice(0, 3).map((r: any, i: number) => {
                 const displayName =
                   (r.first_name || r.last_name)
                     ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
@@ -274,6 +308,7 @@ export default function AmrapLiveScreen() {
       </SafeAreaView>
     </View>
   );
+
 }
 
 function fmt(t: number) {

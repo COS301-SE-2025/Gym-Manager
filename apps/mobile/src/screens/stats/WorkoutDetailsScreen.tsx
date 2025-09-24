@@ -713,10 +713,15 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
       );
     }
   
+    // Sort heart rate samples in chronological order (earliest to latest)
+    const sortedSamples = [...heartRateSamples].sort((a, b) => 
+      new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+    );
+  
     // Convert heart rate samples to chart data
     const chartData = {
-      labels: heartRateSamples.map((sample, index) => {
-        const totalSamples = heartRateSamples.length;
+      labels: sortedSamples.map((sample, index) => {
+        const totalSamples = sortedSamples.length;
         // Show labels only at beginning, middle, and end
         if (index === 0) {
           const date = new Date(sample.startDate);
@@ -740,7 +745,7 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
         return '';
       }),
       datasets: [{
-        data: heartRateSamples.map(hr => hr.value),
+        data: sortedSamples.map(hr => hr.value),
         color: (opacity = 1) => `rgba(216, 255, 62, ${opacity})`, // App color
         strokeWidth: 2
       }]
@@ -1095,6 +1100,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a2a2a',
     borderRadius: 12,
     padding: 16,
+    marginTop: 10,
   },
   zonesTitle: {
     color: 'white',
@@ -1116,13 +1122,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(216, 255, 62, 0.3)', 
   },
   zonePercentage: {
-    color: '#D8FF3E', 
+    color: 'black', 
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   zoneLabel: {
-    color: '#D8FF3E', 
+    color: 'black', 
     fontSize: 12,
     fontWeight: '500',
   },

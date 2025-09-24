@@ -105,60 +105,75 @@ const loadWorkoutData = async () => {
     return;
   }
 
+  if (!workout) return;
+
+  setIsLoading(true);
+  console.log('Raw workout data:', { 
+    startDate: workout.startDate, 
+    endDate: workout.endDate,
+    type: typeof workout.startDate 
+  });
+  let startDate: Date;
+  let endDate: Date;
+
+  try {
+    // Fix: Handle SQL timestamp format from database
+    let startDateString = workout.startDate;
+    let endDateString = workout.endDate;
+    
+    // Convert SQL timestamp format to ISO format if needed
+    if (typeof startDateString === 'string' && startDateString.includes(' ') && !startDateString.includes('T')) {
+      startDateString = startDateString.replace(' ', 'T') + 'Z';
+    }
+    if (typeof endDateString === 'string' && endDateString.includes(' ') && !endDateString.includes('T')) {
+      endDateString = endDateString.replace(' ', 'T') + 'Z';
+    }
+    
+    startDate = new Date(startDateString);
+    endDate = new Date(endDateString);
+    
+    // Add validation for date validity and range
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new Error('Invalid date values');
+    }
+    
+    // Check if dates are too far in the past (HealthKit limitation)
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.getTime() - (6 * 30 * 24 * 60 * 60 * 1000)); // 6 months ago
+    
+    if (startDate < sixMonthsAgo) {
+      console.log('Workout date is too far in the past for HealthKit');
+      setWorkoutStats({ hasWorkout: false });
+      setIsLoading(false);
+      return;
+    }
+    
+    // Check if end date is before start date
+    if (endDate <= startDate) {
+      console.log('End date is before or equal to start date');
+      setWorkoutStats({ hasWorkout: false });
+      setIsLoading(false);
+      return;
+    }
+    
+    // Add a small buffer to the date range to ensure we capture the workout
+    const bufferMinutes = 5; // 5 minutes buffer
+    startDate = new Date(startDate.getTime() - (bufferMinutes * 60 * 1000));
+    endDate = new Date(endDate.getTime() + (bufferMinutes * 60 * 1000));
+    
+  } catch (dateError) {
+    console.error('Error parsing workout dates:', dateError);
+    console.error('Start date:', workout.startDate);
+    console.error('End date:', workout.endDate);
+    setWorkoutStats({ hasWorkout: false });
+    setIsLoading(false);
+    return;
+  }
+
   try {
     const healthKit = NativeModules.RCTAppleHealthKit;
     if (!healthKit) {
       console.log('HealthKit not available');
-      setIsLoading(false);
-      return;
-    }
-    console.log('Raw workout data:', { 
-      startDate: workout.startDate, 
-      endDate: workout.endDate,
-      type: typeof workout.startDate 
-    });
-    let startDate: Date;
-    let endDate: Date;
-
-    try {
-      startDate = new Date(workout.startDate);
-      endDate = new Date(workout.endDate);
-      
-      // Add validation for date validity and range
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        throw new Error('Invalid date values');
-      }
-      
-      // Check if dates are too far in the past (HealthKit limitation)
-      const now = new Date();
-      const sixMonthsAgo = new Date(now.getTime() - (6 * 30 * 24 * 60 * 60 * 1000)); // 6 months ago
-      
-      if (startDate < sixMonthsAgo) {
-        console.log('Workout date is too far in the past for HealthKit');
-        setWorkoutStats({ hasWorkout: false });
-        setIsLoading(false);
-        return;
-      }
-      
-      // Check if end date is before start date
-      if (endDate <= startDate) {
-        console.log('End date is before or equal to start date');
-        setWorkoutStats({ hasWorkout: false });
-        setIsLoading(false);
-        return;
-      }
-      
-      // Add a small buffer to the date range to ensure we capture the workout
-      const bufferMinutes = 5; // 5 minutes buffer
-      startDate = new Date(startDate.getTime() - (bufferMinutes * 60 * 1000));
-      endDate = new Date(endDate.getTime() + (bufferMinutes * 60 * 1000));
-      
-    } catch (dateError) {
-      console.error('Date parsing error:', dateError);
-      console.error('Invalid date values:', { 
-        start: workout.startDate, 
-        end: workout.endDate 
-      });
       setWorkoutStats({ hasWorkout: false });
       setIsLoading(false);
       return;
@@ -229,14 +244,18 @@ const getWorkoutSessions = async (healthKit: any, startDate: Date, endDate: Date
         console.log('Results:', results);
         console.log('Results length:', results ? results.length : 'null/undefined');
         
-        // Handle specific HealthKit errors
+        // Fix: Handle error object properly
         if (error) {
-          if (error.includes('date out of range') || error.includes('out of range')) {
+          const errorMessage = typeof error === 'string' ? error : 
+                              (error as any)?.message || 
+                              JSON.stringify(error);
+          
+          if (errorMessage.includes('date out of range') || errorMessage.includes('out of range')) {
             console.log('Date out of range error - this workout may be too old for HealthKit');
-          } else if (error.includes('permission')) {
+          } else if (errorMessage.includes('permission') || errorMessage.includes('authorization')) {
             console.log('Permission error - HealthKit permissions may not be granted');
           } else {
-            console.log('Other HealthKit error:', error);
+            console.log('Other HealthKit error:', errorMessage);
           }
         }
         
@@ -247,21 +266,27 @@ const getWorkoutSessions = async (healthKit: any, startDate: Date, endDate: Date
               id: workout.id,
               activityType: workout.activityType,
               type: workout.type,
-              startDate: workout.startDate,
-              endDate: workout.endDate,
+              start: workout.start,           // These are the actual property names
+              end: workout.end,               // from HealthKit API
+              startDate: workout.startDate,   // These might be undefined
+              endDate: workout.endDate,       // These might be undefined
               totalEnergyBurned: workout.totalEnergyBurned,
               totalDistance: workout.totalDistance,
               metadata: workout.metadata
             });
             
+            // Fix: Use the correct property names from HealthKit API
+            const startDate = workout.startDate || workout.start;
+            const endDate = workout.endDate || workout.end;
+            
             return {
-              id: workout.id || `workout_${Date.now()}`,
+              id: workout.id || `workout_${Date.now()}_${workoutIndex}`,
               type: mapWorkoutType(workout.activityType || workout.type),
-              startDate: workout.startDate,
-              endDate: workout.endDate,
-              duration: calculateDuration(workout.startDate, workout.endDate),
+              startDate: startDate,
+              endDate: endDate,
+              duration: startDate && endDate ? calculateDuration(startDate, endDate) : 0,
               totalEnergyBurned: workout.totalEnergyBurned,
-              totalDistance: workout.totalDistance,
+              totalDistance: workout.totalDistance || workout.distance,  // Also check 'distance' property
               source: workout.metadata?.HKWasUserEntered ? 'User Entered' : 'Apple Health',
             };
           });
@@ -299,8 +324,70 @@ const getDetailedWorkoutStats = async (healthKit: any, workout: WorkoutSession):
   console.log('\n=== getDetailedWorkoutStats START ===');
   console.log('Workout session:', workout);
   
+  // Fix: Handle undefined dates
+  if (!workout.startDate || !workout.endDate) {
+    console.log('Workout missing start or end date, returning default stats');
+    return {
+      workout: workout,
+      duration: workout.duration || 0,
+      heartRate: {
+        average: 0,
+        max: 0,
+        min: 0,
+        zones: {
+          resting: 0,
+          fatBurn: 0,
+          cardio: 0,
+          peak: 0
+        },
+        samples: 0
+      },
+      energy: {
+        totalCalories: 0,
+        averagePerMinute: 0,
+        peakBurningRate: 0
+      },
+      activity: {
+        totalSteps: 0,
+        averageStepsPerMinute: 0,
+        distance: workout.totalDistance || 0
+      }
+    };
+  }
+  
   const startDate = new Date(workout.startDate);
   const endDate = new Date(workout.endDate);
+  
+  // Additional validation for parsed dates
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    console.log('Invalid dates after parsing, returning default stats');
+    return {
+      workout: workout,
+      duration: workout.duration || 0,
+      heartRate: {
+        average: 0,
+        max: 0,
+        min: 0,
+        zones: {
+          resting: 0,
+          fatBurn: 0,
+          cardio: 0,
+          peak: 0
+        },
+        samples: 0
+      },
+      energy: {
+        totalCalories: 0,
+        averagePerMinute: 0,
+        peakBurningRate: 0
+      },
+      activity: {
+        totalSteps: 0,
+        averageStepsPerMinute: 0,
+        distance: workout.totalDistance || 0
+      }
+    };
+  }
   
   console.log('Parsed dates:', {
     start: startDate.toISOString(),
@@ -530,9 +617,14 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
     return activityType || 'Unknown Workout';
   };
 
-  const calculateDuration = (startDate: string, endDate: string): number => {
+  const calculateDuration = (startDate: string | undefined, endDate: string | undefined): number => {
+    if (!startDate || !endDate) return 0;
+    
     const start = new Date(startDate);
     const end = new Date(endDate);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
+    
     return Math.round((end.getTime() - start.getTime()) / (1000 * 60));
   };
 
@@ -689,7 +781,7 @@ const getActiveEnergySamples = async (healthKit: any, startDate: Date, endDate: 
     <ScrollView style={styles.statsContainer}>
       {/* Workout Header */}
       <View style={styles.workoutHeader}>
-        <Text style={styles.workoutName}>{stats.workout?.type}</Text>
+        <Text style={styles.workoutName}>{workout.type}</Text>
         <Text style={styles.workoutDate}>{formatDateTime(workout.startDate)}</Text>
         <Text style={styles.workoutTime}>
           {formatTime(workout.startDate)} - {formatTime(workout.endDate)}

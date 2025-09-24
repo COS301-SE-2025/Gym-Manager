@@ -19,15 +19,15 @@ export interface MemberProfile {
 
 export interface AttendedClass {
   classId: number;
-  workoutName: string;
+  workoutName: string | null;
   scheduledDate: string;
   scheduledTime: string;
   durationMinutes: number;
-  coachFirstName: string;
-  coachLastName: string;
-  attendedAt: string;
-  score?: number;
-  scaling?: string;
+  coachFirstName: string | null;
+  coachLastName: string | null;
+  attendedAt: string | null;
+  score?: number | null;
+  scaling: string;
 }
 
 export class MemberService {

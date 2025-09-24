@@ -15,7 +15,17 @@ import { NativeModules, Platform } from 'react-native';
 import config from '../../config';
 import { getUser, getToken } from '../../utils/authStorage';
 
-const { Constants } = require('react-native-health');
+// Safe loading of react-native-health constants
+let Constants: any = null;
+try {
+  if (Platform.OS === 'ios') {
+    const RNHealth = require('react-native-health');
+    Constants = RNHealth.Constants;
+  }
+} catch (error) {
+  console.log('Failed to load react-native-health Constants:', error);
+}
+
 const { width } = Dimensions.get('window');
 
 interface StepData {
@@ -64,38 +74,54 @@ const StatsScreen = ({ navigation }: any) => {
 
   const initializeHealthKit = async () => {
     try {
+      // Add safety checks before accessing HealthKit
+      if (Platform.OS !== 'ios') {
+        console.log('HealthKit only available on iOS');
+        return;
+      }
+
       const healthKit = NativeModules.RCTAppleHealthKit;
       
-      if (healthKit && healthKit.initHealthKit) {
-        console.log('Attempting to initialize HealthKit...');
-        
-        const permissions = {
-          permissions: {
-            read: [
-              Constants.Permissions.Steps, 
-              Constants.Permissions.HeartRate,
-              Constants.Permissions.ActiveEnergyBurned,
-              Constants.Permissions.DistanceWalkingRunning
-            ],
-            write: [],
-          }
-        };
-
-        healthKit.initHealthKit(permissions, (error: string) => {
-          if (error) {
-            console.log('Error initializing HealthKit:', error);
-          } else {
-            console.log('HealthKit initialized successfully!');
-          }
-        });
-      } else {
-        console.log('HealthKit not available');
+      if (!healthKit) {
+        console.log('RCTAppleHealthKit module not found');
+        return;
       }
+
+      if (!healthKit.initHealthKit) {
+        console.log('initHealthKit method not available');
+        return;
+      }
+
+      if (!Constants) {
+        console.log('HealthKit Constants not available');
+        return;
+      }
+      
+      console.log('Attempting to initialize HealthKit...');
+      
+      const permissions = {
+        permissions: {
+          read: [
+            Constants.Permissions.Steps, 
+            Constants.Permissions.HeartRate,
+            Constants.Permissions.ActiveEnergyBurned,
+            Constants.Permissions.DistanceWalkingRunning
+          ],
+          write: [],
+        }
+      };
+
+      healthKit.initHealthKit(permissions, (error: string) => {
+        if (error) {
+          console.log('Error initializing HealthKit:', error);
+        } else {
+          console.log('HealthKit initialized successfully!');
+        }
+      });
     } catch (error) {
       console.log('Error in initializeHealthKit:', error);
     }
   };
-
 
   useEffect(() => {
     loadData();
@@ -131,6 +157,13 @@ const StatsScreen = ({ navigation }: any) => {
         return;
       }
 
+      // Check if required methods exist
+      if (!healthKit.getStepCount || !healthKit.getActiveEnergyBurned || !healthKit.getDistanceWalkingRunning) {
+        console.log('Required HealthKit methods not available');
+        setIsLoading(false);
+        return;
+      }
+
       // Get today's steps
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -152,8 +185,17 @@ const StatsScreen = ({ navigation }: any) => {
 
       console.log('Getting today\'s health metrics...');
       
-      // Get today's steps
+      // Add timeout for health data calls to prevent hanging
+      const timeoutDuration = 10000; // 10 seconds
+      
+      // Get today's steps with timeout
+      const stepTimeout = setTimeout(() => {
+        console.log('Step count request timed out');
+        setIsLoading(false);
+      }, timeoutDuration);
+
       healthKit.getStepCount(stepOptions, (error: string, results: any) => {
+        clearTimeout(stepTimeout);
         if (error) {
           console.log('Error getting today\'s steps:', error);
         } else {
@@ -167,8 +209,13 @@ const StatsScreen = ({ navigation }: any) => {
         }
       });
 
-      // Get today's active energy (calories)
+      // Get today's active energy (calories) with timeout
+      const caloriesTimeout = setTimeout(() => {
+        console.log('Calories request timed out');
+      }, timeoutDuration);
+
       healthKit.getActiveEnergyBurned(caloriesOptions, (error: string, results: any) => {
+        clearTimeout(caloriesTimeout);
         if (error) {
           console.log('Error getting today\'s calories:', error);
         } else {
@@ -177,14 +224,19 @@ const StatsScreen = ({ navigation }: any) => {
             const totalCalories = results.reduce((sum, item) => sum + (item.value || 0), 0);
             setTodayMetrics(prev => ({
               ...prev,
-              calories: totalCalories.toFixed(2)
+              calories: Math.round(totalCalories) // Fix: ensure it's a number, not string
             }));
           }
         }
       });
 
-      // Get today's distance
+      // Get today's distance with timeout
+      const distanceTimeout = setTimeout(() => {
+        console.log('Distance request timed out');
+      }, timeoutDuration);
+
       healthKit.getDistanceWalkingRunning(distanceOptions, (error: string, results: any) => {
+        clearTimeout(distanceTimeout);
         if (error) {
           console.log('Error getting today\'s distance:', error);
         } else {
@@ -201,7 +253,10 @@ const StatsScreen = ({ navigation }: any) => {
     } catch (error) {
       console.error('Error loading step data:', error);
     } finally {
-      setIsLoading(false);
+      // Set a fallback timeout to ensure loading stops
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 12000); // 12 seconds total timeout
     }
   };
 

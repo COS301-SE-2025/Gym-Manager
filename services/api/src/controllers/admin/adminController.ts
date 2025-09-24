@@ -80,6 +80,62 @@ export class AdminController {
     }
   };
 
+  updateClass = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      if (!Number.isFinite(classId)) {
+        return res.status(400).json({ error: 'Invalid class ID' });
+      }
+
+      const updates = req.body as {
+        capacity?: number;
+        scheduledDate?: string;
+        scheduledTime?: string;
+        durationMinutes?: number;
+        coachId?: number | null;
+      };
+
+      const updatedClass = await this.adminService.updateClass(classId, updates);
+      return res.json({ success: true, class: updatedClass });
+    } catch (error: any) {
+      console.error('updateClass error:', error);
+      
+      if (error.message === 'classId is required') {
+        return res.status(400).json({ error: 'classId is required' });
+      }
+      
+      if (error.message === 'Class not found') {
+        return res.status(404).json({ error: 'Class not found' });
+      }
+
+      return res.status(500).json({ error: 'Failed to update class' });
+    }
+  };
+
+  deleteClass = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      if (!Number.isFinite(classId)) {
+        return res.status(400).json({ error: 'Invalid class ID' });
+      }
+
+      const deleted = await this.adminService.deleteClass(classId);
+      if (!deleted) {
+        return res.status(404).json({ error: 'Class not found' });
+      }
+
+      return res.json({ success: true, message: 'Class deleted successfully' });
+    } catch (error: any) {
+      console.error('deleteClass error:', error);
+      
+      if (error.message === 'classId is required') {
+        return res.status(400).json({ error: 'classId is required' });
+      }
+
+      return res.status(500).json({ error: 'Failed to delete class' });
+    }
+  };
+
   assignUserToRole = async (req: Request, res: Response) => {
     try {
       const { userId, role } = req.body as AssignRoleRequest;

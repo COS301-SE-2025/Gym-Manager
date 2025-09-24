@@ -54,6 +54,14 @@ export interface IAdminService {
   createWeeklySchedule(request: WeeklyScheduleRequest): Promise<any[]>;
   getWeeklySchedule(): Promise<any>;
   createClass(request: CreateClassRequest): Promise<Class>;
+  updateClass(classId: number, updates: {
+    capacity?: number;
+    scheduledDate?: string;
+    scheduledTime?: string;
+    durationMinutes?: number;
+    coachId?: number | null;
+  }): Promise<Class>;
+  deleteClass(classId: number): Promise<boolean>;
   assignCoachToClass(classId: number, coachId: number): Promise<{ ok: boolean; reason?: string }>;
   assignUserToRole(userId: number, role: string): Promise<{ ok: boolean; reason?: string }>;
   getAllMembers(): Promise<any[]>;
@@ -70,6 +78,14 @@ export interface IAdminRepository {
   createWeeklySchedule(startDate: string, createdBy: number, weeklySchedule: WeeklyScheduleInput): Promise<any[]>;
   getWeeklySchedule(): Promise<any>;
   createClass(payload: CreateClassRequest): Promise<Class>;
+  updateClass(classId: number, updates: {
+    capacity?: number;
+    scheduledDate?: string;
+    scheduledTime?: string;
+    durationMinutes?: number;
+    coachId?: number | null;
+  }): Promise<Class>;
+  deleteClass(classId: number): Promise<boolean>;
   assignCoachToClass(classId: number, coachId: number): Promise<{ ok: boolean; reason?: string }>;
   assignUserToRole(userId: number, role: string): Promise<{ ok: boolean; reason?: string }>;
   getAllMembers(): Promise<any[]>;

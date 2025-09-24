@@ -23,6 +23,8 @@ export class AdminRoutes {
     this.router.post('/schedule/weekly', this.adminController.createWeeklySchedule);
     this.router.get('/schedule/weekly', this.adminController.getWeeklySchedule);
     this.router.post('/class', this.authMiddleware.isAuthenticated, this.adminController.createClass);
+    this.router.put('/classes/:classId', this.authMiddleware.isAuthenticated, this.adminController.updateClass);
+    this.router.delete('/classes/:classId', this.authMiddleware.isAuthenticated, this.adminController.deleteClass);
     this.router.post('/assign-coach', this.authMiddleware.isAuthenticated, this.adminController.assignCoach);
 
     // User management

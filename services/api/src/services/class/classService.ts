@@ -13,6 +13,11 @@ import {
 import { ClassRepository } from '../../repositories/class/classRepository';
 import { UserRepository } from '../../repositories/auth/userRepository';
 import { IUserRepository } from '../../domain/interfaces/auth.interface';
+import { AnalyticsService } from '../analytics/analyticsService';
+import { MemberService } from '../member/memberService';
+import { MemberRepository } from '../../repositories/member/memberRepository';
+import { GamificationService } from '../gamification/gamificationService';
+import { GamificationRepository } from '../../repositories/gamification/gamificationRepository';
 
 /**
  * ClassService - Business Layer
@@ -21,10 +26,22 @@ import { IUserRepository } from '../../domain/interfaces/auth.interface';
 export class ClassService implements IClassService {
   private classRepository: IClassRepository;
   private userRepository: UserRepository;
+  private analyticsService: AnalyticsService;
+  private memberService: MemberService;
+  private gamificationService: GamificationService;
 
-  constructor(classRepository?: IClassRepository, userRepository?: UserRepository) {
+  constructor(
+    classRepository?: IClassRepository,
+    userRepository?: UserRepository,
+    memberService?: MemberService,
+    analyticsService?: AnalyticsService,
+    gamificationService?: GamificationService,
+  ) {
     this.classRepository = classRepository || new ClassRepository();
     this.userRepository = userRepository || new UserRepository();
+    this.memberService = memberService || new MemberService(new MemberRepository());
+    this.analyticsService = analyticsService || new AnalyticsService();
+    this.gamificationService = gamificationService || new GamificationService(new GamificationRepository());
   }
 
   async getCoachAssignedClasses(coachId: number): Promise<Class[]> {
@@ -52,6 +69,14 @@ export class ClassService implements IClassService {
 
     const { rounds, ...workoutInfo } = workoutData;
     return this.classRepository.createWorkout(workoutInfo, rounds);
+  }
+
+  async updateWorkout(workoutId: number, workoutData: CreateWorkoutRequest): Promise<number> {
+    // Validate workout data
+    this.validateWorkoutData(workoutData);
+
+    const { rounds, ...workoutInfo } = workoutData;
+    return this.classRepository.updateWorkout(workoutId, workoutInfo, rounds);
   }
 
   async getAllClasses(userId: number): Promise<ClassWithWorkout[]> {
@@ -132,8 +157,29 @@ export class ClassService implements IClassService {
         throw new Error('Overlapping booking');
       }
 
+      // Check if member has sufficient credits (1 credit per class)
+      const currentCredits = await this.memberService.getCreditsBalance(memberId);
+      if (currentCredits < 1) {
+        throw new Error('Insufficient credits');
+      }
+
+      // Deduct 1 credit from member's account (within transaction)
+      await this.memberService.deductCredits(memberId, 1, tx);
+
       // Insert booking
       await this.classRepository.insertBooking(classId, memberId, tx);
+    });
+
+    // Log booking event
+    await this.analyticsService.addLog({
+      gymId: 1, // Assuming a single gym for now
+      userId: memberId,
+      eventType: 'class_booking',
+      properties: {
+        classId: classId,
+        memberId: memberId,
+      },
+      source: 'api',
     });
   }
 
@@ -142,15 +188,54 @@ export class ClassService implements IClassService {
     if (!attendance) {
       throw new Error('Already checked in');
     }
+
+    // Update gamification system (streaks, badges, points)
+    await this.gamificationService.recordClassAttendance(memberId, classId, new Date());
+
+    // Log attendance event
+    await this.analyticsService.addLog({
+      gymId: 1, // Assuming a single gym for now
+      userId: memberId,
+      eventType: 'class_attendance',
+      properties: {
+        classId: classId,
+        memberId: memberId,
+      },
+      source: 'api',
+    });
+
     return attendance;
   }
 
   async cancelBooking(classId: number, memberId: number): Promise<void> {
-    const result = await this.classRepository.deleteBooking(classId, memberId);
-    const rowCount = result?.rowCount ?? (Array.isArray(result) ? result.length : undefined);
-    if (rowCount === 0) {
-      throw new Error('Booking not found');
-    }
+    // Use transaction for cancellation
+    const { db } = await import('../../db/client');
+    await db.transaction(async (tx) => {
+      // Check if booking exists before canceling
+      const bookingExists = await this.classRepository.alreadyBooked(classId, memberId, tx);
+      if (!bookingExists) {
+        throw new Error('Booking not found');
+      }
+
+      // Delete the booking
+      const result = await this.classRepository.deleteBooking(classId, memberId, tx);
+      const rowCount = result?.rowCount ?? (Array.isArray(result) ? result.length : undefined);
+      if (rowCount === 0) {
+        throw new Error('Booking not found');
+      }
+
+      // Refund 1 credit to member's account (within transaction)
+      await this.memberService.addCredits(memberId, 1, tx);
+    });
+
+    // Log cancellation event
+    await this.analyticsService.addLog({
+      gymId: 1,
+      userId: memberId,
+      eventType: 'class_cancellation',
+      properties: { classId, memberId },
+      source: 'api',
+    });
   }
 
   private validateWorkoutData(workoutData: CreateWorkoutRequest): void {

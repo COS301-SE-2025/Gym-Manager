@@ -4,6 +4,7 @@ import { UserRepository } from '../../repositories/auth/userRepository';
 import { JwtService } from '../../infrastructure/auth/jwtService';
 import { PasswordService } from '../../infrastructure/auth/passwordService';
 import { NotificationService } from '../notifications/notificationService';
+import { AnalyticsService } from '../analytics/analyticsService';
 
 /**
  * AuthService - Business Layer
@@ -14,17 +15,21 @@ export class AuthService implements IAuthService {
   private jwtService: IJwtService;
   private passwordService: IPasswordService;
   private notificationService: NotificationService;
+  private analyticsService: AnalyticsService;
 
   constructor(
     userRepository?: IUserRepository,
     jwtService?: IJwtService,
     passwordService?: IPasswordService,
     notificationService?: NotificationService,
+    analyticsService?: AnalyticsService,
   ) {
     this.userRepository = userRepository || new UserRepository();
     this.jwtService = jwtService || new JwtService();
     this.passwordService = passwordService || new PasswordService();
     this.notificationService = notificationService || new NotificationService();
+    this.analyticsService = analyticsService || new AnalyticsService();
+
   }
 
   async register(userData: UserRegistrationData): Promise<AuthResult> {
@@ -57,6 +62,18 @@ export class AuthService implements IAuthService {
 
     // Emit admin notification for approval
     await this.notificationService.createUserSignupNotification(createdUser);
+
+    // Log user sign up event
+    await this.analyticsService.addLog({
+      gymId: 1, // Assuming a single gym for now
+      userId: createdUser.userId,
+      eventType: 'user_signup',
+      properties: {
+        email: userData.email,
+        roles: roles,
+      },
+      source: 'api',
+    });
 
     // Get roles for token generation
     const assignedRoles = await this.userRepository.getRolesByUserId(createdUser.userId);
@@ -96,6 +113,16 @@ export class AuthService implements IAuthService {
     // Get user roles
     const roles = await this.userRepository.getRolesByUserId(user.userId);
 
+    // Log admin login
+    if (roles.includes('admin')) {
+      await this.analyticsService.addLog({
+        gymId: 1, // Assuming a single gym for now
+        userId: user.userId,
+        eventType: 'admin_login',
+        properties: {},
+        source: 'api',
+      });
+    }
     // Generate tokens
     const token = this.jwtService.generateToken({ 
       userId: user.userId, 

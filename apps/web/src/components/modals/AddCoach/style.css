@@ -46,12 +46,29 @@
   color: #b0b0b0;
 }
 
+.modal input,
+.modal textarea,
 .modal select {
   padding: 10px;
   border-radius: 6px;
   border: 1px solid #555;
   background-color: #1e1e1e;
   color: #e0e0e0;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.modal input:focus,
+.modal textarea:focus,
+.modal select:focus {
+  outline: none;
+  border-color: #d8ff3e;
+  box-shadow: 0 0 0 2px rgba(216, 255, 62, 0.2);
+}
+
+.modal textarea {
+  resize: vertical;
+  min-height: 80px;
 }
 
 .modal-actions {

@@ -95,6 +95,17 @@ class ApiClient {
   async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.client.patch<T>(url, data, config);
   }
+
+  // Add a method to test API connectivity
+  async testConnection() {
+    try {
+      const response = await this.client.get('/health', { timeout: 3000 });
+      return response.data;
+    } catch (error) {
+      console.error('API connection test failed:', error);
+      throw error;
+    }
+  }
 }
 
 // Export a singleton instance

@@ -1,0 +1,256 @@
+.heatmap-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  width: 100%;
+  max-width: 100%;
+}
+
+.heatmap-title {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.heatmap-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.y-axis-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* Add gap to match grid gap */
+  padding-top: 35px; /* Match x-axis height to align with grid */
+  margin-right: 0.5rem; /* Move closer to grid */
+  height: calc(7 * 50px + 6 * 2px); /* 7 days * 50px height + 6 gaps * 2px */
+}
+
+.y-axis-label {
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: right;
+  padding-right: 0.25rem; /* Reduce padding to move closer */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 60px; /* Reduce width to move closer */
+  height: 50px; /* Match cell height */
+}
+
+.heatmap-grid-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0; /* Remove gap to ensure perfect alignment */
+  overflow: hidden; /* Hide overflow from parent */
+}
+
+.heatmap-scroll-wrapper {
+  overflow-x: auto; /* Enable horizontal scrolling */
+  overflow-y: hidden; /* Disable vertical scrolling */
+  max-width: 100%; /* Limit to container width */
+  padding-bottom: 10px; /* Add bottom padding to prevent cutoff */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #666 #2a2a2a; /* Firefox scrollbar colors */
+}
+
+.heatmap-scroll-wrapper::-webkit-scrollbar {
+  height: 8px; /* Webkit scrollbar height */
+}
+
+.heatmap-scroll-wrapper::-webkit-scrollbar-track {
+  background: #2a2a2a; /* Track background */
+  border-radius: 4px;
+}
+
+.heatmap-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #666; /* Thumb background */
+  border-radius: 4px;
+}
+
+.heatmap-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #888; /* Thumb hover background */
+}
+
+.x-axis-labels {
+  position: relative;
+  height: 35px;
+  margin-left: 60px; /* Match y-axis label width */
+  margin-bottom: 0; /* Remove any bottom margin */
+}
+
+.x-axis-label {
+  position: absolute;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+  transform: translateX(-50%);
+  top: 0;
+  height: 35px;
+  line-height: 35px;
+  left: 50%; /* Center within each cell width */
+}
+
+.heatmap-grid {
+  display: grid;
+  gap: 2px;
+  margin-left: 60px; /* Match reduced y-axis label width */
+  margin-top: 0; /* Remove top margin for perfect alignment */
+  margin-bottom: 5px; /* Add bottom margin to prevent cutoff */
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0; /* Remove padding for cleaner look */
+}
+
+.heatmap-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 2px;
+  margin: 0; /* Ensure no margin affects alignment */
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.05);
+  z-index: 10;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.cell-value {
+  color: #000;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+/* Color legend */
+.color-legend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.legend-label {
+  color: #aaa;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.legend-scale {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend-min,
+.legend-max {
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.legend-gradient {
+  width: 120px;
+  height: 20px;
+  border-radius: 10px;
+  border: 1px solid #434343;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .heatmap-container {
+    padding: 0;
+  }
+  
+  .y-axis-labels {
+    padding-top: 35px; /* Maintain alignment */
+    margin-right: 0.5rem;
+    gap: 2px; /* Maintain gap for day labels */
+    height: calc(7 * 50px + 6 * 2px); /* Maintain height calculation */
+  }
+  
+  .heatmap-grid {
+    margin-left: 55px;
+    margin-top: 0;
+    margin-bottom: 5px; /* Add bottom margin to prevent cutoff */
+    padding: 0;
+  }
+  
+  .x-axis-labels {
+    margin-left: 55px;
+    margin-bottom: 0;
+  }
+  
+  .y-axis-label {
+    min-width: 55px;
+    font-size: 0.85rem;
+    padding-right: 0.25rem;
+    height: 50px; /* Match cell height */
+  }
+  
+  .x-axis-label {
+    font-size: 0.85rem;
+  }
+  
+  .cell-value {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .heatmap-container {
+    padding: 0;
+  }
+  
+  .y-axis-labels {
+    padding-top: 35px; /* Maintain alignment */
+    margin-right: 0.5rem;
+    gap: 2px; /* Maintain gap for day labels */
+    height: calc(7 * 50px + 6 * 2px); /* Maintain height calculation */
+  }
+  
+  .heatmap-grid {
+    margin-left: 50px;
+    margin-top: 0;
+    margin-bottom: 5px; /* Add bottom margin to prevent cutoff */
+    padding: 0;
+  }
+  
+  .x-axis-labels {
+    margin-left: 50px;
+    margin-bottom: 0;
+  }
+  
+  .y-axis-label {
+    min-width: 50px;
+    font-size: 0.8rem;
+    padding-right: 0.25rem;
+    height: 50px; /* Match cell height */
+  }
+  
+  .x-axis-label {
+    font-size: 0.8rem;
+  }
+  
+  .cell-value {
+    font-size: 0.75rem;
+  }
+}

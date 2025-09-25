@@ -19,6 +19,7 @@ export interface IClassService {
   getCoachClassesWithWorkouts(coachId: number): Promise<ClassWithWorkout[]>;
   assignWorkoutToClass(coachId: number, classId: number, workoutId: number): Promise<void>;
   createWorkout(workoutData: CreateWorkoutRequest): Promise<number>;
+  updateWorkout(workoutId: number, workoutData: CreateWorkoutRequest): Promise<number>;
   getAllClasses(userId: number): Promise<ClassWithWorkout[]>;
   getMemberClasses(memberId: number): Promise<ClassWithWorkout[]>;
   getMemberUnbookedClasses(memberId: number): Promise<ClassWithWorkout[]>;
@@ -32,6 +33,7 @@ export interface IClassRepository {
   findAssignedClassesWithWorkoutsByCoach(coachId: number): Promise<ClassWithWorkout[]>;
   updateWorkoutForClass(classId: number, workoutId: number): Promise<void>;
   createWorkout(workoutData: Omit<Workout, 'workoutId'>, rounds: any[]): Promise<number>;
+  updateWorkout(workoutId: number, workoutData: Omit<Workout, 'workoutId'>, rounds: any[]): Promise<number>;
   getUpcomingClassesForMembers(condition: any): Promise<ClassWithWorkout[]>;
   getBookedClassesForMember(memberId: number, condition: any): Promise<ClassWithWorkout[]>;
   getUnbookedClassesForMember(memberId: number, condition: any): Promise<ClassWithWorkout[]>;
@@ -40,7 +42,7 @@ export interface IClassRepository {
   countBookingsForClass(classId: number, tx?: any): Promise<number>;
   insertBooking(classId: number, memberId: number, tx?: any): Promise<void>;
   insertAttendance(classId: number, memberId: number): Promise<ClassAttendance | null>;
-  deleteBooking(classId: number, memberId: number): Promise<any>;
+  deleteBooking(classId: number, memberId: number, tx?: any): Promise<any>;
   hasOverlappingBooking(
     memberId: number,
     window: { scheduledDate: string; scheduledTime: string; durationMinutes: number },
@@ -60,6 +62,7 @@ export interface IAdminService {
   removeRole(userId: number, role: string): Promise<void>;
   getRolesByUserId(userId: number): Promise<string[]>;
   getUserById(userId: number): Promise<any>;
+  updateUserRole(userId: number, newRole: string): Promise<{ ok: boolean; reason?: string }>;
   updateUserById(userId: number, updates: any): Promise<{ ok: boolean; reason?: string }>;
 }
 

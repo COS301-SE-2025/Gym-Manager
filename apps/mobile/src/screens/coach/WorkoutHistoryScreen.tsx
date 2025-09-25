@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
-import axios from 'axios';
-import config from '../../config';
-import { getToken } from '../../utils/authStorage';
+import { View, Text, StyleSheet, StatusBar, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import apiClient from '../../utils/apiClient';
 import CoachHistorySheet from '../../components/CoachHistorySheet';
 
 type ApiClassWithWorkout = {
@@ -34,13 +33,10 @@ export default function WorkoutHistoryScreen() {
       setLoading(true);
       setError(null);
       try {
-        const token = await getToken();
-        if (!token) throw new Error('Missing token');
-        const res = await axios.get<ApiClassWithWorkout[]>(
-          `${config.BASE_URL}/coach/classes-with-workouts`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        const res = await apiClient.get<ApiClassWithWorkout[]>(
+          '/coach/classes-with-workouts'
         );
-  
+
         // only include classes that actually have a workout assigned
         const items = res.data.filter(c => c.workoutId != null);
         // newest first
@@ -49,7 +45,7 @@ export default function WorkoutHistoryScreen() {
           const db = new Date(`${b.scheduledDate}T${b.scheduledTime}`).getTime();
           return db - da;
         });
-  
+
         setClasses(items);
       } catch (e: any) {
         setError('Failed to load workout history.');
@@ -98,7 +94,7 @@ export default function WorkoutHistoryScreen() {
     };
   
     return (
-      <SafeAreaView style={s.container}>
+      <SafeAreaView style={s.container} edges={['top', 'left', 'right']}>
         <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
         <View style={s.header}>
           <Text style={s.headerTitle}>Workout History</Text>
@@ -134,7 +130,7 @@ export default function WorkoutHistoryScreen() {
   
   const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#1a1a1a' },
-    header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
+    header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
     headerTitle: { color: 'white', fontSize: 18, fontWeight: '700' },
     card: { backgroundColor: '#2a2a2a', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#232323' },
     cardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },

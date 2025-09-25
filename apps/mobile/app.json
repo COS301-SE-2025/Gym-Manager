@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "Trainwise",
     "slug": "mobile",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -41,7 +41,9 @@
       }
     },
     "plugins": [
-      "react-native-health"
+      "react-native-health",
+      "expo-asset",
+      "expo-font"
     ]
   }
 }

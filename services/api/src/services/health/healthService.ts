@@ -21,7 +21,7 @@ export class HealthService implements IHealthService {
 
     try {
       // Call repository which will throw on timeout or DB failure
-      await this.healthRepository.ping(100);
+      await this.healthRepository.ping(5000);
       
       return {
         ok: true,

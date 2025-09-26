@@ -138,8 +138,6 @@ export default function CoachLiveClassScreen() {
         const minuteIndex = Math.max(0, Math.min((plannedMinutes || 1) - 1, Number(form.emomMinute || 0)));
         const finished = !!form.emomFinished;
         const finishSeconds = Math.max(0, Math.min(59, Number(form.emomSec || 0)));
-        // Coach endpoint (make sure route exists server-side):
-        // POST /coach/live/:classId/emom/mark { userId, minuteIndex, finished, finishSeconds }
         await call(`/coach/live/${classId}/emom/mark`, {
           userId: editUser.user_id,
           minuteIndex,
@@ -167,11 +165,19 @@ export default function CoachLiveClassScreen() {
         return;
       }
     } catch {}
-    // Fallback: attempt a home-like route, otherwise reset stack
     try { nav.navigate('Home'); return; } catch {}
     try { nav.navigate('Root'); return; } catch {}
     nav.popToTop();
   };
+
+  // 🔒 Only show Start when there is no active/ended session
+  const canStart = useMemo(() => {
+    const st = String(session?.status || '');
+    if (!session) return true;              // no session row yet
+    if (['live','paused','ended'].includes(st)) return false;
+    if (!!session.started_at) return false; // has history
+    return true;
+  }, [session]);
 
   return (
     <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
@@ -206,7 +212,7 @@ export default function CoachLiveClassScreen() {
         </View>
 
         <View style={{ height: 12 }} />
-        {session?.status !== 'live' && session?.status !== 'paused' ? (
+        {canStart ? (
           <TouchableOpacity style={s.btnPrimary} onPress={() => call(`/coach/live/${classId}/start`)}>
             <Ionicons name="play-circle-outline" size={20} color="#111" />
             <Text style={[s.btnPrimaryText, { marginLeft: 8 }]}>Start Workout</Text>
@@ -273,10 +279,18 @@ export default function CoachLiveClassScreen() {
               (r.first_name || r.last_name)
                 ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
                 : (r.name ?? `User ${r.user_id}`);
-            const right =
-              (type === 'FOR_TIME' || type === 'EMOM')
-                ? (r.finished ? fmt(Number(r.elapsed_seconds ?? 0)) : '—')
-                : `${Number(r.total_reps ?? 0)} reps`;
+
+            // ✅ Show reps on FOR TIME when not finished (DNF), else show time.
+            // EMOM shows time only when minute-set logic deems finished; otherwise '—'.
+            // INTERVAL/TABATA/AMRAP: always reps.
+            const right = (() => {
+              if (type === 'FOR_TIME' || type === 'EMOM') {
+                if (r.finished) return fmt(Number(r.elapsed_seconds ?? 0));
+                if (type === 'FOR_TIME') return `${Number(r.total_reps ?? 0)} reps`;
+                return '—';
+              }
+              return `${Number(r.total_reps ?? 0)} reps`;
+            })();
 
             return (
               <View key={`${r.user_id}-${i}`} style={s.lbRow}>
@@ -286,7 +300,7 @@ export default function CoachLiveClassScreen() {
                 </Text>
                 <Text style={s.score}>{right}</Text>
 
-                {/* Clear edit icon (ended only) */}
+                {/* Edit icon (only after class ended) */}
                 {isEnded && (
                   <TouchableOpacity style={s.editIconBtn} onPress={() => openEdit(r)} accessibilityLabel="Edit score">
                     <Ionicons name={type === 'EMOM' ? 'timer-outline' : 'pencil'} size={18} color="#fff" />
@@ -407,7 +421,7 @@ export default function CoachLiveClassScreen() {
                   </TouchableOpacity>
                 </View>
 
-                <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', marginTop: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 }}>
                   <TouchableOpacity
                     style={[s.toggle, form.emomFinished ? s.toggleOn : null]}
                     onPress={() => setForm(f => ({ ...f, emomFinished: !f.emomFinished }))}

@@ -26,6 +26,9 @@ export interface IGamificationService {
   // Leaderboard
   getStreakLeaderboard(limit?: number): Promise<Array<{ user: { userId: number; firstName: string; lastName: string }; streak: UserStreak }>>;
   getPointsLeaderboard(limit?: number): Promise<Array<{ user: { userId: number; firstName: string; lastName: string }; streak: UserStreak }>>;
+  
+  // Character level
+  getCharacterLevel(userId: number): Promise<{ level: 1|2|3|4|5; workoutsAttended: number }>;
 }
 
 export interface IGamificationRepository {

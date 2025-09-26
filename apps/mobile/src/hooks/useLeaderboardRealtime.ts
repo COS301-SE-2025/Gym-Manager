@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 
 export type LbFilter = 'ALL' | 'RX' | 'SC';
 
-type LbRow = {
+export type LbRow = {
   user_id: number;
   first_name?: string | null;
   last_name?: string | null;
@@ -28,8 +28,12 @@ export function useLeaderboardRealtime(classId: number, filter: LbFilter = 'ALL'
       const { data } = await axios.get(`${config.BASE_URL}/live/${classId}/leaderboard`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setAllRows(Array.isArray(data) ? data : []);
-    } catch {}
+      const rows = Array.isArray(data) ? data : [];
+      console.log('🔍 Leaderboard data received:', { classId, rowCount: rows.length, rows: rows.slice(0, 3) });
+      setAllRows(rows);
+    } catch (err) {
+      console.log('🔍 Leaderboard fetch error:', err);
+    }
   }, [classId]);
 
   useEffect(() => {

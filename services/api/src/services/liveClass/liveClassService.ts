@@ -53,6 +53,7 @@ export class LiveClassService implements ILiveClassService {
   // --- Workout steps ---
   // --- Workout steps ---
 // --- Workout steps ---
+// --- Workout steps ---
   async getWorkoutSteps(workoutId: number) {
     if (!Number.isFinite(workoutId) || workoutId <= 0) throw new Error('INVALID_WORKOUT_ID');
 
@@ -61,7 +62,32 @@ export class LiveClassService implements ILiveClassService {
     const meta = await this.repo.getWorkoutMetadata(workoutId);
     const workoutType = (workoutTypeRaw ?? 'FOR_TIME').toUpperCase();
 
+    // Build steps with TABATA/INTERVAL semantics:
+    // - quantity is ALWAYS seconds
+    // - quantity_type = 'reps'  => member enters reps (input visible)
+    // - quantity_type = 'duration' => timed-only (no input)
     const baseSteps: Step[] = rows.map((row: any, idx: number) => {
+      const round = Number(row.round_number);
+      const subround = Number(row.subround_number);
+      const seconds = Number(row.quantity); // always seconds in DB for TABATA/INTERVAL
+      const qType = String(row.quantity_type ?? '').toLowerCase();
+
+      if (['TABATA', 'INTERVAL'].includes(workoutType)) {
+        // Label always shows seconds; we surface quantityType so the client can decide about inputs
+        const label = `${row.name} ${seconds}s`;
+        return {
+          index: idx,
+          name: label,
+          duration: seconds,
+          round,
+          subround,
+          // not used for cum reps, but handy for the client:
+          // @ts-ignore – allow extra field
+          quantityType: qType,            // 'reps' (enter reps) or 'duration' (timed-only)
+        };
+      }
+
+      // Default / non-interval types keep existing behavior
       const isReps = row.quantity_type === 'reps';
       const isDur  = row.quantity_type === 'duration';
       const reps = isReps ? Number(row.quantity) : undefined;
@@ -72,9 +98,11 @@ export class LiveClassService implements ILiveClassService {
         name: label,
         reps,
         duration: dur,
-        round: Number(row.round_number),
-        subround: Number(row.subround_number),
+        round,
+        subround,
         target_reps: row.target_reps != null ? Number(row.target_reps) : undefined,
+        // @ts-ignore – allow extra field
+        quantityType: qType,
       };
     });
 
@@ -87,7 +115,7 @@ export class LiveClassService implements ILiveClassService {
       const baseRoundNo = Math.min(...Array.from(uniqRounds));
       const template = stepsIn
         .filter(s => Number(s.round) === baseRoundNo)
-        .sort((a, b) => a.subround - b.subround || a.index - b.index);
+        .sort((a, b) => (a as any).subround - (b as any).subround || a.index - b.index);
 
       const out: Step[] = [];
       let idx = 0;
@@ -100,10 +128,10 @@ export class LiveClassService implements ILiveClassService {
     let steps: Step[];
 
     if (workoutType === 'EMOM') {
-      // 👇 Reindex by subround so each subround becomes the "round bucket"
+      // EMOM: keep existing grouping-by-subround ordering
       const bySub: Record<number, Step[]> = {};
       for (const s of baseSteps) {
-        const sr = Math.max(1, Number(s.subround || 1));
+        const sr = Math.max(1, Number((s as any).subround || 1));
         (bySub[sr] ??= []).push(s);
       }
       const out: Step[] = [];
@@ -120,16 +148,17 @@ export class LiveClassService implements ILiveClassService {
       steps = baseSteps.map((s, i) => ({ ...s, index: i }));
     }
 
-    // cum reps (used elsewhere; safe for EMOM)
+    // cum reps (used by non-interval types; safe here)
     const stepsCumReps: number[] = [];
     let running = 0;
     for (const s of steps) {
-      if (typeof s.reps === 'number') running += s.reps;
+      if (typeof (s as any).reps === 'number') running += (s as any).reps;
       stepsCumReps.push(running);
     }
 
     return { steps, stepsCumReps, workoutType, metadata: meta };
   }
+
 
 
 
@@ -193,38 +222,35 @@ export class LiveClassService implements ILiveClassService {
   }
 
 
+  // in LiveClassService
   async startLiveClass(classId: number) {
+    const existing = await this.repo.getClassSession(classId);
+    if (existing) {
+      const st = String(existing.status || '');
+      if (st === 'ended') throw new Error('ALREADY_ENDED');
+      if (st === 'live' || st === 'paused') throw new Error('ALREADY_STARTED');
+    }
+
     const cls = await this.repo.getClassMeta(classId);
     if (!cls) throw new Error('CLASS_NOT_FOUND');
     if (!cls.workout_id) throw new Error('WORKOUT_NOT_ASSIGNED');
 
     const workoutId: number = Number(cls.workout_id);
-
-    // Get steps (already expanded for FOR TIME) + type
     const { steps, stepsCumReps, workoutType } = await this.getWorkoutSteps(workoutId);
-
-    // Load metadata so we can pass it through AND apply time cap from metadata if present
     const meta = await this.repo.getWorkoutMetadata(workoutId);
     const capFromMeta = Number(meta?.time_limit ?? 0) * 60;
     const timeCapSeconds =
-      Number.isFinite(capFromMeta) && capFromMeta > 0
-        ? capFromMeta
-        : Number(cls.duration_minutes || 0) * 60;
+      Number.isFinite(capFromMeta) && capFromMeta > 0 ? capFromMeta : Number(cls.duration_minutes || 0) * 60;
 
     await this.repo.upsertClassSession(
-      classId,
-      workoutId,
-      timeCapSeconds,
-      steps,
-      stepsCumReps,
-      workoutType,
-      meta
+      classId, workoutId, timeCapSeconds, steps, stepsCumReps, workoutType, meta
     );
 
     await this.repo.seedLiveProgressForClass(classId);
     await this.repo.resetLiveProgressForClass(classId);
     return this.repo.getClassSession(classId);
   }
+
 
 
   async stopLiveClass(classId: number) {
@@ -291,23 +317,73 @@ export class LiveClassService implements ILiveClassService {
     return { ok: true, current_step: row?.current_step ?? 0, finished: !!row?.finished_at };
   }
 
-  // --- Submit partial reps (DNF) ---
+
   async submitPartial(classId: number, userId: number, reps: number) {
     const safe = Math.max(0, Number(reps || 0));
     await this.repo.ensureProgressRow(classId, userId);
     await this.repo.setPartialReps(classId, userId, safe);
+
+    // 👇 If the class already ended, recompute & persist finals so leaderboards update
+    try {
+      const sess = await this.repo.getClassSession(classId);
+      if (String(sess?.status ?? '').toLowerCase() === 'ended') {
+        await this.repo.persistScoresFromLive(classId);
+      }
+    } catch (e) {
+      console.error('persist after partial failed', e);
+    }
+
     return { ok: true, reps: safe };
   }
+  
 
-  // --- Realtime leaderboard ---
   async getRealtimeLeaderboard(classId: number) {
-    const type = await this.repo.getWorkoutTypeByClass(classId);
-    if (!type) throw new Error('WORKOUT_NOT_FOUND_FOR_CLASS');
+    const sess  = await this.repo.getClassSession(classId);
+    const status = String(sess?.status ?? '').toLowerCase();
+    const type   = (sess?.workout_type || await this.repo.getWorkoutTypeByClass(classId) || '')
+      .toString()
+      .toUpperCase();
 
-    const t = type.toUpperCase();
-    if (t === 'EMOM') return this.repo.realtimeEmomLeaderboard(classId);
-    if (t === 'INTERVAL' || t === 'TABATA') return this.repo.realtimeIntervalLeaderboard(classId);
-    if (t === 'AMRAP') return this.repo.realtimeAmrapLeaderboard(classId);
+    if (status === 'ended') {
+      const finals = await this.repo.getFinalLeaderboard(classId);
+
+      const mapped = (finals || []).map((r: any) => {
+        const finished = !!(r.finished ?? false);
+        const seconds  = r.scoreSeconds ?? r.score_seconds ?? null;
+        const reps     = r.scoreReps    ?? r.score_reps    ?? r.score ?? null;
+
+        return {
+          user_id: Number(r.memberId ?? r.user_id ?? r.userId),
+          first_name: r.firstName ?? r.first_name ?? null,
+          last_name:  r.lastName  ?? r.last_name  ?? null,
+          finished,
+          elapsed_seconds: finished ? (seconds != null ? Number(seconds) : null) : null,
+          total_reps: !finished ? (reps != null ? Number(reps) : 0) : (r.scoreReps ?? r.score_reps ?? null),
+          scaling: ((r.scaling ?? 'RX') as string).toUpperCase(),
+          name: r.name ?? null,
+        };
+      });
+
+      if (type === 'FOR_TIME') {
+        mapped.sort((a: { finished: any; elapsed_seconds: number; total_reps: any; }, b: { finished: any; elapsed_seconds: number; total_reps: any; }) => {
+          if (a.finished && b.finished) {
+            const ta = a.elapsed_seconds ?? Number.MAX_SAFE_INTEGER;
+            const tb = b.elapsed_seconds ?? Number.MAX_SAFE_INTEGER;
+            return ta - tb || (b.total_reps ?? 0) - (a.total_reps ?? 0);
+          }
+          if (a.finished !== b.finished) return a.finished ? -1 : 1;
+          return (b.total_reps ?? 0) - (a.total_reps ?? 0);
+        });
+      } else {
+        mapped.sort((a: { total_reps: any; }, b: { total_reps: any; }) => (b.total_reps ?? 0) - (a.total_reps ?? 0));
+      }
+
+      return mapped;
+    }
+
+    if (type === 'EMOM') return this.repo.realtimeEmomLeaderboard(classId);
+    if (type === 'INTERVAL' || type === 'TABATA') return this.repo.realtimeIntervalLeaderboard(classId);
+    if (type === 'AMRAP') return this.repo.realtimeAmrapLeaderboard(classId);
     return this.repo.realtimeForTimeLeaderboard(classId);
   }
 

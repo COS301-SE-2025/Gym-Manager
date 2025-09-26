@@ -48,6 +48,10 @@ export class GamificationRoutes {
       this.gamificationController.recordWorkoutCompletion(req, res)
     );
 
+    this.router.get(
+      '/character', this.authMiddleware.isAuthenticated, (req, res) => this.gamificationController.getCharacterLevel(req, res)
+    );
+
   }
 
   public getRouter(): Router {

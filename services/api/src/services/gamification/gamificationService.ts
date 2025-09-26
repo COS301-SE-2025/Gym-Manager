@@ -355,8 +355,10 @@ export class GamificationService implements IGamificationService {
   ): GamificationStats {
     const currentLevel = userStreak.level;
     const nextLevel = currentLevel + 1;
-    const pointsToNext = this.getPointsToNextLevel(currentLevel);
-    const pointsInCurrent = userStreak.totalPoints - this.getPointsForLevel(currentLevel - 1);
+    const pointsForCurrentLevel = this.getPointsForLevel(currentLevel - 1);
+    const pointsForNextLevel = this.getPointsForLevel(currentLevel);
+    const pointsInCurrent = userStreak.totalPoints - pointsForCurrentLevel;
+    const pointsToNext = Math.max(0, pointsForNextLevel - userStreak.totalPoints);
     
     // Calculate workouts this week (last 7 days)
     const workoutsThisWeek = weeklyHistory.reduce((sum, day) => sum + Number(day.count), 0);
@@ -417,12 +419,14 @@ export class GamificationService implements IGamificationService {
   }
 
   getPointsToNextLevel(currentLevel: number): number {
+    const currentLevelPoints = this.getPointsForLevel(currentLevel - 1);
     const nextLevelPoints = this.getPointsForLevel(currentLevel);
-    return nextLevelPoints;
+    return nextLevelPoints - currentLevelPoints;
   }
 
   private getPointsForLevel(level: number): number {
-    if (level <= 1) return 100;
+    if (level <= 0) return 0;
+    if (level === 1) return 100;
     return level * 100;
   }
 
@@ -434,4 +438,19 @@ export class GamificationService implements IGamificationService {
   async getPointsLeaderboard(limit: number = 10): Promise<Array<{ user: { userId: number; firstName: string; lastName: string }; streak: UserStreak }>> {
     return await this.gamificationRepository.getPointsLeaderboard(limit);
   }
+
+  async getCharacterLevel(userId: number): Promise<{ level: 1|2|3|4|5; workoutsAttended: number }> {
+    // Count *attended* classes from classattendance
+    const workoutsAttended = await this.gamificationRepository.getUserWorkoutCount(userId);
+
+    // Map counts -> level (1,5,20,50,100)
+    let level: 1|2|3|4|5 = 1;
+    if (workoutsAttended >= 100) level = 5;
+    else if (workoutsAttended >= 50) level = 4;
+    else if (workoutsAttended >= 20) level = 3;
+    else if (workoutsAttended >= 5)  level = 2;
+
+    return { level, workoutsAttended };
+  }
+
 }

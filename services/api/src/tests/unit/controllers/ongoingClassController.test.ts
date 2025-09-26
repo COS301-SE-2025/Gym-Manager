@@ -2,10 +2,13 @@
  * ongoingClassController.test.ts
  * Unit tests for getLeaderboard, getLiveClass, submitScore
  */
-import * as ctrl from '../../../controllers/ongoingClassController';
+import { LiveClassController } from '../../../controllers/liveClass/liveClassController';
 import { db } from '../../../db/client';
 import { Request, Response } from 'express';
 import { builder } from '../../builder';
+
+// Create controller instance for testing
+const controller = new LiveClassController();
 
 // ──────────────────── Drizzle Mock ──────────────────────────
 var insertMock: jest.Mock;
@@ -64,7 +67,7 @@ afterEach(jest.clearAllMocks);
 describe('getLeaderboard', () => {
   it('400 if classId missing', async () => {
     const res = mockRes();
-    await ctrl.getLeaderboard(mockReq(1, [], { params: {} }), res);
+    await controller.getLeaderboard(mockReq(1, [], { params: {} }), res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
@@ -73,7 +76,7 @@ describe('getLeaderboard', () => {
     (db.select as jest.Mock).mockReturnValue(builder(rows));
     const req = mockReq(1, [], { params: { classId: '5' } });
     const res = mockRes();
-    await ctrl.getLeaderboard(req, res);
+    await controller.getLeaderboard(req, res);
     expect(res.json).toHaveBeenCalledWith(rows);
   });
 });
@@ -86,7 +89,7 @@ describe('getLiveClass', () => {
 
   it('401 when missing user', async () => {
     const res = mockRes();
-    await ctrl.getLiveClass(mockReq(undefined), res);
+    await controller.getLiveClass(mockReq(undefined), res);
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
@@ -106,7 +109,7 @@ describe('getLiveClass', () => {
 
     const req = mockReq(30, ['coach']);
     const res = mockRes();
-    await ctrl.getLiveClass(req, res);
+    await controller.getLiveClass(req, res);
 
     expect(res.json).toHaveBeenCalledWith({
       ongoing: true,
@@ -130,7 +133,7 @@ describe('getLiveClass', () => {
 
     const req = mockReq(50, ['member']);
     const res = mockRes();
-    await ctrl.getLiveClass(req, res);
+    await controller.getLiveClass(req, res);
 
     expect(res.json).toHaveBeenCalledWith({
       ongoing: true,
@@ -142,7 +145,7 @@ describe('getLiveClass', () => {
   it('returns ongoing=false when nothing live', async () => {
     (db.select as jest.Mock).mockReturnValue(builder([]));
     const res = mockRes();
-    await ctrl.getLiveClass(mockReq(99, ['member']), res);
+    await controller.getLiveClass(mockReq(99, ['member']), res);
     expect(res.json).toHaveBeenCalledWith({ ongoing: false });
   });
 });
@@ -155,7 +158,7 @@ describe('submitScore', () => {
 
   it('401 when unauthenticated', async () => {
     const res = mockRes();
-    await ctrl.submitScore(mockReq(undefined), res);
+    await controller.submitScore(mockReq(undefined), res);
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
@@ -167,7 +170,7 @@ describe('submitScore', () => {
         scores: [{ userId: 2, score: 90 }],
       });
       const res = mockRes();
-      await ctrl.submitScore(req, res);
+      await controller.submitScore(req, res);
       expect(res.status).toHaveBeenCalledWith(403);
     });
 
@@ -181,7 +184,7 @@ describe('submitScore', () => {
         ],
       });
       const res = mockRes();
-      await ctrl.submitScore(req, res);
+      await controller.submitScore(req, res);
       // insert called twice
       expect(insertMock).toHaveBeenCalledTimes(2);
       expect(res.json).toHaveBeenCalledWith({ success: true, updated: 2 });
@@ -194,7 +197,7 @@ describe('submitScore', () => {
       (db.select as jest.Mock).mockReturnValue(builder([]));
       const req = baseReq(40, ['member'], { classId: 5, score: 55 });
       const res = mockRes();
-      await ctrl.submitScore(req, res);
+      await controller.submitScore(req, res);
       expect(res.status).toHaveBeenCalledWith(403);
     });
 
@@ -203,7 +206,7 @@ describe('submitScore', () => {
       (db.select as jest.Mock).mockReturnValue(builder([{}]));
       const req = baseReq(40, ['member'], { classId: 5, score: 60 });
       const res = mockRes();
-      await ctrl.submitScore(req, res);
+      await controller.submitScore(req, res);
       expect(insertMock).toHaveBeenCalledTimes(1);
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
@@ -223,7 +226,7 @@ describe('getWorkoutSteps', () => {
     const req = mockReq(1, ['member'], { params: { workoutId: '1' } });
     const res = mockRes();
     
-    await ctrl.getWorkoutSteps(req, res);
+    await controller.getWorkoutSteps(req, res);
     
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       workoutType: mockWorkoutType
@@ -234,7 +237,7 @@ describe('getWorkoutSteps', () => {
     const req = mockReq(1, ['member'], { params: { workoutId: 'invalid' } });
     const res = mockRes();
     
-    await ctrl.getWorkoutSteps(req, res);
+    await controller.getWorkoutSteps(req, res);
     
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ error: 'INVALID_WORKOUT_ID' });
@@ -246,7 +249,7 @@ describe('startLiveClass', () => {
     const req = mockReq();
     const res = mockRes();
     
-    await ctrl.startLiveClass(req, res);
+    await controller.startLiveClass(req, res);
     
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
@@ -258,7 +261,7 @@ describe('startLiveClass', () => {
     const req = mockReq(1, ['coach'], { params: { classId: '1' } });
     const res = mockRes();
     
-    await ctrl.startLiveClass(req, res);
+    await controller.startLiveClass(req, res);
     
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({ error: 'CLASS_NOT_FOUND' });
@@ -272,7 +275,7 @@ describe('stopLiveClass', () => {
     const req = mockReq(1, ['coach'], { params: { classId: '1' } });
     const res = mockRes();
     
-    await ctrl.stopLiveClass(req, res);
+    await controller.stopLiveClass(req, res);
     
     expect(res.json).toHaveBeenCalledWith({ ok: true, classId: 1 });
   });
@@ -281,7 +284,7 @@ describe('stopLiveClass', () => {
     const req = mockReq();
     const res = mockRes();
     
-    await ctrl.stopLiveClass(req, res);
+    await controller.stopLiveClass(req, res);
     
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
@@ -293,7 +296,7 @@ describe('advanceProgress', () => {
     const req = mockReq();
     const res = mockRes();
     
-    await ctrl.advanceProgress(req, res);
+    await controller.advanceProgress(req, res);
     
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
@@ -308,7 +311,7 @@ describe('advanceProgress', () => {
     });
     const res = mockRes();
     
-    await ctrl.advanceProgress(req, res);
+    await controller.advanceProgress(req, res);
     
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ error: 'CLASS_SESSION_NOT_STARTED' });
@@ -328,7 +331,7 @@ describe('submitPartial', () => {
     });
     const res = mockRes();
     
-    await ctrl.submitPartial(req, res);
+    await controller.submitPartial(req, res);
     
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       ok: true,
@@ -340,7 +343,7 @@ describe('submitPartial', () => {
     const req = mockReq();
     const res = mockRes();
     
-    await ctrl.submitPartial(req, res);
+    await controller.submitPartial(req, res);
     
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
@@ -354,7 +357,7 @@ describe('getRealtimeLeaderboard', () => {
     const req = mockReq(1, ['member'], { params: { classId: '1' } });
     const res = mockRes();
     
-    await ctrl.getRealtimeLeaderboard(req, res);
+    await controller.getRealtimeLeaderboard(req, res);
     
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({ error: 'WORKOUT_NOT_FOUND_FOR_CLASS' });
@@ -366,7 +369,7 @@ describe('getRealtimeLeaderboard', () => {
     const req = mockReq(1, ['member'], { params: { classId: '1' } });
     const res = mockRes();
     
-    await ctrl.getRealtimeLeaderboard(req, res);
+    await controller.getRealtimeLeaderboard(req, res);
     
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: 'LEADERBOARD_FAILED' });
@@ -382,7 +385,7 @@ describe('getMyProgress', () => {
     const req = mockReq(1, ['member'], { params: { classId: '1' } });
     const res = mockRes();
     
-    await ctrl.getMyProgress(req, res);
+    await controller.getMyProgress(req, res);
     
     expect(res.json).toHaveBeenCalledWith(mockProgress);
   });
@@ -391,7 +394,7 @@ describe('getMyProgress', () => {
     const req = mockReq();
     const res = mockRes();
     
-    await ctrl.getMyProgress(req, res);
+    await controller.getMyProgress(req, res);
     
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
@@ -403,7 +406,7 @@ describe('postIntervalScore', () => {
     const req = mockReq();
     const res = mockRes();
     
-    await ctrl.postIntervalScore(req, res);
+    await controller.postIntervalScore(req, res);
     
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: 'UNAUTHORIZED' });
@@ -418,7 +421,7 @@ describe('postIntervalScore', () => {
     });
     const res = mockRes();
     
-    await ctrl.postIntervalScore(req, res);
+    await controller.postIntervalScore(req, res);
     
     expect(res.status).toHaveBeenCalledWith(404);
     expect(res.json).toHaveBeenCalledWith({ error: 'SESSION_NOT_FOUND' });
@@ -433,7 +436,7 @@ describe('postIntervalScore', () => {
     });
     const res = mockRes();
     
-    await ctrl.postIntervalScore(req, res);
+    await controller.postIntervalScore(req, res);
     
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ error: 'INVALID_STEP_INDEX' });
@@ -447,7 +450,7 @@ describe('getIntervalLeaderboard', () => {
     const req = mockReq(1, ['member'], { params: { classId: '1' } });
     const res = mockRes();
     
-    await ctrl.getIntervalLeaderboard(req, res);
+    await controller.getIntervalLeaderboard(req, res);
     
     expect(res.json).toHaveBeenCalledWith([]);
   });

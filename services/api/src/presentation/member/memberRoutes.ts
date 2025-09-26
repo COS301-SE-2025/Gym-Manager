@@ -39,6 +39,11 @@ export class MemberRoutes {
     this.router.get('/:userId/profile', this.authMiddleware.isAuthenticated, (req, res) => {
       this.memberController.getMemberProfile(req, res);
     });
+
+    // Get member's attended classes
+    this.router.get('/:userId/attended-classes', this.authMiddleware.isAuthenticated, (req, res) => {
+      this.memberController.getAttendedClasses(req, res);
+    });
   }
 
   getRouter(): Router {

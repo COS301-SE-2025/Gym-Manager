@@ -9,6 +9,7 @@ import {
   Alert,
   FlatList,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { UserBadge, BadgeDefinition } from '../../types/gamification';
 import { gamificationService } from '../../services/gamificationService';
 import { BadgeCard } from '../../components/gamification/BadgeCard';
@@ -72,9 +73,12 @@ export default function BadgesScreen() {
       return (
         <View style={[styles.badgeContainer, !isEarned && styles.unearnedBadge]}>
           <View style={styles.badgeHeader}>
-            <Text style={styles.badgeIcon}>
-              {gamificationService.getBadgeIcon(badge.badgeType)}
-            </Text>
+            <Ionicons 
+              name={gamificationService.getBadgeIcon(badge.badgeType, badge.name) as any} 
+              size={32} 
+              color={isEarned ? "#D8FF3E" : "#666"} 
+              style={styles.badgeIcon} 
+            />
             <View style={styles.badgeInfo}>
               <Text style={[styles.badgeName, !isEarned && styles.unearnedText]}>
                 {badge.name}
@@ -244,7 +248,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   badgeIcon: {
-    fontSize: 32,
     marginRight: 16,
   },
   badgeInfo: {

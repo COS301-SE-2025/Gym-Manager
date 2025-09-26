@@ -1,10 +1,13 @@
 /**
- * userSettingsController.test.ts – unit tests for editSettings
+ * userSettingsController.test.ts – unit tests for controller.editSettings
  */
-import { editSettings } from '../../../controllers/userSettingsController';
+import { UserSettingsController } from '../../../controllers/userSettings/userSettingsController';
 import { db }            from '../../../db/client';
 import { Request, Response } from 'express';
 import { builder }       from '../../builder';
+
+// Create controller instance for testing
+const controller = new UserSettingsController();
 
 // ─── DB stub ────────────────────────────────────────────────
 jest.mock('../../../db/client', () => ({
@@ -34,12 +37,12 @@ beforeAll(() => {
 afterEach(jest.clearAllMocks);
 
 // ─── tests ──────────────────────────────────────────────────
-describe('editSettings', () => {
+describe('controller.editSettings', () => {
   it('400 when publicVisibility is not boolean', async () => {
     const req = mockReq('yes');               // ← wrong type
     const res = mockRes();
 
-    await editSettings(req, res);
+    await controller.editSettings(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({
@@ -55,7 +58,7 @@ describe('editSettings', () => {
     const req = mockReq(false);
     const res = mockRes();
 
-    await editSettings(req, res);
+    await controller.editSettings(req, res);
 
     expect(db.update).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(404);
@@ -68,7 +71,7 @@ describe('editSettings', () => {
     const req = mockReq(true);
     const res = mockRes();
 
-    await editSettings(req, res);
+    await controller.editSettings(req, res);
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({
@@ -84,7 +87,7 @@ describe('editSettings', () => {
     const req = mockReq(true);
     const res = mockRes();
 
-    await editSettings(req, res);
+    await controller.editSettings(req, res);
 
     expect(db.update).toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith({

@@ -36,6 +36,14 @@ export default function RoleSelectionScreen() {
         <IconLogo width={60} height={58} />
       </View>
 
+      {/* Title and Description */}
+      <View style={styles.titleContainer}>
+        <Text style={styles.title}>Choose Your Profile</Text>
+        <Text style={styles.subtitle}>
+          Select how you'd like to use the app - as a member to book classes and track your fitness, or as a coach to manage classes and members.
+        </Text>
+      </View>
+
       {/* Spacer */}
       <View style={styles.spacer} />
 
@@ -64,6 +72,25 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: 'center',
     marginTop: 40,
+  },
+  titleContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginTop: 40,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#888',
+    textAlign: 'center',
+    lineHeight: 24,
+    maxWidth: 320,
   },
   spacer: {
     flex: 1,

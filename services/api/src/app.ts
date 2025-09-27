@@ -88,6 +88,11 @@ export class App {
     this.app.get('/health', (req, res) => {
       res.json({ status: 'OK', timestamp: new Date().toISOString() });
     });
+
+    // Shallow health endpoint that doesn't touch the database (used in CI)
+    this.app.get('/healthz', (_req, res) => {
+      res.json({ status: 'OK', timestamp: new Date().toISOString() });
+    });
     
     // Setup Swagger documentation
     setupSwagger(this.app as any);

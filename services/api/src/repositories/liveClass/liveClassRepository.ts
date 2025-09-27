@@ -648,7 +648,7 @@ export class LiveClassRepository implements ILiveClassRepository {
         where cb.class_id = ${classId}
       ),
 
-      /* ✅ Generate rows ONLY when we actually have past minutes.
+      /* Generate rows ONLY when we actually have past minutes.
         If full_minutes = 0, this produces ZERO rows (no phantom +60). */
       past_idx as (
         select m.user_id, gs.idx as minute_index

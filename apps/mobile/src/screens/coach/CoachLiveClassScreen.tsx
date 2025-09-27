@@ -170,7 +170,7 @@ export default function CoachLiveClassScreen() {
     nav.popToTop();
   };
 
-  // 🔒 Only show Start when there is no active/ended session
+  // Only show Start when there is no active/ended session
   const canStart = useMemo(() => {
     const st = String(session?.status || '');
     if (!session) return true;              // no session row yet
@@ -280,7 +280,7 @@ export default function CoachLiveClassScreen() {
                 ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
                 : (r.name ?? `User ${r.user_id}`);
 
-            // ✅ Show reps on FOR TIME when not finished (DNF), else show time.
+            // Show reps on FOR TIME when not finished (DNF), else show time.
             // EMOM shows time only when minute-set logic deems finished; otherwise '—'.
             // INTERVAL/TABATA/AMRAP: always reps.
             const right = (() => {

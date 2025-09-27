@@ -90,7 +90,7 @@ const OnboardingScreen = ({ navigation }: OnboardingScreenProps) => {
         }}
         keyExtractor={(item) => item.key}
       />
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
+      <View style={[styles.footer, { paddingBottom: 20 }]}>
         <View style={styles.pagination}>
           {onboardingSlides.map((_, index) => (
             <View

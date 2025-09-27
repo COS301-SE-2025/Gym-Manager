@@ -144,6 +144,12 @@ jobs:
           wget https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-$JM_VERSION.zip
           unzip -q apache-jmeter-$JM_VERSION.zip
           export PATH="$PWD/apache-jmeter-$JM_VERSION/bin:$PATH"
+
+          npm ci
+          npm run build || true
+          nohup npm run start &
+          sleep 10 
+          
           jmeter -n \
             -t tests/perf/healthz.jmx \
             -l tests/perf/results.jtl \

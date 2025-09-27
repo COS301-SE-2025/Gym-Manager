@@ -138,6 +138,12 @@ jobs:
           duration: 60
           MAX_MS: 300
         run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+          JM_VERSION=5.6.3
+          wget https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-$JM_VERSION.zip
+          unzip -q apache-jmeter-$JM_VERSION.zip
+          export PATH="$PWD/apache-jmeter-$JM_VERSION/bin:$PATH"
           jmeter -n \
             -t tests/perf/healthz.jmx \
             -l tests/perf/results.jtl \

@@ -59,6 +59,58 @@ export class AdminService implements IAdminService {
     return this.adminRepository.assignCoachToClass(classId, coachId);
   }
 
+  async updateClass(
+    classId: number,
+    updates: {
+      capacity?: number;
+      scheduledDate?: string;
+      scheduledTime?: string;
+      durationMinutes?: number;
+      coachId?: number | null;
+    },
+  ): Promise<Class> {
+    if (!classId) {
+      throw new Error('classId is required');
+    }
+
+    const updatedClass = await this.adminRepository.updateClass(classId, updates);
+    
+    await this.analyticsService.addLog({
+      gymId: 1, // Assuming a single gym for now
+      userId: null, // Could be added from request context
+      eventType: 'class_update',
+      properties: {
+        classId: updatedClass.classId,
+        updates: updates,
+      },
+      source: 'api',
+    });
+
+    return updatedClass;
+  }
+
+  async deleteClass(classId: number): Promise<boolean> {
+    if (!classId) {
+      throw new Error('classId is required');
+    }
+
+    const deleted = await this.adminRepository.deleteClass(classId);
+    
+    if (deleted) {
+      await this.analyticsService.addLog({
+        gymId: 1, // Assuming a single gym for now
+        userId: null, // Could be added from request context
+        eventType: 'class_deletion',
+        properties: {
+          classId: classId,
+        },
+        source: 'api',
+      });
+    }
+
+    return deleted;
+  }
+
   async assignUserToRole(userId: number, role: string): Promise<{ ok: boolean; reason?: string }> {
     if (!userId || !role) {
       throw new Error('Missing userId or role');

@@ -16,7 +16,7 @@ export function useSession(classId?: number) {
       } catch (err: any) {
         const status = err?.response?.status;
         if (status === 404) {
-          // No session yet — clear stale state & avoid noisy redbox
+          // No session yet - clear stale state & avoid noisy redbox
           if (!canceled) setSess(null);
         } else {
           console.warn('Failed to fetch session:', err?.message ?? err);

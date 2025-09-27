@@ -7,12 +7,12 @@ export function HypeToast({ text, show, style }: { text: string; show: boolean; 
 
   // Debug logging
   useEffect(() => {
-    console.log('🎉 HypeToast received:', { text, show, hasText: !!text });
+    console.log('HypeToast received:', { text, show, hasText: !!text });
   }, [text, show]);
 
   useEffect(() => {
     if (show) {
-      console.log('🎉 HypeToast animating in with text:', text);
+      console.log('HypeToast animating in with text:', text);
       Animated.sequence([
         Animated.timing(anim, { toValue: 1, duration: 220, useNativeDriver: true }),
         Animated.delay(1200),

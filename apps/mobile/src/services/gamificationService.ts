@@ -153,7 +153,7 @@ export class GamificationService {
     const progressPercentage = levelRange > 0 ? Math.min(100, (pointsInCurrent / levelRange) * 100) : 100;
 
     // Debug logging
-    console.log('🔍 Level Progress Debug:', {
+    console.log('Level Progress Debug:', {
       totalPoints,
       actualCurrentLevel,
       nextLevel,

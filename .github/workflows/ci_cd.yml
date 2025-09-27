@@ -12,14 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./services/new_api
+        working-directory: ./services/api
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: services/new_api/package-lock.json
+          cache-dependency-path: services/api/package-lock.json
 
       - name: Install deps
         run: npm ci
@@ -32,14 +32,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./services/new_api
+        working-directory: ./services/api
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: services/new_api/package-lock.json
+          cache-dependency-path: services/api/package-lock.json
 
       - name: Install deps
         run: npm ci
@@ -52,14 +52,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./services/new_api
+        working-directory: ./services/api
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: services/new_api/package-lock.json
+          cache-dependency-path: services/api/package-lock.json
 
       - name: Install deps
         run: npm ci
@@ -81,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: availability-metrics
-          path: services/new_api/tmp/availability-metrics.json
+          path: services/api/tmp/availability-metrics.json
 
   deploy:
     name: Deploy to Production

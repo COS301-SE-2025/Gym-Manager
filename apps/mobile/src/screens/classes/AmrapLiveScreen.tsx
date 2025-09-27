@@ -74,7 +74,7 @@ export default function AmrapLiveScreen() {
 
   // Debug logging
   useEffect(() => {
-    console.log('🔍 AmrapLiveScreen Debug:', {
+    console.log('AmrapLiveScreen Debug:', {
       myUserId,
       hypeOptedOut,
       progressKeys: Object.keys(progress || {}),

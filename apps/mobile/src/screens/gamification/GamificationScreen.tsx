@@ -119,7 +119,7 @@ export default function GamificationScreen() {
   }
 
   // Pull level from user_streaks; default to 1 if missing, cap sprite at 5
-  // Use the level from the backend gamification stats which has the correct calculation
+
   const actualLevel = Math.max(1, Number(stats?.userStreak?.level ?? 1));
   const spriteKey = (Math.min(5, actualLevel) as 1 | 2 | 3 | 4 | 5);
   const workoutsAttended = Number(stats?.userStreak?.totalWorkouts ?? 0);

@@ -85,14 +85,12 @@ Gym-Manager/
     * `dev-web` = web frontend development
   * `feature/` branches = day-to-day task-specific work, usually branched off the relevant sub-dev branch.
 
-<!-- status (up/down) -->
-![API Status](https://img.shields.io/uptimerobot/status/m801465365-843700d64b7c53d6c1e77361)
+### Uptime
 
-<!-- uptime ratio last 7 days -->
-![Uptime 7d](https://img.shields.io/uptimerobot/ratio/7/m801465365-843700d64b7c53d6c1e77361)
+| **Live** | **7 days** | **30 days** |
+|:--:|:--:|:--:|
+| <img alt="API status" src="https://img.shields.io/uptimerobot/status/m801465365-843700d64b7c53d6c1e77361?label=status&style=flat-square" /> | <img alt="Uptime 7d" src="https://img.shields.io/uptimerobot/ratio/7/m801465365-843700d64b7c53d6c1e77361?label=uptime&style=flat-square" /> | <img alt="Uptime 30d" src="https://img.shields.io/uptimerobot/ratio/30/m801465365-843700d64b7c53d6c1e77361?label=uptime&style=flat-square" /> |
 
-<!-- uptime ratio last 30 days -->
-![Uptime 30d](https://img.shields.io/uptimerobot/ratio/30/m801465365-843700d64b7c53d6c1e77361)
 
 > © 2025 Rome was built in a day — University of Pretoria COS 301 Capstone Project
 

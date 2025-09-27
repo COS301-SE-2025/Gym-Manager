@@ -141,7 +141,6 @@ jobs:
           jmeter -n \
             -t tests/perf/healthz.jmx \
             -l tests/perf/results.jtl \
-            -e -o tests/perf/report_html \
             -JHOST=$HOST -JPROTO=$PROTO -JPORT=$PORT \
             -Jusers=$users -Jramp=$ramp -Jduration=$duration -JMAX_MS=$MAX_MS
 

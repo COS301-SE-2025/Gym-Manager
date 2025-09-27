@@ -309,7 +309,7 @@ export class LiveClassService implements ILiveClassService {
     await this.repo.ensureProgressRow(classId, userId);
     await this.repo.setPartialReps(classId, userId, safe);
 
-    // 👇 If the class already ended, recompute & persist finals so leaderboards update
+    // If the class already ended, recompute & persist finals so leaderboards update
     try {
       const sess = await this.repo.getClassSession(classId);
       if (String(sess?.status ?? '').toLowerCase() === 'ended') {
@@ -422,7 +422,7 @@ export class LiveClassService implements ILiveClassService {
     let m = Math.max(0, Number(payload.minuteIndex || 0));
     if (planned > 0) m = Math.min(m, planned - 1);
 
-    // ✅ allow 60 as the "not finished" penalty; finished minutes should be 0..59
+    // allow 60 as the "not finished" penalty; finished minutes should be 0..59
     const sec =
       payload.finishSeconds == null
         ? (payload.finished ? 0 : 60)

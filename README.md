@@ -9,7 +9,7 @@
 ![Build](https://img.shields.io/github/actions/workflow/status/COS301-SE-2025/Gym-Manager/ci.yml?label=Build&logo=github)
 [![Coverage](https://codecov.io/gh/COS301-SE-2025/Gym-Manager/branch/main/graph/badge.svg)](https://codecov.io/gh/COS301-SE-2025/Gym-Manager)
 ![Open Issues](https://img.shields.io/github/issues/COS301-SE-2025/Gym-Manager?logo=github)
-![Uptime](https://img.shields.io/uptimerobot/ratio/7/m801465365-843700d64b7c53d6c1e77361)
+![Uptime](https://img.shields.io/uptimerobot/status/m801465365-843700d64b7c53d6c1e77361?label=status)
 
 > Gym manager is a specialized management software solution purpose-built for HIIT (HighIntensity Interval Training) gyms. Unlike other fitness management platforms, this system is designed around the unique workflows, community focus, and performance tracking needs of
 HIIT environments

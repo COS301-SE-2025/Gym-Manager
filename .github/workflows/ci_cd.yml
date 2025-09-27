@@ -77,6 +77,32 @@ jobs:
       - name: Run API Tests
         run: npm run test:unit
         working-directory: ./services/new_api
+        
+  test-availability:
+    name: Integration (Availability)
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Install API deps
+      - name: Install API deps
+        run: npm install
+        working-directory: ./services/new_api
+
+      # Run the synthetic availability test
+      - name: Probe /health for availability (p95 + failure rate)
+        working-directory: ./services/new_api
+        env:
+          AVAIL_N: 60
+          AVAIL_GAP_MS: 50
+          AVAIL_MAX_P95_MS: 300
+          AVAIL_MAX_ERR_RATE: 0
+        run: npm run test:integration:availability
+
 
   deploy:
     name: Deploy to Production

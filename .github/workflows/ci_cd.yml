@@ -94,7 +94,7 @@ jobs:
         env:
           JWT_SECRET: ci-integration-secret
 
-    test-performance:
+  test-performance:
     name: Integration (Performance via JMeter)
     runs-on: ubuntu-latest
     steps:
@@ -146,7 +146,6 @@ jobs:
             -JHOST=$HOST -JPROTO=$PROTO -JPORT=$PORT \
             -Jusers=$users -Jramp=$ramp -Jduration=$duration -JMAX_MS=$MAX_MS
 
-    
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest

@@ -37,7 +37,7 @@ export function useLeaderboardHype(
 
   // Debug logging
   useEffect(() => {
-    console.log('🔍 HypeToast Debug:', {
+    console.log('HypeToast Debug:', {
       lbLength: lb.length,
       myUserId,
       myRank,
@@ -74,12 +74,12 @@ export function useLeaderboardHype(
 
     // DEBUG: Force a test message if we have a rank but no message
     if (!msg && myRank && lb.length > 0) {
-      console.log('🔍 DEBUG: Forcing test toast for rank', myRank);
+      console.log('DEBUG: Forcing test toast for rank', myRank);
       msg = `Test toast - Rank #${myRank}`;
     }
 
     if (msg) {
-      console.log('🔍 HypeToast triggering with message:', msg);
+      console.log('HypeToast triggering with message:', msg);
       lastShownAtRef.current = now;
       setText(msg);
       setShow(true);

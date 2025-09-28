@@ -109,10 +109,17 @@ jobs:
         run: npm ci
         working-directory: ./services/api
 
-      # Compile TS using the real compiler (no build script required)
-      - name: Compile TypeScript
+      # Compile only if dist doesn't exist
+      - name: Compile TypeScript (if needed)
         working-directory: ./services/api
-        run: npx --yes typescript@5.6.3 tsc -p tsconfig.json
+        run: |
+          set -e
+          if [ -f dist/index.js ] || [ -f dist/src/index.js ]; then
+            echo "dist already present — skipping compile"
+          else
+            # Correct npx form: install package 'typescript' temporarily and run its bin 'tsc'
+            npx -y -p typescript tsc -p tsconfig.json
+          fi
 
       - name: Start API (background) and wait for /healthz
         working-directory: ./services/api
@@ -121,7 +128,28 @@ jobs:
           NODE_ENV: test
           JWT_SECRET: ci-integration-secret
         run: |
-          node -e "(async()=>{let mod;try{mod=require('./dist/index.js')}catch(e){mod=await import('./dist/index.js')}const app=mod.app||mod.default;if(!app?.listen){console.error('Cannot find exported app');process.exit(1)}const port=process.env.PORT||3000;app.listen(port,()=>console.log('API up on '+port))})()" &
+          set -e
+          # Pick a built entry file
+          START=""
+          for CAND in dist/index.js dist/src/index.js; do
+            if [ -f "$CAND" ]; then START="$CAND"; break; fi
+          done
+          if [ -z "$START" ]; then echo "No built entry found in dist"; ls -la dist || true; exit 1; fi
+
+          # Create a tiny bootstrap to require the app and listen
+          cat > boot.js <<'JS'
+          const path = process.env.START_FILE || 'dist/index.js';
+          let mod;
+          try { mod = require('./' + path); }
+          catch (e) { console.error('Failed to require', path, e); process.exit(1); }
+          const app = mod.app || mod.default || (mod.App ? (new mod.App()).getApp() : null);
+          if (!app || !app.listen) { console.error('No Express app export (app.listen)'); process.exit(1); }
+          const port = process.env.PORT || 3000;
+          app.listen(port, () => console.log('API up on ' + port));
+          JS
+
+          START_FILE="$START" node boot.js &
+          # Wait for healthz
           for i in {1..40}; do
             curl -fsS "http://localhost:3000/healthz" >/dev/null && break
             sleep 1
@@ -136,14 +164,11 @@ jobs:
           unzip -q apache-jmeter-$JM_VERSION.zip
           echo "$GITHUB_WORKSPACE/apache-jmeter-$JM_VERSION/bin" >> $GITHUB_PATH
 
-      # Resolve plan path INSIDE services/api; fix typo locally; export for next step
       - name: Locate JMeter plan
         id: jmx
         working-directory: ./services/api
         run: |
           set -e
-          PLAN=""
-          OUT=""
           if [ -f tests/perf/healthz.jmx ]; then
             PLAN="tests/perf/healthz.jmx"; OUT="tests/perf/results.jtl"
           elif [ -f src/tests/perf/healthz.jmx ]; then
@@ -155,8 +180,7 @@ jobs:
             echo "src/tests/perf:"; ls -la src/tests/perf 2>/dev/null || true
             exit 1
           fi
-          echo "Using JMX: $PLAN"
-          # Fix known typo if present
+          # Fix the common typo if present
           sed -i 's/Asserion\.test_strings/Assertion.test_strings/g' "$PLAN" || true
           echo "plan=$PLAN" >> "$GITHUB_OUTPUT"
           echo "out=$OUT"   >> "$GITHUB_OUTPUT"
@@ -185,6 +209,7 @@ jobs:
         with:
           name: jmeter-results
           path: ${{ steps.jmx.outputs.out }}
+
 
 
   deploy:

@@ -42,13 +42,8 @@ async function getMyScaling(classId: number): Promise<'RX'|'SC'> {
 }
 
 function fmtExerciseLabel(step: FlatStep) {
-  const qtyType = (step.quantityType ?? (step.reps != null ? 'reps' : (step.duration != null ? 'duration' : undefined)));
-  if (qtyType === 'reps' && typeof step.reps === 'number') {
-    return `${step.reps} x ${step.name}`;
-  }
-  if (qtyType === 'duration' && typeof step.duration === 'number') {
-    return `${step.duration} sec — ${step.name}`;
-  }
+  // The database already stores the exercise names with quantity info (e.g., "12x Situps", "Squats 10s")
+  // so we just return the name directly without additional formatting
   return step.name;
 }
 

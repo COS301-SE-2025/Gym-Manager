@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import axios from 'axios';
+import './style.css';
 
 export default function AddCoachModal({ onClose }: { onClose: () => void }) {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -29,7 +30,6 @@ export default function AddCoachModal({ onClose }: { onClose: () => void }) {
     e.preventDefault();
     setError('');
 
-    // Validate password match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -46,15 +46,26 @@ export default function AddCoachModal({ onClose }: { onClose: () => void }) {
         password: formData.password,
         roles: ['coach'],
       });
+      // console.log('Coach registered:', response);
+      const token = response.data.token;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userId = payload.userId;
 
-      // await axios.post('/api/coaches', {
-      //   userId: response.data.userId,
-      //   bio: formData.bio
-      // }, {
-      //   headers: {
-      //     Authorization: `Bearer ${localStorage.getItem('authToken')}`
-      //   }
-      // });
+      //second request is send to complete user details
+      //role-specific fields are not accepted by register endpoint
+      if (formData.bio.trim()) {
+        try {
+          await axios.patch(`${API_URL}/users/${userId}`, {
+            bio: formData.bio
+          }, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+        } catch (bioError: any) {
+          console.error('Failed to update coach bio:', bioError);
+        } //continue with registration if bio fails. Can be added later in user editing
+      }
 
       onClose();
     } catch (err: any) {

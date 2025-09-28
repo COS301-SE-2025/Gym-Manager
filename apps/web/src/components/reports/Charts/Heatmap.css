@@ -1,0 +1,26 @@
+.heatmap-container {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.heatmap-controls {
+  flex-shrink: 0;
+}
+
+/* react-day-picker overrides */
+:root {
+  --rdp-cell-size: 36px;
+  --rdp-accent-color: #d8ff3e;
+  --rdp-background-color: #4a4a4a;
+  --rdp-color: #fff;
+}
+
+.rdp {
+  margin: 0;
+  background-color: #2a2a2a;
+  border: 1px solid #434343;
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+

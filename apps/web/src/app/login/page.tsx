@@ -10,11 +10,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage(null);
     try {
       console.log(API_URL);
       const response = await axios.post(
@@ -29,10 +31,23 @@ export default function LoginPage() {
         localStorage.setItem('refreshToken', response.data.refreshToken);
         document.cookie = `refreshToken=${response.data.refreshToken}; path=/; max-age=${60 * 60 * 24 * 30}; secure; samesite=strict`;
       }
-      document.cookie = `authToken=${response.data.token}; path=/; max-age=3600; secure; samesite=strict`;
+      document.cookie = `authToken=${response.data.token}; path=/; max-age=21600; secure; samesite=strict`;
       router.push('/dashboard');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
+      let message = 'Something went wrong. Please try again.';
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        const apiMessage = (err.response?.data as any)?.error;
+        if (apiMessage) {
+          message = apiMessage;
+        } else if (status === 400 || status === 401) {
+          message = 'Invalid email or password.';
+        } else if (status && status >= 500) {
+          message = 'Server error. Please try again later.';
+        }
+      }
+      setErrorMessage(message);
     } finally {
       setIsLoading(false);
     }
@@ -48,6 +63,11 @@ export default function LoginPage() {
           <h1>Management Dashboard</h1>
           <h3>Sign in to your account</h3>
         </div>
+        {errorMessage && (
+          <div className="error-banner" role="alert" aria-live="polite">
+            {errorMessage}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="email">Email</label>
@@ -55,7 +75,10 @@ export default function LoginPage() {
               type="email"
               id="email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                if (errorMessage) setErrorMessage(null);
+              }}
               required
             />
           </div>
@@ -65,7 +88,10 @@ export default function LoginPage() {
               type="password"
               id="password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                if (errorMessage) setErrorMessage(null);
+              }}
               required
             />
           </div>

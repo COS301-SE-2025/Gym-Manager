@@ -49,6 +49,26 @@ export class LiveClassRoutes {
     // interval/tabata/emom
     this.router.post('/live/:classId/interval/score', this.auth.isAuthenticated, this.controller.postIntervalScore);
     this.router.get('/live/:classId/interval/leaderboard', this.auth.isAuthenticated, this.controller.getIntervalLeaderboard);
+    this.router.post('/live/:classId/emom/mark', this.auth.isAuthenticated, this.controller.postEmomMark);
+
+    // Coach notes
+    this.router.get('/coach/live/:classId/note',  this.auth.isAuthenticated, this.coachOnly, this.controller.getCoachNote);
+    this.router.post('/coach/live/:classId/note', this.auth.isAuthenticated, this.coachOnly, this.controller.setCoachNote);
+
+    // End-of-class edit endpoints (coach only)
+    this.router.post('/coach/live/:classId/ft/set-finish', this.auth.isAuthenticated, this.coachOnly, this.controller.ftSetFinish);
+    this.router.post('/coach/live/:classId/ft/set-reps',   this.auth.isAuthenticated, this.coachOnly, this.controller.ftSetReps);
+    this.router.post('/coach/live/:classId/amrap/set-total', this.auth.isAuthenticated, this.coachOnly, this.controller.amrapSetTotal);
+    this.router.post('/coach/live/:classId/interval/set-total', this.auth.isAuthenticated, this.coachOnly, this.controller.intervalSetTotal);
+    this.router.post('/coach/live/:classId/emom/mark',this.auth.isAuthenticated,this.coachOnly,this.controller.coachPostEmomMark);
+
+  this.router.post('/coach/live/:classId/emom/set-total',this.auth.isAuthenticated,this.coachOnly,this.controller.emomSetTotal);
+
+
+    // Member scaling
+    this.router.get('/live/:classId/scaling',  this.auth.isAuthenticated, this.controller.getMyScaling);
+    this.router.post('/live/:classId/scaling', this.auth.isAuthenticated, this.controller.setMyScaling);
+
   }
 
   getRouter() { return this.router; }

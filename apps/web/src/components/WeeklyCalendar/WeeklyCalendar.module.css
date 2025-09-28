@@ -47,42 +47,201 @@
   text-align: center;
 }
 
-/* Toolbar styling */
-.calendarWrapper :global(.rbc-toolbar) {
+.customToolbar {
   background-color: #1e1e1e;
   padding: 16px 20px;
   border-bottom: 1px solid #404040;
   margin-bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 60px;
 }
 
-.calendarWrapper :global(.rbc-toolbar button) {
-  background-color: #404040;
-  color: #e0e0e0;
-  border: 1px solid #555;
-  border-radius: 4px;
-  padding: 8px 16px;
-  font-weight: 500;
-  transition: all 0.2s ease;
+.toolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
 }
 
-.calendarWrapper :global(.rbc-toolbar button:hover) {
-  background-color: #748c24;
-  border-color: #748c24;
-  color: white;
+.toolbarCenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 2;
 }
 
-.calendarWrapper :global(.rbc-toolbar button:active),
-.calendarWrapper :global(.rbc-toolbar button.rbc-active) {
-  background-color: #d8ff3e;
-  color: #1e1e1e;
-  border-color: #d8ff3e;
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  justify-content: flex-end;
 }
 
-.calendarWrapper :global(.rbc-toolbar-label) {
+.toolbarLabel {
   color: #e0e0e0;
   font-weight: 700;
   font-size: 18px;
   text-transform: capitalize;
+}
+
+/* Navigation Buttons */
+.navButton {
+  background-color: #404040;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-weight: 500;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.navButton:hover {
+  background-color: #748c24;
+  border-color: #748c24;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.navButton:active {
+  transform: translateY(0);
+}
+
+/*Today/Current Week button */
+.todayButton {
+  background-color: #404040;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-width: auto;
+  width: auto;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.todayButton:hover:not(:disabled) {
+  background-color: #748c24;
+  border-color: #748c24;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.todayButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.todayButton.activeButton {
+  background-color: #d8ff3e;
+  color: #1e1e1e;
+  border-color: #d8ff3e;
+  box-shadow: 0 2px 8px rgba(216, 255, 62, 0.3);
+}
+
+.todayButton.activeButton:hover:not(:disabled) {
+  background-color: #c4e63a;
+  border-color: #c4e63a;
+  transform: translateY(-1px);
+}
+
+.todayButton.activeButton:disabled {
+  background-color: #2a2a2a;
+  color: #666;
+  border-color: #333;
+  cursor: default;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.todayButton.activeButton:disabled:hover {
+  background-color: #2a2a2a;
+  border-color: #333;
+  color: #666;
+  transform: none;
+}
+
+.todayButton:disabled {
+  background-color: #2a2a2a;
+  color: #666;
+  border-color: #333;
+  cursor: default;
+  opacity: 0.6;
+}
+
+.todayButton:disabled:hover {
+  background-color: #2a2a2a;
+  border-color: #333;
+  color: #666;
+  transform: none;
+}
+
+/* View Buttons */
+.viewButton {
+  background-color: #404040;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-width: 60px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.viewButton:hover {
+  background-color: #748c24;
+  border-color: #748c24;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.viewButton:active {
+  transform: translateY(0);
+}
+
+.viewButton.activeViewButton {
+  background-color: #d8ff3e;
+  color: #1e1e1e;
+  border-color: #d8ff3e;
+  box-shadow: 0 2px 8px rgba(216, 255, 62, 0.3);
+}
+
+.viewButton.activeViewButton:hover {
+  background-color: #c4e63a;
+  border-color: #c4e63a;
+  transform: translateY(-1px);
+}
+
+/* Hide default toolbar */
+.calendarWrapper :global(.rbc-toolbar) {
+  display: none;
 }
 
 /* Time slots styling */
@@ -92,7 +251,6 @@
   font-size: 12px;
 }
 
-/* Remove empty space above first time slot */
 .calendarWrapper :global(.rbc-time-view) {
   overflow: hidden;
 }
@@ -106,7 +264,6 @@
   margin-bottom: 0;
 }
 
-/* Hide all-day section but keep day headers */
 .calendarWrapper :global(.rbc-allday-cell) {
   display: none !important;
 }
@@ -115,7 +272,6 @@
   display: none !important;
 }
 
-/* Keep day headers visible */
 .calendarWrapper :global(.rbc-time-header-content) {
   border-bottom: 1px solid #404040;
   background-color: #1e1e1e;
@@ -130,7 +286,6 @@
   background-color: #2a2a2a;
 }
 
-/* Remove spacing from first timeslot group */
 .calendarWrapper :global(.rbc-timeslot-group:first-child) {
   margin-top: 0;
   padding-top: 0;
@@ -144,7 +299,6 @@
   border-top: 1px solid #404040;
 }
 
-/* Day columns */
 .calendarWrapper :global(.rbc-day-slot) {
   border-left: 1px solid #404040;
 }
@@ -153,7 +307,6 @@
   background-color: rgba(216, 255, 62, 0.1);
 }
 
-/* Event styling */
 .calendarWrapper :global(.rbc-event) {
   background: #748c24;
   border: none;
@@ -162,8 +315,11 @@
   font-weight: 500;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: all 0.2s ease;
-  padding: 6px 8px;
-  margin: 1px;
+  padding: 12px 16px;
+  margin: 2px;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
 }
 
 .calendarWrapper :global(.rbc-event:hover) {
@@ -172,17 +328,182 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
+/* color variation for calendar: around original */
+.calendarWrapper :global(.rbc-event:nth-child(1)) {
+  background: #748c24;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(2)) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(3)) {
+  background: #7a9426;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(4)) {
+  background: #6e8a22;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(5)) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(6)) {
+  background: #7f9a28;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(7)) {
+  background: #6a8621;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(8)) {
+  background: #849e2a;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(9)) {
+  background: #65801f;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(10)) {
+  background: #5c6f1c;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(11)) {
+  background: #8aa82c;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(12)) {
+  background: #6d8a22;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(13)) {
+  background: #7c9627;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(14)) {
+  background: #8fb030;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(15)) {
+  background: #9bb833;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(16)) {
+  background: #748c24;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(17)) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(18)) {
+  background: #7a9426;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(19)) {
+  background: #6e8a22;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(20)) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(1):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(2):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(3):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(4):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(5):hover) {
+  background: #4a5a1a;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(6):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(7):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(8):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(9):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(10):hover) {
+  background: #4a5a1a;
+}
+
+/* Hover states for additional color variations */
+.calendarWrapper :global(.rbc-event:nth-child(11):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(12):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(13):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(14):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(15):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(16):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(17):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(18):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(19):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(20):hover) {
+  background: #4a5a1a;
+}
+
 .calendarWrapper :global(.rbc-event:focus) {
   outline: 2px solid #d8ff3e;
   outline-offset: 1px;
 }
 
 .calendarWrapper :global(.rbc-event-content) {
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 14px;
+  line-height: 1.5;
   color: white;
   font-weight: 500;
+  width: 100%;
+  text-align: left;
 }
+
 
 /* Selected event */
 .calendarWrapper :global(.rbc-selected) {
@@ -283,20 +604,35 @@
     max-width: calc(100vw - 20px);
   }
 
-  .calendarWrapper :global(.rbc-toolbar) {
+  .customToolbar {
     padding: 12px 16px;
     flex-direction: column;
     gap: 12px;
+    min-height: auto;
   }
 
-  .calendarWrapper :global(.rbc-toolbar button) {
-    font-size: 12px;
-    padding: 6px 12px;
+  .toolbarLeft,
+  .toolbarRight {
+    flex: none;
+    justify-content: center;
   }
 
-  .calendarWrapper :global(.rbc-toolbar-label) {
-    font-size: 16px;
+  .toolbarCenter {
     order: -1;
+    flex: none;
+  }
+
+  .toolbarLabel {
+    font-size: 16px;
+  }
+
+  .navButton,
+  .todayButton,
+  .viewButton {
+    font-size: 12px;
+    padding: 8px 12px;
+    min-width: auto;
+    height: 36px;
   }
 
   .calendarWrapper :global(.rbc-calendar) {

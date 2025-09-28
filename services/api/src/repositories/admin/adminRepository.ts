@@ -133,6 +133,39 @@ export class AdminRepository implements IAdminRepository {
     return { ok: true };
   }
 
+  async updateClass(
+    classId: number,
+    updates: {
+      capacity?: number;
+      scheduledDate?: string;
+      scheduledTime?: string;
+      durationMinutes?: number;
+      coachId?: number | null;
+    },
+    tx?: Executor,
+  ): Promise<Class> {
+    const [updated] = await this.exec(tx)
+      .update(classes)
+      .set(updates)
+      .where(eq(classes.classId, classId))
+      .returning();
+    
+    if (!updated) {
+      throw new Error('Class not found');
+    }
+    
+    return this.mapToClass(updated);
+  }
+
+  async deleteClass(classId: number, tx?: Executor): Promise<boolean> {
+    const result = await this.exec(tx)
+      .delete(classes)
+      .where(eq(classes.classId, classId))
+      .returning({ classId: classes.classId });
+    
+    return result.length > 0;
+  }
+
   /* ============== ROLES & USERS ============== */
 
   async assignUserToRole(userId: number, role: 'coach'|'member'|'admin'|'manager', tx?: Executor): Promise<{ ok: boolean; reason?: string }> {

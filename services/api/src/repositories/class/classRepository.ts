@@ -61,6 +61,16 @@ export class ClassRepository implements IClassRepository {
   }
 
   async findAssignedClassesWithWorkoutsByCoach(coachId: number, tx?: Executor): Promise<ClassWithWorkout[]> {
+    // Subquery: count bookings per class
+    const bookingsCount = this.exec(tx)
+      .select({
+        classId: classbookings.classId,
+        bookingsCount: sql<number>`COUNT(${classbookings.bookingId})`.as('bookingsCount'),
+      })
+      .from(classbookings)
+      .groupBy(classbookings.classId)
+      .as('bookingsCount');
+
     const rows = await this.exec(tx)
       .select({
         classId: classes.classId,
@@ -75,9 +85,14 @@ export class ClassRepository implements IClassRepository {
         workoutId: workouts.workoutId,
         workoutType: workouts.type,
         workoutMetadata: workouts.metadata,
+        coachFirstName: users.firstName,
+        coachLastName: users.lastName,
+        bookingsCount: bookingsCount.bookingsCount,
       })
       .from(classes)
       .leftJoin(workouts, eq(classes.workoutId, workouts.workoutId))
+      .leftJoin(users, eq(classes.coachId, users.userId))
+      .leftJoin(bookingsCount, eq(classes.classId, bookingsCount.classId))
       .where(eq(classes.coachId, coachId));
 
     return rows.map((row: any) => this.mapToClassWithWorkout(row));
@@ -175,6 +190,112 @@ export class ClassRepository implements IClassRepository {
       }
 
       // 5) Insert rounds, subrounds & subround_exercises
+      for (const r of roundsInput) {
+        const [roundRec] = await tx
+          .insert(rounds)
+          .values({ workoutId, roundNumber: r.roundNumber })
+          .returning({ roundId: rounds.roundId });
+        const roundId = roundRec.roundId;
+
+        for (const sr of r.subrounds) {
+          const [subRec] = await tx
+            .insert(subrounds)
+            .values({
+              roundId,
+              subroundNumber: sr.subroundNumber,
+            })
+            .returning({ subroundId: subrounds.subroundId });
+          const subroundId = subRec.subroundId;
+
+          for (const ex of sr.exercises) {
+            const exId = ex.exerciseId != null ? ex.exerciseId : nameToId.get(ex.exerciseName);
+            if (!exId) {
+              throw new Error(`Unable to resolve exercise id for ${ex.exerciseName ?? ex.exerciseId}`);
+            }
+            await tx.insert(subroundExercises).values({
+              subroundId,
+              exerciseId: exId,
+              position: ex.position,
+              quantityType: ex.quantityType,
+              quantity: ex.quantity,
+              notes: ex.notes ?? null,
+            });
+          }
+        }
+      }
+
+      return workoutId;
+    })) as number;
+  }
+
+  async updateWorkout(
+    workoutId: number,
+    workoutData: Omit<WorkoutRow, 'workoutId'>,
+    roundsInput: Array<any>,
+    tx?: Executor
+  ): Promise<number> {
+    return (await this.exec(tx).transaction(async (tx: any) => {
+      // 1) Update workout
+      await tx
+        .update(workouts)
+        .set(workoutData)
+        .where(eq(workouts.workoutId, workoutId));
+
+      // 2) Delete existing rounds, subrounds, and subround exercises
+      // This will cascade delete due to foreign key constraints
+      await tx
+        .delete(rounds)
+        .where(eq(rounds.workoutId, workoutId));
+
+      // 3) Gather all requested IDs & names
+      const wantedIds = new Set<number>();
+      const wantedNames = new Set<string>();
+      for (const r of roundsInput) {
+        for (const sr of r.subrounds) {
+          for (const ex of sr.exercises) {
+            if (ex.exerciseId != null) wantedIds.add(ex.exerciseId);
+            else wantedNames.add(ex.exerciseName);
+          }
+        }
+      }
+
+      // 4) Verify existing IDs
+      if (wantedIds.size > 0) {
+        const existingIdRows = await tx
+          .select({ id: exercises.exerciseId })
+          .from(exercises)
+          .where(inArray(exercises.exerciseId, [...wantedIds]));
+        const existingIds = new Set(existingIdRows.map((r: any) => r.id));
+        const missingIds = [...wantedIds].filter((id) => !existingIds.has(id));
+        if (missingIds.length) {
+          throw new Error(`These exerciseIds do not exist: ${missingIds.join(', ')}`);
+        }
+      }
+
+      // 5) Resolve names → IDs (upsert missing names)
+      const nameToId = new Map<string, number>();
+      if (wantedNames.size > 0) {
+        // 5a) Fetch any that already exist by name
+        const existingByNameRows = await tx
+          .select({ id: exercises.exerciseId, name: exercises.name })
+          .from(exercises)
+          .where(inArray(exercises.name, [...wantedNames]));
+
+        existingByNameRows.forEach((r: any) => nameToId.set(r.name, r.id));
+
+        // 5b) Insert the truly new names
+        for (const name of wantedNames) {
+          if (!nameToId.has(name)) {
+            const [ins] = await tx
+              .insert(exercises)
+              .values({ name, description: null })
+              .returning({ id: exercises.exerciseId });
+            nameToId.set(name, ins.id);
+          }
+        }
+      }
+
+      // 6) Insert new rounds, subrounds & subround_exercises
       for (const r of roundsInput) {
         const [roundRec] = await tx
           .insert(rounds)

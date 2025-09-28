@@ -1,8 +1,9 @@
-import { pgTable, foreignKey, integer, text, serial, date, time, timestamp, check, varchar, jsonb, index, unique, pgPolicy, bigint, boolean, bigserial, primaryKey, uniqueIndex, pgView, numeric, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, integer, text, serial, date, time, timestamp, check, varchar, jsonb, index, unique, pgPolicy, bigint, boolean, bigserial, primaryKey, uniqueIndex, pgView, numeric, pgEnum} from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const membershipStatus = pgEnum("membership_status", ['pending', 'approved', 'suspended', 'cancelled'])
 export const userRole = pgEnum("user_role", ['member', 'coach', 'admin', 'manager'])
+export const badgeType = pgEnum("badge_type", ['streak', 'attendance', 'achievement', 'milestone', 'special'])
 
 
 export const coaches = pgTable("coaches", {
@@ -271,8 +272,10 @@ export const classattendance = pgTable("classattendance", {
 	memberId: integer("member_id").notNull(),
 	markedAt: timestamp("marked_at", { mode: 'string' }).defaultNow(),
 	score: integer().default(0),
+	scaling: varchar("scaling", { length: 10}).default("rx").notNull(),
 }, (table) => [
 	index("idx_classattendance_class_member").using("btree", table.classId.asc().nullsLast().op("int4_ops"), table.memberId.asc().nullsLast().op("int4_ops")),
+	index("idx_classattendance_scaling").using("btree", table.scaling.asc().nullsLast()),
 	foreignKey({
 			columns: [table.classId, table.memberId],
 			foreignColumns: [classbookings.classId, classbookings.memberId],
@@ -344,3 +347,161 @@ export const leaderboard = pgView("leaderboard", {	classId: integer("class_id"),
 	sortBucket: integer("sort_bucket"),
 	sortKey: numeric("sort_key"),
 }).as(sql`WITH base AS ( SELECT lp.class_id, lp.user_id, lp.current_step, lp.rounds_completed, lp.finished_at, COALESCE(lp.dnf_partial_reps, 0) AS dnf_partial_reps, cs.started_at, cs.time_cap_seconds, cs.steps_cum_reps, cs.workout_type FROM live_progress lp JOIN class_sessions cs USING (class_id) ), helpers AS ( SELECT b.class_id, b.user_id, b.current_step, b.rounds_completed, b.finished_at, b.dnf_partial_reps, b.started_at, b.time_cap_seconds, b.steps_cum_reps, b.workout_type, CASE WHEN jsonb_array_length(b.steps_cum_reps) > 0 THEN (b.steps_cum_reps ->> (jsonb_array_length(b.steps_cum_reps) - 1))::integer ELSE 0 END AS reps_per_round, CASE WHEN b.current_step <= 0 THEN 0 ELSE COALESCE((b.steps_cum_reps ->> (b.current_step - 1))::integer, 0) END AS within_step_reps FROM base b ), scored AS ( SELECT h.class_id, h.user_id, h.workout_type, CASE WHEN h.workout_type = 'FOR_TIME'::text AND h.finished_at IS NOT NULL THEN EXTRACT(epoch FROM h.finished_at - h.started_at) ELSE NULL::numeric END AS elapsed_seconds, CASE WHEN h.workout_type = 'FOR_TIME'::text AND h.finished_at IS NULL THEN h.within_step_reps + h.dnf_partial_reps ELSE NULL::integer END AS total_reps_ft, CASE WHEN h.workout_type = 'AMRAP'::text THEN h.rounds_completed * h.reps_per_round + h.within_step_reps + h.dnf_partial_reps ELSE NULL::integer END AS total_reps_amrap FROM helpers h ) SELECT class_id, user_id, workout_type = 'FOR_TIME'::text AND elapsed_seconds IS NOT NULL AS finished, elapsed_seconds, COALESCE(total_reps_amrap, total_reps_ft) AS total_reps, CASE WHEN workout_type = 'FOR_TIME'::text AND elapsed_seconds IS NOT NULL THEN 0 WHEN workout_type = 'FOR_TIME'::text THEN 1 WHEN workout_type = 'AMRAP'::text THEN 0 ELSE 2 END AS sort_bucket, CASE WHEN workout_type = 'FOR_TIME'::text AND elapsed_seconds IS NOT NULL THEN elapsed_seconds WHEN workout_type = 'FOR_TIME'::text THEN (- COALESCE(total_reps_ft, 0))::numeric WHEN workout_type = 'AMRAP'::text THEN (- COALESCE(total_reps_amrap, 0))::numeric ELSE 0::numeric END AS sort_key FROM scored`);
+
+// Payment Packages and Financial Analytics Tables
+export const paymentPackages = pgTable("payment_packages", {
+	packageId: serial("package_id").primaryKey(),
+	name: varchar("name", { length: 255 }).notNull(),
+	description: text("description"),
+	creditsAmount: integer("credits_amount").notNull(),
+	priceCents: integer("price_cents").notNull(),
+	currency: varchar("currency", { length: 3 }).default("USD"),
+	isActive: boolean("is_active").default(true),
+	createdBy: integer("created_by").references(() => admins.userId),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	index("idx_payment_packages_active").using("btree", table.isActive.asc().nullsLast().op("bool_ops")),
+	foreignKey({
+		columns: [table.createdBy],
+		foreignColumns: [admins.userId],
+		name: "payment_packages_created_by_fkey"
+	}),
+]);
+
+export const paymentTransactions = pgTable("payment_transactions", {
+	transactionId: serial("transaction_id").primaryKey(),
+	memberId: integer("member_id").notNull().references(() => members.userId),
+	packageId: integer("package_id").notNull().references(() => paymentPackages.packageId),
+	amountCents: integer("amount_cents").notNull(),
+	creditsPurchased: integer("credits_purchased").notNull(),
+	paymentMethod: varchar("payment_method", { length: 50 }),
+	paymentStatus: varchar("payment_status", { length: 20 }).default("pending"),
+	externalTransactionId: varchar("external_transaction_id", { length: 255 }),
+	processedAt: timestamp("processed_at", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	index("idx_payment_transactions_member").using("btree", table.memberId.asc().nullsLast().op("int4_ops")),
+	index("idx_payment_transactions_status").using("btree", table.paymentStatus.asc().nullsLast().op("text_ops")),
+	index("idx_payment_transactions_created").using("btree", table.createdAt.asc().nullsLast().op("timestamptz_ops")),
+	foreignKey({
+		columns: [table.memberId],
+		foreignColumns: [members.userId],
+		name: "payment_transactions_member_id_fkey"
+	}),
+	foreignKey({
+		columns: [table.packageId],
+		foreignColumns: [paymentPackages.packageId],
+		name: "payment_transactions_package_id_fkey"
+	}),
+]);
+
+export const monthlyRevenue = pgTable("monthly_revenue", {
+	id: serial("id").primaryKey(),
+	year: integer("year").notNull(),
+	month: integer("month").notNull(),
+	totalRevenueCents: integer("total_revenue_cents").default(0),
+	newSubscriptionsCents: integer("new_subscriptions_cents").default(0),
+	recurringRevenueCents: integer("recurring_revenue_cents").default(0),
+	oneTimePurchasesCents: integer("one_time_purchases_cents").default(0),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	index("idx_monthly_revenue_year_month").using("btree", table.year.asc().nullsLast().op("int4_ops"), table.month.asc().nullsLast().op("int4_ops")),
+	uniqueIndex("uq_monthly_revenue_year_month").using("btree", table.year.asc().nullsLast().op("int4_ops"), table.month.asc().nullsLast().op("int4_ops")),
+]);
+
+export const userFinancialMetrics = pgTable("user_financial_metrics", {
+	id: serial("id").primaryKey(),
+	memberId: integer("member_id").notNull().references(() => members.userId),
+	totalSpentCents: integer("total_spent_cents").default(0),
+	totalCreditsPurchased: integer("total_credits_purchased").default(0),
+	firstPurchaseDate: timestamp("first_purchase_date", { mode: 'string' }),
+	lastPurchaseDate: timestamp("last_purchase_date", { mode: 'string' }),
+	lifetimeValueCents: integer("lifetime_value_cents").default(0),
+	averageOrderValueCents: integer("average_order_value_cents").default(0),
+	purchaseFrequency: decimal("purchase_frequency", { precision: 5, scale: 2 }).default("0"),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	index("idx_user_financial_metrics_member").using("btree", table.memberId.asc().nullsLast().op("int4_ops")),
+	foreignKey({
+		columns: [table.memberId],
+		foreignColumns: [members.userId],
+		name: "user_financial_metrics_member_id_fkey"
+	}),
+	uniqueIndex("uq_user_financial_metrics_member").using("btree", table.memberId.asc().nullsLast().op("int4_ops")),
+]);
+
+// Gamification Tables
+export const badgeDefinitions = pgTable("badge_definitions", {
+	badgeId: serial("badge_id").primaryKey().notNull(),
+	name: text().notNull(),
+	description: text().notNull(),
+	iconName: text("icon_name").notNull(),
+	badgeType: badgeType("badge_type").notNull(),
+	criteria: jsonb().notNull(),
+	pointsValue: integer("points_value").default(0).notNull(),
+	isActive: boolean("is_active").default(true).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	index("idx_badge_definitions_type").using("btree", table.badgeType.asc().nullsLast().op("text_ops")),
+	index("idx_badge_definitions_active").using("btree", table.isActive.asc().nullsLast().op("bool_ops")),
+]);
+
+export const userBadges = pgTable("user_badges", {
+	userBadgeId: serial("user_badge_id").primaryKey().notNull(),
+	userId: integer("user_id").notNull(),
+	badgeId: integer("badge_id").notNull(),
+	earnedAt: timestamp("earned_at", { mode: 'string' }).defaultNow().notNull(),
+	isDisplayed: boolean("is_displayed").default(true).notNull(),
+}, (table) => [
+	index("idx_user_badges_user_id").using("btree", table.userId.asc().nullsLast().op("int4_ops")),
+	index("idx_user_badges_badge_id").using("btree", table.badgeId.asc().nullsLast().op("int4_ops")),
+	foreignKey({
+		columns: [table.userId],
+		foreignColumns: [users.userId],
+		name: "user_badges_user_id_fkey"
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.badgeId],
+		foreignColumns: [badgeDefinitions.badgeId],
+		name: "user_badges_badge_id_fkey"
+	}).onDelete("cascade"),
+	unique("user_badges_user_id_badge_id_key").on(table.userId, table.badgeId),
+]);
+
+export const userStreaks = pgTable("user_streaks", {
+	userId: integer("user_id").primaryKey().notNull(),
+	currentStreak: integer("current_streak").default(0).notNull(),
+	longestStreak: integer("longest_streak").default(0).notNull(),
+	lastActivityDate: date("last_activity_date"),
+	streakStartDate: date("streak_start_date"),
+	totalWorkouts: integer("total_workouts").default(0).notNull(),
+	totalPoints: integer("total_points").default(0).notNull(),
+	level: integer().default(1).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	foreignKey({
+		columns: [table.userId],
+		foreignColumns: [users.userId],
+		name: "user_streaks_user_id_fkey"
+	}).onDelete("cascade"),
+]);
+
+export const userActivities = pgTable("user_activities", {
+	activityId: serial("activity_id").primaryKey().notNull(),
+	userId: integer("user_id").notNull(),
+	activityType: text("activity_type").notNull(),
+	activityData: jsonb("activity_data"),
+	pointsEarned: integer("points_earned").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
+}, (table) => [
+	index("idx_user_activities_user_id").using("btree", table.userId.asc().nullsLast().op("int4_ops")),
+	index("idx_user_activities_created_at").using("btree", table.createdAt.asc().nullsLast().op("timestamptz_ops")),
+	foreignKey({
+		columns: [table.userId],
+		foreignColumns: [users.userId],
+		name: "user_activities_user_id_fkey"
+	}).onDelete("cascade"),
+]);

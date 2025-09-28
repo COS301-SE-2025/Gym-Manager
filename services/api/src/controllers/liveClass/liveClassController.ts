@@ -17,7 +17,7 @@ export class LiveClassController {
       return res.json(session);
     } catch (e: any) {
       if (e.message === 'INVALID_CLASS_ID') return res.status(400).json({ error: e.message });
-      return res.status(500).json({ error: 'SESSION_FETCH_FAILED' });
+      return res.status(500).json({ error: e.message});
     }
   };
 
@@ -45,6 +45,16 @@ export class LiveClassController {
     try {
       const workoutId = Number(req.params.workoutId);
       const out = await this.service.getWorkoutSteps(workoutId);
+      
+      // Debug: Log the response being sent to frontend
+      console.log('=== GET WORKOUT STEPS DEBUG (LiveClassController) ===');
+      console.log('Workout ID:', workoutId);
+      console.log('Full response:', JSON.stringify(out, null, 2));
+      console.log('Steps count:', out.steps?.length || 0);
+      console.log('Workout type:', out.workoutType);
+      console.log('Metadata:', out.metadata);
+      console.log('==================================================');
+      
       return res.json(out);
     } catch (e: any) {
       if (e.message === 'INVALID_WORKOUT_ID') return res.status(400).json({ error: e.message });
@@ -55,9 +65,19 @@ export class LiveClassController {
   submitScore = async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user) return res.status(401).json({ success: false, error: 'UNAUTHORIZED' });
+      
+      // console.log(`🎯 LiveClassController.submitScore called for user ${req.user.userId}`);
+      // console.log(`📝 Request body:`, req.body);
+      // console.log(`👤 User roles:`, req.user.roles);
+      
       const out = await this.service.submitScore(req.user.userId, req.user.roles, req.body);
+      
+      // console.log(`✅ LiveClassController.submitScore result:`, out);
       return res.json(out);
     } catch (e: any) {
+      console.error(`❌ LiveClassController.submitScore error:`, e.message);
+      console.error(`❌ Error stack:`, e.stack);
+      
       const msg = e.message || '';
       if (['CLASS_ID_REQUIRED','NOT_CLASS_COACH','ROLE_NOT_ALLOWED','NOT_BOOKED','SCORE_REQUIRED'].includes(msg))
         return res.status(msg === 'CLASS_ID_REQUIRED' || msg === 'SCORE_REQUIRED' ? 400 : 403).json({ success: false, error: msg });
@@ -71,11 +91,15 @@ export class LiveClassController {
       const session = await this.service.startLiveClass(classId);
       return res.json({ ok: true, session });
     } catch (e: any) {
-      if (e.message === 'CLASS_NOT_FOUND') return res.status(404).json({ error: e.message });
+      if (e.message === 'CLASS_NOT_FOUND')      return res.status(404).json({ error: e.message });
       if (e.message === 'WORKOUT_NOT_ASSIGNED') return res.status(400).json({ error: e.message });
+      if (e.message === 'ALREADY_ENDED')        return res.status(409).json({ error: e.message });
+      if (e.message === 'ALREADY_STARTED')      return res.status(409).json({ error: e.message });
       return res.status(500).json({ error: 'START_LIVE_FAILED' });
     }
   };
+
+
 
   stopLiveClass = async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -186,4 +210,219 @@ export class LiveClassController {
       return res.status(500).json({ error: 'INTERVAL_LEADERBOARD_FAILED' });
     }
   };
+
+  postEmomMark = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+      const classId = Number(req.params.classId);
+      const minuteIndex = Number(req.body?.minuteIndex);
+      const finished = !!req.body?.finished;
+      const finishSeconds = req.body?.finishSeconds == null ? null : Math.max(0, Number(req.body.finishSeconds));
+      const exercisesCompleted = Math.max(0, Number(req.body?.exercisesCompleted || 0));
+      const exercisesTotal     = Math.max(0, Number(req.body?.exercisesTotal || 0));
+
+      await this.service.postEmomMark(
+        classId,
+        req.user.userId,
+        { minuteIndex, finished, finishSeconds, exercisesCompleted, exercisesTotal }
+      );
+      return res.json({ ok: true });
+    } catch (e: any) {
+      const msg = e.message || '';
+      const code =
+        msg === 'SESSION_NOT_FOUND' || msg === 'NOT_EMOM_WORKOUT' ? 400 :
+        msg === 'NOT_BOOKED' ? 403 : 500;
+      return res.status(code).json({ error: msg || 'EMOM_MARK_FAILED' });
+    }
+  };
+
+  getCoachNote = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      const note = await this.service.getCoachNote(classId);
+      return res.json({ note: note ?? '' });
+    } catch {
+      return res.status(500).json({ error: 'COACH_NOTE_FETCH_FAILED' });
+    }
+  };
+
+  setCoachNote = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      const text = String(req.body?.note ?? '');
+      await this.service.setCoachNote(classId, req.user!.userId, text);
+      return res.json({ ok: true, note: text });
+    } catch (e:any) {
+      const msg = e.message || '';
+      if (msg === 'NOT_CLASS_COACH') return res.status(403).json({ error: msg });
+      return res.status(500).json({ error: 'COACH_NOTE_SAVE_FAILED' });
+    }
+  };
+
+  // --- Coach: FOR_TIME finish (seconds from class start) ---
+  coachSetForTimeFinish = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      const userId  = Number(req.body?.userId);
+      const finishSeconds = req.body?.finishSeconds == null ? null : Number(req.body.finishSeconds); // null clears
+      await this.service.coachSetForTimeFinish(classId, req.user!.userId, userId, finishSeconds);
+      return res.json({ ok: true });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = msg === 'NOT_CLASS_COACH' ? 403 : 400;
+      return res.status(code).json({ error: msg || 'FT_SET_FINISH_FAILED' });
+    }
+  };
+
+  // --- Coach: AMRAP total reps ---
+  coachSetAmrapTotal = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      const userId  = Number(req.body?.userId);
+      const totalReps = Number(req.body?.totalReps ?? 0);
+      await this.service.coachSetAmrapTotal(classId, req.user!.userId, userId, totalReps);
+      return res.json({ ok: true });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = msg === 'NOT_CLASS_COACH' ? 403 : 400;
+      return res.status(code).json({ error: msg || 'AMRAP_SET_TOTAL_FAILED' });
+    }
+  };
+
+  // --- Coach: INTERVAL/TABATA step score ---
+  coachPostIntervalScore = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId   = Number(req.params.classId);
+      const userId    = Number(req.body?.userId);
+      const stepIndex = Number(req.body?.stepIndex);
+      const reps      = Number(req.body?.reps ?? 0);
+      await this.service.coachPostIntervalScore(classId, req.user!.userId, userId, stepIndex, reps);
+      return res.json({ ok: true });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = ['INVALID_STEP_INDEX','STEP_INDEX_OUT_OF_RANGE'].includes(msg) ? 400
+                : (msg === 'NOT_CLASS_COACH' ? 403 : 500);
+      return res.status(code).json({ error: msg || 'INTERVAL_COACH_SCORE_FAILED' });
+    }
+  };
+
+  // --- Coach: EMOM mark (minute) ---
+  coachPostEmomMark = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId     = Number(req.params.classId);
+      const userId      = Number(req.body?.userId);
+      const minuteIndex = Number(req.body?.minuteIndex);
+      const finished    = !!req.body?.finished;
+      const finishSeconds = Number(req.body?.finishSeconds ?? 60);
+      await this.service.coachPostEmomMark(classId, req.user!.userId, userId, minuteIndex, finished, finishSeconds);
+      return res.json({ ok: true });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = msg === 'NOT_CLASS_COACH' ? 403 : 400;
+      return res.status(code).json({ error: msg || 'EMOM_COACH_MARK_FAILED' });
+    }
+  };
+
+  ftSetFinish = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      const userId  = Number(req.body?.userId);
+      const finishSeconds = Math.max(0, Number(req.body?.finishSeconds || 0));
+      await this.service.coachForTimeSetFinishSecondsEndedOnly(classId, userId, finishSeconds);
+      return res.json({ ok: true });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = msg === 'SESSION_NOT_FOUND' ? 404 : msg === 'NOT_ENDED' ? 409 : msg === 'NOT_BOOKED' ? 403 : 500;
+      return res.status(code).json({ error: msg || 'FT_SET_FINISH_FAILED' });
+    }
+  };
+
+  ftSetReps = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      const userId  = Number(req.body?.userId);
+      const totalReps = Math.max(0, Number(req.body?.totalReps || 0));
+      await this.service.coachForTimeSetTotalRepsEndedOnly(classId, userId, totalReps);
+      return res.json({ ok: true });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = msg === 'SESSION_NOT_FOUND' ? 404 : msg === 'NOT_ENDED' ? 409 : msg === 'NOT_BOOKED' ? 403 : 500;
+      return res.status(code).json({ error: msg || 'FT_SET_REPS_FAILED' });
+    }
+  };
+
+  amrapSetTotal = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      const userId  = Number(req.body?.userId);
+      const totalReps = Math.max(0, Number(req.body?.totalReps || 0));
+      await this.service.coachAmrapSetTotalEndedOnly(classId, userId, totalReps);
+      return res.json({ ok: true });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = msg === 'SESSION_NOT_FOUND' ? 404 : msg === 'NOT_ENDED' ? 409 : msg === 'NOT_BOOKED' ? 403 : 500;
+      return res.status(code).json({ error: msg || 'AMRAP_SET_TOTAL_FAILED' });
+    }
+  };
+
+  intervalSetTotal = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId = Number(req.params.classId);
+      const userId  = Number(req.body?.userId);
+      const totalReps = Math.max(0, Number(req.body?.totalReps || 0));
+      await this.service.coachIntervalSetTotalEndedOnly(classId, userId, totalReps);
+      return res.json({ ok: true });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = msg === 'SESSION_NOT_FOUND' ? 404 : msg === 'NOT_ENDED' ? 409 : msg === 'NOT_BOOKED' ? 403 : 500;
+      return res.status(code).json({ error: msg || 'INTERVAL_SET_TOTAL_FAILED' });
+    }
+  };
+
+  getMyScaling = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+      const classId = Number(req.params.classId);
+      const scaling = await this.service.getMyScaling(classId, req.user.userId);
+      return res.json({ scaling });
+    } catch {
+      return res.status(500).json({ error: 'SCALING_FETCH_FAILED' });
+    }
+  };
+
+  setMyScaling = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+      const classId = Number(req.params.classId);
+      const scalingRaw = String(req.body?.scaling ?? '').toUpperCase();
+      const scaling = scalingRaw === 'SC' ? 'SC' : 'RX'; // default RX
+      await this.service.setMyScaling(classId, req.user.userId, scaling);
+      return res.json({ ok: true, scaling });
+    } catch (e:any) {
+      const msg = e.message || '';
+      const code = msg === 'NOT_BOOKED' ? 403 : 500;
+      return res.status(code).json({ error: msg || 'SCALING_SAVE_FAILED' });
+    }
+  };
+
+  // inside LiveClassController
+
+  emomSetTotal = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const classId      = Number(req.params.classId);
+      const userId       = Number(req.body?.userId);
+      const totalSeconds = Math.max(0, Number(req.body?.totalSeconds ?? 0));
+      await this.service.coachEmomSetTotalEndedOnly(classId, req.user!.userId, userId, totalSeconds);
+      return res.json({ ok: true });
+    } catch (e: any) {
+      const msg  = e.message || '';
+      const code = msg === 'SESSION_NOT_FOUND' ? 404
+                : msg === 'NOT_ENDED'        ? 409
+                : msg === 'NOT_BOOKED'       ? 403
+                : msg === 'NOT_CLASS_COACH'  ? 403
+                : 500;
+      return res.status(code).json({ error: msg || 'EMOM_SET_TOTAL_FAILED' });
+    }
+  };
+
 }

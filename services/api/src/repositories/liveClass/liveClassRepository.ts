@@ -22,6 +22,8 @@ export class LiveClassRepository implements ILiveClassRepository {
           - coalesce(extract(epoch from (now() - cs.paused_at)), 0)
         ) >= cs.time_cap_seconds
     `);
+
+    await globalDb.execute(sql`select public.persist_scores_from_live(${classId})`);
   }
 
   async getClassSession(classId: number): Promise<LiveSession | null> {
@@ -33,7 +35,8 @@ export class LiveClassRepository implements ILiveClassRepository {
         extract(epoch from started_at)::bigint as started_at_s,
         extract(epoch from ended_at)::bigint   as ended_at_s,
         extract(epoch from paused_at)::bigint  as paused_at_s,
-        steps, steps_cum_reps, workout_type
+        steps, steps_cum_reps, workout_type,
+        coalesce(workout_metadata, '{}'::jsonb) as workout_metadata
       from public.class_sessions
       where class_id = ${classId}
       limit 1
@@ -42,12 +45,17 @@ export class LiveClassRepository implements ILiveClassRepository {
   }
 
   // --- Final leaderboard ---
+// repositories/liveClass/liveClassRepository.ts
   async getFinalLeaderboard(classId: number) {
     const leaderboard = await globalDb
       .select({
         classId: classattendance.classId,
         memberId: classattendance.memberId,
-        score: classattendance.score,
+        score: classattendance.score,                 // legacy/compat
+        scoreSeconds: classattendance.scoreSeconds,   // time for FT/EMOM
+        scoreReps: classattendance.scoreReps,         // reps for DNFs / AMRAP / INTERVAL / TABATA
+        finished: classattendance.finished,           // true when time-based finish
+        scaling: classattendance.scaling,             // RX/SC
         markedAt: classattendance.markedAt,
         firstName: users.firstName,
         lastName: users.lastName,
@@ -55,11 +63,11 @@ export class LiveClassRepository implements ILiveClassRepository {
       .from(classattendance)
       .innerJoin(users, eq(classattendance.memberId, users.userId))
       .innerJoin(members, eq(users.userId, members.userId))
-      .where(and(eq(classattendance.classId, Number(classId)), eq(members.publicVisibility, true)))
-      .orderBy(desc(classattendance.score));
+      .where(and(eq(classattendance.classId, Number(classId)), eq(members.publicVisibility, true)));
 
     return leaderboard;
   }
+
 
   // --- Discovery for coach ---
   async getLiveClassForCoach(userId: number) {
@@ -160,6 +168,15 @@ export class LiveClassRepository implements ILiveClassRepository {
     return (rows[0] as { type: string })?.type ?? null;
   }
 
+  async getWorkoutTypeAndMetadata(workoutId: number): Promise<{ type: string | null; metadata: any }> {
+    const { rows } = await globalDb.execute(sql`select type, metadata from public.workouts where workout_id=${workoutId} limit 1`);
+    const row = rows[0] as { type: string; metadata: any };
+    return {
+      type: row?.type ?? null,
+      metadata: row?.metadata ?? {}
+    };
+  }
+
   // --- Coach controls ---
   async getClassMeta(classId: number) {
     const cls = await globalDb.execute(sql`
@@ -171,20 +188,31 @@ export class LiveClassRepository implements ILiveClassRepository {
     return cls.rows[0] as any;
   }
 
+  async getWorkoutMetadata(workoutId: number): Promise<any> {
+    const { rows } = await globalDb.execute(sql`
+      select coalesce(metadata, '{}'::jsonb) as metadata
+      from public.workouts
+      where workout_id = ${workoutId}
+      limit 1
+    `);
+    return (rows[0] as any)?.metadata ?? {};
+  }
+
   async upsertClassSession(
     classId: number,
     workoutId: number,
     timeCapSeconds: number,
     steps: Step[],
     stepsCumReps: number[],
-    workoutType: string
+    workoutType: string,
+    workoutMetadata: any
   ) {
     await globalDb.execute(sql`
       insert into public.class_sessions
-        (class_id, workout_id, status, time_cap_seconds, started_at, ended_at, paused_at, pause_accum_seconds, steps, steps_cum_reps, workout_type)
+        (class_id, workout_id, status, time_cap_seconds, started_at, ended_at, paused_at, pause_accum_seconds, steps, steps_cum_reps, workout_type, workout_metadata)
       values (
         ${classId}, ${workoutId}, 'live', ${timeCapSeconds}, now(), null, null, 0,
-        ${JSON.stringify(steps)}::jsonb, ${JSON.stringify(stepsCumReps)}::jsonb, ${workoutType}
+        ${JSON.stringify(steps)}::jsonb, ${JSON.stringify(stepsCumReps)}::jsonb, ${workoutType}, ${JSON.stringify(workoutMetadata)}::jsonb
       )
       on conflict (class_id) do update
         set status               = 'live',
@@ -195,9 +223,38 @@ export class LiveClassRepository implements ILiveClassRepository {
             pause_accum_seconds  = 0,
             steps                = excluded.steps,
             steps_cum_reps       = excluded.steps_cum_reps,
-            workout_type         = excluded.workout_type
+            workout_type         = excluded.workout_type,
+            workout_metadata     = excluded.workout_metadata
     `);
   }
+
+    async upsertFinal(
+    classId: number,
+    userId: number,
+    opts: { seconds?: number | null; reps?: number | null; finished?: boolean | null }
+    ) {
+    const seconds = opts.seconds == null ? null : Math.max(0, Number(opts.seconds));
+    const reps    = opts.reps    == null ? null : Math.max(0, Number(opts.reps));
+    const fin     = opts.finished ?? null;
+
+    await globalDb.execute(sql`
+        insert into public.classattendance (class_id, member_id, score, score_seconds, score_reps, finished)
+        values (
+        ${classId}, ${userId},
+        coalesce(${seconds}::int, ${reps}::int, 0),
+        ${seconds}::int,
+        ${reps}::int,
+        ${fin}
+        )
+        on conflict (class_id, member_id) do update
+        set score         = excluded.score,
+            score_seconds = excluded.score_seconds,
+            score_reps    = excluded.score_reps,
+            finished      = excluded.finished,
+            marked_at     = now()
+    `);
+    }
+
 
   async seedLiveProgressForClass(classId: number) {
     await globalDb.execute(sql`
@@ -226,6 +283,8 @@ export class LiveClassRepository implements ILiveClassRepository {
       set status = 'ended', ended_at = now()
       where class_id = ${classId}
     `);
+
+    await this.persistScoresFromLive(classId);
   }
   async pauseSession(classId: number) {
     await globalDb.execute(sql`
@@ -381,37 +440,52 @@ export class LiveClassRepository implements ILiveClassRepository {
 
   async realtimeIntervalLeaderboard(classId: number) {
     const { rows } = await globalDb.execute(sql`
-      with agg as (
-        select
-          lis.class_id,
-          lis.user_id,
-          sum(lis.reps)::int as total_reps,
-          sum(
-            case
-              when ((cs.steps -> (lis.step_index)::int) ->> 'target_reps') is not null
-                and lis.reps >= (((cs.steps -> (lis.step_index)::int) ->> 'target_reps')::int)
-              then 1 else 0
-            end
-          )::int as completed_minutes
+      with base as (
+        select cb.member_id as user_id
+        from public.classbookings cb
+        where cb.class_id = ${classId}
+      ),
+      live as (
+        select lis.user_id, sum(lis.reps)::int as live_total
         from public.live_interval_scores lis
-        join public.class_sessions cs on cs.class_id = lis.class_id
         where lis.class_id = ${classId}
-        group by lis.class_id, lis.user_id
+        group by lis.user_id
+      ),
+      ov as (
+        select o.user_id, o.reps::int as override_total
+        from public.live_interval_overrides o
+        where o.class_id = ${classId}
+      ),
+      totals as (
+        select
+          b.user_id,
+          coalesce(ov.override_total, live.live_total, 0)::int as total_reps
+        from base b
+        left join live live on live.user_id = b.user_id
+        left join ov   ov   on ov.user_id   = b.user_id
       )
       select
-        a.class_id,
-        a.user_id,
+        ${classId}::int as class_id,
+        t.user_id,
         u.first_name,
         u.last_name,
         false as finished,
         null::numeric as elapsed_seconds,
-        a.total_reps
-      from agg a
-      join public.users u on u.user_id = a.user_id
-      order by a.completed_minutes desc, a.total_reps desc
+        t.total_reps,
+        coalesce(ca.scaling, 'RX') as scaling
+      from totals t
+      left join public.users u
+        on u.user_id = t.user_id
+      left join public.members m
+        on m.user_id = t.user_id
+      left join public.classattendance ca
+        on ca.class_id = ${classId} and ca.member_id = t.user_id
+      where m.public_visibility = true
+      order by t.total_reps desc, u.first_name asc nulls last
     `);
     return rows;
   }
+
 
   async realtimeAmrapLeaderboard(classId: number) {
     const { rows } = await globalDb.execute(sql`
@@ -446,13 +520,18 @@ export class LiveClassRepository implements ILiveClassRepository {
         u.last_name,
         false as finished,
         null::numeric as elapsed_seconds,
-        (c.rounds_completed * c.reps_per_round + c.within_round_reps + coalesce(c.dnf_partial_reps, 0))::int as total_reps
+        (c.rounds_completed * c.reps_per_round + c.within_round_reps + coalesce(c.dnf_partial_reps, 0))::int as total_reps,
+        coalesce(ca.scaling, 'RX') as scaling
       from calc c
       join public.users u on u.user_id = c.user_id
+      join public.members m on m.user_id = c.user_id
+      left join public.classattendance ca on ca.class_id = c.class_id and ca.member_id = c.user_id
+      where m.public_visibility = true
       order by total_reps desc, u.first_name asc
     `);
     return rows;
   }
+
 
   async realtimeForTimeLeaderboard(classId: number) {
     const { rows } = await globalDb.execute(sql`
@@ -484,9 +563,13 @@ export class LiveClassRepository implements ILiveClassRepository {
                 then ((b.steps_cum_reps ->> (b.current_step - 1))::int)
                 else 0 end)
           + coalesce(b.dnf_partial_reps, 0)
-        ) as total_reps
+        ) as total_reps,
+        coalesce(ca.scaling, 'RX') as scaling
       from base b
       join public.users u on u.user_id = b.user_id
+      join public.members m on m.user_id = b.user_id
+      left join public.classattendance ca on ca.class_id = b.class_id and ca.member_id = b.user_id
+      where m.public_visibility = true
       order by
         case when b.finished_at is not null then 0 else 1 end,
         elapsed_seconds asc nulls last,
@@ -494,6 +577,156 @@ export class LiveClassRepository implements ILiveClassRepository {
     `);
     return rows;
   }
+
+
+  async realtimeEmomLeaderboard(classId: number) {
+    // Cumulative time rules:
+    // - Past minutes [0..full_minutes-1]: finished -> finish_seconds (0..59), else 60
+    // - Current minute (= full_minutes): include ONLY if finished; else 0
+    // - Future minutes: 0
+    const { rows } = await globalDb.execute(sql`
+        with sess as (
+        select
+            cs.class_id,
+            cs.started_at,
+            cs.ended_at,
+            cs.paused_at,
+            coalesce(cs.pause_accum_seconds, 0)::bigint as pause_accum_seconds,
+            cs.status,
+            cs.workout_id
+        from public.class_sessions cs
+        where cs.class_id = ${classId}
+        limit 1
+        ),
+        plan as (
+        select
+            s.class_id,
+            (w.metadata -> 'emom_repeats') as reps,
+            s.started_at,
+            s.ended_at,
+            s.paused_at,
+            s.pause_accum_seconds,
+            s.status
+        from sess s
+        join public.workouts w on w.workout_id = s.workout_id
+        ),
+        mins as (
+        select
+            p.class_id,
+            coalesce(
+            (select sum((x)::int) from jsonb_array_elements_text(coalesce(p.reps, '[]'::jsonb)) x),
+            0
+            ) as planned_minutes,
+            (
+            extract(
+                epoch from (
+                (case when p.status = 'ended' and p.ended_at is not null then p.ended_at else now() end)
+                - p.started_at
+                )
+            )::bigint
+            - coalesce(p.pause_accum_seconds, 0)
+            - case when p.status = 'paused' and p.paused_at is not null
+                then coalesce(extract(epoch from (now() - p.paused_at))::bigint, 0)
+                else 0
+                end
+            )::bigint as elapsed_seconds,
+            p.status
+        from plan p
+        ),
+        bound as (
+        select
+            class_id,
+            planned_minutes,
+            least(planned_minutes, greatest(0, (elapsed_seconds / 60)::int)) as full_minutes,
+            status
+        from mins
+        ),
+
+      members as (
+        select cb.member_id as user_id
+        from public.classbookings cb
+        where cb.class_id = ${classId}
+      ),
+
+      /* ✅ Generate rows ONLY when we actually have past minutes.
+        If full_minutes = 0, this produces ZERO rows (no phantom +60). */
+      past_idx as (
+        select m.user_id, gs.idx as minute_index
+        from members m
+        cross join bound b
+        join lateral (
+          select generate_series(0, b.full_minutes - 1) as idx
+        ) gs on b.full_minutes > 0
+      ),
+
+      past_minutes as (
+        select
+          p.user_id,
+          coalesce(
+            case
+              when s.finished then greatest(0, least(59, coalesce(s.finish_seconds, 60)))::numeric
+              else 60::numeric
+            end,
+            60::numeric
+          ) as minute_time
+        from past_idx p
+        left join public.live_emom_scores s
+          on s.class_id    = ${classId}
+        and s.user_id     = p.user_id
+        and s.minute_index = p.minute_index
+      ),
+
+      past_sum as (
+        select user_id, coalesce(sum(minute_time), 0)::numeric as total_past
+        from past_minutes
+        group by user_id
+      ),
+
+      /* Current minute: include ONLY if finished (else 0) */
+      current_sum as (
+        select
+          m.user_id,
+          coalesce((
+            select greatest(0, least(59, coalesce(s.finish_seconds, 60)))::numeric
+            from public.live_emom_scores s
+            join bound b on true
+            where s.class_id     = ${classId}
+              and s.user_id      = m.user_id
+              and s.minute_index = b.full_minutes
+              and s.finished     = true
+              and b.full_minutes < b.planned_minutes
+              and b.status      <> 'ended'
+          ), 0)::numeric as cur_part
+        from members m
+      ),
+
+      totals as (
+        select
+          m.user_id,
+          coalesce(p.total_past, 0)::numeric + coalesce(c.cur_part, 0)::numeric as total_time
+        from members m
+        left join past_sum   p on p.user_id = m.user_id
+        left join current_sum c on c.user_id = m.user_id
+      )
+
+      select
+        ${classId}::int as class_id,
+        t.user_id,
+        u.first_name,
+        u.last_name,
+        true as finished,                 -- force time display path
+        t.total_time as elapsed_seconds,  -- cumulative seconds so far
+        null::int as total_reps
+      from totals t
+      left join public.users u on u.user_id = t.user_id
+      left join public.members m on m.user_id = t.user_id
+      where m.public_visibility = true
+      order by t.total_time asc, u.first_name asc nulls last;
+    `);
+    return rows;
+  }
+
+
 
   // --- My progress ---
   // repositories/liveClass/liveClassRepository.ts
@@ -574,15 +807,18 @@ export class LiveClassRepository implements ILiveClassRepository {
   async intervalLeaderboard(classId: number) {
     const { rows } = await globalDb.execute(sql`
       select s.user_id,
-             sum(s.reps) as total_reps,
-             u.first_name,
-             u.last_name
+            sum(s.reps)::int as total_reps,
+            u.first_name,
+            u.last_name
       from public.live_interval_scores s
-      join public.users u on u.user_id = s.user_id
+      join public.users u    on u.user_id = s.user_id
+      join public.members m  on m.user_id = s.user_id
       where s.class_id = ${classId}
+        and coalesce(m.public_visibility, true) = true
       group by s.user_id, u.first_name, u.last_name
-      order by sum(s.reps) desc, u.first_name asc
+      order by sum(s.reps) desc, u.first_name asc nulls last
     `);
+
     return rows.map((r: any) => ({
       user_id: r.user_id,
       total_reps: Number(r.total_reps ?? 0),
@@ -591,6 +827,7 @@ export class LiveClassRepository implements ILiveClassRepository {
       last_name: r.last_name,
     }));
   }
+
 
   // --- Scores ---
   async assertCoachOwnsClass(classId: number, coachId: number) {
@@ -625,4 +862,421 @@ export class LiveClassRepository implements ILiveClassRepository {
         set: { score },
       });
   }
+
+  // --- Notes ---
+  async getCoachNote(classId: number) {
+    const { rows } = await globalDb.execute(sql`
+      select coach_notes from public.class_sessions where class_id = ${classId} limit 1
+    `);
+    return (rows[0] as any)?.coach_notes ?? null;
+  }
+
+  async setCoachNote(classId: number, text: string) {
+    await globalDb.execute(sql`
+      update public.class_sessions
+      set coach_notes = ${text}
+      where class_id = ${classId}
+    `);
+  }
+
+  // --- Coach edit: FOR_TIME finish ---
+  async setForTimeFinish(classId: number, userId: number, finishSeconds: number | null, startedAt: any) {
+    if (finishSeconds == null) {
+      await globalDb.execute(sql`
+        update public.live_progress
+        set finished_at = null, updated_at = now()
+        where class_id = ${classId} and user_id = ${userId}
+      `);
+    } else {
+      await globalDb.execute(sql`
+        update public.live_progress
+        set finished_at = (${startedAt} + make_interval(secs => ${Math.max(0, Number(finishSeconds))})), updated_at = now()
+        where class_id = ${classId} and user_id = ${userId}
+      `);
+    }
+  }
+
+  // --- Coach edit: AMRAP map from total reps ---
+  async setAmrapProgress(classId: number, userId: number, rounds: number, currentStep: number, partial: number) {
+    await globalDb.execute(sql`
+      update public.live_progress
+      set rounds_completed = ${Math.max(0, rounds)},
+          current_step     = ${Math.max(0, currentStep)},
+          dnf_partial_reps = ${Math.max(0, partial)},
+          updated_at       = now()
+      where class_id = ${classId} and user_id = ${userId}
+    `);
+  }
+
+  // --- Coach edit: EMOM mark ---
+  async upsertEmomMark(classId: number, userId: number, minuteIndex: number, finished: boolean, finishSeconds: number) {
+    await globalDb.execute(sql`
+      insert into public.live_emom_scores (class_id, user_id, minute_index, finished, finish_seconds)
+      values (${classId}, ${userId}, ${minuteIndex}, ${finished}, ${finishSeconds})
+      on conflict (class_id, user_id, minute_index) do update
+        set finished = excluded.finished,
+            finish_seconds = excluded.finish_seconds,
+            updated_at = now()
+    `);
+
+    const { rows: st } = await globalDb.execute(sql`select status from public.class_sessions where class_id=${classId} limit 1`);
+    const ended = (st[0]?.status || '').toString() === 'ended';
+    if (ended) {
+        const { rows } = await globalDb.execute(sql`
+        with planned as (
+            select coalesce((
+            select sum((x)::int)
+            from jsonb_array_elements_text(coalesce(w.metadata->'emom_repeats','[]'::jsonb)) x
+            ), 0)::int as minutes
+            from public.class_sessions cs
+            join public.workouts w on w.workout_id = cs.workout_id
+            where cs.class_id=${classId} limit 1
+        ),
+        idx as (select generate_series(0, (select minutes from planned)-1) as i),
+        per as (
+            select
+            i.i as minute_index,
+            case when s.finished then greatest(0, least(59, coalesce(s.finish_seconds,60)))::int else 60 end as part
+            from idx i
+            left join public.live_emom_scores s on s.class_id=${classId} and s.user_id=${userId} and s.minute_index=i.i
+        )
+        select coalesce(sum(part),0)::int as total
+        from per
+        `);
+        const total = Number(rows[0]?.total ?? 0);
+        await this.upsertFinal(classId, userId, { seconds: total, finished: true });
+    }
+  }
+
+
+  async setForTimeFinishSeconds(classId: number, userId: number, seconds: number) {
+    // finished_at = started_at + seconds
+    await globalDb.execute(sql`
+      update public.live_progress lp
+      set finished_at = cs.started_at + (${seconds} || ' seconds')::interval,
+          updated_at  = now()
+      from public.class_sessions cs
+      where lp.class_id = cs.class_id
+        and lp.class_id = ${classId}
+        and lp.user_id  = ${userId}
+    `);
+  }
+
+  async setForTimePartialReps(classId: number, userId: number, reps: number) {
+    // also clear finished_at if coach is moving user back to an unfinished state
+    await globalDb.execute(sql`
+      update public.live_progress
+      set dnf_partial_reps = ${reps},
+          finished_at      = null,
+          updated_at       = now()
+      where class_id = ${classId} and user_id = ${userId}
+    `);
+  }
+
+  async setForTimePosition(classId: number, userId: number, currentStep: number, partialReps: number) {
+    await globalDb.execute(sql`
+      with sc as (
+        select coalesce(jsonb_array_length(steps), 0) as step_count
+        from public.class_sessions
+        where class_id = ${classId}
+        limit 1
+      )
+      update public.live_progress lp
+      set current_step = least(greatest(${currentStep}, 0), (select step_count from sc)),
+          dnf_partial_reps = ${partialReps},
+          finished_at = null,
+          updated_at = now()
+      where lp.class_id = ${classId} and lp.user_id = ${userId}
+    `);
+  }
+
+
+    // FOR TIME: set finished time (seconds from start)
+  async setForTimeFinishBySeconds(classId: number, userId: number, seconds: number) {
+    await globalDb.execute(sql`
+        with base as (select started_at from public.class_sessions where class_id=${classId} limit 1)
+        update public.live_progress
+        set finished_at = (select started_at from base) + make_interval(secs => ${seconds}),
+            current_step = (select coalesce(jsonb_array_length(steps),0) from public.class_sessions where class_id=${classId}),
+            dnf_partial_reps = 0,
+            updated_at = now()
+        where class_id=${classId} and user_id=${userId}
+    `);
+    await this.upsertFinal(classId, userId, { seconds: Math.max(0, Number(seconds)), finished: true });
+    }
+
+
+  // FOR TIME: set a final *total reps* (DNF). We map it to current_step + dnf.
+  async setForTimeTotalReps(classId: number, userId: number, totalReps: number) {
+    await globalDb.execute(sql`
+      with cs as (
+        select steps_cum_reps from public.class_sessions where class_id = ${classId} limit 1
+      ),
+      pick as (
+        select
+          coalesce((
+            select idx from (
+              select (row_number() over())::int as idx, (val)::int as v
+              from jsonb_array_elements_text((select steps_cum_reps from cs)) with ordinality as t(val, ord)
+            ) x
+            where x.v <= ${totalReps}
+            order by x.idx desc
+            limit 1
+          ), 0) as idx,
+          coalesce((
+            select v from (
+              select (row_number() over())::int as idx, (val)::int as v
+              from jsonb_array_elements_text((select steps_cum_reps from cs)) with ordinality as t(val, ord)
+            ) y
+            where y.v <= ${totalReps}
+            order by y.idx desc
+            limit 1
+          ), 0) as within
+      )
+      update public.live_progress lp
+      set current_step      = (select greatest( (select idx from pick), 0 )),
+          dnf_partial_reps  = greatest(${totalReps} - (select within from pick), 0),
+          finished_at       = null,
+          updated_at        = now()
+      where lp.class_id = ${classId} and lp.user_id = ${userId}
+    `);
+
+    await this.upsertFinal(classId, userId, { reps: Math.max(0, Number(totalReps)), finished: false });
+  }
+
+
+  // AMRAP: set final total reps by splitting into rounds/current_step/dnf
+  async setAmrapTotalReps(classId: number, userId: number, totalReps: number) {
+    await globalDb.execute(sql`
+      with cs as (
+        select steps_cum_reps from public.class_sessions where class_id = ${classId} limit 1
+      ),
+      rpr as (
+        select coalesce( ( (select steps_cum_reps from cs) ->> greatest(jsonb_array_length((select steps_cum_reps from cs)) - 1, 0) )::int, 0 ) as reps_per_round
+      ),
+      split as (
+        select
+          case when (select reps_per_round from rpr) > 0 then floor(${totalReps}::numeric / (select reps_per_round from rpr))::int else 0 end as rounds,
+          case when (select reps_per_round from rpr) > 0 then ${totalReps} % (select reps_per_round from rpr) else ${totalReps} end as rem
+      ),
+      pick as (
+        select
+          coalesce((
+            select idx from (
+              select (row_number() over())::int as idx, (val)::int as v
+              from jsonb_array_elements_text((select steps_cum_reps from cs)) with ordinality as t(val, ord)
+            ) x
+            where x.v <= (select rem from split)
+            order by x.idx desc
+            limit 1
+          ), 0) as idx,
+          coalesce((
+            select v from (
+              select (row_number() over())::int as idx, (val)::int as v
+              from jsonb_array_elements_text((select steps_cum_reps from cs)) with ordinality as t(val, ord)
+            ) y
+            where y.v <= (select rem from split)
+            order by y.idx desc
+            limit 1
+          ), 0) as within
+      )
+      update public.live_progress lp
+      set rounds_completed  = (select rounds from split),
+          current_step      = (select idx from pick),
+          dnf_partial_reps  = greatest((select rem from split) - (select within from pick), 0),
+          finished_at       = null,
+          updated_at        = now()
+      where lp.class_id = ${classId} and lp.user_id = ${userId}
+    `);
+
+    await this.upsertFinal(classId, userId, { reps: Math.max(0, Number(totalReps)) });
+  }
+
+
+  // INTERVAL/TABATA: override final total reps (used only after ended)
+  async upsertIntervalOverride(classId: number, userId: number, totalReps: number) {
+    await globalDb.execute(sql`
+        insert into public.live_interval_overrides (class_id, user_id, reps)
+        values (${classId}, ${userId}, ${totalReps})
+        on conflict (class_id, user_id) do update
+        set reps = excluded.reps,
+            updated_at = now()
+    `);
+    await this.upsertFinal(classId, userId, { reps: Math.max(0, Number(totalReps)) });
+    }
+
+
+
+  // Save or change member's scaling for this class
+  async upsertScaling(classId: number, userId: number, scaling: 'RX'|'SC') {
+    await globalDb.execute(sql`
+      insert into public.classattendance (class_id, member_id, score, scaling)
+      values (${classId}, ${userId}, 0, ${scaling})
+      on conflict (class_id, member_id) do update
+        set scaling = excluded.scaling,
+            marked_at = now()
+    `);
+  }
+
+  async getScaling(classId: number, userId: number): Promise<'RX'|'SC'> {
+    const { rows } = await globalDb.execute(sql`
+      select coalesce(scaling, 'RX') as scaling
+      from public.classattendance
+      where class_id = ${classId} and member_id = ${userId}
+      limit 1
+    `);
+    const s = (rows[0]?.scaling ?? 'RX').toString().toUpperCase();
+    return s === 'SC' ? 'SC' : 'RX';
+  }
+
+    // repositories/liveClass/liveClassRepository.ts
+    async persistScoresFromLive(classId: number) {
+        // find workout type (snapshot)
+        const { rows: typ } = await globalDb.execute(sql`
+            select w.type
+            from public.class_sessions cs
+            join public.workouts w on w.workout_id = cs.workout_id
+            where cs.class_id = ${classId}
+            limit 1
+        `);
+        const type = (typ[0]?.type || '').toString().toUpperCase();
+
+        if (type === 'FOR_TIME') {
+            const { rows } = await globalDb.execute(sql`
+            with base as (
+                select
+                lp.user_id,
+                lp.current_step,
+                lp.finished_at,
+                lp.dnf_partial_reps,
+                cs.started_at,
+                cs.steps_cum_reps
+                from public.live_progress lp
+                join public.class_sessions cs on cs.class_id = lp.class_id
+                where lp.class_id = ${classId}
+            ),
+            plan as (
+                select
+                b.*,
+                coalesce((b.steps_cum_reps ->> greatest(jsonb_array_length(b.steps_cum_reps)-1,0))::int, 0) as plan_reps,
+                case when b.current_step > 0 then (b.steps_cum_reps ->> (b.current_step - 1))::int else 0 end as within_reps
+                from base b
+            )
+            select
+                p.user_id,
+                (p.finished_at is not null) as finished,
+                case when p.finished_at is not null then extract(epoch from (p.finished_at - p.started_at))::int else null end as seconds,
+                case when p.finished_at is not null then p.plan_reps else (p.within_reps + coalesce(p.dnf_partial_reps,0)) end as reps_or_dnf
+            from plan p
+            `);
+
+            for (const r of rows) {
+            const finished = !!r.finished;
+            const seconds  = finished ? Number(r.seconds ?? 0) : null;
+            const reps     = finished ? Number(r.reps_or_dnf ?? 0) : Number(r.reps_or_dnf ?? 0);
+            await this.upsertFinal(classId, Number(r.user_id), {
+                seconds,
+                reps: finished ? Number(reps) : Number(reps), // keep achieved reps for display/history
+                finished
+            });
+            }
+            return;
+        }
+
+        if (type === 'AMRAP') {
+            const { rows } = await globalDb.execute(sql`
+            with base as (
+                select
+                lp.user_id,
+                lp.current_step,
+                lp.rounds_completed,
+                lp.dnf_partial_reps,
+                cs.steps_cum_reps
+                from public.live_progress lp
+                join public.class_sessions cs on cs.class_id = lp.class_id
+                where lp.class_id = ${classId}
+            ),
+            calc as (
+                select
+                b.user_id,
+                coalesce((b.steps_cum_reps ->> greatest(jsonb_array_length(b.steps_cum_reps)-1,0))::int, 0) as reps_per_round,
+                case when b.current_step > 0 then (b.steps_cum_reps ->> (b.current_step - 1))::int else 0 end as within
+                from base b
+            )
+            select
+                c.user_id,
+                (c.reps_per_round * (select rounds_completed from base where user_id=c.user_id limit 1)
+                + c.within
+                + coalesce((select dnf_partial_reps from base where user_id=c.user_id limit 1),0)
+                )::int as total_reps
+            from calc c
+            `);
+
+            for (const r of rows) {
+            await this.upsertFinal(classId, Number(r.user_id), { reps: Number(r.total_reps) });
+            }
+            return;
+        }
+
+        if (type === 'TABATA' || type === 'INTERVAL') {
+            const { rows } = await globalDb.execute(sql`
+            select s.user_id, coalesce(sum(s.reps),0)::int as total_reps
+            from public.live_interval_scores s
+            where s.class_id = ${classId}
+            group by s.user_id
+            `);
+            for (const r of rows) {
+            await this.upsertFinal(classId, Number(r.user_id), { reps: Number(r.total_reps) });
+            }
+            return;
+        }
+
+        if (type === 'EMOM') {
+            // Planned minute count from metadata
+            const { rows: mins } = await globalDb.execute(sql`
+            with sess as (
+                select cs.workout_id
+                from public.class_sessions cs
+                where cs.class_id = ${classId}
+                limit 1
+            )
+            select coalesce((
+                select sum((x)::int)
+                from jsonb_array_elements_text(coalesce(w.metadata->'emom_repeats','[]'::jsonb)) x
+            ), 0)::int as planned_minutes
+            from sess s
+            join public.workouts w on w.workout_id = s.workout_id
+            `);
+            const planned = Number(mins[0]?.planned_minutes ?? 0);
+
+            const { rows } = await globalDb.execute(sql`
+            with members as (
+                select cb.member_id as user_id
+                from public.classbookings cb
+                where cb.class_id = ${classId}
+            ),
+            idx as (select generate_series(0, ${planned} - 1) as minute_index),
+            grid as (select m.user_id, i.minute_index from members m cross join idx i),
+            per as (
+                select
+                g.user_id,
+                case when s.finished then greatest(0, least(59, coalesce(s.finish_seconds,60)))::int else 60 end as part
+                from grid g
+                left join public.live_emom_scores s
+                on s.class_id=${classId}
+                and s.user_id=g.user_id
+                and s.minute_index=g.minute_index
+            )
+            select user_id, coalesce(sum(part),0)::int as total_seconds
+            from per
+            group by user_id
+            `);
+
+            for (const r of rows) {
+            await this.upsertFinal(classId, Number(r.user_id), { seconds: Number(r.total_seconds), finished: true });
+            }
+            return;
+        }
+    }
+
 }

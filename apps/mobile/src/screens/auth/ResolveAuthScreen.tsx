@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
@@ -66,8 +67,8 @@ const ResolveAuthScreen = ({ navigation }: ResolveAuthScreenProps) => {
   }, [navigation]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       <ActivityIndicator size="large" color="#D8FF3E" />
     </SafeAreaView>
   );

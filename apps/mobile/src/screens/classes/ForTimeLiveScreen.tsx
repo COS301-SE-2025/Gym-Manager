@@ -1,6 +1,7 @@
+// apps/mobile/src/screens/classes/ForTimeLiveScreen.tsx
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, SafeAreaView, StatusBar,
+  View, Text, StyleSheet, Pressable, StatusBar,
   Modal, TextInput, TouchableOpacity, ActivityIndicator, Animated
 } from 'react-native';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -9,10 +10,14 @@ import { BlurView } from 'expo-blur';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
 import { useMyProgress } from '../../hooks/useMyProgress';
-import { useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
+import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
 import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
+import { getToken, getUser } from '../../utils/authStorage';
 import config from '../../config';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { HypeToast } from '../../components/HypeToast';
+import { useLeaderboardHype } from '../../hooks/useLeaderboardHype';
+
 
 type R = RouteProp<AuthStackParamList, 'ForTimeLive'>;
 
@@ -23,6 +28,35 @@ function useNowSec() {
     return () => clearInterval(id);
   }, []);
   return now;
+}
+
+function toEpochSecMaybe(ts: any): number {
+  if (!ts) return 0;
+  if (typeof ts === 'number') return ts;
+  const s = String(ts).replace(' ', 'T');
+  const hasTZ = /[zZ]|[+\-]\d{2}:\d{2}$/.test(s);
+  const iso = hasTZ ? s : s + 'Z';
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) ? Math.floor(ms/1000) : 0;
+}
+
+// "10 x Pushups"  or  "10 sec — Plank"
+function fmtStepLabel(step: any): string {
+  const qtyType = step?.quantityType ?? (typeof step?.reps === 'number' ? 'reps' : (typeof step?.duration === 'number' ? 'duration' : undefined));
+  if (qtyType === 'reps' && typeof step?.reps === 'number') {
+    return `${step.reps} x ${step?.name ?? '—'}`;
+  }
+  if (qtyType === 'duration' && typeof step?.duration === 'number') {
+    return `${step.duration} sec — ${step?.name ?? '—'}`;
+  }
+  return step?.name ?? '—';
+}
+
+function fmt(t: number) {
+  const s = Math.max(0, Math.floor(t));
+  const m = Math.floor(s / 60);
+  const ss = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
 }
 
 export default function ForTimeLiveScreen() {
@@ -44,34 +78,74 @@ export default function ForTimeLiveScreen() {
     }, [])
   );
 
-  const session = useSession(classId);                // polls /live/:classId/session
-  const progress = useMyProgress(classId);            // polls /live/:classId/me
-  const lb = useLeaderboardRealtime(classId);
+
+  const session = useSession(classId);
+  const progress = useMyProgress(classId);
+  
+  const [scope, setScope] = useState<LbFilter>('ALL');
+  const lb = useLeaderboardRealtime(classId, scope);
+
+  // Tutorial overlay state
+  const [showTutorial, setShowTutorial] = useState(true);
+  const [tutorialStep, setTutorialStep] = useState(0); // 0: green, 1: red
+  useEffect(() => {
+    // Hide tutorial after 4 seconds automatically
+    const timer = setTimeout(() => setShowTutorial(false), 4000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Tutorial animation
+  useEffect(() => {
+    if (!showTutorial) return;
+    const interval = setInterval(() => {
+      setTutorialStep(prev => (prev + 1) % 2);
+    }, 800); // Switch every 800ms
+    return () => clearInterval(interval);
+  }, [showTutorial]);
+
+  // More reliable user ID detection using the same method as useMyProgress
+  const [myUserId, setMyUserId] = useState<number | null>(null);
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const user = await getUser();
+      const userId = user?.userId || user?.id;
+      setMyUserId(userId || null);
+    };
+    fetchUserId();
+  }, []);
+
+  const hypeOptedOut =
+    (session as any)?.workout_metadata?.hype_opt_out === true ||
+    (progress as any)?.hype_opt_out === true ||
+    false;
+
+  const hype = useLeaderboardHype(lb, myUserId || undefined, hypeOptedOut);
+
 
   const steps: any[] = (session?.steps as any[]) ?? [];
   const cum: number[] = (session?.steps_cum_reps as any[]) ?? [];
   const ready = Array.isArray(steps) && steps.length > 0;
 
-  // local, optimistic step index
+  // local, optimistic step index synced from server progress
   const [localIdx, setLocalIdx] = useState(0);
   useEffect(() => {
     if (!ready) return;
     setLocalIdx(Math.max(0, Math.min(steps.length, Number(progress.current_step ?? 0))));
   }, [ready, progress.current_step, steps.length]);
 
-  // pause-aware elapsed seconds
-  const nowSec       = useNowSec();
-  const startedAtSec = Number((session as any)?.started_at_s ?? 0);
-  const pausedAtSec  = Number((session as any)?.paused_at_s ?? 0);
+  // pause-aware elapsed seconds (robust if epoch helpers missing)
+  const nowSec = useNowSec();
+  const startedAtSec = Number((session as any)?.started_at_s ?? 0) || toEpochSecMaybe((session as any)?.started_at);
+  const pausedAtSec  = Number((session as any)?.paused_at_s  ?? 0) || toEpochSecMaybe((session as any)?.paused_at);
   const pauseAccum   = Number((session as any)?.pause_accum_seconds ?? 0);
   const extraPaused  = session?.status === 'paused' && pausedAtSec ? Math.max(0, nowSec - pausedAtSec) : 0;
   const elapsed      = startedAtSec ? Math.max(0, (nowSec - startedAtSec) - (pauseAccum + extraPaused)) : 0;
 
-  const cap    = session?.time_cap_seconds ?? 0;
+  const cap = session?.time_cap_seconds ?? 0;
   const timeUp = cap > 0 && elapsed >= cap;
 
-  const current  = ready ? steps[localIdx] : undefined;
-  const next     = ready ? steps[localIdx + 1] : undefined;
+  const current = ready ? steps[localIdx] : undefined;
+  const next = ready ? steps[localIdx + 1] : undefined;
   const finished =
     !!(progress as any)?.finished_at_s ||
     !!progress.finished_at ||
@@ -84,7 +158,6 @@ export default function ForTimeLiveScreen() {
     return within + (progress.dnf_partial_reps ?? 0);
   }, [ready, finished, localIdx, cum, progress.dnf_partial_reps, session?.workout_type]);
 
-  // Ask partial only if NOT finished and (time up OR coach stopped)
   const askPartial = ready && !finished && (timeUp || session?.status === 'ended');
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -158,40 +231,63 @@ export default function ForTimeLiveScreen() {
   const scaleIn = pausedAnim.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] });
 
   return (
-    <SafeAreaView style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#0d150f" />
+    <View style={s.root}>
+      <StatusBar hidden={true} />
+      <SafeAreaView style={s.safeArea} edges={['left', 'right']}>
 
       {/* single timer */}
       <View pointerEvents="none" style={s.topOverlay}>
-        <Text style={s.timeTop}>{fmt(elapsed)}</Text>
+        <Text style={s.timeTop} pointerEvents="none">{fmt(elapsed)}</Text>
       </View>
 
+      <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />
+
       {/* centered content */}
-      <View pointerEvents="none" style={s.centerOverlay}>
+      <View pointerEvents="box-none" style={s.centerOverlay}>
         {!ready ? (
           <>
-            <ActivityIndicator size="large" color="#D8FF3E" />
-            <Text style={{ color: '#a5a5a5', marginTop: 10, fontWeight: '700' }}>Getting class ready…</Text>
+            <ActivityIndicator size="large" color="#D8FF3E" pointerEvents="none" />
+            <Text style={{ color: '#a5a5a5', marginTop: 10, fontWeight: '700' }} pointerEvents="none">Getting class ready…</Text>
           </>
         ) : (
           <>
-            <Text style={s.stepCounter}>{String(localIdx + 1).padStart(2,'0')} / {String(totalSteps).padStart(2,'0')}</Text>
-            {!!scoreSoFar && <Text style={s.score}>{scoreSoFar} reps</Text>}
-            <Text style={s.current}>{current?.name ?? '—'}</Text>
-            <Text style={s.nextLabel}>Next: {next?.name ?? '—'}</Text>
+            <Text style={s.stepCounter} pointerEvents="none">{String(localIdx + 1).padStart(2,'0')} / {String(totalSteps).padStart(2,'0')}</Text>
+            {!!scoreSoFar && <Text style={s.score} pointerEvents="none">{scoreSoFar} reps</Text>}
+            <Text style={s.current} pointerEvents="none">{fmtStepLabel(current)}</Text>
+            <Text style={s.nextLabel} pointerEvents="none">Next: {fmtStepLabel(next)}</Text>
 
-            <View style={s.lb}>
-              <Text style={s.lbTitle}>Leaderboard</Text>
-              {lb.slice(0, 6).map((r: any, i: number) => {
+            <View style={[s.lb, { zIndex: 50, elevation: 6 }]} pointerEvents="box-none">
+              <Text style={s.lbTitle} pointerEvents="none">Leaderboard</Text>
+
+              {/* RX/SC filter */}
+              <View style={{ flexDirection:'row', justifyContent:'center', gap:6, marginBottom:8 }} pointerEvents="auto">
+                {(['ALL','RX','SC'] as const).map(opt => (
+                  <TouchableOpacity
+                    key={opt}
+                    onPress={()=>setScope(opt)}
+                    style={{
+                      paddingHorizontal:10, paddingVertical:6, borderRadius:999,
+                      backgroundColor: scope===opt ? '#2e3500' : '#1f1f1f',
+                      borderWidth:1, borderColor: scope===opt ? '#d8ff3e' : '#2a2a2a'
+                    }}
+                  >
+                    <Text style={{ color: scope===opt ? '#d8ff3e' : '#9aa', fontWeight:'800' }}>{opt}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {lb.slice(0, 3).map((r: any, i: number) => {
                 const displayName =
                   (r.first_name || r.last_name)
                     ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
                     : (r.name ?? `User ${r.user_id}`);
                 return (
-                  <View key={`${r.user_id}-${i}`} style={s.lbRow}>
-                    <Text style={s.lbPos}>{i+1}</Text>
-                    <Text style={s.lbUser}>{displayName}</Text>
-                    <Text style={s.lbScore}>
+                  <View key={`${r.user_id}-${i}`} style={s.lbRow} pointerEvents="none">
+                    <Text style={s.lbPos} pointerEvents="none">{i+1}</Text>
+                    <Text style={s.lbUser} pointerEvents="none">
+                      {displayName} <Text style={{ color:'#9aa' }} pointerEvents="none">({(r.scaling ?? 'RX')})</Text>
+                    </Text>
+                    <Text style={s.lbScore} pointerEvents="none">
                       {r.finished ? fmt(Number(r.elapsed_seconds ?? 0)) : `${Number(r.total_reps ?? 0)} reps`}
                     </Text>
                   </View>
@@ -208,7 +304,30 @@ export default function ForTimeLiveScreen() {
         <Pressable style={s.next} android_ripple={{color:'#0a0'}} onPress={() => go(1)} disabled={!ready || session?.status !== 'live'} />
       </View>
 
-      {/* PAUSE overlay: animated fade + blur; blocks input */}
+      {/* tutorial overlay */}
+      {showTutorial && (
+        <View style={s.tutorialOverlay} pointerEvents="none">
+          {/* Green region highlight */}
+          {tutorialStep === 0 && (
+            <Animated.View style={[s.tutorialHighlight, s.tutorialGreenHighlight]} pointerEvents="none">
+              <View style={s.tutorialLabelContainer}>
+                <Text style={s.tutorialLabel}>TAP FOR NEXT</Text>
+              </View>
+            </Animated.View>
+          )}
+          
+          {/* Red region highlight */}
+          {tutorialStep === 1 && (
+            <Animated.View style={[s.tutorialHighlight, s.tutorialRedHighlight]} pointerEvents="none">
+              <View style={s.tutorialLabelContainer}>
+                <Text style={s.tutorialLabel}>TAP FOR BACK</Text>
+              </View>
+            </Animated.View>
+          )}
+        </View>
+      )}
+
+      {/* PAUSE overlay */}
       {session?.status === 'paused' && (
         <View style={s.pausedOverlay} pointerEvents="auto">
           <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor:'#000', opacity: fadeOpacity }]} />
@@ -220,7 +339,7 @@ export default function ForTimeLiveScreen() {
         </View>
       )}
 
-      {/* DNF prompt (only when needed, we do NOT auto-navigate while this is open) */}
+      {/* DNF prompt */}
       <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={()=>{}}>
         <View style={s.modalWrap}>
           <View style={s.modalCard}>
@@ -235,19 +354,15 @@ export default function ForTimeLiveScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
-}
 
-function fmt(t: number) {
-  const s = Math.max(0, Math.floor(t));
-  const m = Math.floor(s / 60);
-  const ss = s % 60;
-  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
 }
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0d150f' },
+  safeArea: { flex: 1 },
   row: { flex: 1, flexDirection: 'row' },
   back: { flex: 1, backgroundColor: '#2b0f0f' },
   next: { flex: 3, backgroundColor: '#0f1a13' },
@@ -278,4 +393,48 @@ const s = StyleSheet.create({
   modalInput:{ backgroundColor:'#222', borderRadius:10, color:'#fff', fontSize:24, fontWeight:'900', paddingVertical:8, textAlign:'center' },
   modalBtn:{ backgroundColor:'#d8ff3e', borderRadius:10, paddingVertical:14, marginTop:12 },
   modalBtnText:{ color:'#111', fontWeight:'900', textAlign:'center' },
+
+  tutorialOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100 },
+  tutorialHighlight: { 
+    position: 'absolute', 
+    borderWidth: 4, 
+    borderRadius: 8,
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  tutorialGreenHighlight: { 
+    top: 0, 
+    right: 0, 
+    bottom: 0, 
+    left: '25%', // Green area is flex: 3, so starts at 25%
+    borderColor: '#4CAF50',
+    backgroundColor: 'rgba(76, 175, 80, 0.15)',
+  },
+  tutorialRedHighlight: { 
+    top: 0, 
+    left: 0, 
+    bottom: 0, 
+    right: '75%', // Red area is flex: 1, so takes 25% of screen
+    borderColor: '#F44336',
+    backgroundColor: 'rgba(244, 67, 54, 0.15)',
+  },
+  tutorialLabelContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -40 }, { translateY: -15 }],
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  tutorialLabel: {
+    color: '#fff',
+    fontWeight: '900',
+    fontSize: 14,
+    textAlign: 'center',
+  },
 });

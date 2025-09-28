@@ -40,15 +40,9 @@ function toEpochSecMaybe(ts: any): number {
   return Number.isFinite(ms) ? Math.floor(ms/1000) : 0;
 }
 
-// "10 x Pushups"  or  "10 sec — Plank"
+// The database already stores exercise names with quantity info (e.g., "12x Situps", "Squats 10s")
+// so we just return the name directly without additional formatting
 function fmtStepLabel(step: any): string {
-  const qtyType = step?.quantityType ?? (typeof step?.reps === 'number' ? 'reps' : (typeof step?.duration === 'number' ? 'duration' : undefined));
-  if (qtyType === 'reps' && typeof step?.reps === 'number') {
-    return `${step.reps} x ${step?.name ?? '—'}`;
-  }
-  if (qtyType === 'duration' && typeof step?.duration === 'number') {
-    return `${step.duration} sec — ${step?.name ?? '—'}`;
-  }
   return step?.name ?? '—';
 }
 

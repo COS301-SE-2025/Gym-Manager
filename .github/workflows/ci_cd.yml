@@ -94,7 +94,7 @@ jobs:
         env:
           JWT_SECRET: ci-integration-secret
 
-  test-performance:
+test-performance:
     name: Integration — Performance (JMeter)
     runs-on: ubuntu-latest
     steps:
@@ -110,7 +110,7 @@ jobs:
         run: npm ci
         working-directory: ./services/api
 
-      # Build API
+      # Build & start Express API app
       - name: Build API
         run: npm run build
         working-directory: ./services/api
@@ -156,7 +156,7 @@ jobs:
             -JHOST=$HOST -JPROTO=$PROTO -JPORT=$PORT \
             -Jusers=$users -Jramp=$ramp -Jduration=$duration -JMAX_MS=$MAX_MS
 
-      # Upload raw results
+      # Upload results
       - name: Upload JMeter results
         uses: actions/upload-artifact@v4
         with:

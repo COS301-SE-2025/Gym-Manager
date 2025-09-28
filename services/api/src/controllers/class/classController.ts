@@ -6,7 +6,7 @@ import {
   BookClassRequest,
   CheckInRequest,
   AssignCoachRequest,
-  AssignWorkoutRequest
+  AssignWorkoutRequest,
 } from '../../domain/entities/class.entity';
 
 /**
@@ -66,7 +66,7 @@ export class ClassController {
       res.json({ success: true });
     } catch (error: any) {
       console.error('assignWorkoutToClass error:', error);
-      
+
       if (error.message === 'Unauthorized or class not found') {
         return res.status(403).json({ error: 'Unauthorized or class not found' });
       }
@@ -80,12 +80,7 @@ export class ClassController {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const {
-      workoutName,
-      type,
-      metadata,
-      rounds: roundsInput,
-    } = req.body as CreateWorkoutRequest;
+    const { workoutName, type, metadata, rounds: roundsInput } = req.body as CreateWorkoutRequest;
 
     try {
       const workoutData: CreateWorkoutRequest = {
@@ -104,11 +99,13 @@ export class ClassController {
       });
     } catch (error: any) {
       console.error('createWorkout error:', error);
-      
-      if (error.message.includes('is required') || 
-          error.message.includes('must be') || 
-          error.message.includes('needs') ||
-          error.message.includes('each')) {
+
+      if (
+        error.message.includes('is required') ||
+        error.message.includes('must be') ||
+        error.message.includes('needs') ||
+        error.message.includes('each')
+      ) {
         return res.status(400).json({ error: error.message });
       }
 
@@ -126,12 +123,7 @@ export class ClassController {
       return res.status(400).json({ error: 'Invalid workout ID' });
     }
 
-    const {
-      workoutName,
-      type,
-      metadata,
-      rounds: roundsInput,
-    } = req.body as CreateWorkoutRequest;
+    const { workoutName, type, metadata, rounds: roundsInput } = req.body as CreateWorkoutRequest;
 
     try {
       const workoutData: CreateWorkoutRequest = {
@@ -150,11 +142,13 @@ export class ClassController {
       });
     } catch (error: any) {
       console.error('updateWorkout error:', error);
-      
-      if (error.message.includes('is required') || 
-          error.message.includes('must be') || 
-          error.message.includes('needs') ||
-          error.message.includes('each')) {
+
+      if (
+        error.message.includes('is required') ||
+        error.message.includes('must be') ||
+        error.message.includes('needs') ||
+        error.message.includes('each')
+      ) {
         return res.status(400).json({ error: error.message });
       }
 
@@ -174,7 +168,7 @@ export class ClassController {
       return res.json(classesList);
     } catch (error: any) {
       console.error('getAllClasses error:', error);
-      
+
       if (error.message === 'Unauthorized') {
         return res.status(403).json({ error: 'Unauthorized' });
       }
@@ -230,27 +224,27 @@ export class ClassController {
       if (error.message === 'Invalid class ID') {
         return res.status(400).json({ error: 'Invalid class ID' });
       }
-      
+
       if (error.message === 'Class not found') {
         return res.status(404).json({ error: 'Class not found' });
       }
-      
+
       if (error.message === 'Class has already ended') {
         return res.status(400).json({ error: 'Class has already ended' });
       }
-      
+
       if (error.message === 'Already booked') {
         return res.status(400).json({ error: 'Already booked' });
       }
-      
+
       if (error.message === 'Overlapping booking') {
         return res.status(400).json({ error: 'Overlapping booking' });
       }
-      
+
       if (error.message === 'Class full') {
         return res.status(400).json({ error: 'Class full' });
       }
-      
+
       if (error.message === 'Insufficient credits') {
         return res.status(400).json({ error: 'Insufficient credits' });
       }
@@ -272,7 +266,7 @@ export class ClassController {
       return res.status(201).json({ success: true, attendance });
     } catch (error: any) {
       console.error('checkInToClass error:', error);
-      
+
       if (error.message === 'Already checked in') {
         return res.status(409).json({ error: 'Already checked in' });
       }
@@ -298,7 +292,7 @@ export class ClassController {
       return res.json({ success: true });
     } catch (error: any) {
       console.error('cancelBooking error:', error);
-      
+
       if (error.message === 'Booking not found') {
         return res.status(404).json({ error: 'Booking not found' });
       }

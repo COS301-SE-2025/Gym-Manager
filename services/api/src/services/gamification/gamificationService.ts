@@ -1,6 +1,14 @@
 import { IGamificationService } from '../../domain/interfaces/gamification.interface';
 import { IGamificationRepository } from '../../domain/interfaces/gamification.interface';
-import { BadgeDefinition, UserBadge, UserStreak, UserActivity, GamificationStats, ActivityData, BadgeCriteria } from '../../domain/entities/gamification.entity';
+import {
+  BadgeDefinition,
+  UserBadge,
+  UserStreak,
+  UserActivity,
+  GamificationStats,
+  ActivityData,
+  BadgeCriteria,
+} from '../../domain/entities/gamification.entity';
 
 export class GamificationService implements IGamificationService {
   constructor(private gamificationRepository: IGamificationRepository) {}
@@ -8,10 +16,10 @@ export class GamificationService implements IGamificationService {
   // Streak management
   async updateUserStreak(userId: number, activityDate: Date): Promise<UserStreak> {
     const existingStreak = await this.gamificationRepository.findUserStreak(userId);
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const activityDay = new Date(activityDate);
     activityDay.setHours(0, 0, 0, 0);
 
@@ -46,8 +54,10 @@ export class GamificationService implements IGamificationService {
 
     const lastActivityDay = new Date(lastActivity);
     lastActivityDay.setHours(0, 0, 0, 0);
-    
-    const daysDifference = Math.floor((activityDay.getTime() - lastActivityDay.getTime()) / (1000 * 60 * 60 * 24));
+
+    const daysDifference = Math.floor(
+      (activityDay.getTime() - lastActivityDay.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
     let newStreak = existingStreak.currentStreak;
     let newStreakStart = existingStreak.streakStartDate;
@@ -69,7 +79,8 @@ export class GamificationService implements IGamificationService {
     }
 
     const newLongestStreak = Math.max(newStreak, existingStreak.longestStreak);
-    const newTotalPoints = existingStreak.totalPoints + 10 + (newStreak > 1 ? Math.min(newStreak * 2, 50) : 0); // Bonus points for streaks
+    const newTotalPoints =
+      existingStreak.totalPoints + 10 + (newStreak > 1 ? Math.min(newStreak * 2, 50) : 0); // Bonus points for streaks
     const newLevel = this.calculateLevel(newTotalPoints);
 
     return await this.gamificationRepository.updateUserStreak(userId, {
@@ -102,18 +113,30 @@ export class GamificationService implements IGamificationService {
     const userBadges = await this.gamificationRepository.findUserBadges(userId);
     const userWorkoutCount = await this.gamificationRepository.getUserWorkoutCount(userId);
     const userWorkoutHistory = await this.gamificationRepository.getUserWorkoutHistory(userId, 30);
-    const userAttendanceHistory = await this.gamificationRepository.getUserClassAttendanceHistory(userId, 30);
+    const userAttendanceHistory = await this.gamificationRepository.getUserClassAttendanceHistory(
+      userId,
+      30,
+    );
 
     const newBadges: UserBadge[] = [];
     let totalBadgePoints = 0;
 
     for (const badgeDef of badgeDefinitions) {
       // Check if user already has this badge
-      const hasBadge = userBadges.some(ub => ub.badgeId === badgeDef.badgeId);
+      const hasBadge = userBadges.some((ub) => ub.badgeId === badgeDef.badgeId);
       if (hasBadge) continue;
 
       // Check if user meets criteria
-      if (await this.checkBadgeCriteria(badgeDef, userStreak, userWorkoutCount, userWorkoutHistory, userAttendanceHistory, activityData)) {
+      if (
+        await this.checkBadgeCriteria(
+          badgeDef,
+          userStreak,
+          userWorkoutCount,
+          userWorkoutHistory,
+          userAttendanceHistory,
+          activityData,
+        )
+      ) {
         const newBadge = await this.gamificationRepository.createUserBadge({
           userId,
           badgeId: badgeDef.badgeId,
@@ -121,7 +144,7 @@ export class GamificationService implements IGamificationService {
         });
         newBadge.badge = badgeDef;
         newBadges.push(newBadge);
-        
+
         // Award points for earning the badge
         const badgePoints = this.calculateBadgePoints(badgeDef);
         totalBadgePoints += badgePoints;
@@ -134,7 +157,7 @@ export class GamificationService implements IGamificationService {
       if (currentStreak) {
         const newTotalPoints = currentStreak.totalPoints + totalBadgePoints;
         const newLevel = this.calculateLevel(newTotalPoints);
-        
+
         await this.gamificationRepository.updateUserStreak(userId, {
           totalPoints: newTotalPoints,
           level: newLevel,
@@ -151,63 +174,82 @@ export class GamificationService implements IGamificationService {
     userWorkoutCount: number,
     userWorkoutHistory: Array<{ date: Date; count: number }>,
     userAttendanceHistory: Array<{ date: Date; timeOfDay: string; classId: number }>,
-    activityData: ActivityData
+    activityData: ActivityData,
   ): Promise<boolean> {
     const criteria = badgeDef.criteria as BadgeCriteria;
 
     switch (badgeDef.name) {
       case 'First Steps':
         return userWorkoutCount >= (criteria.workouts_completed || 1);
-      
+
       case 'Week Warrior':
         return (userStreak?.currentStreak || 0) >= (criteria.streak_days || 7);
-      
+
       case 'Month Master':
         return (userStreak?.currentStreak || 0) >= (criteria.streak_days || 30);
-      
+
       case 'Century Club':
         return userWorkoutCount >= (criteria.total_workouts || 100);
-      
+
       case 'Early Bird':
-        return await this.checkMorningWorkouts(userAttendanceHistory, criteria.morning_workouts || 5);
-      
+        return await this.checkMorningWorkouts(
+          userAttendanceHistory,
+          criteria.morning_workouts || 5,
+        );
+
       case 'Night Owl':
-        return await this.checkEveningWorkouts(userAttendanceHistory, criteria.evening_workouts || 5);
-      
+        return await this.checkEveningWorkouts(
+          userAttendanceHistory,
+          criteria.evening_workouts || 5,
+        );
+
       case 'Consistency King':
         return await this.checkConsistency(userWorkoutHistory, criteria.weeks_consistent || 4);
-      
+
       case 'Iron Will':
         return (userStreak?.currentStreak || 0) >= (criteria.streak_days || 50);
-      
+
       case 'Legend':
         return (userStreak?.currentStreak || 0) >= (criteria.streak_days || 365);
-      
+
       default:
         return false;
     }
   }
 
-  private async checkMorningWorkouts(attendanceHistory: Array<{ date: Date; timeOfDay: string; classId: number }>, required: number): Promise<boolean> {
-    const morningWorkouts = attendanceHistory.filter(attendance => attendance.timeOfDay === 'morning');
+  private async checkMorningWorkouts(
+    attendanceHistory: Array<{ date: Date; timeOfDay: string; classId: number }>,
+    required: number,
+  ): Promise<boolean> {
+    const morningWorkouts = attendanceHistory.filter(
+      (attendance) => attendance.timeOfDay === 'morning',
+    );
     return morningWorkouts.length >= required;
   }
 
-  private async checkEveningWorkouts(attendanceHistory: Array<{ date: Date; timeOfDay: string; classId: number }>, required: number): Promise<boolean> {
-    const eveningWorkouts = attendanceHistory.filter(attendance => attendance.timeOfDay === 'evening');
+  private async checkEveningWorkouts(
+    attendanceHistory: Array<{ date: Date; timeOfDay: string; classId: number }>,
+    required: number,
+  ): Promise<boolean> {
+    const eveningWorkouts = attendanceHistory.filter(
+      (attendance) => attendance.timeOfDay === 'evening',
+    );
     return eveningWorkouts.length >= required;
   }
 
-  private async checkConsistency(workoutHistory: Array<{ date: Date; count: number }>, requiredWeeks: number): Promise<boolean> {
+  private async checkConsistency(
+    workoutHistory: Array<{ date: Date; count: number }>,
+    requiredWeeks: number,
+  ): Promise<boolean> {
     // Check if user worked out 3+ times per week for required weeks
     const weeks = new Map<string, number>();
-    
+
     for (const workout of workoutHistory) {
       const weekKey = this.getWeekKey(workout.date);
       weeks.set(weekKey, (weeks.get(weekKey) || 0) + workout.count);
     }
 
-    const consistentWeeks = Array.from(weeks.values()).filter(count => count >= 3).length;
+    const consistentWeeks = Array.from(weeks.values()).filter((count) => count >= 3).length;
     return consistentWeeks >= requiredWeeks;
   }
 
@@ -232,9 +274,13 @@ export class GamificationService implements IGamificationService {
   }
 
   // Activity tracking
-  async recordActivity(userId: number, activityType: string, activityData: ActivityData): Promise<UserActivity> {
+  async recordActivity(
+    userId: number,
+    activityType: string,
+    activityData: ActivityData,
+  ): Promise<UserActivity> {
     const pointsEarned = this.calculateActivityPoints(activityType, activityData);
-    
+
     const activity = await this.gamificationRepository.createUserActivity({
       userId,
       activityType,
@@ -254,9 +300,13 @@ export class GamificationService implements IGamificationService {
   }
 
   // Class attendance tracking - new method for attendance-based gamification
-  async recordClassAttendance(userId: number, classId: number, attendanceDate: Date = new Date()): Promise<{ streak: UserStreak; newBadges: UserBadge[] }> {
+  async recordClassAttendance(
+    userId: number,
+    classId: number,
+    attendanceDate: Date = new Date(),
+  ): Promise<{ streak: UserStreak; newBadges: UserBadge[] }> {
     // console.log(`🎮 recordClassAttendance called for user ${userId}, class ${classId}`);
-    
+
     // Update user streak based on class attendance
     // console.log(`📈 Updating user streak...`);
     const updatedStreak = await this.updateUserStreak(userId, attendanceDate);
@@ -328,7 +378,6 @@ export class GamificationService implements IGamificationService {
     const allBadges = await this.gamificationRepository.findUserBadges(userId);
     const userWeeklyHistory = await this.gamificationRepository.getUserWeeklyWorkoutHistory(userId);
 
-
     if (!userStreak) {
       // Create initial streak if none exists
       const newStreak = await this.gamificationRepository.createUserStreak({
@@ -351,7 +400,7 @@ export class GamificationService implements IGamificationService {
     userStreak: UserStreak,
     recentBadges: UserBadge[],
     totalBadges: number,
-    weeklyHistory: Array<{ date: Date; count: number }>
+    weeklyHistory: Array<{ date: Date; count: number }>,
   ): GamificationStats {
     const currentLevel = userStreak.level;
     const nextLevel = currentLevel + 1;
@@ -359,13 +408,12 @@ export class GamificationService implements IGamificationService {
     const pointsForNextLevel = this.getPointsForLevel(currentLevel);
     const pointsInCurrent = userStreak.totalPoints - pointsForCurrentLevel;
     const pointsToNext = Math.max(0, pointsForNextLevel - userStreak.totalPoints);
-    
+
     // Calculate workouts this week (last 7 days)
     const workoutsThisWeek = weeklyHistory.reduce((sum, day) => sum + Number(day.count), 0);
-    
+
     // Calculate points this week based on actual workouts completed
     const pointsThisWeek = workoutsThisWeek * 10;
-
 
     return {
       userStreak,
@@ -431,26 +479,35 @@ export class GamificationService implements IGamificationService {
   }
 
   // Leaderboard
-  async getStreakLeaderboard(limit: number = 10): Promise<Array<{ user: { userId: number; firstName: string; lastName: string }; streak: UserStreak }>> {
+  async getStreakLeaderboard(
+    limit: number = 10,
+  ): Promise<
+    Array<{ user: { userId: number; firstName: string; lastName: string }; streak: UserStreak }>
+  > {
     return await this.gamificationRepository.getStreakLeaderboard(limit);
   }
 
-  async getPointsLeaderboard(limit: number = 10): Promise<Array<{ user: { userId: number; firstName: string; lastName: string }; streak: UserStreak }>> {
+  async getPointsLeaderboard(
+    limit: number = 10,
+  ): Promise<
+    Array<{ user: { userId: number; firstName: string; lastName: string }; streak: UserStreak }>
+  > {
     return await this.gamificationRepository.getPointsLeaderboard(limit);
   }
 
-  async getCharacterLevel(userId: number): Promise<{ level: 1|2|3|4|5; workoutsAttended: number }> {
+  async getCharacterLevel(
+    userId: number,
+  ): Promise<{ level: 1 | 2 | 3 | 4 | 5; workoutsAttended: number }> {
     // Count *attended* classes from classattendance
     const workoutsAttended = await this.gamificationRepository.getUserWorkoutCount(userId);
 
     // Map counts -> level (1,5,20,50,100)
-    let level: 1|2|3|4|5 = 1;
+    let level: 1 | 2 | 3 | 4 | 5 = 1;
     if (workoutsAttended >= 100) level = 5;
     else if (workoutsAttended >= 50) level = 4;
     else if (workoutsAttended >= 20) level = 3;
-    else if (workoutsAttended >= 5)  level = 2;
+    else if (workoutsAttended >= 5) level = 2;
 
     return { level, workoutsAttended };
   }
-
 }

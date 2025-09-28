@@ -1,13 +1,7 @@
 // services/api/src/repositories/dailyLeaderboard/dailyLeaderboardRepository.ts
 import { db as globalDb } from '../../db/client';
 import { sql } from 'drizzle-orm';
-import {
-  classes,
-  workouts,
-  users,
-  members,
-  classattendance
-} from '../../db/schema';
+import { classes, workouts, users, members, classattendance } from '../../db/schema';
 
 export interface IDailyLeaderboardRepository {
   getDailyLeaderboard(date: string, scaling?: string): Promise<DailyLeaderboardEntry[]>;
@@ -17,24 +11,30 @@ export interface DailyLeaderboardEntry {
   userId: number;
   firstName: string;
   lastName: string;
-  totalScore: number;      // daily points (sum of per-class points)
-  classCount: number;      // how many classes they appeared in that day
-  bestScore: number;       // best per-class points that day
+  totalScore: number; // daily points (sum of per-class points)
+  classCount: number; // how many classes they appeared in that day
+  bestScore: number; // best per-class points that day
   bestWorkoutName: string; // workout name for the bestScore class
-  scaling: string;         // 'RX' | 'SC' | 'mixed'
+  scaling: string; // 'RX' | 'SC' | 'mixed'
 }
 
 type Executor = typeof globalDb | any;
 
 export class DailyLeaderboardRepository implements IDailyLeaderboardRepository {
-  private exec(tx?: Executor): Executor { return tx ?? globalDb; }
+  private exec(tx?: Executor): Executor {
+    return tx ?? globalDb;
+  }
 
-  async getDailyLeaderboard(date: string, scaling?: string, tx?: Executor): Promise<DailyLeaderboardEntry[]> {
+  async getDailyLeaderboard(
+    date: string,
+    scaling?: string,
+    tx?: Executor,
+  ): Promise<DailyLeaderboardEntry[]> {
     // Normalize scaling param (controller/service already validate when provided)
     const scalingUpper = (scaling ?? '').toUpperCase(); // 'RX' | 'SC' | ''
 
     // Raw SQL is easier for conditional ranking + window functions
-    const { rows } = await this.exec(tx).execute(sql`
+    const result = await globalDb.execute(sql`
       with base as (
         select
           c.class_id,
@@ -148,7 +148,7 @@ export class DailyLeaderboardRepository implements IDailyLeaderboardRepository {
       order by a.total_points desc, a.class_count desc, a.first_name asc
     `);
 
-    // rows already match DailyLeaderboardEntry shape
-    return rows as unknown as DailyLeaderboardEntry[];
+    // result.rows already match DailyLeaderboardEntry shape
+    return result.rows as unknown as DailyLeaderboardEntry[];
   }
 }

@@ -31,7 +31,7 @@ jobs:
 
       - name: Install NPM dependencies for api
         run: npm install
-        working-directory: ./services/new_api
+        working-directory: ./services/api
 
       - name: Install NPM dependencies for mobile interface
         run: npm install
@@ -53,16 +53,38 @@ jobs:
 
       - name: Install API dependencies
         run: npm install
-        working-directory: ./services/new_api
+        working-directory: ./services/api
       
       - name: Lint API
         run: npm run lint
-        working-directory: ./services/new_api
+        working-directory: ./services/api
 
   test:
-    name: Run Unit
+    name: Run Tests
     runs-on: ubuntu-latest
     needs: setup
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: gym_manager_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/gym_manager_test
+      JWT_SECRET: test-secret-key
+      PG_USER: postgres
+      PG_PASSWORD: postgres
+      PG_HOST: localhost
+      PG_PORT: 5432
+      PG_DATABASE: gym_manager_test
     steps:
       - uses: actions/checkout@v4
 
@@ -72,11 +94,24 @@ jobs:
 
       - name: Install API test deps
         run: npm install
-        working-directory: ./services/new_api
+        working-directory: ./services/api
 
-      - name: Run API Tests
-        run: npm run test:unit
-        working-directory: ./services/new_api
+      - name: Setup test database
+        run: |
+          npm run db:generate
+          npm run db:push
+          npm run test:db:setup
+        working-directory: ./services/api
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/gym_manager_test
+
+      - name: Run Stable Tests (CI/CD)
+        run: npm run test:ci-stable
+        working-directory: ./services/api
+
+      - name: Run Coverage Report
+        run: npm run test:coverage
+        working-directory: ./services/api
 
   deploy:
     name: Deploy to Production

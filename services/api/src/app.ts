@@ -45,17 +45,16 @@ export class App {
     // CORS must run before any other routes
     this.app.use(cors(corsOptions));
     this.app.options('*', cors(corsOptions));
-    
+
     // Body parsing middleware
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
-    
+
     // Request timeout middleware (20 seconds like the old version)
     this.app.use(requestTimeout(20_000));
   }
 
   private setupRoutes(): void {
-    
     // Get routes from dependency container
     const authRoutes = this.container.getAuthRoutes();
     const classRoutes = this.container.getClassRoutes();
@@ -67,10 +66,9 @@ export class App {
     const analyticsRoutes = this.container.getAnalyticsRoutes();
     const paymentPackagesRoutes = this.container.getPaymentPackagesRoutes();
     const gamificationRoutes = this.container.getGamificationRoutes();
-    
+
     const dailyLeaderboardRoutes = this.container.getDailyLeaderboardRoutes();
-    
-    
+
     // Mount routes
     this.app.use(authRoutes.getRouter());
     this.app.use(classRoutes.getRouter());
@@ -83,7 +81,7 @@ export class App {
     this.app.use('/analytics', analyticsRoutes.getRouter());
     this.app.use('/payments', paymentPackagesRoutes.getRouter());
     this.app.use('/gamification', gamificationRoutes.getRouter());
-    
+
     // Health check
     this.app.get('/health', (req, res) => {
       res.json({ status: 'OK', timestamp: new Date().toISOString() });
@@ -93,15 +91,15 @@ export class App {
     this.app.get('/healthz', (_req, res) => {
       res.json({ status: 'OK', timestamp: new Date().toISOString() });
     });
-    
+
     // Setup Swagger documentation
     setupSwagger(this.app as any);
-    
+
     // 404 handler - must be after all routes
     this.app.use((req, res) => {
       res.status(404).json({ error: 'Route not found' });
     });
-    
+
     // Error handler - must be last
     this.app.use(errorHandler);
   }

@@ -10,7 +10,7 @@ export const requestTimeout = (timeoutMs: number) => {
 
     // Clear timeout when response is sent
     const originalSend = res.send;
-    res.send = function(data) {
+    res.send = function (data) {
       clearTimeout(timeout);
       return originalSend.call(this, data);
     };

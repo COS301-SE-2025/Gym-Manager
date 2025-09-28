@@ -12,10 +12,7 @@ export class NotificationRepository {
     payload: { title: string; message: string },
     tx?: Executor,
   ): Promise<NotificationRow> {
-    const [row] = await this.exec(tx)
-      .insert(notifications)
-      .values(payload)
-      .returning();
+    const [row] = await this.exec(tx).insert(notifications).values(payload).returning();
     return row;
   }
 
@@ -24,9 +21,7 @@ export class NotificationRepository {
     targetRole: 'member' | 'coach' | 'admin' | 'manager',
     tx?: Executor,
   ): Promise<void> {
-    await this.exec(tx)
-      .insert(notificationTargets)
-      .values({ notificationId, targetRole });
+    await this.exec(tx).insert(notificationTargets).values({ notificationId, targetRole });
   }
 
   async createNotificationWithTarget(
@@ -40,5 +35,3 @@ export class NotificationRepository {
     });
   }
 }
-
-

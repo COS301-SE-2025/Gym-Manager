@@ -10,7 +10,7 @@ import {
   CheckInRequest,
   AssignCoachRequest,
   AssignWorkoutRequest,
-  WeeklyScheduleInput
+  WeeklyScheduleInput,
 } from '../entities/class.entity';
 import { WeeklyScheduleRequest } from '../entities/admin.entity';
 
@@ -33,7 +33,11 @@ export interface IClassRepository {
   findAssignedClassesWithWorkoutsByCoach(coachId: number): Promise<ClassWithWorkout[]>;
   updateWorkoutForClass(classId: number, workoutId: number): Promise<void>;
   createWorkout(workoutData: Omit<Workout, 'workoutId'>, rounds: any[]): Promise<number>;
-  updateWorkout(workoutId: number, workoutData: Omit<Workout, 'workoutId'>, rounds: any[]): Promise<number>;
+  updateWorkout(
+    workoutId: number,
+    workoutData: Omit<Workout, 'workoutId'>,
+    rounds: any[],
+  ): Promise<number>;
   getUpcomingClassesForMembers(condition: any): Promise<ClassWithWorkout[]>;
   getBookedClassesForMember(memberId: number, condition: any): Promise<ClassWithWorkout[]>;
   getUnbookedClassesForMember(memberId: number, condition: any): Promise<ClassWithWorkout[]>;
@@ -54,13 +58,16 @@ export interface IAdminService {
   createWeeklySchedule(request: WeeklyScheduleRequest): Promise<any[]>;
   getWeeklySchedule(): Promise<any>;
   createClass(request: CreateClassRequest): Promise<Class>;
-  updateClass(classId: number, updates: {
-    capacity?: number;
-    scheduledDate?: string;
-    scheduledTime?: string;
-    durationMinutes?: number;
-    coachId?: number | null;
-  }): Promise<Class>;
+  updateClass(
+    classId: number,
+    updates: {
+      capacity?: number;
+      scheduledDate?: string;
+      scheduledTime?: string;
+      durationMinutes?: number;
+      coachId?: number | null;
+    },
+  ): Promise<Class>;
   deleteClass(classId: number): Promise<boolean>;
   assignCoachToClass(classId: number, coachId: number): Promise<{ ok: boolean; reason?: string }>;
   assignUserToRole(userId: number, role: string): Promise<{ ok: boolean; reason?: string }>;
@@ -75,16 +82,23 @@ export interface IAdminService {
 }
 
 export interface IAdminRepository {
-  createWeeklySchedule(startDate: string, createdBy: number, weeklySchedule: WeeklyScheduleInput): Promise<any[]>;
+  createWeeklySchedule(
+    startDate: string,
+    createdBy: number,
+    weeklySchedule: WeeklyScheduleInput,
+  ): Promise<any[]>;
   getWeeklySchedule(): Promise<any>;
   createClass(payload: CreateClassRequest): Promise<Class>;
-  updateClass(classId: number, updates: {
-    capacity?: number;
-    scheduledDate?: string;
-    scheduledTime?: string;
-    durationMinutes?: number;
-    coachId?: number | null;
-  }): Promise<Class>;
+  updateClass(
+    classId: number,
+    updates: {
+      capacity?: number;
+      scheduledDate?: string;
+      scheduledTime?: string;
+      durationMinutes?: number;
+      coachId?: number | null;
+    },
+  ): Promise<Class>;
   deleteClass(classId: number): Promise<boolean>;
   assignCoachToClass(classId: number, coachId: number): Promise<{ ok: boolean; reason?: string }>;
   assignUserToRole(userId: number, role: string): Promise<{ ok: boolean; reason?: string }>;

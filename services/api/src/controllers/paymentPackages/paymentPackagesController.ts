@@ -54,26 +54,29 @@ export class PaymentPackagesController {
     const { name, description, creditsAmount, priceCents, currency } = req.body;
 
     if (!name || !creditsAmount || !priceCents) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: name, creditsAmount, priceCents' 
+      return res.status(400).json({
+        error: 'Missing required fields: name, creditsAmount, priceCents',
       });
     }
 
     if (creditsAmount <= 0 || priceCents <= 0) {
-      return res.status(400).json({ 
-        error: 'creditsAmount and priceCents must be positive numbers' 
+      return res.status(400).json({
+        error: 'creditsAmount and priceCents must be positive numbers',
       });
     }
 
     try {
-      const packageId = await this.paymentPackagesService.createPackage(
-        req.user.userId,
-        { name, description, creditsAmount, priceCents, currency }
-      );
-      res.status(201).json({ 
-        success: true, 
+      const packageId = await this.paymentPackagesService.createPackage(req.user.userId, {
+        name,
+        description,
+        creditsAmount,
+        priceCents,
+        currency,
+      });
+      res.status(201).json({
+        success: true,
         packageId,
-        message: 'Payment package created successfully' 
+        message: 'Payment package created successfully',
       });
     } catch (error: any) {
       console.error('createPackage error:', error);
@@ -153,10 +156,10 @@ export class PaymentPackagesController {
         paymentMethod,
         externalTransactionId,
       });
-      res.status(201).json({ 
-        success: true, 
+      res.status(201).json({
+        success: true,
         transactionId,
-        message: 'Payment transaction created successfully' 
+        message: 'Payment transaction created successfully',
       });
     } catch (error: any) {
       console.error('createTransaction error:', error);
@@ -188,8 +191,8 @@ export class PaymentPackagesController {
 
     const validStatuses = ['pending', 'completed', 'failed', 'refunded'];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ 
-        error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` 
+      return res.status(400).json({
+        error: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
       });
     }
 
@@ -197,7 +200,7 @@ export class PaymentPackagesController {
       await this.paymentPackagesService.updateTransactionStatus(
         Number(transactionId),
         status,
-        externalTransactionId
+        externalTransactionId,
       );
       res.json({ success: true, message: 'Transaction status updated successfully' });
     } catch (error: any) {

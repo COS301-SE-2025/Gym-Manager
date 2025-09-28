@@ -13,7 +13,7 @@ export class HealthRepository implements IHealthRepository {
    */
   async ping(timeoutMs = 5000): Promise<void> {
     console.log('Health check: Attempting database ping with timeout:', timeoutMs + 'ms');
-    
+
     // Promise that rejects after timeoutMs
     const timeoutP = new Promise((_res, rej) =>
       setTimeout(() => rej(new Error('timeout')), timeoutMs),

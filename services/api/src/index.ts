@@ -7,5 +7,3 @@ const application = new App().getApp();
 
 export { application as app };
 export default application;
-
-

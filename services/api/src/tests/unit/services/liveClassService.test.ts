@@ -180,6 +180,7 @@ describe('LiveClassService', () => {
         round: 1,
         subround: 1,
         target_reps: 10,
+        quantityType: 'reps',
       });
     });
 
@@ -203,6 +204,7 @@ describe('LiveClassService', () => {
         round: 1,
         subround: 1,
         target_reps: undefined,
+        quantityType: 'duration',
       });
       expect(result.stepsCumReps).toEqual([0]);
       expect(result.metadata).toEqual({ time_limit: 15 });
@@ -231,7 +233,11 @@ describe('LiveClassService', () => {
 
       expect(mockRepo.assertCoachOwnsClass).toHaveBeenCalledWith(1, userId);
       expect(mockRepo.upsertScoresBatch).toHaveBeenCalledWith(1, body.scores);
-      expect(result).toEqual({ success: true, updated: 1 });
+      expect(result).toEqual({ 
+        success: true, 
+        updated: 1,
+        gamification: expect.any(Array)
+      });
     });
 
     it('should submit member single score', async () => {
@@ -249,7 +255,10 @@ describe('LiveClassService', () => {
 
       expect(mockRepo.assertMemberBooked).toHaveBeenCalledWith(1, userId);
       expect(mockRepo.upsertMemberScore).toHaveBeenCalledWith(1, userId, 100);
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ 
+        success: true,
+        gamification: expect.any(Object)
+      });
     });
 
     it('should throw error for invalid class ID', async () => {
@@ -293,7 +302,9 @@ describe('LiveClassService', () => {
       mockRepo.upsertClassSession.mockResolvedValue(undefined);
       mockRepo.seedLiveProgressForClass.mockResolvedValue(undefined);
       mockRepo.resetLiveProgressForClass.mockResolvedValue(undefined);
-      mockRepo.getClassSession.mockResolvedValue(mockSession);
+      mockRepo.getClassSession
+        .mockResolvedValueOnce(null) // First call (check existing)
+        .mockResolvedValueOnce(mockSession); // Second call (return result)
 
       const result = await service.startLiveClass(classId);
 
@@ -540,12 +551,21 @@ describe('LiveClassService', () => {
       expect(result).toEqual(mockLeaderboard);
     });
 
-    it('should throw error if workout not found', async () => {
+    it('should handle when workout not found', async () => {
       const classId = 1;
+      const mockLeaderboard = [
+        { user_id: 1, first_name: 'John', last_name: 'Doe', total_reps: 10 }
+      ];
 
       mockRepo.getWorkoutTypeByClass.mockResolvedValue(null);
+      mockRepo.getClassSession.mockResolvedValue(null);
+      mockRepo.realtimeForTimeLeaderboard.mockResolvedValue(mockLeaderboard);
 
-      await expect(service.getRealtimeLeaderboard(classId)).rejects.toThrow('WORKOUT_NOT_FOUND_FOR_CLASS');
+      const result = await service.getRealtimeLeaderboard(classId);
+
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toEqual(mockLeaderboard);
     });
   });
 

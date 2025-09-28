@@ -29,10 +29,8 @@ export function useLeaderboardRealtime(classId: number, filter: LbFilter = 'ALL'
         headers: { Authorization: `Bearer ${token}` },
       });
       const rows = Array.isArray(data) ? data : [];
-      console.log('🔍 Leaderboard data received:', { classId, rowCount: rows.length, rows: rows.slice(0, 3) });
       setAllRows(rows);
     } catch (err) {
-      console.log('🔍 Leaderboard fetch error:', err);
     }
   }, [classId]);
 

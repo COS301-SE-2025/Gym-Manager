@@ -35,18 +35,6 @@ export function useLeaderboardHype(
     return idx >= 0 ? idx + 1 : null;
   }, [lb, myUserId]);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 HypeToast Debug:', {
-      lbLength: lb.length,
-      myUserId,
-      myRank,
-      optedOut,
-      show,
-      text,
-      lbUsers: lb.slice(0, 3).map(r => ({ id: r.user_id, name: r.first_name || r.last_name || r.name }))
-    });
-  }, [lb, myUserId, myRank, optedOut, show, text]);
 
   useEffect(() => {
     if (optedOut) return;
@@ -72,14 +60,8 @@ export function useLeaderboardHype(
       if (myRank <= 3 && Math.random() < 0.12) msg = pick(TOP3_TEMPLATES)();
     }
 
-    // DEBUG: Force a test message if we have a rank but no message
-    if (!msg && myRank && lb.length > 0) {
-      console.log('🔍 DEBUG: Forcing test toast for rank', myRank);
-      msg = `Test toast - Rank #${myRank}`;
-    }
 
     if (msg) {
-      console.log('🔍 HypeToast triggering with message:', msg);
       lastShownAtRef.current = now;
       setText(msg);
       setShow(true);

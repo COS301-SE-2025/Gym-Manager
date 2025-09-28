@@ -72,16 +72,6 @@ export default function AmrapLiveScreen() {
     (progress as any)?.hype_opt_out === true ||
     false;
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 AmrapLiveScreen Debug:', {
-      myUserId,
-      hypeOptedOut,
-      progressKeys: Object.keys(progress || {}),
-      sessionKeys: Object.keys(session || {}),
-      lbLength: lb.length
-    });
-  }, [myUserId, hypeOptedOut, progress, session, lb.length]);
 
   // Hype hook
   const hype = useLeaderboardHype(lb, myUserId || undefined, hypeOptedOut);

@@ -17,13 +17,11 @@ export default function RoleSelectionScreen() {
   const navigation = useNavigation();
 
   const handleMemberPress = () => {
-    console.log('Member selected');
 
     navigation.navigate('MemberTabs' as never);
   };
 
   const handleCoachPress = () => {
-    console.log('Coach selected');
     navigation.navigate('Coach' as never);
   };
 

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Trainwise",
     "slug": "mobile",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -34,8 +34,8 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "EXPO_PUBLIC_SUPABASE_URL": "https://uajwqpocubnhrotapire.supabase.co",
-      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhandxcG9jdWJuaHJvdGFwaXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NjI0MzcsImV4cCI6MjA2OTUzODQzN30.BVefkikNJHoPh5JJKTkTEaQu_bAO5eSxx-ZYNiqZZm0",
+      "EXPO_PUBLIC_SUPABASE_URL": "https://ecqfwjomzhjmmfwzmxkw.supabase.co/",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjcWZ3am9temhqbW1md3pteGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2NTg2MTMsImV4cCI6MjA3NDIzNDYxM30.KmBwfIEcKXSMbaWgbSbh4Xp_u0aVM6swAKAwDbwTKAY",
       "eas": {
         "projectId": "61f7365a-b258-49b3-8846-976da535da41"
       }

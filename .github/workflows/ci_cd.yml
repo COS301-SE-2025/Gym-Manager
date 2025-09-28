@@ -98,6 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -119,16 +120,21 @@ jobs:
           NODE_ENV: test
           JWT_SECRET: ci-integration-secret
         run: |
-          # Start exported Express app (supports CJS or ESM builds)
           node -e "(async()=>{let mod;try{mod=require('./dist/index.js')}catch(e){mod=await import('./dist/index.js')}const app=mod.app||mod.default;if(!app?.listen){console.error('Cannot find exported app');process.exit(1)}const port=process.env.PORT||3000;app.listen(port,()=>console.log('API up on '+port))})()" &
-          # Wait up to ~40s for readiness
           for i in {1..40}; do
-            if curl -fsS http://localhost:3000/healthz >/dev/null; then
-              echo 'API ready'; break
-            fi
+            curl -fsS http://localhost:3000/healthz >/dev/null && break
             sleep 1
           done
           curl -fsS http://localhost:3000/healthz >/dev/null || (echo 'API failed to start' && exit 1)
+
+      - name: Verify JMeter plan exists
+        working-directory: ./services/api
+        run: |
+          echo "Workspace: $GITHUB_WORKSPACE"
+          ls -la
+          ls -la tests || true
+          ls -la tests/perf || true
+          test -f tests/perf/healthz.jmx || (echo "JMX not found at services/api/tests/perf/healthz.jmx" && exit 1)
 
       - name: Install JMeter
         run: |
@@ -139,8 +145,9 @@ jobs:
           echo "$GITHUB_WORKSPACE/apache-jmeter-$JM_VERSION/bin" >> $GITHUB_PATH
 
       - name: Run JMeter plan against local API
-        working-directory: ./services/api
         env:
+          JM_PLAN: ${{ github.workspace }}/services/api/tests/perf/healthz.jmx
+          JM_OUT:  ${{ github.workspace }}/services/api/tests/perf/results.jtl
           HOST: localhost
           PROTO: http
           PORT: 3000
@@ -150,16 +157,17 @@ jobs:
           MAX_MS: 300
         run: |
           jmeter -n \
-            -t tests/perf/healthz.jmx \
-            -l tests/perf/results.jtl \
-            -JHOST=$HOST -JPROTO=$PROTO -JPORT=$PORT \
-            -Jusers=$users -Jramp=$ramp -Jduration=$duration -JMAX_MS=$MAX_MS
+            -t "$JM_PLAN" \
+            -l "$JM_OUT" \
+            -JHOST="$HOST" -JPROTO="$PROTO" -JPORT="$PORT" \
+            -Jusers="$users" -Jramp="$ramp" -Jduration="$duration" -JMAX_MS="$MAX_MS"
 
       - name: Upload JMeter results
         uses: actions/upload-artifact@v4
         with:
           name: jmeter-results
           path: services/api/tests/perf/results.jtl
+
 
   deploy:
     name: Deploy to Production

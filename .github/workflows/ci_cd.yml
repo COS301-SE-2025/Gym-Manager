@@ -103,31 +103,30 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: services/api/package-lock.json
 
-      - name: Install deps
+      - name: Install API deps
         run: npm ci
+        working-directory: ./services/api
 
-      - name: Build API
-        run: npm run build
-
-      - name: Start API (background) and wait for /healthz
+      # Start the API from TypeScript (no build step) and wait for /healthz
+      - name: Start API (ts-node) and wait for /healthz
+        working-directory: ./services/api
         env:
           PORT: 3000
           NODE_ENV: test
           JWT_SECRET: ci-integration-secret
         run: |
-          node -e "(async()=>{let mod;try{mod=require('./dist/index.js')}catch(e){mod=await import('./dist/index.js')}const app=mod.app||mod.default;if(!app?.listen){console.error('Cannot find exported app');process.exit(1)}const port=process.env.PORT||3000;app.listen(port,()=>console.log('API up on '+port))})()" &
+          npx ts-node -e "const m=require('./src/index'); const app=m.app||m.default; const port=process.env.PORT||3000; if(!app?.listen){console.error('No exported app'); process.exit(1)}; app.listen(port,()=>console.log('API up on '+port));" &
           for i in {1..40}; do
             curl -fsS "http://localhost:3000/healthz" >/dev/null && break
             sleep 1
           done
           curl -fsS "http://localhost:3000/healthz" >/dev/null || (echo 'API failed to start' && exit 1)
 
-      - name: Verify JMeter plan exists (src/tests/perf/healthz.jmx)
-        run: |
-          ls -la src/tests/perf || true
-          test -f src/tests/perf/healthz.jmx || (echo "JMX not found at src/tests/perf/healthz.jmx" && exit 1)
+      - name: Verify JMeter plan exists
+        working-directory: ./services/api
+        run: test -f tests/perf/healthz.jmx || (echo "Missing tests/perf/healthz.jmx" && exit 1)
 
       - name: Install JMeter
         run: |
@@ -138,9 +137,8 @@ jobs:
           echo "$GITHUB_WORKSPACE/apache-jmeter-$JM_VERSION/bin" >> $GITHUB_PATH
 
       - name: Run JMeter plan against local API
+        working-directory: ./services/api
         env:
-          JM_PLAN: ${{ github.workspace }}/src/tests/perf/healthz.jmx
-          JM_OUT:  ${{ github.workspace }}/src/tests/perf/results.jtl
           HOST: localhost
           PROTO: http
           PORT: 3000
@@ -150,8 +148,8 @@ jobs:
           MAX_MS: 300
         run: |
           jmeter -n \
-            -t "$JM_PLAN" \
-            -l "$JM_OUT" \
+            -t tests/perf/healthz.jmx \
+            -l tests/perf/results.jtl \
             -JHOST="$HOST" -JPROTO="$PROTO" -JPORT="$PORT" \
             -Jusers="$users" -Jramp="$ramp" -Jduration="$duration" -JMAX_MS="$MAX_MS"
 
@@ -159,7 +157,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jmeter-results
-          path: src/tests/perf/results.jtl
+          path: services/api/tests/perf/results.jtl
+
 
 
 

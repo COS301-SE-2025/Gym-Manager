@@ -226,8 +226,25 @@ jobs:
           echo "First 10 lines of results:"
           head -n 10 "$JM_OUT" || true
 
-
-
+      - name: Perf gates (p95 & error rate)
+        working-directory: ./services/api
+        env:
+          JM_OUT: ${{ steps.jmx.outputs.out }}   # this is the results.jtl from your earlier step
+          MAX_P95_MS: 300
+          MAX_ERR_PCT: 0
+        run: |
+          set -e
+          tail -n +2 "$JM_OUT" > /tmp/rows.csv
+          N=$(wc -l < /tmp/rows.csv)
+          # errors: success column is #8, responseCode is #4
+          ERR=$(awk -F',' '$8=="false" || $4!="200"{c++} END{print c+0}' /tmp/rows.csv)
+          ERR_PCT=$(awk -v e="$ERR" -v n="$N" 'BEGIN{ if(n==0){print 100}else{printf "%.2f", (e*100.0)/n}}')
+          # p95 from elapsed column (#2)
+          P95=$(cut -d, -f2 /tmp/rows.csv | sort -n | awk -v n="$N" 'BEGIN{idx=int(0.95*n); if(idx<1) idx=1} NR==idx{print; exit}')
+          echo "Samples=$N, Errors=$ERR ($ERR_PCT%), p95=${P95}ms"
+          # enforce thresholds
+          awk -v p="$P95" -v max="$MAX_P95_MS" 'BEGIN{ if(p>max){ printf "p95 %sms > %sms\n", p, max; exit 1}}'
+          awk -v e="$ERR_PCT" -v max="$MAX_ERR_PCT" 'BEGIN{ if(e>max){ printf "error rate %s%% > %s%%\n", e, max; exit 1}}'
 
   deploy:
     name: Deploy to Production

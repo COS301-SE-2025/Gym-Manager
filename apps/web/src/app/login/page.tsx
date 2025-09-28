@@ -18,7 +18,6 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      console.log(API_URL);
       const response = await axios.post(
         `${API_URL}/login`,
         { email, password },

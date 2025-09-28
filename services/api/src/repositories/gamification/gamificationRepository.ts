@@ -73,8 +73,6 @@ export class GamificationRepository implements IGamificationRepository {
   }
 
   async updateUserStreak(userId: number, updates: Partial<UserStreak>): Promise<UserStreak> {
-    // console.log(`💾 updateUserStreak repository called for user ${userId}`);
-    // console.log(`📝 Updates:`, updates);
 
     const updateData: any = {};
 
@@ -88,7 +86,6 @@ export class GamificationRepository implements IGamificationRepository {
     if (updates.totalPoints !== undefined) updateData.totalPoints = updates.totalPoints;
     if (updates.level !== undefined) updateData.level = updates.level;
 
-    // console.log(`🗄️ Database update data:`, updateData);
 
     const result = await db
       .update(userStreaks)
@@ -96,7 +93,6 @@ export class GamificationRepository implements IGamificationRepository {
       .where(eq(userStreaks.userId, userId))
       .returning();
 
-    // console.log(`✅ Database update result:`, result);
 
     const streak = result[0];
     return {

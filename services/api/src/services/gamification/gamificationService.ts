@@ -300,21 +300,10 @@ export class GamificationService implements IGamificationService {
   }
 
   // Class attendance tracking - new method for attendance-based gamification
-  async recordClassAttendance(
-    userId: number,
-    classId: number,
-    attendanceDate: Date = new Date(),
-  ): Promise<{ streak: UserStreak; newBadges: UserBadge[] }> {
-    // console.log(`🎮 recordClassAttendance called for user ${userId}, class ${classId}`);
-
+  async recordClassAttendance(userId: number, classId: number, attendanceDate: Date = new Date()): Promise<{ streak: UserStreak; newBadges: UserBadge[] }> {
+    
     // Update user streak based on class attendance
-    // console.log(`📈 Updating user streak...`);
     const updatedStreak = await this.updateUserStreak(userId, attendanceDate);
-    // console.log(`✅ Streak updated:`, {
-    //   currentStreak: updatedStreak.currentStreak,
-    //   totalPoints: updatedStreak.totalPoints,
-    //   level: updatedStreak.level
-    // });
 
     // Create activity data for badge checking
     const activityData: ActivityData = {
@@ -323,19 +312,15 @@ export class GamificationService implements IGamificationService {
     };
 
     // Check for new badges
-    // console.log(`🏆 Checking for new badges...`);
     const newBadges = await this.checkAndAwardBadges(userId, activityData);
-    // console.log(`✅ Badge check complete, new badges: ${newBadges.length}`);
 
     // Record the attendance as an activity for tracking
-    // console.log(`📝 Recording activity...`);
     await this.gamificationRepository.createUserActivity({
       userId,
       activityType: 'class_attendance',
       activityData,
       pointsEarned: this.calculateAttendancePoints(updatedStreak.currentStreak),
     });
-    // console.log(`✅ Activity recorded`);
 
     return { streak: updatedStreak, newBadges };
   }

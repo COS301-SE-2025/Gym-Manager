@@ -169,7 +169,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       const bookedResponse = await apiClient.get<ApiBookedClass[]>('/member/classes');
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      console.log("BRAW RESPONSE DATA BOOKED:", bookedResponse.data);
       const formattedBookedClasses: ClassItem[] = bookedResponse.data
         .filter((apiClass) => {
           const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
@@ -210,7 +209,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setUpcomingError(null);
     try {
       const upcomingResponse = await apiClient.get<ApiUpcomingClass[]>('/member/unbookedclasses');
-      console.log("RAW RESPONSE DATA:", upcomingResponse.data);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
@@ -329,7 +327,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   };
 
   const handleConfirmBooking = async (classId: string): Promise<boolean> => {
-    console.log('Attempting to book class:', classId);
 
     try {
       const response = await apiClient.post('/book', { classId: classId });

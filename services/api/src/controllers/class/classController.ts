@@ -9,10 +9,6 @@ import {
   AssignWorkoutRequest,
 } from '../../domain/entities/class.entity';
 
-/**
- * ClassController - Controller Layer
- * Handles HTTP requests/responses and delegates business logic to service layer
- */
 export class ClassController {
   private classService: ClassService;
 
@@ -38,7 +34,6 @@ export class ClassController {
 
   getCoachClassesWithWorkouts = async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user) {
-      console.log('Unauthorized access attempt');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 

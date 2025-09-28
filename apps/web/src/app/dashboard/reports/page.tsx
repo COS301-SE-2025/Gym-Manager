@@ -34,7 +34,6 @@ export default function ReportsPage() {
     setLoading(true);
     try {
       const statsData = await reportsService.getSummaryStats(period);
-      console.log(statsData);
       setStats(statsData);
     } catch (error) {
       console.error('Failed to fetch stats:', error);

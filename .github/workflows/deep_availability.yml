@@ -36,22 +36,36 @@ jobs:
         run: npm ci
         working-directory: ./services/api
 
-      - name: Wait for local Postgres (only if no external DB secret)
-        if: ${{ !secrets.DATABASE_URL }}
+      - name: Wait for local Postgres (fallback only)
+        if: ${{ secrets.DATABASE_URL == '' }}
         run: |
           for i in {1..40}; do
-            pg_isready -h 127.0.0.1 -p 5432 -U postgres && break
+            pg_isready -h 127.0.0.1 -p 5432 -U postgres && break || true
             sleep 1
           done
 
-      - name: Run deep availability test against /health
+      - name: Deep availability — external DB (/health)
+        if: ${{ secrets.DATABASE_URL != '' }}
         working-directory: ./services/api
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL != '' && secrets.DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:5432/app?sslmode=disable' }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET || 'ci-integration-secret' }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET:   ${{ secrets.JWT_SECRET || 'ci-integration-secret' }}
 
           AVAIL_PATH: /health
+          AVAIL_N: 60
+          AVAIL_GAP_MS: 50
+          AVAIL_MAX_P95_MS: 300
+          AVAIL_MAX_ERR_RATE: 0
+        run: npm run test:integration:availability
 
+      - name: Deep availability — local Postgres (/health)
+        if: ${{ secrets.DATABASE_URL == '' }}
+        working-directory: ./services/api
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/app?sslmode=disable
+          JWT_SECRET: ci-integration-secret
+
+          AVAIL_PATH: /health
           AVAIL_N: 60
           AVAIL_GAP_MS: 50
           AVAIL_MAX_P95_MS: 300

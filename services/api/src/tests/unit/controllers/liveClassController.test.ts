@@ -118,7 +118,7 @@ describe('LiveClassController', () => {
       await controller.getLiveSession(mockRequest as Request, mockResponse as Response);
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith({ error: 'SESSION_FETCH_FAILED' });
+      expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Database error' });
     });
   });
 

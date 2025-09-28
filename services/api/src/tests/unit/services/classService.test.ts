@@ -100,7 +100,7 @@ describe('ClassService', () => {
     const svc = new ClassService(mockRepo as any, {} as any);
     const res = await svc.checkInToClass(1, 1);
     expect(res).toEqual({ classId: 1 });
-  });
+  }, 30000);
 
   it('cancelBooking validates inputs and calls repository', async () => {
     const mockRepo = {

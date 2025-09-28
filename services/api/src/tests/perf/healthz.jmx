@@ -12,27 +12,34 @@
       <stringProp name="TestPlan.user_define_classpath"></stringProp>
     </TestPlan>
     <hashTree>
-      <!-- HTTP Defaults -->
-      <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Request Defaults" enabled="true">
-        <stringProp name="HTTPSampler.protocol">${__P(PROTO,https)}</stringProp>
-        <stringProp name="HTTPSampler.domain">${__P(HOST,localhost)}</stringProp>
-        <stringProp name="HTTPSampler.port">${__P(PORT,443)}</stringProp>
-      </ConfigTestElement>
-      <hashTree/>
-      <!-- Thread Group -->
+      <!-- Thread Group (no scheduler; use loops instead) -->
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Users" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <stringProp name="LoopController.loops">${__P(loops,200)}</stringProp>
+        </elementProp>
         <stringProp name="ThreadGroup.num_threads">${__P(users,10)}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${__P(ramp,10)}</stringProp>
-        <boolProp name="ThreadGroup.scheduler">true</boolProp>
-        <stringProp name="ThreadGroup.duration">${__P(duration,60)}</stringProp>
-        <stringProp name="ThreadGroup.delay">0</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
       </ThreadGroup>
       <hashTree>
+        <!-- HTTP Defaults (scoped inside the Thread Group) -->
+        <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Request Defaults" enabled="true">
+          <stringProp name="HTTPSampler.protocol">${__P(PROTO,http)}</stringProp>
+          <stringProp name="HTTPSampler.domain">${__P(HOST,localhost)}</stringProp>
+          <stringProp name="HTTPSampler.port">${__P(PORT,3000)}</stringProp>
+        </ConfigTestElement>
+        <hashTree/>
+        <!-- Sampler -->
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="GET /healthz" enabled="true">
           <stringProp name="HTTPSampler.method">GET</stringProp>
           <stringProp name="HTTPSampler.path">${__P(PATH,/healthz)}</stringProp>
         </HTTPSamplerProxy>
         <hashTree>
+          <!-- Assert 200 -->
           <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert 200" enabled="true">
             <collectionProp name="Assertion.test_strings">
               <stringProp name="49586">200</stringProp>
@@ -43,16 +50,12 @@
             <intProp name="Assertion.test_type">8</intProp>
           </ResponseAssertion>
           <hashTree/>
+          <!-- Assert duration -->
           <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion" testname="Assert &lt;= MAX_MS" enabled="true">
             <stringProp name="DurationAssertion.duration">${__P(MAX_MS,300)}</stringProp>
           </DurationAssertion>
           <hashTree/>
         </hashTree>
-        <!-- Listeners for local runs (not needed in CI, report is generated headless) -->
-        <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="false">
-          <boolProp name="ResultCollector.error_logging">false</boolProp>
-        </ResultCollector>
-        <hashTree/>
       </hashTree>
     </hashTree>
   </hashTree>

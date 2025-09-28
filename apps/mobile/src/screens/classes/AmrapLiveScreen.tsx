@@ -132,6 +132,24 @@ export default function AmrapLiveScreen() {
   const [partial, setPartial] = useState('');
   useEffect(() => { if (askPartial && !modalOpen) setModalOpen(true); }, [askPartial, modalOpen]);
 
+  // Tutorial overlay state
+  const [showTutorial, setShowTutorial] = useState(true);
+  const [tutorialStep, setTutorialStep] = useState(0); // 0: green, 1: red
+  useEffect(() => {
+    // Hide tutorial after 4 seconds automatically
+    const timer = setTimeout(() => setShowTutorial(false), 4000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Tutorial animation
+  useEffect(() => {
+    if (!showTutorial) return;
+    const interval = setInterval(() => {
+      setTutorialStep(prev => (prev + 1) % 2);
+    }, 800); // Switch every 800ms
+    return () => clearInterval(interval);
+  }, [showTutorial]);
+
   const sendPartial = async () => {
     const token = await getToken();
     await axios.post(`${config.BASE_URL}/live/${classId}/partial`, {
@@ -280,11 +298,34 @@ export default function AmrapLiveScreen() {
         </View>
       )}
 
+      {/* tutorial overlay */}
+      {showTutorial && (
+        <View style={s.tutorialOverlay} pointerEvents="none">
+          {/* Green region highlight */}
+          {tutorialStep === 0 && (
+            <Animated.View style={[s.tutorialHighlight, s.tutorialGreenHighlight]} pointerEvents="none">
+              <View style={s.tutorialLabelContainer}>
+                <Text style={s.tutorialLabel}>TAP FOR NEXT</Text>
+              </View>
+            </Animated.View>
+          )}
+          
+          {/* Red region highlight */}
+          {tutorialStep === 1 && (
+            <Animated.View style={[s.tutorialHighlight, s.tutorialRedHighlight]} pointerEvents="none">
+              <View style={s.tutorialLabelContainer}>
+                <Text style={s.tutorialLabel}>TAP FOR BACK</Text>
+              </View>
+            </Animated.View>
+          )}
+        </View>
+      )}
+
       {/* partial reps prompt */}
       <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={()=>{}}>
         <View style={s.modalWrap}>
           <View style={s.modalCard}>
-            <Text style={s.modalTitle}>Time’s up — last exercise reps</Text>
+            <Text style={s.modalTitle}>Time's up — last exercise reps</Text>
             <TextInput
               value={partial} onChangeText={setPartial} keyboardType="numeric"
               style={s.modalInput} placeholder="0" placeholderTextColor="#7a7a7a"
@@ -341,4 +382,48 @@ const s = StyleSheet.create({
   modalInput:{ backgroundColor:'#222', borderRadius:10, color:'#fff', fontSize:24, fontWeight:'900', paddingVertical:8, textAlign:'center' },
   modalBtn:{ backgroundColor:'#d8ff3e', borderRadius:10, paddingVertical:14, marginTop:12 },
   modalBtnText:{ color:'#111', fontWeight:'900', textAlign:'center' },
+
+  tutorialOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100 },
+  tutorialHighlight: { 
+    position: 'absolute', 
+    borderWidth: 4, 
+    borderRadius: 8,
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  tutorialGreenHighlight: { 
+    top: 0, 
+    right: 0, 
+    bottom: 0, 
+    left: '25%', // Green area is flex: 3, so starts at 25%
+    borderColor: '#4CAF50',
+    backgroundColor: 'rgba(76, 175, 80, 0.15)',
+  },
+  tutorialRedHighlight: { 
+    top: 0, 
+    left: 0, 
+    bottom: 0, 
+    right: '75%', // Red area is flex: 1, so takes 25% of screen
+    borderColor: '#F44336',
+    backgroundColor: 'rgba(244, 67, 54, 0.15)',
+  },
+  tutorialLabelContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -40 }, { translateY: -15 }],
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  tutorialLabel: {
+    color: '#fff',
+    fontWeight: '900',
+    fontSize: 14,
+    textAlign: 'center',
+  },
 });

@@ -16,14 +16,14 @@ export default function ErrorContent() {
         return {
           title: 'Login Required',
           description: message || 'You need to login to access this page',
-          action: { text: 'Login', path: '/' },
+          action: { text: 'Login', path: '/login' },
           colorClass: 'yellow',
         };
       case 'session':
         return {
           title: 'Session Expired',
           description: message || 'Your session has expired. Please login again.',
-          action: { text: 'Login', path: '/' },
+          action: { text: 'Login', path: '/login' },
           colorClass: 'orange',
         };
       case '404':

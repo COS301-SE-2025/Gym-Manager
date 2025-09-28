@@ -36,6 +36,15 @@ body {
   margin-bottom: 8px;
 }
 
+.error-banner {
+  background-color: #3a1f1f;
+  color: #ffb3b3;
+  border: 1px solid #6b1f1f;
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 12px 0 16px 0;
+}
+
 .login-form {
   display: flex;
   flex-direction: column;

@@ -315,8 +315,11 @@
   font-weight: 500;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: all 0.2s ease;
-  padding: 6px 8px;
-  margin: 1px;
+  padding: 12px 16px;
+  margin: 2px;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
 }
 
 .calendarWrapper :global(.rbc-event:hover) {
@@ -325,17 +328,182 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
+/* color variation for calendar: around original */
+.calendarWrapper :global(.rbc-event:nth-child(1)) {
+  background: #748c24;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(2)) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(3)) {
+  background: #7a9426;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(4)) {
+  background: #6e8a22;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(5)) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(6)) {
+  background: #7f9a28;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(7)) {
+  background: #6a8621;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(8)) {
+  background: #849e2a;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(9)) {
+  background: #65801f;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(10)) {
+  background: #5c6f1c;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(11)) {
+  background: #8aa82c;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(12)) {
+  background: #6d8a22;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(13)) {
+  background: #7c9627;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(14)) {
+  background: #8fb030;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(15)) {
+  background: #9bb833;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(16)) {
+  background: #748c24;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(17)) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(18)) {
+  background: #7a9426;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(19)) {
+  background: #6e8a22;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(20)) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(1):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(2):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(3):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(4):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(5):hover) {
+  background: #4a5a1a;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(6):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(7):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(8):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(9):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(10):hover) {
+  background: #4a5a1a;
+}
+
+/* Hover states for additional color variations */
+.calendarWrapper :global(.rbc-event:nth-child(11):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(12):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(13):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(14):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(15):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(16):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(17):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(18):hover) {
+  background: #6b8e23;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(19):hover) {
+  background: #5a6b1d;
+}
+
+.calendarWrapper :global(.rbc-event:nth-child(20):hover) {
+  background: #4a5a1a;
+}
+
 .calendarWrapper :global(.rbc-event:focus) {
   outline: 2px solid #d8ff3e;
   outline-offset: 1px;
 }
 
 .calendarWrapper :global(.rbc-event-content) {
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 14px;
+  line-height: 1.5;
   color: white;
   font-weight: 500;
+  width: 100%;
+  text-align: left;
 }
+
 
 /* Selected event */
 .calendarWrapper :global(.rbc-selected) {

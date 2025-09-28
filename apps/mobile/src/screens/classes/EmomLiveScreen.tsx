@@ -65,6 +65,24 @@ export default function EmomLiveScreen() {
   const [scope, setScope] = useState<LbFilter>('ALL');
   const lb = useLeaderboardRealtime(classId, scope);
 
+  // Tutorial overlay state
+  const [showTutorial, setShowTutorial] = useState(true);
+  const [tutorialStep, setTutorialStep] = useState(0); // 0: green, 1: red
+  useEffect(() => {
+    // Hide tutorial after 4 seconds automatically
+    const timer = setTimeout(() => setShowTutorial(false), 4000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Tutorial animation
+  useEffect(() => {
+    if (!showTutorial) return;
+    const interval = setInterval(() => {
+      setTutorialStep(prev => (prev + 1) % 2);
+    }, 800); // Switch every 800ms
+    return () => clearInterval(interval);
+  }, [showTutorial]);
+
   // More reliable user ID detection using the same method as useMyProgress
   const [myUserId, setMyUserId] = useState<number | null>(null);
   useEffect(() => {
@@ -384,6 +402,29 @@ export default function EmomLiveScreen() {
         <Pressable style={s.next} android_ripple={{color:'#0a0'}} onPress={() => go(1)} disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0} />
       </View>
 
+      {/* tutorial overlay */}
+      {showTutorial && (
+        <View style={s.tutorialOverlay} pointerEvents="none">
+          {/* Green region highlight */}
+          {tutorialStep === 0 && (
+            <Animated.View style={[s.tutorialHighlight, s.tutorialGreenHighlight]} pointerEvents="none">
+              <View style={s.tutorialLabelContainer}>
+                <Text style={s.tutorialLabel}>TAP FOR NEXT</Text>
+              </View>
+            </Animated.View>
+          )}
+          
+          {/* Red region highlight */}
+          {tutorialStep === 1 && (
+            <Animated.View style={[s.tutorialHighlight, s.tutorialRedHighlight]} pointerEvents="none">
+              <View style={s.tutorialLabelContainer}>
+                <Text style={s.tutorialLabel}>TAP FOR BACK</Text>
+              </View>
+            </Animated.View>
+          )}
+        </View>
+      )}
+
       {/* PAUSE overlay */}
       {session?.status === 'paused' && (
         <View style={s.pausedOverlay} pointerEvents="auto">
@@ -427,4 +468,48 @@ const s = StyleSheet.create({
   pausedOverlay: { ...StyleSheet.absoluteFillObject, alignItems:'center', justifyContent:'center', zIndex: 20 },
   pausedTitle: { color:'#fff', fontWeight:'900', fontSize: 44, letterSpacing: 2, textAlign:'center' },
   pausedSub:   { color:'#eaeaea', fontWeight:'700', marginTop: 6, fontSize: 14, textAlign:'center' },
+
+  tutorialOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100 },
+  tutorialHighlight: { 
+    position: 'absolute', 
+    borderWidth: 4, 
+    borderRadius: 8,
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 20,
+  },
+  tutorialGreenHighlight: { 
+    top: 0, 
+    right: 0, 
+    bottom: 0, 
+    left: '25%', // Green area is flex: 3, so starts at 25%
+    borderColor: '#4CAF50',
+    backgroundColor: 'rgba(76, 175, 80, 0.15)',
+  },
+  tutorialRedHighlight: { 
+    top: 0, 
+    left: 0, 
+    bottom: 0, 
+    right: '75%', // Red area is flex: 1, so takes 25% of screen
+    borderColor: '#F44336',
+    backgroundColor: 'rgba(244, 67, 54, 0.15)',
+  },
+  tutorialLabelContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -40 }, { translateY: -15 }],
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  tutorialLabel: {
+    color: '#fff',
+    fontWeight: '900',
+    fontSize: 14,
+    textAlign: 'center',
+  },
 });

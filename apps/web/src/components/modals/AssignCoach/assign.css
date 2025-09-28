@@ -87,3 +87,96 @@
 .modal-actions button[type='button']:hover {
   background-color: #666;
 }
+
+.class-details {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.detail-group {
+  margin-bottom: 16px;
+}
+
+.detail-group:last-child {
+  margin-bottom: 0;
+}
+
+.detail-group p {
+  margin: 8px 0;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-group:not(:last-child) {
+  margin-bottom: 8px;
+}
+
+.modal input[type="date"],
+.modal input[type="time"],
+.modal input[type="number"] {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  font-family: inherit;
+}
+
+.modal input[type="date"]:focus,
+.modal input[type="time"]:focus,
+.modal input[type="number"]:focus,
+.modal select:focus {
+  outline: none;
+  border-color: #d8ff3e;
+  box-shadow: 0 0 0 2px rgba(216, 255, 62, 0.2);
+}
+
+.edit-btn {
+  background-color: #d8ff3e !important;
+  color: #1e1e1e !important;
+}
+
+.edit-btn:hover {
+  background-color: #c0da35 !important;
+}
+
+.save-btn {
+  background-color: #d8ff3e !important;
+  color: #1e1e1e !important;
+}
+
+.save-btn:hover {
+  background-color: #c0da35 !important;
+}
+
+.delete-btn {
+  background-color: #e74c3c !important;
+  color: white !important;
+}
+
+.delete-btn:hover {
+  background-color: #c0392b !important;
+}
+
+/* Edit mode button layout */
+.edit-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.right-actions {
+  display: flex;
+  gap: 12px;
+}

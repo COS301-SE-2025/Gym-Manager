@@ -31,7 +31,7 @@
     "test:core-working": "./test-core-working.sh",
     "test:stable": "./test-stable.sh",
     "test:ci-working": "npm run lint && npm run test:unit && npm run test:core-working",
-    "test:ci-stable": "./test-stable.sh"
+    "test:ci-stable": "./test-stable.sh",
     "test:integration:availability": "jest --runInBand src/tests/integration/availability.health.test.ts",
     "test:integration:security": "jest --runInBand --coverage=false src/tests/integration/security.auth.test.ts",
     "test:integration:availability:remote": "jest --runInBand src/tests/integration/availability.remote.test.ts"

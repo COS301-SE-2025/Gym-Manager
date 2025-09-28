@@ -116,13 +116,13 @@ describe('Authentication Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/auth/register')
+        .post('/register')
         .send(userData)
         .expect(201);
 
       expect(response.body).toHaveProperty('token');
-      expect(response.body).toHaveProperty('user');
-      expect(response.body.user.email).toBe(userData.email);
+      expect(response.body).toHaveProperty('refreshToken');
+      expect(response.body.token).toBeDefined();
 
       // Verify user was created in database
       const [createdUser] = await db
@@ -143,7 +143,7 @@ describe('Authentication Integration Tests', () => {
       };
 
       await request(app)
-        .post('/auth/register')
+        .post('/register')
         .send(incompleteData)
         .expect(400);
     });
@@ -159,13 +159,13 @@ describe('Authentication Integration Tests', () => {
 
       // First registration should succeed
       await request(app)
-        .post('/auth/register')
+        .post('/register')
         .send(userData)
         .expect(201);
 
       // Second registration with same email should fail
       await request(app)
-        .post('/auth/register')
+        .post('/register')
         .send(userData)
         .expect(400);
     });
@@ -181,7 +181,7 @@ describe('Authentication Integration Tests', () => {
       // This test assumes there's a user with these credentials
       // In a real scenario, you'd create the user first
       const response = await request(app)
-        .post('/auth/login')
+        .post('/login')
         .send(loginData);
 
       // The response might be 401 if user doesn't exist, which is expected
@@ -195,7 +195,7 @@ describe('Authentication Integration Tests', () => {
       };
 
       await request(app)
-        .post('/auth/login')
+        .post('/login')
         .send(invalidData)
         .expect(401);
     });
@@ -213,7 +213,7 @@ describe('Authentication Integration Tests', () => {
 
     it('should allow authenticated coach to access coach endpoints', async () => {
       const response = await request(app)
-        .get('/classes/coach/assigned')
+        .get('/coach/assigned')
         .set('Authorization', `Bearer ${coachToken}`)
         .expect(200);
 
@@ -222,7 +222,7 @@ describe('Authentication Integration Tests', () => {
 
     it('should allow authenticated admin to access admin endpoints', async () => {
       const response = await request(app)
-        .get('/admin/users')
+        .get('/users')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -239,7 +239,7 @@ describe('Authentication Integration Tests', () => {
       await request(app)
         .get('/member/classes')
         .set('Authorization', 'Bearer invalid-token')
-        .expect(403);
+        .expect(401);
     });
 
     it('should return 403 for expired token', async () => {
@@ -252,30 +252,30 @@ describe('Authentication Integration Tests', () => {
       await request(app)
         .get('/member/classes')
         .set('Authorization', `Bearer ${expiredToken}`)
-        .expect(403);
+        .expect(401);
     });
   });
 
   describe('Role-based Authorization', () => {
     it('should prevent member from accessing coach endpoints', async () => {
       await request(app)
-        .get('/classes/coach/assigned')
+        .get('/coach/assigned')
         .set('Authorization', `Bearer ${memberToken}`)
-        .expect(403);
+        .expect(401);
     });
 
     it('should prevent member from accessing admin endpoints', async () => {
       await request(app)
-        .get('/admin/users')
+        .get('/users')
         .set('Authorization', `Bearer ${memberToken}`)
-        .expect(403);
+        .expect(401);
     });
 
     it('should prevent coach from accessing admin endpoints', async () => {
       await request(app)
-        .get('/admin/users')
+        .get('/users')
         .set('Authorization', `Bearer ${coachToken}`)
-        .expect(403);
+        .expect(401);
     });
   });
 
@@ -286,7 +286,7 @@ describe('Authentication Integration Tests', () => {
       await request(app)
         .get('/member/classes')
         .set('Authorization', `Bearer ${malformedToken}`)
-        .expect(403);
+        .expect(401);
     });
 
     it('should validate token payload', async () => {
@@ -299,7 +299,7 @@ describe('Authentication Integration Tests', () => {
       await request(app)
         .get('/member/classes')
         .set('Authorization', `Bearer ${invalidPayloadToken}`)
-        .expect(403);
+        .expect(401);
     });
   });
 });

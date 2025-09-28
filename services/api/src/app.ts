@@ -38,10 +38,10 @@ export class App {
 
     this.app.use(cors(corsOptions));
     this.app.options('*', cors(corsOptions));
-    
+
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
- 
+
     this.app.use(requestTimeout(20_000));
   }
 
@@ -80,13 +80,12 @@ export class App {
       res.json({ status: 'OK', timestamp: new Date().toISOString() });
     });
 
-    
     setupSwagger(this.app as any);
-    
+
     this.app.use((req, res) => {
       res.status(404).json({ error: 'Route not found' });
     });
-    
+
     this.app.use(errorHandler);
   }
 
@@ -95,8 +94,7 @@ export class App {
   }
 
   start(port: number = 3000): void {
-    this.app.listen(port, () => {
-    });
+    this.app.listen(port, () => {});
   }
 }
 

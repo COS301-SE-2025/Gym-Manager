@@ -23,8 +23,8 @@ export class LiveClassService implements ILiveClassService {
     this.repo = repo || new LiveClassRepository();
     this.userRepo = userRepo || new UserRepository();
 
-    this.gamificationService = gamificationService || new GamificationService(new GamificationRepository());
-
+    this.gamificationService =
+      gamificationService || new GamificationService(new GamificationRepository());
   }
 
   // --- Session ---
@@ -172,7 +172,6 @@ export class LiveClassService implements ILiveClassService {
 
   // --- Submit score (coach batch or member single) ---
   async submitScore(userId: number, roles: string[] = [], body: any) {
-
     const classId = body?.classId;
     if (!Number.isFinite(classId)) throw new Error('CLASS_ID_REQUIRED');
 
@@ -274,23 +273,22 @@ export class LiveClassService implements ILiveClassService {
   }
 
   async stopLiveClass(classId: number) {
-
     await this.repo.stopSession(classId);
     try {
       await this.repo.persistScoresFromLive(classId);
-      
 
       // Trigger gamification for all participants
       // Get all participants who had attendance records created
       const participants = await this.getParticipantsForClass(classId);
       for (const participant of participants) {
         try {
-
-          const gamificationResult = await this.gamificationService.recordClassAttendance(participant.userId, classId, new Date());
-
+          const gamificationResult = await this.gamificationService.recordClassAttendance(
+            participant.userId,
+            classId,
+            new Date(),
+          );
         } catch (gamificationError) {
           console.error(`Gamification failed for user ${participant.userId}:`, gamificationError);
-
         }
       }
     } catch (e) {
@@ -638,17 +636,18 @@ export class LiveClassService implements ILiveClassService {
     return this.repo.getScaling(classId, userId);
   }
 
-
-  async setMyScaling(classId: number, userId: number, scaling: 'RX'|'SC'): Promise<void> {
-    
+  async setMyScaling(classId: number, userId: number, scaling: 'RX' | 'SC'): Promise<void> {
     // user must be booked to set scaling
     await this.repo.assertMemberBooked(classId, userId);
     await this.repo.upsertScaling(classId, userId, scaling);
 
     // Trigger gamification updates for class attendance
     try {
-      const gamificationResult = await this.gamificationService.recordClassAttendance(userId, classId, new Date());
-
+      const gamificationResult = await this.gamificationService.recordClassAttendance(
+        userId,
+        classId,
+        new Date(),
+      );
     } catch (gamificationError) {
       console.error('Gamification update failed for scaling:', gamificationError);
     }

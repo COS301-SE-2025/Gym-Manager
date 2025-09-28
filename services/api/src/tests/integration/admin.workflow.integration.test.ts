@@ -115,7 +115,7 @@ describe('Admin Workflow Integration Tests', () => {
   describe('User Management', () => {
     it('should allow admin to view all users', async () => {
       const response = await request(app)
-        .get('/admin/users')
+        .get('/users')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -129,7 +129,7 @@ describe('Admin Workflow Integration Tests', () => {
 
     it('should allow admin to view users by role', async () => {
       const response = await request(app)
-        .get('/admin/users/role/member')
+        .get('/users/role/member')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -139,7 +139,7 @@ describe('Admin Workflow Integration Tests', () => {
 
     it('should allow admin to view pending members', async () => {
       const response = await request(app)
-        .get('/admin/members/pending')
+        .get('/members')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -148,7 +148,7 @@ describe('Admin Workflow Integration Tests', () => {
 
     it('should prevent non-admin from accessing admin endpoints', async () => {
       await request(app)
-        .get('/admin/users')
+        .get('/users')
         .set('Authorization', `Bearer ${memberToken}`)
         .expect(403);
     });
@@ -157,7 +157,7 @@ describe('Admin Workflow Integration Tests', () => {
   describe('Member Approval Workflow', () => {
     it('should allow admin to approve pending member', async () => {
       const response = await request(app)
-        .post('/admin/members/approve')
+        .post('/members/approve')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ userId: testMemberUserId })
         .expect(200);
@@ -309,7 +309,7 @@ describe('Admin Workflow Integration Tests', () => {
 
     it('should allow admin to view notifications', async () => {
       const response = await request(app)
-        .get('/admin/notifications')
+        .get('/notifications')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -339,7 +339,7 @@ describe('Admin Workflow Integration Tests', () => {
   describe('System Analytics', () => {
     it('should allow admin to view system statistics', async () => {
       const response = await request(app)
-        .get('/admin/analytics/overview')
+        .get('/analytics/summary-stats')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -351,7 +351,7 @@ describe('Admin Workflow Integration Tests', () => {
 
     it('should allow admin to view user activity', async () => {
       const response = await request(app)
-        .get('/admin/analytics/activity')
+        .get('/analytics/operations-data')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -360,7 +360,7 @@ describe('Admin Workflow Integration Tests', () => {
 
     it('should allow admin to view class statistics', async () => {
       const response = await request(app)
-        .get('/admin/analytics/classes')
+        .get('/analytics/gym-utilization')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -373,7 +373,7 @@ describe('Admin Workflow Integration Tests', () => {
   describe('Error Handling', () => {
     it('should return 404 for non-existent user operations', async () => {
       await request(app)
-        .post('/admin/members/approve')
+        .post('/members/approve')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ userId: 99999 })
         .expect(404);
@@ -389,13 +389,13 @@ describe('Admin Workflow Integration Tests', () => {
 
     it('should return 401 for unauthenticated requests', async () => {
       await request(app)
-        .get('/admin/users')
+        .get('/users')
         .expect(401);
     });
 
     it('should return 403 for unauthorized role access', async () => {
       await request(app)
-        .get('/admin/users')
+        .get('/users')
         .set('Authorization', `Bearer ${memberToken}`)
         .expect(403);
     });
@@ -429,7 +429,7 @@ describe('Admin Workflow Integration Tests', () => {
       }
 
       const response = await request(app)
-        .post('/admin/members/bulk-approve')
+        .post('/members/bulk-approve')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ userIds: memberIds })
         .expect(200);

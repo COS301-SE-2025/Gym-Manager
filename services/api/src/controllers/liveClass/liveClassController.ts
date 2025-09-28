@@ -54,13 +54,12 @@ export class LiveClassController {
 
   submitScore = async (req: AuthenticatedRequest, res: Response) => {
     try {
-      if (!req.user) return res.status(401).json({ success: false, error: 'UNAUTHORIZED' });      
-      
+      if (!req.user) return res.status(401).json({ success: false, error: 'UNAUTHORIZED' });
+
       const out = await this.service.submitScore(req.user.userId, req.user.roles, req.body);
-      
+
       return res.json(out);
     } catch (e: any) {
-      
       const msg = e.message || '';
       if (
         [

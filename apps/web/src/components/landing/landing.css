@@ -114,6 +114,95 @@
   border: 1px solid var(--border);
 }
 
+.mobile-download {
+  padding: 48px 0;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-download h2 {
+  font-size: 28px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.mobile-download p {
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 32px;
+  font-size: 16px;
+}
+
+.download-buttons {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  align-items: center;
+}
+
+.download-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  min-width: 200px;
+  justify-content: center;
+}
+
+.android-btn {
+  background: var(--accent);
+  color: #0b0b0b;
+  border: 1px solid var(--accent);
+}
+
+.android-btn:hover {
+  background: #c4e63a;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(216, 255, 62, 0.3);
+}
+
+.apple-btn {
+  background: var(--card);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.download-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.download-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.download-label {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.download-platform {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.coming-soon-text {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
 .img-placeholder.wide {
   height: 300px;
 }
@@ -316,5 +405,12 @@
   }
   .hero-text h1 {
     font-size: 40px;
+  }
+  .download-buttons {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .download-btn {
+    min-width: 250px;
   }
 }

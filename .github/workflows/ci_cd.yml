@@ -226,6 +226,87 @@ jobs:
           echo "First 10 lines of results:"
           head -n 10 "$JM_OUT" || true
 
+      - name: Perf gates (p95 & error rate)
+        working-directory: ./services/api
+        env:
+          JM_OUT: ${{ steps.jmx.outputs.out }}   # this is the results.jtl from your earlier step
+          MAX_P95_MS: 300
+          MAX_ERR_PCT: 0
+        run: |
+          set -e
+          tail -n +2 "$JM_OUT" > /tmp/rows.csv
+          N=$(wc -l < /tmp/rows.csv)
+          # errors: success column is #8, responseCode is #4
+          ERR=$(awk -F',' '$8=="false" || $4!="200"{c++} END{print c+0}' /tmp/rows.csv)
+          ERR_PCT=$(awk -v e="$ERR" -v n="$N" 'BEGIN{ if(n==0){print 100}else{printf "%.2f", (e*100.0)/n}}')
+          # p95 from elapsed column (#2)
+          P95=$(cut -d, -f2 /tmp/rows.csv | sort -n | awk -v n="$N" 'BEGIN{idx=int(0.95*n); if(idx<1) idx=1} NR==idx{print; exit}')
+          echo "Samples=$N, Errors=$ERR ($ERR_PCT%), p95=${P95}ms"
+          # enforce thresholds
+          awk -v p="$P95" -v max="$MAX_P95_MS" 'BEGIN{ if(p>max){ printf "p95 %sms > %sms\n", p, max; exit 1}}'
+          awk -v e="$ERR_PCT" -v max="$MAX_ERR_PCT" 'BEGIN{ if(e>max){ printf "error rate %s%% > %s%%\n", e, max; exit 1}}'
+
+      - name: Run JMeter plan against deployed API
+        working-directory: ./services/api
+        env:
+          JM_PLAN: ${{ steps.jmx.outputs.plan }}
+          JM_OUT:  ${{ steps.jmx.outputs.out }}
+          HOST: secrets.HOSTNAME
+          PROTO: http
+          PORT: 3000
+          users: 10
+          ramp: 10
+          loops: 200
+          MAX_MS: 300
+        run: |
+          set -e
+          jmeter -n \
+            -t "$JM_PLAN" \
+            -l "$JM_OUT" \
+            -JHOST="$HOST" -JPROTO="$PROTO" -JPORT="$PORT" \
+            -Jusers="$users" -Jramp="$ramp" -Jloops="$loops" -JMAX_MS="$MAX_MS"
+
+          # Prove we actually ran requests: file exists and has samples
+          test -f "$JM_OUT" || (echo "JMeter did not create results file: $JM_OUT" && exit 1)
+
+          # Count samples (works whether XML or CSV; both include the token 'sample')
+          SAMPLES=$(grep -c -i "<sample " "$JM_OUT" 2>/dev/null || true)
+          if [ "$SAMPLES" -eq 0 ]; then
+            # Try CSV token name if using CSV output
+            SAMPLES=$(grep -c -i ",200," "$JM_OUT" 2>/dev/null || echo 0)
+          fi
+          echo "Sample count in results: $SAMPLES"
+          if [ "${SAMPLES:-0}" -le 0 ]; then
+            echo "No samples recorded — failing."
+            # show tail of the log to help debug
+            tail -n +1 "$JM_OUT" | head -n 50 || true
+            exit 1
+          fi
+
+          # Show a small excerpt for the logs
+          echo "First 10 lines of results:"
+          head -n 10 "$JM_OUT" || true
+
+      - name: Perf gates (p95 & error rate)
+        working-directory: ./services/api
+        env:
+          JM_OUT: ${{ steps.jmx.outputs.out }}   # this is the results.jtl from your earlier step
+          MAX_P95_MS: 300
+          MAX_ERR_PCT: 0
+        run: |
+          set -e
+          tail -n +2 "$JM_OUT" > /tmp/rows.csv
+          N=$(wc -l < /tmp/rows.csv)
+          # errors: success column is #8, responseCode is #4
+          ERR=$(awk -F',' '$8=="false" || $4!="200"{c++} END{print c+0}' /tmp/rows.csv)
+          ERR_PCT=$(awk -v e="$ERR" -v n="$N" 'BEGIN{ if(n==0){print 100}else{printf "%.2f", (e*100.0)/n}}')
+          # p95 from elapsed column (#2)
+          P95=$(cut -d, -f2 /tmp/rows.csv | sort -n | awk -v n="$N" 'BEGIN{idx=int(0.95*n); if(idx<1) idx=1} NR==idx{print; exit}')
+          echo "Samples=$N, Errors=$ERR ($ERR_PCT%), p95=${P95}ms"
+          # enforce thresholds
+          awk -v p="$P95" -v max="$MAX_P95_MS" 'BEGIN{ if(p>max){ printf "p95 %sms > %sms\n", p, max; exit 1}}'
+          awk -v e="$ERR_PCT" -v max="$MAX_ERR_PCT" 'BEGIN{ if(e>max){ printf "error rate %s%% > %s%%\n", e, max; exit 1}}'
+
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest

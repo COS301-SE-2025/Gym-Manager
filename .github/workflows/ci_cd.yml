@@ -95,10 +95,11 @@ jobs:
           JWT_SECRET: ci-integration-secret
 
   test-performance:
-    name: Integration (Performance via JMeter)
+    name: Integration — Performance (JMeter)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -109,25 +110,36 @@ jobs:
         run: npm ci
         working-directory: ./services/api
 
-      - name: Build & start API locally
-        run: |
-          npm run build || true   # optional if you have a build step
-          nohup npm run start &   # start server in background
-          sleep 10                # give it a few seconds to boot
+      # Build API
+      - name: Build API
+        run: npm run build
+        working-directory: ./services/api
+
+      - name: Start API (background) and wait for /healthz
         working-directory: ./services/api
         env:
+          PORT: 3000
+          NODE_ENV: test
           JWT_SECRET: ci-integration-secret
+        run: |
+          # Start the Express app exported from dist/index.js
+          node -e "const { app } = require('./dist/index.js'); app.listen(process.env.PORT || 3000, () => console.log('API up'));" &
+          # Wait until the healthz endpoint responds
+          for i in {1..40}; do
+            curl -fsS "http://localhost:3000/healthz" && break
+            sleep 1
+          done
 
+      # Install JMeter
       - name: Install JMeter
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget unzip
+          sudo apt-get update && sudo apt-get install -y wget unzip
           JM_VERSION=5.6.3
-          wget https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-$JM_VERSION.zip
+          wget -q https://dlcdn.apache.org/jmeter/binaries/apache-jmeter-$JM_VERSION.zip
           unzip -q apache-jmeter-$JM_VERSION.zip
-          export PATH="$PWD/apache-jmeter-$JM_VERSION/bin:$PATH"
+          echo "$GITHUB_WORKSPACE/apache-jmeter-$JM_VERSION/bin" >> $GITHUB_PATH
 
-      - name: Run JMeter against local API
+      - name: Run JMeter plan against local API
         working-directory: ./services/api
         env:
           HOST: localhost
@@ -135,20 +147,21 @@ jobs:
           PORT: 3000
           users: 10
           ramp: 10
-          duration: 60
+          duration: 30
           MAX_MS: 300
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget unzip
-          JM_VERSION=5.6.3
-          wget https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-$JM_VERSION.zip
-          unzip -q apache-jmeter-$JM_VERSION.zip
-          export PATH="$PWD/apache-jmeter-$JM_VERSION/bin:$PATH"
           jmeter -n \
             -t tests/perf/healthz.jmx \
             -l tests/perf/results.jtl \
             -JHOST=$HOST -JPROTO=$PROTO -JPORT=$PORT \
             -Jusers=$users -Jramp=$ramp -Jduration=$duration -JMAX_MS=$MAX_MS
+
+      # Upload raw results
+      - name: Upload JMeter results
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-results
+          path: services/api/tests/perf/results.jtl
 
   deploy:
     name: Deploy to Production

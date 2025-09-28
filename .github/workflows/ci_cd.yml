@@ -109,24 +109,25 @@ jobs:
         run: npm ci
         working-directory: ./services/api
 
-      # Start the API from TypeScript (no build step) and wait for /healthz
-      - name: Start API (ts-node) and wait for /healthz
+      # Compile TS
+      - name: Compile TypeScript
+        working-directory: ./services/api
+        run: npx tsc -p tsconfig.json
+
+      # Start the API from dist/index.js and wait for /healthz
+      - name: Start API and wait for /healthz
         working-directory: ./services/api
         env:
           PORT: 3000
           NODE_ENV: test
           JWT_SECRET: ci-integration-secret
         run: |
-          npx ts-node -e "const m=require('./src/index'); const app=m.app||m.default; const port=process.env.PORT||3000; if(!app?.listen){console.error('No exported app'); process.exit(1)}; app.listen(port,()=>console.log('API up on '+port));" &
+          node -e "const m=require('./dist/index.js'); const app=m.app||m.default; const port=process.env.PORT||3000; if(!app?.listen){console.error('No exported app'); process.exit(1)}; app.listen(port,()=>console.log('API up on '+port));" &
           for i in {1..40}; do
             curl -fsS "http://localhost:3000/healthz" >/dev/null && break
             sleep 1
           done
           curl -fsS "http://localhost:3000/healthz" >/dev/null || (echo 'API failed to start' && exit 1)
-
-      - name: Verify JMeter plan exists
-        working-directory: ./services/api
-        run: test -f tests/perf/healthz.jmx || (echo "Missing tests/perf/healthz.jmx" && exit 1)
 
       - name: Install JMeter
         run: |
@@ -136,9 +137,31 @@ jobs:
           unzip -q apache-jmeter-$JM_VERSION.zip
           echo "$GITHUB_WORKSPACE/apache-jmeter-$JM_VERSION/bin" >> $GITHUB_PATH
 
+      # Resolve JMX path whether it lives in tests/perf or src/tests/perf
+      - name: Locate JMeter plan
+        id: jmx
+        working-directory: ./services/api
+        run: |
+          set -e
+          if [ -f tests/perf/healthz.jmx ]; then
+            echo "plan=tests/perf/healthz.jmx" >> $GITHUB_OUTPUT
+            echo "out=tests/perf/results.jtl"   >> $GITHUB_OUTPUT
+          elif [ -f src/tests/perf/healthz.jmx ]; then
+            echo "plan=src/tests/perf/healthz.jmx" >> $GITHUB_OUTPUT
+            echo "out=src/tests/perf/results.jtl"  >> $GITHUB_OUTPUT
+          else
+            echo "Could not find healthz.jmx in tests/perf or src/tests/perf"
+            echo "Repo tree:"; ls -la; echo "src/tests/perf:"; ls -la src/tests/perf || true; echo "tests/perf:"; ls -la tests/perf || true
+            exit 1
+          fi
+          # Optional tiny typo fix if needed (Assertion.test_strings)
+          sed -i 's/Asserion\.test_strings/Assertion.test_strings/g' "${{ steps.jmx.outputs.plan }}"
+
       - name: Run JMeter plan against local API
         working-directory: ./services/api
         env:
+          JM_PLAN: ${{ steps.jmx.outputs.plan }}
+          JM_OUT:  ${{ steps.jmx.outputs.out }}
           HOST: localhost
           PROTO: http
           PORT: 3000
@@ -148,8 +171,8 @@ jobs:
           MAX_MS: 300
         run: |
           jmeter -n \
-            -t tests/perf/healthz.jmx \
-            -l tests/perf/results.jtl \
+            -t "$JM_PLAN" \
+            -l "$JM_OUT" \
             -JHOST="$HOST" -JPROTO="$PROTO" -JPORT="$PORT" \
             -Jusers="$users" -Jramp="$ramp" -Jduration="$duration" -JMAX_MS="$MAX_MS"
 
@@ -157,10 +180,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jmeter-results
-          path: services/api/tests/perf/results.jtl
-
-
-
+          path: |
+            services/api/${{ steps.jmx.outputs.out }}
 
   deploy:
     name: Deploy to Production

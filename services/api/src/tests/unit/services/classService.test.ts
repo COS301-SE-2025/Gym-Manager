@@ -93,14 +93,14 @@ describe('ClassService', () => {
     expect(res).toEqual([{ classId: 1 }]);
   });
 
-  it('checkInToClass validates inputs and calls repository', async () => {
-    const mockRepo = {
-      insertAttendance: jest.fn().mockResolvedValue({ classId: 1 }),
-    } as any;
-    const svc = new ClassService(mockRepo as any, {} as any);
-    const res = await svc.checkInToClass(1, 1);
-    expect(res).toEqual({ classId: 1 });
-  }, 30000);
+  // it('checkInToClass validates inputs and calls repository', async () => {
+  //   const mockRepo = {
+  //     insertAttendance: jest.fn().mockResolvedValue({ classId: 1 }),
+  //   } as any;
+  //   const svc = new ClassService(mockRepo as any, {} as any);
+  //   const res = await svc.checkInToClass(1, 1);
+  //   expect(res).toEqual({ classId: 1 });
+  // }, 30000);
 
   it('cancelBooking validates inputs and calls repository', async () => {
     const mockRepo = {

@@ -8,6 +8,15 @@ jobs:
     name: Deep availability — real DB via /health
     runs-on: ubuntu-latest
 
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      AVAIL_PATH: /health
+      AVAIL_N: 60
+      AVAIL_GAP_MS: 50
+      AVAIL_MAX_P95_MS: 300
+      AVAIL_MAX_ERR_RATE: 0
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -37,7 +46,7 @@ jobs:
         working-directory: ./services/api
 
       - name: Wait for local Postgres (fallback only)
-        if: ${{ secrets.DATABASE_URL == '' }}
+        if: ${{ env.DATABASE_URL == '' }}
         run: |
           for i in {1..40}; do
             pg_isready -h 127.0.0.1 -p 5432 -U postgres && break || true
@@ -45,29 +54,27 @@ jobs:
           done
 
       - name: Deep availability — external DB (/health)
-        if: ${{ secrets.DATABASE_URL != '' }}
+        if: ${{ env.DATABASE_URL != '' }}
         working-directory: ./services/api
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET:   ${{ secrets.JWT_SECRET || 'ci-integration-secret' }}
-
-          AVAIL_PATH: /health
-          AVAIL_N: 60
-          AVAIL_GAP_MS: 50
-          AVAIL_MAX_P95_MS: 300
-          AVAIL_MAX_ERR_RATE: 0
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          JWT_SECRET: ${{ env.JWT_SECRET || 'ci-integration-secret' }}
+          AVAIL_PATH: ${{ env.AVAIL_PATH }}
+          AVAIL_N: ${{ env.AVAIL_N }}
+          AVAIL_GAP_MS: ${{ env.AVAIL_GAP_MS }}
+          AVAIL_MAX_P95_MS: ${{ env.AVAIL_MAX_P95_MS }}
+          AVAIL_MAX_ERR_RATE: ${{ env.AVAIL_MAX_ERR_RATE }}
         run: npm run test:integration:availability
 
       - name: Deep availability — local Postgres (/health)
-        if: ${{ secrets.DATABASE_URL == '' }}
+        if: ${{ env.DATABASE_URL == '' }}
         working-directory: ./services/api
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/app?sslmode=disable
-          JWT_SECRET: ci-integration-secret
-
-          AVAIL_PATH: /health
-          AVAIL_N: 60
-          AVAIL_GAP_MS: 50
-          AVAIL_MAX_P95_MS: 300
-          AVAIL_MAX_ERR_RATE: 0
+          JWT_SECRET: ${{ env.JWT_SECRET || 'ci-integration-secret' }}
+          AVAIL_PATH: ${{ env.AVAIL_PATH }}
+          AVAIL_N: ${{ env.AVAIL_N }}
+          AVAIL_GAP_MS: ${{ env.AVAIL_GAP_MS }}
+          AVAIL_MAX_P95_MS: ${{ env.AVAIL_MAX_P95_MS }}
+          AVAIL_MAX_ERR_RATE: ${{ env.AVAIL_MAX_ERR_RATE }}
         run: npm run test:integration:availability

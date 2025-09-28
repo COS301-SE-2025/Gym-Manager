@@ -92,25 +92,6 @@ export class App {
 
   start(port: number = 3000): void {
     this.app.listen(port, () => {
-      console.log(`Server running on port ${port}`);
-      console.log('Layered Architecture Demo:');
-      console.log('- Presentation Layer: Routes handle HTTP concerns');
-      console.log('- Controller Layer: Controllers handle request/response');
-      console.log('- Service Layer: Business logic and orchestration');
-      console.log('- Repository Layer: Data access and persistence');
-      console.log('- Infrastructure Layer: External concerns (JWT, passwords, etc.)');
-      console.log('');
-      console.log('Available endpoints:');
-      console.log('- /auth/* - Authentication endpoints');
-      console.log('- /classes/* - Class management endpoints');
-      console.log('- /admin/* - Admin management endpoints');
-      console.log('- /live/* - Live class endpoints');
-      console.log('- /settings/* - User settings endpoints');
-      console.log('- /members/* - Member management endpoints');
-      console.log('- /analytics/* - Analytics endpoints (coach, member, logs, summary-stats)');
-      console.log('- /payments/* - Payment packages and financial analytics endpoints');
-      console.log('- /gamification/* - Gamification endpoints (streaks, badges, leaderboards)');
-      console.log('- /health - Health check endpoint');
     });
   }
 }

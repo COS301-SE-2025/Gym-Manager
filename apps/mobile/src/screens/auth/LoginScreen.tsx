@@ -107,13 +107,11 @@ export default function LoginScreen() {
     setIsLoading(true);
 
     try {
-      console.log('Login pressed', { email, password });
       const response = await axios.post(`${config.BASE_URL}/login`, {
         email: email.trim().toLowerCase(),
         password,
       });
 
-      console.log('Login response:', response.data);
 
       if (response.data && response.data.token) {
         await storeToken(response.data.token);
@@ -133,10 +131,7 @@ export default function LoginScreen() {
         console.warn('Login response does not contain user information.');
       }
       try {
-        console.log('Checking user status');
-        console.log('JWT token:', response.data.token);
         const userStatus = await getUserStatus();
-        console.log('User status:', userStatus);
         if (userStatus.membershipStatus === 'pending') {
           navigation.navigate('Pending' as never);
           return;

@@ -125,7 +125,6 @@ export const analyticsService = {
 };
 
 export const reportsService = {
-  // getBookings: async () => (await api.get('/reports/bookings')).data,
 
   getLogs: async () => {
     return logService.getLogs();
@@ -142,7 +141,6 @@ export const reportsService = {
       };
     } catch (error) {
       console.error('Failed to fetch summary stats:', error);
-      // Fallback to mock data if API fails
       return {
         bookings: '0',
         fillRate: 0,
@@ -192,7 +190,6 @@ export const reportsService = {
   getConversionFunnel: async () => {
     try {
       const funnel = await analyticsService.getConversionFunnel();
-      // Map to chart-friendly format and correct labels per requirement
       return {
         labels: ['Signed Up', 'Approved', 'Booked First Class', 'Attended First Class'],
         datasets: [
@@ -215,7 +212,6 @@ export const reportsService = {
       };
     } catch (error) {
       console.error('Failed to map conversion funnel:', error);
-      // Fallback to empty chart
       return {
         labels: ['Signed Up', 'Approved', 'Booked First Class', 'Attended First Class'],
         datasets: [
@@ -248,7 +244,6 @@ export const reportsService = {
     }
   },
 
-  // Finance
   getFinancialAnalytics: async (): Promise<{
     monthlyRecurringRevenue: { current: number; previous: number; growth: number };
     averageRevenuePerUser: { current: number; previous: number; growth: number };
@@ -259,7 +254,6 @@ export const reportsService = {
     const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/payments/analytics`, {
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
-    console.log('Financial analytics response:', response.data);
     return response.data;
   },
 };

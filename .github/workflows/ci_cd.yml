@@ -103,24 +103,25 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: services/api/package-lock.json
 
-      - name: Install deps
+      - name: Install API deps
         run: npm ci
+        working-directory: ./services/api
 
-      # No build script? Compile TS directly to dist/
+      # Compile TS using the real compiler (no build script required)
       - name: Compile TypeScript
-        run: npx tsc -p tsconfig.json
+        working-directory: ./services/api
+        run: npx --yes typescript@5.6.3 tsc -p tsconfig.json
 
-      - name: Start API and wait for /healthz
+      - name: Start API (background) and wait for /healthz
+        working-directory: ./services/api
         env:
           PORT: 3000
           NODE_ENV: test
           JWT_SECRET: ci-integration-secret
         run: |
-          # Start exported Express app from dist/index.js
           node -e "(async()=>{let mod;try{mod=require('./dist/index.js')}catch(e){mod=await import('./dist/index.js')}const app=mod.app||mod.default;if(!app?.listen){console.error('Cannot find exported app');process.exit(1)}const port=process.env.PORT||3000;app.listen(port,()=>console.log('API up on '+port))})()" &
-          # Wait until /healthz responds
           for i in {1..40}; do
             curl -fsS "http://localhost:3000/healthz" >/dev/null && break
             sleep 1
@@ -135,9 +136,10 @@ jobs:
           unzip -q apache-jmeter-$JM_VERSION.zip
           echo "$GITHUB_WORKSPACE/apache-jmeter-$JM_VERSION/bin" >> $GITHUB_PATH
 
-      # IMPORTANT: use a local PLAN var, then export outputs for the next step
+      # Resolve plan path INSIDE services/api; fix typo locally; export for next step
       - name: Locate JMeter plan
         id: jmx
+        working-directory: ./services/api
         run: |
           set -e
           PLAN=""
@@ -147,20 +149,20 @@ jobs:
           elif [ -f src/tests/perf/healthz.jmx ]; then
             PLAN="src/tests/perf/healthz.jmx"; OUT="src/tests/perf/results.jtl"
           else
-            echo "Could not find healthz.jmx"
-            echo "Tree:"; ls -la
+            echo "Could not find healthz.jmx in tests/perf or src/tests/perf"
+            echo "Tree (services/api):"; ls -la
             echo "tests/perf:"; ls -la tests/perf 2>/dev/null || true
             echo "src/tests/perf:"; ls -la src/tests/perf 2>/dev/null || true
             exit 1
           fi
           echo "Using JMX: $PLAN"
-          # Optional typo fix if present in your plan
+          # Fix known typo if present
           sed -i 's/Asserion\.test_strings/Assertion.test_strings/g' "$PLAN" || true
-          # Export for later steps
           echo "plan=$PLAN" >> "$GITHUB_OUTPUT"
           echo "out=$OUT"   >> "$GITHUB_OUTPUT"
 
       - name: Run JMeter plan against local API
+        working-directory: ./services/api
         env:
           JM_PLAN: ${{ steps.jmx.outputs.plan }}
           JM_OUT:  ${{ steps.jmx.outputs.out }}
@@ -183,6 +185,7 @@ jobs:
         with:
           name: jmeter-results
           path: ${{ steps.jmx.outputs.out }}
+
 
   deploy:
     name: Deploy to Production

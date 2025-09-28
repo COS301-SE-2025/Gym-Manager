@@ -15,7 +15,7 @@ export class HealthController {
   healthCheck = async (_req: Request, res: Response) => {
     try {
       const result = await this.healthService.checkHealth();
-      
+
       if (result.ok) {
         return res.json(result);
       } else {
@@ -27,7 +27,7 @@ export class HealthController {
         ok: false,
         uptime: 0,
         db: 'DOWN',
-        error: 'Health check failed'
+        error: 'Health check failed',
       });
     }
   };

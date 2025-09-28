@@ -8,7 +8,7 @@ import {
   rounds,
   subrounds,
   subroundExercises,
-  users
+  users,
 } from '../../db/schema';
 import { eq, and, gt, gte, or, sql, inArray, asc } from 'drizzle-orm';
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
@@ -60,7 +60,10 @@ export class ClassRepository implements IClassRepository {
     return rows.map((row: any) => this.mapToClass(row));
   }
 
-  async findAssignedClassesWithWorkoutsByCoach(coachId: number, tx?: Executor): Promise<ClassWithWorkout[]> {
+  async findAssignedClassesWithWorkoutsByCoach(
+    coachId: number,
+    tx?: Executor,
+  ): Promise<ClassWithWorkout[]> {
     // Subquery: count bookings per class
     const bookingsCount = this.exec(tx)
       .select({
@@ -120,17 +123,14 @@ export class ClassRepository implements IClassRepository {
   }
 
   async updateWorkoutForClass(classId: number, workoutId: number, tx?: Executor): Promise<void> {
-    await this.exec(tx)
-      .update(classes)
-      .set({ workoutId })
-      .where(eq(classes.classId, classId));
+    await this.exec(tx).update(classes).set({ workoutId }).where(eq(classes.classId, classId));
   }
 
   // Workouts
   async createWorkout(
     workoutData: Omit<WorkoutRow, 'workoutId'>,
     roundsInput: Array<any>,
-    tx?: Executor
+    tx?: Executor,
   ): Promise<number> {
     return (await this.exec(tx).transaction(async (tx: any) => {
       // 1) Insert workout
@@ -210,7 +210,9 @@ export class ClassRepository implements IClassRepository {
           for (const ex of sr.exercises) {
             const exId = ex.exerciseId != null ? ex.exerciseId : nameToId.get(ex.exerciseName);
             if (!exId) {
-              throw new Error(`Unable to resolve exercise id for ${ex.exerciseName ?? ex.exerciseId}`);
+              throw new Error(
+                `Unable to resolve exercise id for ${ex.exerciseName ?? ex.exerciseId}`,
+              );
             }
             await tx.insert(subroundExercises).values({
               subroundId,
@@ -232,20 +234,15 @@ export class ClassRepository implements IClassRepository {
     workoutId: number,
     workoutData: Omit<WorkoutRow, 'workoutId'>,
     roundsInput: Array<any>,
-    tx?: Executor
+    tx?: Executor,
   ): Promise<number> {
     return (await this.exec(tx).transaction(async (tx: any) => {
       // 1) Update workout
-      await tx
-        .update(workouts)
-        .set(workoutData)
-        .where(eq(workouts.workoutId, workoutId));
+      await tx.update(workouts).set(workoutData).where(eq(workouts.workoutId, workoutId));
 
       // 2) Delete existing rounds, subrounds, and subround exercises
       // This will cascade delete due to foreign key constraints
-      await tx
-        .delete(rounds)
-        .where(eq(rounds.workoutId, workoutId));
+      await tx.delete(rounds).where(eq(rounds.workoutId, workoutId));
 
       // 3) Gather all requested IDs & names
       const wantedIds = new Set<number>();
@@ -316,7 +313,9 @@ export class ClassRepository implements IClassRepository {
           for (const ex of sr.exercises) {
             const exId = ex.exerciseId != null ? ex.exerciseId : nameToId.get(ex.exerciseName);
             if (!exId) {
-              throw new Error(`Unable to resolve exercise id for ${ex.exerciseName ?? ex.exerciseId}`);
+              throw new Error(
+                `Unable to resolve exercise id for ${ex.exerciseName ?? ex.exerciseId}`,
+              );
             }
             await tx.insert(subroundExercises).values({
               subroundId,
@@ -382,7 +381,7 @@ export class ClassRepository implements IClassRepository {
       .where(
         or(
           gt(classes.scheduledDate, today),
-          and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time))
+          and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time)),
         ),
       );
 
@@ -434,8 +433,8 @@ export class ClassRepository implements IClassRepository {
           eq(classbookings.memberId, memberId),
           or(
             gt(classes.scheduledDate, today),
-            and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time))
-          )
+            and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time)),
+          ),
         ),
       );
 
@@ -495,11 +494,11 @@ export class ClassRepository implements IClassRepository {
           // upcoming window
           or(
             gt(classes.scheduledDate, today),
-            and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time))
+            and(eq(classes.scheduledDate, today), gte(classes.scheduledTime, time)),
           ),
           // keep only where there is no matching booking row for this member
-          sql`"memberBookings"."class_id" IS NULL`
-        )
+          sql`"memberBookings"."class_id" IS NULL`,
+        ),
       )
       .orderBy(asc(classes.scheduledDate), asc(classes.scheduledTime));
 
@@ -559,7 +558,11 @@ export class ClassRepository implements IClassRepository {
     return Number(row?.count ?? 0) > 0;
   }
 
-  async insertAttendance(classId: number, memberId: number, tx?: Executor): Promise<ClassAttendance | null> {
+  async insertAttendance(
+    classId: number,
+    memberId: number,
+    tx?: Executor,
+  ): Promise<ClassAttendance | null> {
     const executor = this.exec(tx);
     const [attendance] = await executor
       .insert(classattendance)
@@ -602,7 +605,6 @@ export class ClassRepository implements IClassRepository {
       bookingsCount: row.bookingsCount ?? 0,
     };
   }
-
 
   private mapToClassAttendance(row: AttendanceRow): ClassAttendance {
     return {

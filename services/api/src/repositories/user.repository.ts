@@ -1,14 +1,7 @@
 // src/repositories/user.repository.ts
 import { db as globalDb } from '../db/client';
-import {
-  users,
-  userroles,
-  members,
-  coaches,
-  admins,
-  managers,
-} from '../db/schema';
-import { eq, and, inArray, sql, asc} from 'drizzle-orm';
+import { users, userroles, members, coaches, admins, managers } from '../db/schema';
+import { eq, and, inArray, sql, asc } from 'drizzle-orm';
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 
 /**
@@ -21,7 +14,6 @@ export type MemberRow = InferSelectModel<typeof members>;
 export type CoachRow = InferSelectModel<typeof coaches>;
 export type AdminRow = InferSelectModel<typeof admins>;
 export type ManagerRow = InferSelectModel<typeof managers>;
-
 
 /**
  * Executor type: either the global db or a transaction object returned by db.transaction()
@@ -60,7 +52,11 @@ export class UserRepository {
     return created;
   }
 
-  async updateUser(userId: number, updates: Partial<UserInsert>, tx?: Executor): Promise<UserRow | null> {
+  async updateUser(
+    userId: number,
+    updates: Partial<UserInsert>,
+    tx?: Executor,
+  ): Promise<UserRow | null> {
     const [updated] = await this.exec(tx)
       .update(users)
       .set(updates)
@@ -81,7 +77,10 @@ export class UserRepository {
    * Get role strings for a user
    */
   async getRolesByUserId(userId: number, tx?: Executor): Promise<string[]> {
-    const rows = await this.exec(tx).select({ role: userroles.userRole }).from(userroles).where(eq(userroles.userId, userId));
+    const rows = await this.exec(tx)
+      .select({ role: userroles.userRole })
+      .from(userroles)
+      .where(eq(userroles.userId, userId));
     return rows.map((r: any) => r.role);
   }
 
@@ -90,14 +89,18 @@ export class UserRepository {
    * Also inserts into specialized tables (members/coaches/admins/managers) if role not already present.
    * This method is idempotent.
    */
-  async assignRoles(userId: number, roles: Array<'member' | 'coach' | 'admin' | 'manager'>, tx?: Executor): Promise<void> {
+  async assignRoles(
+    userId: number,
+    roles: Array<'member' | 'coach' | 'admin' | 'manager'>,
+    tx?: Executor,
+  ): Promise<void> {
     const executor = this.exec(tx);
 
     // check existing roles quickly
     const existing = await executor.select().from(userroles).where(eq(userroles.userId, userId));
     const existingSet = new Set(existing.map((r: any) => r.userRole));
 
-    const toInsert = roles.filter(r => !existingSet.has(r)).map((r) => ({ userId, userRole: r }));
+    const toInsert = roles.filter((r) => !existingSet.has(r)).map((r) => ({ userId, userRole: r }));
     if (toInsert.length > 0) {
       await executor.insert(userroles).values(toInsert);
     }
@@ -105,12 +108,20 @@ export class UserRepository {
     // Ensure specialized rows exist for each role
     for (const role of roles) {
       if (role === 'member') {
-        const [m] = await executor.select().from(members).where(eq(members.userId, userId)).limit(1);
+        const [m] = await executor
+          .select()
+          .from(members)
+          .where(eq(members.userId, userId))
+          .limit(1);
         if (!m) {
           await executor.insert(members).values({ userId, status: 'pending', creditsBalance: 0 });
         }
       } else if (role === 'coach') {
-        const [c] = await executor.select().from(coaches).where(eq(coaches.userId, userId)).limit(1);
+        const [c] = await executor
+          .select()
+          .from(coaches)
+          .where(eq(coaches.userId, userId))
+          .limit(1);
         if (!c) {
           await executor.insert(coaches).values({ userId, bio: '' });
         }
@@ -120,7 +131,11 @@ export class UserRepository {
           await executor.insert(admins).values({ userId, authorisation: null });
         }
       } else if (role === 'manager') {
-        const [m] = await executor.select().from(managers).where(eq(managers.userId, userId)).limit(1);
+        const [m] = await executor
+          .select()
+          .from(managers)
+          .where(eq(managers.userId, userId))
+          .limit(1);
         if (!m) {
           await executor.insert(managers).values({ userId, permissions: null });
         }
@@ -131,7 +146,11 @@ export class UserRepository {
   /**
    * Remove a role for a user. Also deletes from specialized table.
    */
-  async removeRole(userId: number, role: 'member' | 'coach' | 'admin' | 'manager', tx?: Executor): Promise<void> {
+  async removeRole(
+    userId: number,
+    role: 'member' | 'coach' | 'admin' | 'manager',
+    tx?: Executor,
+  ): Promise<void> {
     const executor = this.exec(tx);
     // delete specialized row first (to preserve DB integrity if constraints exist)
     switch (role) {
@@ -149,7 +168,9 @@ export class UserRepository {
         break;
     }
     // delete role mapping
-    await executor.delete(userroles).where(and(eq(userroles.userId, userId), eq(userroles.userRole, role)));
+    await executor
+      .delete(userroles)
+      .where(and(eq(userroles.userId, userId), eq(userroles.userRole, role)));
   }
 
   // -------------------------
@@ -235,7 +256,10 @@ export class UserRepository {
    * Create a user and associated role rows in one call (transactional).
    * Returns the created user.
    */
-  async createUserWithRoles(payload: UserInsert, rolesToAssign: Array<'member' | 'coach' | 'admin' | 'manager'> = []) {
+  async createUserWithRoles(
+    payload: UserInsert,
+    rolesToAssign: Array<'member' | 'coach' | 'admin' | 'manager'> = [],
+  ) {
     return globalDb.transaction(async (tx: Executor) => {
       const created = await this.createUser(payload, tx);
       if (rolesToAssign.length > 0) {
@@ -249,7 +273,11 @@ export class UserRepository {
    * Replace roles for a user (remove all existing roles and set new ones).
    * This is destructive – run in a transaction at service level if you need safety.
    */
-  async replaceRoles(userId: number, newRoles: Array<'member' | 'coach' | 'admin' | 'manager'>, tx?: Executor): Promise<void> {
+  async replaceRoles(
+    userId: number,
+    newRoles: Array<'member' | 'coach' | 'admin' | 'manager'>,
+    tx?: Executor,
+  ): Promise<void> {
     const executor = this.exec(tx);
 
     // delete all specialized rows first
@@ -276,8 +304,16 @@ export class UserRepository {
   /**
    * Utility: check if a user has a role
    */
-  async userHasRole(userId: number, role: 'member' | 'coach' | 'admin' | 'manager', tx?: Executor): Promise<boolean> {
-    const rows = await this.exec(tx).select().from(userroles).where(and(eq(userroles.userId, userId), eq(userroles.userRole, role))).limit(1);
+  async userHasRole(
+    userId: number,
+    role: 'member' | 'coach' | 'admin' | 'manager',
+    tx?: Executor,
+  ): Promise<boolean> {
+    const rows = await this.exec(tx)
+      .select()
+      .from(userroles)
+      .where(and(eq(userroles.userId, userId), eq(userroles.userRole, role)))
+      .limit(1);
     return rows.length > 0;
   }
 
@@ -296,7 +332,10 @@ export class UserRepository {
   }
 
   // Returns { publicVisibility: boolean } or null if not found
-  async getMemberSettings(userId: number, tx?: Executor): Promise<{ publicVisibility: boolean } | null> {
+  async getMemberSettings(
+    userId: number,
+    tx?: Executor,
+  ): Promise<{ publicVisibility: boolean } | null> {
     const [row] = await this.exec(tx)
       .select({ publicVisibility: members.publicVisibility })
       .from(members)
@@ -306,7 +345,11 @@ export class UserRepository {
     return row ?? null;
   }
 
-  async updateMemberVisibility(userId: number, publicVisibility: boolean, tx?: Executor): Promise<{ userId: number } | null> {
+  async updateMemberVisibility(
+    userId: number,
+    publicVisibility: boolean,
+    tx?: Executor,
+  ): Promise<{ userId: number } | null> {
     const [updated] = await this.exec(tx)
       .update(members)
       .set({ publicVisibility })
@@ -315,7 +358,6 @@ export class UserRepository {
 
     return updated ?? null;
   }
-
 }
 
 export default UserRepository;

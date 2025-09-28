@@ -1,12 +1,26 @@
 import { db as globalDb } from '../../db/client';
-import { classes, workouts, classbookings, classattendance, members, userroles, users } from '../../db/schema';
+import {
+  classes,
+  workouts,
+  classbookings,
+  classattendance,
+  members,
+  userroles,
+  users,
+} from '../../db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
-import { ILiveClassRepository, LiveSession, Step } from '../../domain/interfaces/liveClass.interface';
+import {
+  ILiveClassRepository,
+  LiveSession,
+  Step,
+} from '../../domain/interfaces/liveClass.interface';
 
 type Executor = typeof globalDb | any;
 
 export class LiveClassRepository implements ILiveClassRepository {
-  private exec(tx?: Executor) { return tx ?? globalDb; }
+  private exec(tx?: Executor) {
+    return tx ?? globalDb;
+  }
 
   // --- Session helpers ---
   async autoEndIfCapReached(classId: number): Promise<void> {
@@ -45,17 +59,17 @@ export class LiveClassRepository implements ILiveClassRepository {
   }
 
   // --- Final leaderboard ---
-// repositories/liveClass/liveClassRepository.ts
+  // repositories/liveClass/liveClassRepository.ts
   async getFinalLeaderboard(classId: number) {
     const leaderboard = await globalDb
       .select({
         classId: classattendance.classId,
         memberId: classattendance.memberId,
-        score: classattendance.score,                 // legacy/compat
-        scoreSeconds: classattendance.scoreSeconds,   // time for FT/EMOM
-        scoreReps: classattendance.scoreReps,         // reps for DNFs / AMRAP / INTERVAL / TABATA
-        finished: classattendance.finished,           // true when time-based finish
-        scaling: classattendance.scaling,             // RX/SC
+        score: classattendance.score, // legacy/compat
+        scoreSeconds: classattendance.scoreSeconds, // time for FT/EMOM
+        scoreReps: classattendance.scoreReps, // reps for DNFs / AMRAP / INTERVAL / TABATA
+        finished: classattendance.finished, // true when time-based finish
+        scaling: classattendance.scaling, // RX/SC
         markedAt: classattendance.markedAt,
         firstName: users.firstName,
         lastName: users.lastName,
@@ -68,14 +82,13 @@ export class LiveClassRepository implements ILiveClassRepository {
     return leaderboard;
   }
 
-
   // --- Discovery for coach ---
   async getLiveClassForCoach(userId: number) {
     const nowLocal = sql`(now() at time zone 'Africa/Johannesburg')`;
     const coachWindow = and(
       eq(classes.coachId, userId),
       sql`${classes.scheduledDate} + ${classes.scheduledTime} <= ${nowLocal}`,
-      sql`${classes.scheduledDate} + ${classes.scheduledTime} + (${classes.durationMinutes || '0'}::int || ' minutes')::interval >= ${nowLocal}`
+      sql`${classes.scheduledDate} + ${classes.scheduledTime} + (${classes.durationMinutes || '0'}::int || ' minutes')::interval >= ${nowLocal}`,
     );
 
     const currentCoach = await globalDb
@@ -115,7 +128,7 @@ export class LiveClassRepository implements ILiveClassRepository {
     const memberWindow = and(
       eq(classbookings.memberId, userId),
       sql`${classes.scheduledDate} + ${classes.scheduledTime} <= ${nowLocal}`,
-      sql`${classes.scheduledDate} + ${classes.scheduledTime} + (${classes.durationMinutes || '0'}::int || ' minutes')::interval >= ${nowLocal}`
+      sql`${classes.scheduledDate} + ${classes.scheduledTime} + (${classes.durationMinutes || '0'}::int || ' minutes')::interval >= ${nowLocal}`,
     );
 
     const currentMember = await globalDb
@@ -164,16 +177,22 @@ export class LiveClassRepository implements ILiveClassRepository {
   }
 
   async getWorkoutType(workoutId: number): Promise<string | null> {
-    const { rows } = await globalDb.execute(sql`select type from public.workouts where workout_id=${workoutId} limit 1`);
+    const { rows } = await globalDb.execute(
+      sql`select type from public.workouts where workout_id=${workoutId} limit 1`,
+    );
     return (rows[0] as { type: string })?.type ?? null;
   }
 
-  async getWorkoutTypeAndMetadata(workoutId: number): Promise<{ type: string | null; metadata: any }> {
-    const { rows } = await globalDb.execute(sql`select type, metadata from public.workouts where workout_id=${workoutId} limit 1`);
+  async getWorkoutTypeAndMetadata(
+    workoutId: number,
+  ): Promise<{ type: string | null; metadata: any }> {
+    const { rows } = await globalDb.execute(
+      sql`select type, metadata from public.workouts where workout_id=${workoutId} limit 1`,
+    );
     const row = rows[0] as { type: string; metadata: any };
     return {
       type: row?.type ?? null,
-      metadata: row?.metadata ?? {}
+      metadata: row?.metadata ?? {},
     };
   }
 
@@ -205,7 +224,7 @@ export class LiveClassRepository implements ILiveClassRepository {
     steps: Step[],
     stepsCumReps: number[],
     workoutType: string,
-    workoutMetadata: any
+    workoutMetadata: any,
   ) {
     await globalDb.execute(sql`
       insert into public.class_sessions
@@ -228,14 +247,14 @@ export class LiveClassRepository implements ILiveClassRepository {
     `);
   }
 
-    async upsertFinal(
+  async upsertFinal(
     classId: number,
     userId: number,
-    opts: { seconds?: number | null; reps?: number | null; finished?: boolean | null }
-    ) {
+    opts: { seconds?: number | null; reps?: number | null; finished?: boolean | null },
+  ) {
     const seconds = opts.seconds == null ? null : Math.max(0, Number(opts.seconds));
-    const reps    = opts.reps    == null ? null : Math.max(0, Number(opts.reps));
-    const fin     = opts.finished ?? null;
+    const reps = opts.reps == null ? null : Math.max(0, Number(opts.reps));
+    const fin = opts.finished ?? null;
 
     await globalDb.execute(sql`
         insert into public.classattendance (class_id, member_id, score, score_seconds, score_reps, finished)
@@ -253,8 +272,7 @@ export class LiveClassRepository implements ILiveClassRepository {
             finished      = excluded.finished,
             marked_at     = now()
     `);
-    }
-
+  }
 
   async seedLiveProgressForClass(classId: number) {
     await globalDb.execute(sql`
@@ -332,7 +350,11 @@ export class LiveClassRepository implements ILiveClassRepository {
     return rows[0] as any;
   }
 
-  async getElapsedSeconds(startedAt: any, pausedAt: any, pauseAccumSeconds: number): Promise<number> {
+  async getElapsedSeconds(
+    startedAt: any,
+    pausedAt: any,
+    pauseAccumSeconds: number,
+  ): Promise<number> {
     const q = await globalDb.execute(sql`
       select (
         extract(epoch from (now() - ${startedAt}))::bigint
@@ -341,7 +363,7 @@ export class LiveClassRepository implements ILiveClassRepository {
       )::bigint as e
     `);
     return Number((q.rows[0] as any)?.e ?? 0);
-    }
+  }
 
   async advanceAmrap(classId: number, userId: number, stepCount: number, dir: number) {
     const { rows } = await globalDb.execute(sql`
@@ -486,7 +508,6 @@ export class LiveClassRepository implements ILiveClassRepository {
     return rows;
   }
 
-
   async realtimeAmrapLeaderboard(classId: number) {
     const { rows } = await globalDb.execute(sql`
       with base as (
@@ -532,7 +553,6 @@ export class LiveClassRepository implements ILiveClassRepository {
     return rows;
   }
 
-
   async realtimeForTimeLeaderboard(classId: number) {
     const { rows } = await globalDb.execute(sql`
       with base as (
@@ -577,7 +597,6 @@ export class LiveClassRepository implements ILiveClassRepository {
     `);
     return rows;
   }
-
 
   async realtimeEmomLeaderboard(classId: number) {
     // Cumulative time rules:
@@ -726,8 +745,6 @@ export class LiveClassRepository implements ILiveClassRepository {
     return rows;
   }
 
-
-
   // --- My progress ---
   // repositories/liveClass/liveClassRepository.ts
   async getMyProgress(classId: number, userId: number) {
@@ -765,17 +782,18 @@ export class LiveClassRepository implements ILiveClassRepository {
       where lp.class_id = ${classId} and lp.user_id = ${userId}
     `);
 
-    return rows[0] ?? {
-      current_step: 0,
-      finished_at: null,
-      finished_at_s: null,
-      dnf_partial_reps: 0,
-      rounds_completed: 0,
-      elapsed_seconds: null,
-      total_reps: 0,
-    };
+    return (
+      rows[0] ?? {
+        current_step: 0,
+        finished_at: null,
+        finished_at_s: null,
+        dnf_partial_reps: 0,
+        rounds_completed: 0,
+        elapsed_seconds: null,
+        total_reps: 0,
+      }
+    );
   }
-
 
   // --- Interval scores ---
   async getSessionTypeAndSteps(classId: number) {
@@ -790,8 +808,11 @@ export class LiveClassRepository implements ILiveClassRepository {
   }
 
   async assertMemberBooked(classId: number, userId: number) {
-    const booked = await globalDb.select().from(classbookings)
-      .where(and(eq(classbookings.classId, classId), eq(classbookings.memberId, userId))).limit(1);
+    const booked = await globalDb
+      .select()
+      .from(classbookings)
+      .where(and(eq(classbookings.classId, classId), eq(classbookings.memberId, userId)))
+      .limit(1);
     if (booked.length === 0) throw new Error('NOT_BOOKED');
   }
 
@@ -828,11 +849,13 @@ export class LiveClassRepository implements ILiveClassRepository {
     }));
   }
 
-
   // --- Scores ---
   async assertCoachOwnsClass(classId: number, coachId: number) {
-    const rows = await globalDb.select({ coachId: classes.coachId })
-      .from(classes).where(eq(classes.classId, classId)).limit(1);
+    const rows = await globalDb
+      .select({ coachId: classes.coachId })
+      .from(classes)
+      .where(eq(classes.classId, classId))
+      .limit(1);
     const cls = rows[0];
     if (!cls || Number(cls.coachId) !== Number(coachId)) throw new Error('NOT_CLASS_COACH');
   }
@@ -880,7 +903,12 @@ export class LiveClassRepository implements ILiveClassRepository {
   }
 
   // --- Coach edit: FOR_TIME finish ---
-  async setForTimeFinish(classId: number, userId: number, finishSeconds: number | null, startedAt: any) {
+  async setForTimeFinish(
+    classId: number,
+    userId: number,
+    finishSeconds: number | null,
+    startedAt: any,
+  ) {
     if (finishSeconds == null) {
       await globalDb.execute(sql`
         update public.live_progress
@@ -897,7 +925,13 @@ export class LiveClassRepository implements ILiveClassRepository {
   }
 
   // --- Coach edit: AMRAP map from total reps ---
-  async setAmrapProgress(classId: number, userId: number, rounds: number, currentStep: number, partial: number) {
+  async setAmrapProgress(
+    classId: number,
+    userId: number,
+    rounds: number,
+    currentStep: number,
+    partial: number,
+  ) {
     await globalDb.execute(sql`
       update public.live_progress
       set rounds_completed = ${Math.max(0, rounds)},
@@ -909,7 +943,13 @@ export class LiveClassRepository implements ILiveClassRepository {
   }
 
   // --- Coach edit: EMOM mark ---
-  async upsertEmomMark(classId: number, userId: number, minuteIndex: number, finished: boolean, finishSeconds: number) {
+  async upsertEmomMark(
+    classId: number,
+    userId: number,
+    minuteIndex: number,
+    finished: boolean,
+    finishSeconds: number,
+  ) {
     await globalDb.execute(sql`
       insert into public.live_emom_scores (class_id, user_id, minute_index, finished, finish_seconds)
       values (${classId}, ${userId}, ${minuteIndex}, ${finished}, ${finishSeconds})
@@ -919,10 +959,12 @@ export class LiveClassRepository implements ILiveClassRepository {
             updated_at = now()
     `);
 
-    const { rows: st } = await globalDb.execute(sql`select status from public.class_sessions where class_id=${classId} limit 1`);
+    const { rows: st } = await globalDb.execute(
+      sql`select status from public.class_sessions where class_id=${classId} limit 1`,
+    );
     const ended = (st[0]?.status || '').toString() === 'ended';
     if (ended) {
-        const { rows } = await globalDb.execute(sql`
+      const { rows } = await globalDb.execute(sql`
         with planned as (
             select coalesce((
             select sum((x)::int)
@@ -943,11 +985,10 @@ export class LiveClassRepository implements ILiveClassRepository {
         select coalesce(sum(part),0)::int as total
         from per
         `);
-        const total = Number(rows[0]?.total ?? 0);
-        await this.upsertFinal(classId, userId, { seconds: total, finished: true });
+      const total = Number(rows[0]?.total ?? 0);
+      await this.upsertFinal(classId, userId, { seconds: total, finished: true });
     }
   }
-
 
   async setForTimeFinishSeconds(classId: number, userId: number, seconds: number) {
     // finished_at = started_at + seconds
@@ -973,7 +1014,12 @@ export class LiveClassRepository implements ILiveClassRepository {
     `);
   }
 
-  async setForTimePosition(classId: number, userId: number, currentStep: number, partialReps: number) {
+  async setForTimePosition(
+    classId: number,
+    userId: number,
+    currentStep: number,
+    partialReps: number,
+  ) {
     await globalDb.execute(sql`
       with sc as (
         select coalesce(jsonb_array_length(steps), 0) as step_count
@@ -990,8 +1036,7 @@ export class LiveClassRepository implements ILiveClassRepository {
     `);
   }
 
-
-    // FOR TIME: set finished time (seconds from start)
+  // FOR TIME: set finished time (seconds from start)
   async setForTimeFinishBySeconds(classId: number, userId: number, seconds: number) {
     await globalDb.execute(sql`
         with base as (select started_at from public.class_sessions where class_id=${classId} limit 1)
@@ -1002,9 +1047,11 @@ export class LiveClassRepository implements ILiveClassRepository {
             updated_at = now()
         where class_id=${classId} and user_id=${userId}
     `);
-    await this.upsertFinal(classId, userId, { seconds: Math.max(0, Number(seconds)), finished: true });
-    }
-
+    await this.upsertFinal(classId, userId, {
+      seconds: Math.max(0, Number(seconds)),
+      finished: true,
+    });
+  }
 
   // FOR TIME: set a final *total reps* (DNF). We map it to current_step + dnf.
   async setForTimeTotalReps(classId: number, userId: number, totalReps: number) {
@@ -1041,9 +1088,11 @@ export class LiveClassRepository implements ILiveClassRepository {
       where lp.class_id = ${classId} and lp.user_id = ${userId}
     `);
 
-    await this.upsertFinal(classId, userId, { reps: Math.max(0, Number(totalReps)), finished: false });
+    await this.upsertFinal(classId, userId, {
+      reps: Math.max(0, Number(totalReps)),
+      finished: false,
+    });
   }
-
 
   // AMRAP: set final total reps by splitting into rounds/current_step/dnf
   async setAmrapTotalReps(classId: number, userId: number, totalReps: number) {
@@ -1092,7 +1141,6 @@ export class LiveClassRepository implements ILiveClassRepository {
     await this.upsertFinal(classId, userId, { reps: Math.max(0, Number(totalReps)) });
   }
 
-
   // INTERVAL/TABATA: override final total reps (used only after ended)
   async upsertIntervalOverride(classId: number, userId: number, totalReps: number) {
     await globalDb.execute(sql`
@@ -1103,12 +1151,10 @@ export class LiveClassRepository implements ILiveClassRepository {
             updated_at = now()
     `);
     await this.upsertFinal(classId, userId, { reps: Math.max(0, Number(totalReps)) });
-    }
-
-
+  }
 
   // Save or change member's scaling for this class
-  async upsertScaling(classId: number, userId: number, scaling: 'RX'|'SC') {
+  async upsertScaling(classId: number, userId: number, scaling: 'RX' | 'SC') {
     await globalDb.execute(sql`
       insert into public.classattendance (class_id, member_id, score, scaling)
       values (${classId}, ${userId}, 0, ${scaling})
@@ -1118,7 +1164,7 @@ export class LiveClassRepository implements ILiveClassRepository {
     `);
   }
 
-  async getScaling(classId: number, userId: number): Promise<'RX'|'SC'> {
+  async getScaling(classId: number, userId: number): Promise<'RX' | 'SC'> {
     const { rows } = await globalDb.execute(sql`
       select coalesce(scaling, 'RX') as scaling
       from public.classattendance
@@ -1129,20 +1175,20 @@ export class LiveClassRepository implements ILiveClassRepository {
     return s === 'SC' ? 'SC' : 'RX';
   }
 
-    // repositories/liveClass/liveClassRepository.ts
-    async persistScoresFromLive(classId: number) {
-        // find workout type (snapshot)
-        const { rows: typ } = await globalDb.execute(sql`
+  // repositories/liveClass/liveClassRepository.ts
+  async persistScoresFromLive(classId: number) {
+    // find workout type (snapshot)
+    const { rows: typ } = await globalDb.execute(sql`
             select w.type
             from public.class_sessions cs
             join public.workouts w on w.workout_id = cs.workout_id
             where cs.class_id = ${classId}
             limit 1
         `);
-        const type = (typ[0]?.type || '').toString().toUpperCase();
+    const type = (typ[0]?.type || '').toString().toUpperCase();
 
-        if (type === 'FOR_TIME') {
-            const { rows } = await globalDb.execute(sql`
+    if (type === 'FOR_TIME') {
+      const { rows } = await globalDb.execute(sql`
             with base as (
                 select
                 lp.user_id,
@@ -1170,21 +1216,21 @@ export class LiveClassRepository implements ILiveClassRepository {
             from plan p
             `);
 
-            for (const r of rows) {
-            const finished = !!r.finished;
-            const seconds  = finished ? Number(r.seconds ?? 0) : null;
-            const reps     = finished ? Number(r.reps_or_dnf ?? 0) : Number(r.reps_or_dnf ?? 0);
-            await this.upsertFinal(classId, Number(r.user_id), {
-                seconds,
-                reps: finished ? Number(reps) : Number(reps), // keep achieved reps for display/history
-                finished
-            });
-            }
-            return;
-        }
+      for (const r of rows) {
+        const finished = !!r.finished;
+        const seconds = finished ? Number(r.seconds ?? 0) : null;
+        const reps = finished ? Number(r.reps_or_dnf ?? 0) : Number(r.reps_or_dnf ?? 0);
+        await this.upsertFinal(classId, Number(r.user_id), {
+          seconds,
+          reps: finished ? Number(reps) : Number(reps), // keep achieved reps for display/history
+          finished,
+        });
+      }
+      return;
+    }
 
-        if (type === 'AMRAP') {
-            const { rows } = await globalDb.execute(sql`
+    if (type === 'AMRAP') {
+      const { rows } = await globalDb.execute(sql`
             with base as (
                 select
                 lp.user_id,
@@ -1212,28 +1258,28 @@ export class LiveClassRepository implements ILiveClassRepository {
             from calc c
             `);
 
-            for (const r of rows) {
-            await this.upsertFinal(classId, Number(r.user_id), { reps: Number(r.total_reps) });
-            }
-            return;
-        }
+      for (const r of rows) {
+        await this.upsertFinal(classId, Number(r.user_id), { reps: Number(r.total_reps) });
+      }
+      return;
+    }
 
-        if (type === 'TABATA' || type === 'INTERVAL') {
-            const { rows } = await globalDb.execute(sql`
+    if (type === 'TABATA' || type === 'INTERVAL') {
+      const { rows } = await globalDb.execute(sql`
             select s.user_id, coalesce(sum(s.reps),0)::int as total_reps
             from public.live_interval_scores s
             where s.class_id = ${classId}
             group by s.user_id
             `);
-            for (const r of rows) {
-            await this.upsertFinal(classId, Number(r.user_id), { reps: Number(r.total_reps) });
-            }
-            return;
-        }
+      for (const r of rows) {
+        await this.upsertFinal(classId, Number(r.user_id), { reps: Number(r.total_reps) });
+      }
+      return;
+    }
 
-        if (type === 'EMOM') {
-            // Planned minute count from metadata
-            const { rows: mins } = await globalDb.execute(sql`
+    if (type === 'EMOM') {
+      // Planned minute count from metadata
+      const { rows: mins } = await globalDb.execute(sql`
             with sess as (
                 select cs.workout_id
                 from public.class_sessions cs
@@ -1247,9 +1293,9 @@ export class LiveClassRepository implements ILiveClassRepository {
             from sess s
             join public.workouts w on w.workout_id = s.workout_id
             `);
-            const planned = Number(mins[0]?.planned_minutes ?? 0);
+      const planned = Number(mins[0]?.planned_minutes ?? 0);
 
-            const { rows } = await globalDb.execute(sql`
+      const { rows } = await globalDb.execute(sql`
             with members as (
                 select cb.member_id as user_id
                 from public.classbookings cb
@@ -1272,11 +1318,13 @@ export class LiveClassRepository implements ILiveClassRepository {
             group by user_id
             `);
 
-            for (const r of rows) {
-            await this.upsertFinal(classId, Number(r.user_id), { seconds: Number(r.total_seconds), finished: true });
-            }
-            return;
-        }
+      for (const r of rows) {
+        await this.upsertFinal(classId, Number(r.user_id), {
+          seconds: Number(r.total_seconds),
+          finished: true,
+        });
+      }
+      return;
     }
-
+  }
 }

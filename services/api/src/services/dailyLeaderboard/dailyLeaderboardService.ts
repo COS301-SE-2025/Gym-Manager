@@ -1,4 +1,7 @@
-import { IDailyLeaderboardRepository, DailyLeaderboardEntry } from '../../repositories/dailyLeaderboard/dailyLeaderboardRepository';
+import {
+  IDailyLeaderboardRepository,
+  DailyLeaderboardEntry,
+} from '../../repositories/dailyLeaderboard/dailyLeaderboardRepository';
 
 export interface IDailyLeaderboardService {
   getDailyLeaderboard(date?: string, scaling?: string): Promise<DailyLeaderboardEntry[]>;
@@ -10,7 +13,7 @@ export class DailyLeaderboardService implements IDailyLeaderboardService {
   async getDailyLeaderboard(date?: string, scaling?: string): Promise<DailyLeaderboardEntry[]> {
     // Default to today in UTC (you might want to adjust timezone)
     const targetDate = date || new Date().toISOString().slice(0, 10);
-    
+
     // Validate date format
     if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
       throw new Error('INVALID_DATE_FORMAT');

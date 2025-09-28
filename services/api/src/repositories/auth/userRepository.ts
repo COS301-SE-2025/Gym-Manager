@@ -1,13 +1,6 @@
 import { db as globalDb } from '../../db/client';
-import {
-  users,
-  userroles,
-  members,
-  coaches,
-  admins,
-  managers,
-} from '../../db/schema';
-import { eq, and, inArray, sql, asc} from 'drizzle-orm';
+import { users, userroles, members, coaches, admins, managers } from '../../db/schema';
+import { eq, and, inArray, sql, asc } from 'drizzle-orm';
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 import { IUserRepository } from '../../domain/interfaces/auth.interface';
 import { User } from '../../domain/entities/user.entity';
@@ -60,14 +53,21 @@ export class UserRepository implements IUserRepository {
     return globalDb.transaction(async (tx: Executor) => {
       const created = await this.createUser(userData, tx);
       if (roles.length > 0) {
-        await this.assignRoles(created.userId, roles as Array<'member' | 'coach' | 'admin' | 'manager'>, tx);
+        await this.assignRoles(
+          created.userId,
+          roles as Array<'member' | 'coach' | 'admin' | 'manager'>,
+          tx,
+        );
       }
       return created;
     });
   }
 
   async getRolesByUserId(userId: number, tx?: Executor): Promise<string[]> {
-    const rows = await this.exec(tx).select({ role: userroles.userRole }).from(userroles).where(eq(userroles.userId, userId));
+    const rows = await this.exec(tx)
+      .select({ role: userroles.userRole })
+      .from(userroles)
+      .where(eq(userroles.userId, userId));
     return rows.map((r: any) => r.role);
   }
 
@@ -82,7 +82,11 @@ export class UserRepository implements IUserRepository {
   }
 
   // Additional repository methods (not in interface but needed for business logic)
-  async updateUser(userId: number, updates: Partial<UserInsert>, tx?: Executor): Promise<User | null> {
+  async updateUser(
+    userId: number,
+    updates: Partial<UserInsert>,
+    tx?: Executor,
+  ): Promise<User | null> {
     const [updated] = await this.exec(tx)
       .update(users)
       .set(updates)
@@ -95,14 +99,18 @@ export class UserRepository implements IUserRepository {
     await this.exec(tx).delete(users).where(eq(users.userId, userId));
   }
 
-  async assignRoles(userId: number, roles: Array<'member' | 'coach' | 'admin' | 'manager'>, tx?: Executor): Promise<void> {
+  async assignRoles(
+    userId: number,
+    roles: Array<'member' | 'coach' | 'admin' | 'manager'>,
+    tx?: Executor,
+  ): Promise<void> {
     const executor = this.exec(tx);
 
     // Check existing roles
     const existing = await executor.select().from(userroles).where(eq(userroles.userId, userId));
     const existingSet = new Set(existing.map((r: any) => r.userRole));
 
-    const toInsert = roles.filter(r => !existingSet.has(r)).map((r) => ({ userId, userRole: r }));
+    const toInsert = roles.filter((r) => !existingSet.has(r)).map((r) => ({ userId, userRole: r }));
     if (toInsert.length > 0) {
       await executor.insert(userroles).values(toInsert);
     }
@@ -110,12 +118,20 @@ export class UserRepository implements IUserRepository {
     // Ensure specialized rows exist for each role
     for (const role of roles) {
       if (role === 'member') {
-        const [m] = await executor.select().from(members).where(eq(members.userId, userId)).limit(1);
+        const [m] = await executor
+          .select()
+          .from(members)
+          .where(eq(members.userId, userId))
+          .limit(1);
         if (!m) {
           await executor.insert(members).values({ userId, status: 'pending', creditsBalance: 0 });
         }
       } else if (role === 'coach') {
-        const [c] = await executor.select().from(coaches).where(eq(coaches.userId, userId)).limit(1);
+        const [c] = await executor
+          .select()
+          .from(coaches)
+          .where(eq(coaches.userId, userId))
+          .limit(1);
         if (!c) {
           await executor.insert(coaches).values({ userId, bio: '' });
         }
@@ -125,7 +141,11 @@ export class UserRepository implements IUserRepository {
           await executor.insert(admins).values({ userId, authorisation: null });
         }
       } else if (role === 'manager') {
-        const [m] = await executor.select().from(managers).where(eq(managers.userId, userId)).limit(1);
+        const [m] = await executor
+          .select()
+          .from(managers)
+          .where(eq(managers.userId, userId))
+          .limit(1);
         if (!m) {
           await executor.insert(managers).values({ userId, permissions: null });
         }
@@ -141,7 +161,7 @@ export class UserRepository implements IUserRepository {
       lastName: row.lastName,
       email: row.email,
       phone: row.phone || undefined,
-      passwordHash: row.passwordHash || undefined
+      passwordHash: row.passwordHash || undefined,
     };
   }
 }

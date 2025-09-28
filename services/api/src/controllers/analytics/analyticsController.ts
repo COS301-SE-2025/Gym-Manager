@@ -148,5 +148,4 @@ export class AnalyticsController {
       res.status(500).json({ error: 'Failed to fetch cohort retention data' });
     }
   };
-
 }

@@ -49,15 +49,15 @@ export class MemberController {
       }
 
       if (!credits || !amount || !paymentMethod || !transactionId) {
-        res.status(400).json({ 
-          error: 'Missing required fields: credits, amount, paymentMethod, transactionId' 
+        res.status(400).json({
+          error: 'Missing required fields: credits, amount, paymentMethod, transactionId',
         });
         return;
       }
 
       if (credits <= 0 || amount <= 0) {
-        res.status(400).json({ 
-          error: 'Credits and amount must be positive numbers' 
+        res.status(400).json({
+          error: 'Credits and amount must be positive numbers',
         });
         return;
       }
@@ -68,7 +68,7 @@ export class MemberController {
         credits,
         amount,
         paymentMethod,
-        transactionId
+        transactionId,
       );
 
       res.json({
@@ -76,7 +76,7 @@ export class MemberController {
         newBalance: result.newBalance,
         creditsAdded: result.creditsAdded,
         transactionId: result.transactionId,
-        message: `Successfully added ${credits} credits to your account`
+        message: `Successfully added ${credits} credits to your account`,
       });
     } catch (error) {
       console.error('Error purchasing credits:', error);
@@ -128,14 +128,14 @@ export class MemberController {
         userIdNum,
         packageId,
         paymentMethod,
-        externalTransactionId
+        externalTransactionId,
       );
 
       res.json({
         success: true,
         newBalance: result.newBalance,
         creditsAdded: result.creditsAdded,
-        transactionId: result.transactionId
+        transactionId: result.transactionId,
       });
     } catch (error: any) {
       console.error('Error purchasing credits with package:', error);

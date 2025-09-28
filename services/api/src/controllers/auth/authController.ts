@@ -31,11 +31,11 @@ export class AuthController {
       return res.status(201).json(result);
     } catch (error: any) {
       console.error('Register error:', error);
-      
+
       if (error.message === 'Missing required fields') {
         return res.status(400).json({ error: 'Missing required fields' });
       }
-      
+
       if (error.message === 'Email already registered') {
         return res.status(400).json({ error: 'Email already registered' });
       }
@@ -57,11 +57,11 @@ export class AuthController {
       return res.json(result);
     } catch (error: any) {
       console.error('Login error:', error);
-      
+
       if (error.message === 'Missing credentials') {
         return res.status(400).json({ error: 'Missing credentials' });
       }
-      
+
       if (error.message === 'Invalid credentials') {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
@@ -96,7 +96,7 @@ export class AuthController {
 
       const userId = req.user.userId as number;
       const result = await this.authService.getUserStatus(userId);
-      
+
       return res.json(result);
     } catch (error: any) {
       console.error('Status fetch error:', error);
@@ -104,18 +104,17 @@ export class AuthController {
     }
   };
 
-
   getMe = async (req: AuthenticatedRequest, res: Response) => {
-       try {
-         if (!req.user) {
-           return res.status(401).json({ error: 'Unauthorized' });
-         }
-       const userId = req.user.userId as number;
-         const me = await this.authService.getMe(userId);
-         return res.json(me);
-       } catch (error: any) {
-         console.error('Get me error:', error);
-         return res.status(500).json({ error: 'Failed to fetch user' });
-       }
-    };
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      const userId = req.user.userId as number;
+      const me = await this.authService.getMe(userId);
+      return res.json(me);
+    } catch (error: any) {
+      console.error('Get me error:', error);
+      return res.status(500).json({ error: 'Failed to fetch user' });
+    }
+  };
 }

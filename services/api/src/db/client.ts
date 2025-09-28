@@ -7,15 +7,19 @@ dotenv.config();
 
 console.log('--- DRIZZLE CLIENT DB CONNECTION ATTEMPT ---');
 console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
-console.log('DATABASE_URL (masked):', process.env.DATABASE_URL ? 
-  process.env.DATABASE_URL.replace(/:\/\/[^:]+:[^@]+@/, '://***:***@') : 'undefined');
+console.log(
+  'DATABASE_URL (masked):',
+  process.env.DATABASE_URL
+    ? process.env.DATABASE_URL.replace(/:\/\/[^:]+:[^@]+@/, '://***:***@')
+    : 'undefined',
+);
 
 const url =
-  process.env.DATABASE_URL 
-  ?? `postgres://${process.env.PG_USER}:` +
-     `${process.env.PG_PASSWORD}@` +
-     `${process.env.PG_HOST}:${process.env.PG_PORT}/` +
-     `${process.env.PG_DATABASE}`;
+  process.env.DATABASE_URL ??
+  `postgres://${process.env.PG_USER}:` +
+    `${process.env.PG_PASSWORD}@` +
+    `${process.env.PG_HOST}:${process.env.PG_PORT}/` +
+    `${process.env.PG_DATABASE}`;
 
 console.log('Using connection URL (masked):', url.replace(/:\/\/[^:]+:[^@]+@/, '://***:***@'));
 

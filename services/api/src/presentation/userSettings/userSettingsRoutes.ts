@@ -20,8 +20,16 @@ export class UserSettingsRoutes {
 
   private setupRoutes(): void {
     // User settings routes (require authentication)
-    this.router.get('/user/settings', this.authMiddleware.isAuthenticated, this.userSettingsController.getUserSettings);
-    this.router.post('/user/settings/visibility', this.authMiddleware.isAuthenticated, this.userSettingsController.editSettings);
+    this.router.get(
+      '/user/settings',
+      this.authMiddleware.isAuthenticated,
+      this.userSettingsController.getUserSettings,
+    );
+    this.router.post(
+      '/user/settings/visibility',
+      this.authMiddleware.isAuthenticated,
+      this.userSettingsController.editSettings,
+    );
   }
 
   getRouter(): express.Router {

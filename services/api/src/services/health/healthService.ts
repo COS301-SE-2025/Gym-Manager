@@ -22,7 +22,7 @@ export class HealthService implements IHealthService {
     try {
       // Call repository which will throw on timeout or DB failure
       await this.healthRepository.ping(5000);
-      
+
       return {
         ok: true,
         uptime: uptimeSec,
@@ -33,7 +33,7 @@ export class HealthService implements IHealthService {
     } catch (err: any) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       console.error('Health-check DB ping failed:', errorMessage);
-      
+
       return {
         ok: false,
         uptime: uptimeSec,

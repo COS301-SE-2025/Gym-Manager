@@ -1,11 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 
-export const errorHandler = (
-  err: any,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Error:', err);
 
   // If response was already sent, delegate to default error handler
@@ -19,6 +14,6 @@ export const errorHandler = (
 
   res.status(status).json({
     error: message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };

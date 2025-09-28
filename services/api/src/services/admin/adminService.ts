@@ -74,7 +74,7 @@ export class AdminService implements IAdminService {
     }
 
     const updatedClass = await this.adminRepository.updateClass(classId, updates);
-    
+
     await this.analyticsService.addLog({
       gymId: 1, // Assuming a single gym for now
       userId: null, // Could be added from request context
@@ -95,7 +95,7 @@ export class AdminService implements IAdminService {
     }
 
     const deleted = await this.adminRepository.deleteClass(classId);
-    
+
     if (deleted) {
       await this.analyticsService.addLog({
         gymId: 1, // Assuming a single gym for now

@@ -12,6 +12,7 @@ export class HealthRepository implements IHealthRepository {
    * Throws any DB error or a 'timeout' Error when timed out.
    */
   async ping(timeoutMs = 5000): Promise<void> {
+
     
     // Promise that rejects after timeoutMs
     const timeoutP = new Promise((_res, rej) =>

@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { AuthController } from '../../controllers/auth/authController';
 import { AuthService } from '../../services/auth/authService';
 import { UserRepository } from '../../repositories/auth/userRepository';
@@ -108,108 +107,115 @@ export class DependencyContainer {
     this.services.set('memberRepository', new MemberRepository());
     this.services.set('gamificationRepository', new GamificationRepository());
 
-
     // Service layer
-    this.services.set('authService', new AuthService(
-      this.services.get('userRepository'),
-      this.services.get('jwtService'),
-      this.services.get('passwordService'),
-      this.services.get('notificationService'),
-      this.services.get('analyticsService')
-    ));
+    this.services.set(
+      'authService',
+      new AuthService(
+        this.services.get('userRepository'),
+        this.services.get('jwtService'),
+        this.services.get('passwordService'),
+        this.services.get('notificationService'),
+        this.services.get('analyticsService'),
+      ),
+    );
 
-    this.services.set('classService', new ClassService(
-      this.services.get('classRepository'),
-      this.services.get('userRepository'),
-      this.services.get('memberService'),
-      this.services.get('analyticsService')
-    ));
+    this.services.set(
+      'classService',
+      new ClassService(
+        this.services.get('classRepository'),
+        this.services.get('userRepository'),
+        this.services.get('memberService'),
+        this.services.get('analyticsService'),
+      ),
+    );
 
-    this.services.set('adminService', new AdminService(
-      this.services.get('adminRepository'),
-      this.services.get('analyticsService')
-    ));
+    this.services.set(
+      'adminService',
+      new AdminService(this.services.get('adminRepository'), this.services.get('analyticsService')),
+    );
 
-    this.services.set('liveClassService', new LiveClassService(
-      this.services.get('liveClassRepository')
-    ));
+    this.services.set(
+      'liveClassService',
+      new LiveClassService(this.services.get('liveClassRepository')),
+    );
 
-    this.services.set('userSettingsService', new UserSettingsService(
-      this.services.get('userSettingsRepository')
-    ));
+    this.services.set(
+      'userSettingsService',
+      new UserSettingsService(this.services.get('userSettingsRepository')),
+    );
 
-    this.services.set('healthService', new HealthService(
-      this.services.get('healthRepository')
-    ));
+    this.services.set('healthService', new HealthService(this.services.get('healthRepository')));
 
-    this.services.set('notificationService', new NotificationService(
-      this.services.get('notificationRepository')
-    ));
+    this.services.set(
+      'notificationService',
+      new NotificationService(this.services.get('notificationRepository')),
+    );
 
-    this.services.set('dailyLeaderboardService', new DailyLeaderboardService(
-      this.services.get('dailyLeaderboardRepository')
-    ));
+    this.services.set(
+      'dailyLeaderboardService',
+      new DailyLeaderboardService(this.services.get('dailyLeaderboardRepository')),
+    );
 
-    this.services.set('memberService', new MemberService(
-      this.services.get('memberRepository'),
-      this.services.get('paymentPackagesService')
-    ));
+    this.services.set(
+      'memberService',
+      new MemberService(
+        this.services.get('memberRepository'),
+        this.services.get('paymentPackagesService'),
+      ),
+    );
 
-    this.services.set('gamificationService', new GamificationService(
-      this.services.get('gamificationRepository')
-    ));
+    this.services.set(
+      'gamificationService',
+      new GamificationService(this.services.get('gamificationRepository')),
+    );
 
     // Analytics service
     this.services.set('analyticsRepository', new AnalyticsRepository());
-    this.services.set('analyticsService', new AnalyticsService(
-      this.services.get('analyticsRepository')
-    ));
+    this.services.set(
+      'analyticsService',
+      new AnalyticsService(this.services.get('analyticsRepository')),
+    );
     this.services.set('paymentPackagesService', new PaymentPackagesService());
     // Controller layer
-    this.services.set('authController', new AuthController(
-      this.services.get('authService')
-    ));
+    this.services.set('authController', new AuthController(this.services.get('authService')));
 
-    this.services.set('classController', new ClassController(
-      this.services.get('classService')
-    ));
+    this.services.set('classController', new ClassController(this.services.get('classService')));
 
-    this.services.set('adminController', new AdminController(
-      this.services.get('adminService')
-    ));
+    this.services.set('adminController', new AdminController(this.services.get('adminService')));
 
-    this.services.set('liveClassController', new LiveClassController(
-      this.services.get('liveClassService')
-    ));
+    this.services.set(
+      'liveClassController',
+      new LiveClassController(this.services.get('liveClassService')),
+    );
 
-    this.services.set('userSettingsController', new UserSettingsController(
-      this.services.get('userSettingsService')
-    ));
+    this.services.set(
+      'userSettingsController',
+      new UserSettingsController(this.services.get('userSettingsService')),
+    );
 
-    this.services.set('healthController', new HealthController(
-      this.services.get('healthService')
-    ));
+    this.services.set('healthController', new HealthController(this.services.get('healthService')));
 
+    this.services.set(
+      'dailyLeaderboardController',
+      new DailyLeaderboardController(this.services.get('dailyLeaderboardService')),
+    );
 
-    this.services.set('dailyLeaderboardController', new DailyLeaderboardController(
-      this.services.get('dailyLeaderboardService')
-    ));
+    this.services.set('memberController', new MemberController(this.services.get('memberService')));
 
-    this.services.set('memberController', new MemberController(
-      this.services.get('memberService')
-    ));
+    this.services.set(
+      'analyticsController',
+      new AnalyticsController(this.services.get('analyticsService')),
+    );
 
-    this.services.set('analyticsController', new AnalyticsController(
-      this.services.get('analyticsService')
-    ));
+    this.services.set(
+      'paymentPackagesController',
+      new PaymentPackagesController(this.services.get('paymentPackagesService')),
+    );
 
-    this.services.set('paymentPackagesController', new PaymentPackagesController(
-      this.services.get('paymentPackagesService')
-    ));
-
-    this.services.set('gamificationController', new GamificationController(
-      this.services.get('gamificationService')
-    ));
+    this.services.set(
+      'gamificationController',
+      new GamificationController(this.services.get('gamificationService')),
+    );
 
     // Presentation layer
     this.services.set('authRoutes', new AuthRoutes());
@@ -220,15 +226,14 @@ export class DependencyContainer {
     this.services.set('healthRoutes', new HealthRoutes());
 
     this.services.set('dailyLeaderboardRoutes', new DailyLeaderboardRoutes());
-    this.services.set('memberRoutes', new MemberRoutes(
-      this.services.get('memberController')
-    ));
+    this.services.set('memberRoutes', new MemberRoutes(this.services.get('memberController')));
 
     this.services.set('analyticsRoutes', new AnalyticsRoutes());
     this.services.set('paymentPackagesRoutes', new PaymentPackagesRoutes());
-    this.services.set('gamificationRoutes', new GamificationRoutes(
-      this.services.get('gamificationController')
-    ));
+    this.services.set(
+      'gamificationRoutes',
+      new GamificationRoutes(this.services.get('gamificationController')),
+    );
   }
 
   get<T>(serviceName: string): T {

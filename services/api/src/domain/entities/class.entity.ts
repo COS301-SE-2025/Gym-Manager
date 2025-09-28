@@ -14,14 +14,13 @@ export interface Class {
 export interface ClassWithWorkout extends Class {
   workoutName?: string;
   workoutType?: string;
-  workoutMetadata?: any;  // if you’re selecting it already
+  workoutMetadata?: any; // if you’re selecting it already
 
   // new fields
   coachFirstName?: string;
   coachLastName?: string;
   bookingsCount: number; // not optional, since COUNT() always returns 0+
 }
-
 
 export interface ClassBooking {
   classId: number;

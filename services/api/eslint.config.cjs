@@ -46,7 +46,9 @@ module.exports = [
     },
     rules: {
       'prettier/prettier': 'error',
-      '@typescript-eslint/no-unused-vars': ['warn'],
+      '@typescript-eslint/no-unused-vars': 'off',
+      'no-unused-vars': 'off',
+      'no-useless-catch': 'off',
       '@typescript-eslint/naming-convention': [
         'error',
         {

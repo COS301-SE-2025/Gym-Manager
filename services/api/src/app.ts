@@ -41,12 +41,11 @@ export class App {
     
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
-    
+ 
     this.app.use(requestTimeout(20_000));
   }
 
   private setupRoutes(): void {
-    
     const authRoutes = this.container.getAuthRoutes();
     const classRoutes = this.container.getClassRoutes();
     const adminRoutes = this.container.getAdminRoutes();
@@ -57,10 +56,9 @@ export class App {
     const analyticsRoutes = this.container.getAnalyticsRoutes();
     const paymentPackagesRoutes = this.container.getPaymentPackagesRoutes();
     const gamificationRoutes = this.container.getGamificationRoutes();
-    
+
     const dailyLeaderboardRoutes = this.container.getDailyLeaderboardRoutes();
-    
-    
+
     this.app.use(authRoutes.getRouter());
     this.app.use(classRoutes.getRouter());
     this.app.use(adminRoutes.getRouter());
@@ -72,7 +70,7 @@ export class App {
     this.app.use('/analytics', analyticsRoutes.getRouter());
     this.app.use('/payments', paymentPackagesRoutes.getRouter());
     this.app.use('/gamification', gamificationRoutes.getRouter());
-    
+
     this.app.get('/health', (req, res) => {
       res.json({ status: 'OK', timestamp: new Date().toISOString() });
     });
@@ -81,6 +79,7 @@ export class App {
     this.app.get('/healthz', (_req, res) => {
       res.json({ status: 'OK', timestamp: new Date().toISOString() });
     });
+
     
     setupSwagger(this.app as any);
     

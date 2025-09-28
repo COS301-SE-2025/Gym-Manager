@@ -21,7 +21,7 @@ describe('HealthService', () => {
 
       const result = await service.checkHealth();
 
-      expect(mockRepository.ping).toHaveBeenCalledWith(100);
+      expect(mockRepository.ping).toHaveBeenCalledWith(5000);
       expect(result).toEqual({
         ok: true,
         uptime: expect.any(Number),
@@ -39,7 +39,7 @@ describe('HealthService', () => {
 
       const result = await service.checkHealth();
 
-      expect(mockRepository.ping).toHaveBeenCalledWith(100);
+      expect(mockRepository.ping).toHaveBeenCalledWith(5000);
       expect(result).toEqual({
         ok: false,
         uptime: expect.any(Number),

@@ -1,10 +1,18 @@
-import { User, UserWithRoles, UserRegistrationData, UserLoginData, AuthResult } from '../entities/user.entity';
+import {
+  User,
+  UserWithRoles,
+  UserRegistrationData,
+  UserLoginData,
+  AuthResult,
+} from '../entities/user.entity';
 
 export interface IAuthService {
   register(userData: UserRegistrationData): Promise<AuthResult>;
   login(loginData: UserLoginData): Promise<AuthResult>;
   refresh(accessToken: string | null, refreshToken: string): Promise<AuthResult>;
-  getUserStatus(userId: number): Promise<{ userId: number; roles: string[]; membershipStatus: string }>;
+  getUserStatus(
+    userId: number,
+  ): Promise<{ userId: number; roles: string[]; membershipStatus: string }>;
 }
 
 export interface IUserRepository {

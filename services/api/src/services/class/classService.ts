@@ -41,7 +41,8 @@ export class ClassService implements IClassService {
     this.userRepository = userRepository || new UserRepository();
     this.memberService = memberService || new MemberService(new MemberRepository());
     this.analyticsService = analyticsService || new AnalyticsService();
-    this.gamificationService = gamificationService || new GamificationService(new GamificationRepository());
+    this.gamificationService =
+      gamificationService || new GamificationService(new GamificationRepository());
   }
 
   async getCoachAssignedClasses(coachId: number): Promise<Class[]> {
@@ -285,7 +286,9 @@ export class ClassService implements IClassService {
             !QUANTITY_TYPES.includes(ex.quantityType) ||
             typeof ex.quantity !== 'number'
           ) {
-            throw new Error('exercise entries need position:number, quantityType:(reps|duration), quantity:number');
+            throw new Error(
+              'exercise entries need position:number, quantityType:(reps|duration), quantity:number',
+            );
           }
         }
       }

@@ -1,8 +1,11 @@
-import { IUserSettingsService, IUserSettingsRepository } from '../../domain/interfaces/userSettings.interface';
+import {
+  IUserSettingsService,
+  IUserSettingsRepository,
+} from '../../domain/interfaces/userSettings.interface';
 import {
   UserSettingsResponse,
   UpdateUserSettingsRequest,
-  UpdateUserSettingsResponse
+  UpdateUserSettingsResponse,
 } from '../../domain/entities/userSettings.entity';
 import { UserSettingsRepository } from '../../repositories/userSettings/userSettingsRepository';
 
@@ -31,14 +34,20 @@ export class UserSettingsService implements IUserSettingsService {
     };
   }
 
-  async updateUserSettings(userId: number, request: UpdateUserSettingsRequest): Promise<UpdateUserSettingsResponse> {
+  async updateUserSettings(
+    userId: number,
+    request: UpdateUserSettingsRequest,
+  ): Promise<UpdateUserSettingsResponse> {
     const { publicVisibility } = request;
 
     if (typeof publicVisibility !== 'boolean') {
       throw new Error("'publicVisibility' must be a boolean");
     }
 
-    const updated = await this.userSettingsRepository.updateMemberVisibility(userId, publicVisibility);
+    const updated = await this.userSettingsRepository.updateMemberVisibility(
+      userId,
+      publicVisibility,
+    );
     if (!updated) {
       throw new Error('Member not found');
     }
@@ -46,7 +55,7 @@ export class UserSettingsService implements IUserSettingsService {
     return {
       success: true,
       userId: updated.userId,
-      publicVisibility
+      publicVisibility,
     };
   }
 }

@@ -23,7 +23,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.trainwise.gymmanager"
+      "package": "com.trainwise.gymmanager",
+      "minSdkVersion": 26
     },
     "androidStatusBar": {
       "hidden": true,
@@ -43,15 +44,7 @@
     "plugins": [
       "react-native-health",
       "expo-asset",
-      "expo-font",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "minSdkVersion": 26
-          }
-        }
-      ]
+      "expo-font"
     ]
   }
 }

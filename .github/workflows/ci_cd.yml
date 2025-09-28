@@ -45,7 +45,6 @@ jobs:
         run: npm run test:unit
         working-directory: ./services/api
         env:
-          # Provide a dummy secret so JWT-related unit tests don’t explode
           JWT_SECRET: ci-unit-secret
 
   test-availability:
@@ -94,12 +93,11 @@ jobs:
         env:
           JWT_SECRET: ci-integration-secret
 
-test-performance:
+  test-performance:
     name: Integration — Performance (JMeter)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -110,7 +108,6 @@ test-performance:
         run: npm ci
         working-directory: ./services/api
 
-      # Build & start Express API app
       - name: Build API
         run: npm run build
         working-directory: ./services/api
@@ -122,15 +119,17 @@ test-performance:
           NODE_ENV: test
           JWT_SECRET: ci-integration-secret
         run: |
-          # Start the Express app exported from dist/index.js
-          node -e "const { app } = require('./dist/index.js'); app.listen(process.env.PORT || 3000, () => console.log('API up'));" &
-          # Wait until the healthz endpoint responds
+          # Start exported Express app (supports CJS or ESM builds)
+          node -e "(async()=>{let mod;try{mod=require('./dist/index.js')}catch(e){mod=await import('./dist/index.js')}const app=mod.app||mod.default;if(!app?.listen){console.error('Cannot find exported app');process.exit(1)}const port=process.env.PORT||3000;app.listen(port,()=>console.log('API up on '+port))})()" &
+          # Wait up to ~40s for readiness
           for i in {1..40}; do
-            curl -fsS "http://localhost:3000/healthz" && break
+            if curl -fsS http://localhost:3000/healthz >/dev/null; then
+              echo 'API ready'; break
+            fi
             sleep 1
           done
+          curl -fsS http://localhost:3000/healthz >/dev/null || (echo 'API failed to start' && exit 1)
 
-      # Install JMeter
       - name: Install JMeter
         run: |
           sudo apt-get update && sudo apt-get install -y wget unzip
@@ -156,7 +155,6 @@ test-performance:
             -JHOST=$HOST -JPROTO=$PROTO -JPORT=$PORT \
             -Jusers=$users -Jramp=$ramp -Jduration=$duration -JMAX_MS=$MAX_MS
 
-      # Upload results
       - name: Upload JMeter results
         uses: actions/upload-artifact@v4
         with:
@@ -166,13 +164,11 @@ test-performance:
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: [lint, unit-tests, test-availability, test-security]
+    needs: [lint, unit-tests, test-availability, test-security, test-performance]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
-
       - name: Deploy API to production
         run: echo "TODO"
-
       - name: Deploy UI to production
         run: echo "TODO"

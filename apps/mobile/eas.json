@@ -8,17 +8,17 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_SUPABASE_URL": "supabase-url-here",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "supabase-anon-key-here",
-        "EXPO_PUBLIC_BASE_URL": "https://api-link-here.vercel.app"
+        "EXPO_PUBLIC_SUPABASE_URL": "https://ecqfwjomzhjmmfwzmxkw.supabase.co/",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjcWZ3am9temhqbW1md3pteGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2NTg2MTMsImV4cCI6MjA3NDIzNDYxM30.KmBwfIEcKXSMbaWgbSbh4Xp_u0aVM6swAKAwDbwTKAY",
+        "EXPO_PUBLIC_BASE_URL": "https://gym-manager-api-new.vercel.app"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_SUPABASE_URL": "supabase-url-here",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "supabase-anon-key-here",
-        "EXPO_PUBLIC_BASE_URL": "https://api-link-here.vercel.app"
+        "EXPO_PUBLIC_SUPABASE_URL": "https://ecqfwjomzhjmmfwzmxkw.supabase.co/",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjcWZ3am9temhqbW1md3pteGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2NTg2MTMsImV4cCI6MjA3NDIzNDYxM30.KmBwfIEcKXSMbaWgbSbh4Xp_u0aVM6swAKAwDbwTKAY",
+        "EXPO_PUBLIC_BASE_URL": "https://gym-manager-api-new.vercel.app"
       }
     },
     "production": {
@@ -27,9 +27,9 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_SUPABASE_URL": "supabase-url-here",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "supabase-anon-key-here",
-        "EXPO_PUBLIC_BASE_URL": "https://api-link-here.vercel.app"
+        "EXPO_PUBLIC_SUPABASE_URL": "https://ecqfwjomzhjmmfwzmxkw.supabase.co/",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjcWZ3am9temhqbW1md3pteGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2NTg2MTMsImV4cCI6MjA3NDIzNDYxM30.KmBwfIEcKXSMbaWgbSbh4Xp_u0aVM6swAKAwDbwTKAY",
+        "EXPO_PUBLIC_BASE_URL": "https://gym-manager-api-new.vercel.app"
       }
     }
   },

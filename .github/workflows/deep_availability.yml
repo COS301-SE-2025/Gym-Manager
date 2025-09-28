@@ -1,0 +1,59 @@
+name: Manual Deep Availability (/health with DB)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deep-availability:
+    name: Deep availability — real DB via /health
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: services/api/package-lock.json
+
+      - name: Install API deps
+        run: npm ci
+        working-directory: ./services/api
+
+      - name: Wait for local Postgres (only if no external DB secret)
+        if: ${{ !secrets.DATABASE_URL }}
+        run: |
+          for i in {1..40}; do
+            pg_isready -h 127.0.0.1 -p 5432 -U postgres && break
+            sleep 1
+          done
+
+      - name: Run deep availability test against /health
+        working-directory: ./services/api
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL != '' && secrets.DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:5432/app?sslmode=disable' }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET != '' && secrets.JWT_SECRET || 'ci-integration-secret' }}
+
+          AVAIL_PATH: /health
+
+          AVAIL_N: 60
+          AVAIL_GAP_MS: 50
+          AVAIL_MAX_P95_MS: 300
+          AVAIL_MAX_ERR_RATE: 0
+        run: npm run test:integration:availability

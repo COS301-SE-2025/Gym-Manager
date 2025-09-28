@@ -24,12 +24,12 @@ export default [
         ecmaVersion: 'latest',
         sourceType: 'module',
         ecmaFeatures: {
-          jsx: true, // ✅ enable JSX parsing
+          jsx: true, // enable JSX parsing
         },
         project: './tsconfig.json',
       },
       globals: {
-        // ✅ Node + React Native globals
+        // Node + React Native globals
         console: true,
         require: true,
         module: true,

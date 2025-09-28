@@ -133,7 +133,7 @@ export default function IntervalLiveScreen() {
     return Number(t) >= 0;
   };
 
-  // ✓ handler: validate -> POST -> mark submitted
+  // handler: validate -> POST -> mark submitted
   const submit = useCallback(async (stepIndex: number) => {
     const step = steps?.[stepIndex];
     if (!canSubmit || isRestStep(step) || isTimeOnlyStep(step)) return;
@@ -159,13 +159,13 @@ export default function IntervalLiveScreen() {
     }
   }, [classId, canSubmit, inputs, steps]);
 
-  // Finish: only when inputs are filled AND every required step has ✓ submitted
+  // Finish: only when inputs are filled AND every required step has - submitted
   const submitAllAndFinish = useCallback(async () => {
     if (!canSubmit || finishing) return;
     if (!(allFilled && allSubmitted && noErrors)) return;
     setFinishing(true);
     try {
-      // No auto-submit: you asked that ALL ✓ are clicked before enabling this
+      // No auto-submit: you asked that ALL - are clicked before enabling this
     } finally {
       setFinishing(false);
       nav.replace('LiveClassEnd', { classId });

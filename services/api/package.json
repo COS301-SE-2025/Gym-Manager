@@ -19,7 +19,8 @@
     "test:services": "jest --coverage --testPathPattern=tests/unit.*Service.test.ts",
     "test:controllers": "jest --coverage --testPathPattern=tests/unit.*Controller.test.ts",
     "test:ci": "jest --coverage --ci --watchAll=false",
-    "test:integration:availability": "jest --runInBand src/tests/integration/availability.health.test.ts"
+    "test:integration:availability": "jest --runInBand src/tests/integration/availability.health.test.ts",
+    "test:integration:security": "jest --runInBand --coverage=false src/tests/integration/security.auth.test.ts"
   },
   "keywords": [],
   "author": "",

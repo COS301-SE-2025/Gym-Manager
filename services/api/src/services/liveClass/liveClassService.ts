@@ -14,8 +14,7 @@ export class LiveClassService implements ILiveClassService {
     this.repo = repo || new LiveClassRepository();
     this.userRepo = userRepo || new UserRepository();
     this.gamificationService = gamificationService || new GamificationService(new GamificationRepository());
-    
-    // console.log(`🏗️ LiveClassService initialized with gamification service:`, !!this.gamificationService);
+
   }
 
   // --- Session ---
@@ -165,10 +164,7 @@ export class LiveClassService implements ILiveClassService {
 
   // --- Submit score (coach batch or member single) ---
   async submitScore(userId: number, roles: string[] = [], body: any) {
-    // console.log(`🎮 LiveClassService.submitScore called for user ${userId}`);
-    // console.log(`📝 Body:`, body);
-    // console.log(`👤 Roles:`, roles);
-    
+
     const classId = body?.classId;
     if (!Number.isFinite(classId)) throw new Error('CLASS_ID_REQUIRED');
 
@@ -254,28 +250,18 @@ export class LiveClassService implements ILiveClassService {
 
 
   async stopLiveClass(classId: number) {
-    // console.log(`🛑 stopLiveClass called for class ${classId}`);
-    
     await this.repo.stopSession(classId);
-    // ⬇️ persist final scores for history
     try {
       await this.repo.persistScoresFromLive(classId);
-      // console.log(`✅ Scores persisted for class ${classId}`);
       
       // Trigger gamification for all participants
-      // console.log(`🎮 Triggering gamification for all participants...`);
       // Get all participants who had attendance records created
       const participants = await this.getParticipantsForClass(classId);
       for (const participant of participants) {
         try {
           const gamificationResult = await this.gamificationService.recordClassAttendance(participant.userId, classId, new Date());
-          // console.log(`✅ Gamification for user ${participant.userId}:`, {
-          //   streak: gamificationResult.streak.currentStreak,
-          //   totalPoints: gamificationResult.streak.totalPoints,
-          //   newBadges: gamificationResult.newBadges.length
-          // });
         } catch (gamificationError) {
-          console.error(`❌ Gamification failed for user ${participant.userId}:`, gamificationError);
+          console.error(`Gamification failed for user ${participant.userId}:`, gamificationError);
         }
       }
     } catch (e) {
@@ -323,7 +309,7 @@ export class LiveClassService implements ILiveClassService {
     await this.repo.ensureProgressRow(classId, userId);
     await this.repo.setPartialReps(classId, userId, safe);
 
-    // 👇 If the class already ended, recompute & persist finals so leaderboards update
+    // If the class already ended, recompute & persist finals so leaderboards update
     try {
       const sess = await this.repo.getClassSession(classId);
       if (String(sess?.status ?? '').toLowerCase() === 'ended') {
@@ -436,7 +422,7 @@ export class LiveClassService implements ILiveClassService {
     let m = Math.max(0, Number(payload.minuteIndex || 0));
     if (planned > 0) m = Math.min(m, planned - 1);
 
-    // ✅ allow 60 as the "not finished" penalty; finished minutes should be 0..59
+    // allow 60 as the "not finished" penalty; finished minutes should be 0..59
     const sec =
       payload.finishSeconds == null
         ? (payload.finished ? 0 : 60)
@@ -559,7 +545,6 @@ export class LiveClassService implements ILiveClassService {
   }
 
   async setMyScaling(classId: number, userId: number, scaling: 'RX'|'SC'): Promise<void> {
-    // console.log(`🎯 setMyScaling called for user ${userId}, class ${classId}, scaling: ${scaling}`);
     
     // user must be booked to set scaling
     await this.repo.assertMemberBooked(classId, userId);
@@ -567,15 +552,9 @@ export class LiveClassService implements ILiveClassService {
     
     // Trigger gamification updates for class attendance
     try {
-      // console.log(`🎮 Triggering gamification for scaling update...`);
       const gamificationResult = await this.gamificationService.recordClassAttendance(userId, classId, new Date());
-      // console.log(`✅ Gamification result for scaling:`, {
-      //   streak: gamificationResult.streak.currentStreak,
-      //   totalPoints: gamificationResult.streak.totalPoints,
-      //   newBadges: gamificationResult.newBadges.length
-      // });
     } catch (gamificationError) {
-      console.error('❌ Gamification update failed for scaling:', gamificationError);
+      console.error('Gamification update failed for scaling:', gamificationError);
     }
   }
 

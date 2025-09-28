@@ -133,7 +133,7 @@ export default function EmomLiveScreen() {
 
   const steps: any[] = stepsFromSession.length ? stepsFromSession : fallbackSteps;
 
-  // ✅ Consider the session "ready" when we have a session row; exercises will appear as soon as steps arrive or fallback builds them.
+  // Consider the session "ready" when we have a session row; exercises will appear as soon as steps arrive or fallback builds them.
   const ready = !!session;
 
   // group by round

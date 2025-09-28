@@ -22,7 +22,7 @@ describe('Availability NFR — /health synthetic probe', () => {
 
     for (let i = 0; i < N; i++) {
       const t0 = Date.now();
-      const res = await request(app).get('/health');
+      const res = await request(app).get('/healthz');
       const dt = Date.now() - t0;
       durations.push(dt);
 

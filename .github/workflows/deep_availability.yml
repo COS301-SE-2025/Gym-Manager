@@ -1,36 +1,36 @@
-name: Manual Deep Availability (/health with DB)
+name: Manual Remote Availability (/health on deployed API)
 
 on:
   workflow_dispatch:
+    inputs:
+      api_url:
+        description: "Deployed API base URL (e.g. https://api.yourdomain.com)"
+        required: false
+      probes:
+        description: "Number of probes (N)"
+        required: false
+        default: "60"
+      gap_ms:
+        description: "Gap between probes in ms"
+        required: false
+        default: "50"
+      p95_ms:
+        description: "Max allowed p95 latency in ms"
+        required: false
+        default: "300"
+      max_err_rate:
+        description: "Max allowed error rate (0.0..1.0)"
+        required: false
+        default: "0"
+      timeout_ms:
+        description: "Jest test timeout in ms"
+        required: false
+        default: "60000"
 
 jobs:
-  deep-availability:
-    name: Deep availability — real DB via /health
+  availability-remote:
+    name: Remote availability — /health on deployed API
     runs-on: ubuntu-latest
-
-    env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      AVAIL_PATH: /health
-      AVAIL_N: 60
-      AVAIL_GAP_MS: 50
-      AVAIL_MAX_P95_MS: 300
-      AVAIL_MAX_ERR_RATE: 0
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: app
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U postgres"
-          --health-interval=5s
-          --health-timeout=3s
-          --health-retries=10
 
     steps:
       - uses: actions/checkout@v4
@@ -38,43 +38,36 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: services/api/package-lock.json
 
-      - name: Install API deps
+      - name: Install API dev deps (for Jest)
         run: npm ci
         working-directory: ./services/api
 
-      - name: Wait for local Postgres (fallback only)
-        if: ${{ env.DATABASE_URL == '' }}
+      # Resolve API_URL from: workflow input -> Actions Variable -> Secret
+      - name: Resolve API_URL
+        id: cfg
         run: |
-          for i in {1..40}; do
-            pg_isready -h 127.0.0.1 -p 5432 -U postgres && break || true
-            sleep 1
-          done
+          if [ -n "${{ github.event.inputs.api_url }}" ]; then
+            echo "api_url=${{ github.event.inputs.api_url }}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ vars.API_URL }}" ]; then
+            echo "api_url=${{ vars.API_URL }}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ secrets.API_URL }}" ]; then
+            echo "api_url=${{ secrets.API_URL }}" >> $GITHUB_OUTPUT
+          else
+            echo "API_URL not provided (input/variable/secret)."
+            exit 1
+          fi
 
-      - name: Deep availability — external DB (/health)
-        if: ${{ env.DATABASE_URL != '' }}
+      - name: Run remote availability probes
+        run: npm run test:integration:availability:remote
         working-directory: ./services/api
         env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-          JWT_SECRET: ${{ env.JWT_SECRET || 'ci-integration-secret' }}
-          AVAIL_PATH: ${{ env.AVAIL_PATH }}
-          AVAIL_N: ${{ env.AVAIL_N }}
-          AVAIL_GAP_MS: ${{ env.AVAIL_GAP_MS }}
-          AVAIL_MAX_P95_MS: ${{ env.AVAIL_MAX_P95_MS }}
-          AVAIL_MAX_ERR_RATE: ${{ env.AVAIL_MAX_ERR_RATE }}
-        run: npm run test:integration:availability
-
-      - name: Deep availability — local Postgres (/health)
-        if: ${{ env.DATABASE_URL == '' }}
-        working-directory: ./services/api
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/app?sslmode=disable
-          JWT_SECRET: ${{ env.JWT_SECRET || 'ci-integration-secret' }}
-          AVAIL_PATH: ${{ env.AVAIL_PATH }}
-          AVAIL_N: ${{ env.AVAIL_N }}
-          AVAIL_GAP_MS: ${{ env.AVAIL_GAP_MS }}
-          AVAIL_MAX_P95_MS: ${{ env.AVAIL_MAX_P95_MS }}
-          AVAIL_MAX_ERR_RATE: ${{ env.AVAIL_MAX_ERR_RATE }}
-        run: npm run test:integration:availability
+          API_URL:              ${{ steps.cfg.outputs.api_url }}
+          AVAIL_PATH:           /health
+          AVAIL_N:              ${{ github.event.inputs.probes     || '60' }}
+          AVAIL_GAP_MS:         ${{ github.event.inputs.gap_ms     || '50' }}
+          AVAIL_MAX_P95_MS:     ${{ github.event.inputs.p95_ms     || '300' }}
+          AVAIL_MAX_ERR_RATE:   ${{ github.event.inputs.max_err_rate || '0' }}
+          AVAIL_TIMEOUT_MS:     ${{ github.event.inputs.timeout_ms || '60000' }}

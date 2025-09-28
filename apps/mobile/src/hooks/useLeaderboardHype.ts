@@ -72,6 +72,7 @@ export function useLeaderboardHype(
       if (myRank <= 3 && Math.random() < 0.12) msg = pick(TOP3_TEMPLATES)();
     }
 
+
     // DEBUG: Force a test message if we have a rank but no message
     if (!msg && myRank && lb.length > 0) {
       console.log('DEBUG: Forcing test toast for rank', myRank);

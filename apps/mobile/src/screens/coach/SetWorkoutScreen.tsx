@@ -301,7 +301,6 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
       // Fetch workout details
       const response = await apiClient.get(`/workout/${workoutId}/steps`);
-      console.log('handleLoadWorkout');  
       const workoutData = response.data;
 
       // Parse the workout data and populate the form
@@ -539,7 +538,6 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
         if (editMode && classDetails?.workoutId) {
           // Update existing workout
-          console.log(`Updating workout: ${workout.workoutName}`, workoutData);
 
           const updateResponse = await apiClient.put(
             `/coach/update-workout/${classDetails.workoutId}`,
@@ -553,7 +551,6 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           }
         } else {
           // Create new workout
-          console.log(`Creating workout: ${workout.workoutName}`, workoutData);
 
           const createResponse = await apiClient.post(
             `/coach/create-workout`,

@@ -210,7 +210,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setUpcomingError(null);
     try {
       const upcomingResponse = await apiClient.get<ApiUpcomingClass[]>('/member/unbookedclasses');
-
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
@@ -329,7 +328,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   };
 
   const handleConfirmBooking = async (classId: string): Promise<boolean> => {
-    console.log('Attempting to book class:', classId);
 
     try {
       const response = await apiClient.post('/book', { classId: classId });

@@ -1,8 +1,5 @@
 import { db as globalDb } from '../../db/client';
-import {
-  members,
-  users,
-} from '../../db/schema';
+import { members, users } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import type { InferSelectModel } from 'drizzle-orm';
 import { IUserSettingsRepository } from '../../domain/interfaces/userSettings.interface';
@@ -45,7 +42,10 @@ export class UserSettingsRepository implements IUserSettingsRepository {
     return row ? this.mapToUserSettings(row) : null;
   }
 
-  async updateMemberVisibility(userId: number, publicVisibility: boolean): Promise<{ userId: number } | null> {
+  async updateMemberVisibility(
+    userId: number,
+    publicVisibility: boolean,
+  ): Promise<{ userId: number } | null> {
     const [updated] = await this.exec()
       .update(members)
       .set({ publicVisibility })

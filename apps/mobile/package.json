@@ -1,5 +1,5 @@
 {
-  "name": "mobile",
+  "name": "Trainwise",
   "version": "1.0.0",
   "main": "index.ts",
   "type": "module",
@@ -28,6 +28,7 @@
     "expo": "~53.0.23",
     "expo-asset": "~11.1.7",
     "expo-blur": "~14.1.5",
+    "expo-build-properties": "~0.14.8",
     "expo-font": "~13.3.2",
     "expo-image": "~2.4.0",
     "expo-linear-gradient": "~14.1.5",

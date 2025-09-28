@@ -1,11 +1,11 @@
 import { db } from '../../db/client';
-import { 
-  paymentPackages, 
-  paymentTransactions, 
-  monthlyRevenue, 
+import {
+  paymentPackages,
+  paymentTransactions,
+  monthlyRevenue,
   userFinancialMetrics,
   members,
-  users
+  users,
 } from '../../db/schema';
 import { eq, and, desc, sql, count, avg, sum } from 'drizzle-orm';
 
@@ -93,7 +93,7 @@ export class PaymentPackagesService {
       .where(eq(paymentPackages.isActive, true))
       .orderBy(desc(paymentPackages.createdAt));
 
-    return packages.map(pkg => ({
+    return packages.map((pkg) => ({
       packageId: pkg.packageId,
       name: pkg.name,
       description: pkg.description || undefined,
@@ -130,7 +130,7 @@ export class PaymentPackagesService {
       .groupBy(paymentPackages.packageId)
       .orderBy(desc(paymentPackages.createdAt));
 
-    return packages.map(pkg => ({
+    return packages.map((pkg) => ({
       packageId: pkg.packageId,
       name: pkg.name,
       description: pkg.description || undefined,
@@ -189,12 +189,12 @@ export class PaymentPackagesService {
       .limit(1);
 
     if (existingTransactions.length > 0) {
-      throw new Error('Cannot delete package: There are existing transactions using this package. Please deactivate it instead.');
+      throw new Error(
+        'Cannot delete package: There are existing transactions using this package. Please deactivate it instead.',
+      );
     }
 
-    await db
-      .delete(paymentPackages)
-      .where(eq(paymentPackages.packageId, packageId));
+    await db.delete(paymentPackages).where(eq(paymentPackages.packageId, packageId));
   }
 
   /**
@@ -230,9 +230,9 @@ export class PaymentPackagesService {
    * Update payment transaction status
    */
   async updateTransactionStatus(
-    transactionId: number, 
-    status: string, 
-    externalTransactionId?: string
+    transactionId: number,
+    status: string,
+    externalTransactionId?: string,
   ): Promise<void> {
     const updateData: any = {
       paymentStatus: status,
@@ -268,12 +268,7 @@ export class PaymentPackagesService {
         totalRevenue: sum(monthlyRevenue.totalRevenueCents),
       })
       .from(monthlyRevenue)
-      .where(
-        and(
-          eq(monthlyRevenue.year, currentYear),
-          eq(monthlyRevenue.month, currentMonth)
-        )
-      );
+      .where(and(eq(monthlyRevenue.year, currentYear), eq(monthlyRevenue.month, currentMonth)));
 
     // Get previous month revenue
     const [previousRevenue] = await db
@@ -281,12 +276,7 @@ export class PaymentPackagesService {
         totalRevenue: sum(monthlyRevenue.totalRevenueCents),
       })
       .from(monthlyRevenue)
-      .where(
-        and(
-          eq(monthlyRevenue.year, previousYear),
-          eq(monthlyRevenue.month, previousMonth)
-        )
-      );
+      .where(and(eq(monthlyRevenue.year, previousYear), eq(monthlyRevenue.month, previousMonth)));
 
     // Get total active members
     const [memberCount] = await db
@@ -330,9 +320,10 @@ export class PaymentPackagesService {
       const previousTrend = index > 0 ? revenueTrends[index - 1] : null;
       const currentRevenue = Number(trend.revenue) || 0;
       const previousRevenue = Number(previousTrend?.revenue) || 0;
-      const growth = previousTrend && previousRevenue > 0 
-        ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 
-        : 0;
+      const growth =
+        previousTrend && previousRevenue > 0
+          ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
+          : 0;
 
       return {
         year: trend.year,
@@ -382,7 +373,7 @@ export class PaymentPackagesService {
       .where(eq(paymentTransactions.memberId, memberId))
       .orderBy(desc(paymentTransactions.createdAt));
 
-    return transactions.map(tx => ({
+    return transactions.map((tx) => ({
       transactionId: tx.transactionId,
       memberId: tx.memberId,
       packageId: tx.packageId,

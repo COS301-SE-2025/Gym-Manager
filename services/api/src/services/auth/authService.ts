@@ -1,5 +1,15 @@
-import { IAuthService, IUserRepository, IJwtService, IPasswordService } from '../../domain/interfaces/auth.interface';
-import { UserRegistrationData, UserLoginData, AuthResult, UserWithRoles } from '../../domain/entities/user.entity';
+import {
+  IAuthService,
+  IUserRepository,
+  IJwtService,
+  IPasswordService,
+} from '../../domain/interfaces/auth.interface';
+import {
+  UserRegistrationData,
+  UserLoginData,
+  AuthResult,
+  UserWithRoles,
+} from '../../domain/entities/user.entity';
 import { UserRepository } from '../../repositories/auth/userRepository';
 import { JwtService } from '../../infrastructure/auth/jwtService';
 import { PasswordService } from '../../infrastructure/auth/passwordService';
@@ -29,7 +39,6 @@ export class AuthService implements IAuthService {
     this.passwordService = passwordService || new PasswordService();
     this.notificationService = notificationService || new NotificationService();
     this.analyticsService = analyticsService || new AnalyticsService();
-
   }
 
   async register(userData: UserRegistrationData): Promise<AuthResult> {
@@ -57,7 +66,7 @@ export class AuthService implements IAuthService {
         phone: userData.phone,
         passwordHash,
       },
-      roles
+      roles,
     );
 
     // Emit admin notification for approval
@@ -79,9 +88,9 @@ export class AuthService implements IAuthService {
     const assignedRoles = await this.userRepository.getRolesByUserId(createdUser.userId);
 
     // Generate tokens
-    const token = this.jwtService.generateToken({ 
-      userId: createdUser.userId, 
-      roles: assignedRoles 
+    const token = this.jwtService.generateToken({
+      userId: createdUser.userId,
+      roles: assignedRoles,
     });
     const refreshToken = this.jwtService.generateRefreshToken({ userId: createdUser.userId });
 
@@ -105,7 +114,10 @@ export class AuthService implements IAuthService {
       throw new Error('Invalid credentials');
     }
 
-    const passwordValid = await this.passwordService.verifyPassword(loginData.password, user.passwordHash);
+    const passwordValid = await this.passwordService.verifyPassword(
+      loginData.password,
+      user.passwordHash,
+    );
     if (!passwordValid) {
       throw new Error('Invalid credentials');
     }
@@ -124,9 +136,9 @@ export class AuthService implements IAuthService {
       });
     }
     // Generate tokens
-    const token = this.jwtService.generateToken({ 
-      userId: user.userId, 
-      roles 
+    const token = this.jwtService.generateToken({
+      userId: user.userId,
+      roles,
     });
     const refreshToken = this.jwtService.generateRefreshToken({ userId: user.userId });
 
@@ -157,7 +169,9 @@ export class AuthService implements IAuthService {
     return { token: newAccessToken, refreshToken: newRefreshToken };
   }
 
-  async getUserStatus(userId: number): Promise<{ userId: number; roles: string[]; membershipStatus: string }> {
+  async getUserStatus(
+    userId: number,
+  ): Promise<{ userId: number; roles: string[]; membershipStatus: string }> {
     // Get user roles
     const roles = await this.userRepository.getRolesByUserId(userId);
 
@@ -171,12 +185,11 @@ export class AuthService implements IAuthService {
     return { userId, roles, membershipStatus };
   }
 
-
   async getMe(userId: number) {
-       const user = await this.userRepository.findById(userId);
-        if (!user) throw new Error('User not found');
-        const roles = await this.userRepository.getRolesByUserId(userId);
-        const { passwordHash: _omit, ...userSafe } = user as any;
-        return { ...userSafe, roles };
-      }
+    const user = await this.userRepository.findById(userId);
+    if (!user) throw new Error('User not found');
+    const roles = await this.userRepository.getRolesByUserId(userId);
+    const { passwordHash: _omit, ...userSafe } = user as any;
+    return { ...userSafe, roles };
+  }
 }

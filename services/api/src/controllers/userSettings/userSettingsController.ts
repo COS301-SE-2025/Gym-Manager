@@ -26,7 +26,7 @@ export class UserSettingsController {
       return res.json(result);
     } catch (error: any) {
       console.error('getUserSettings error:', error);
-      
+
       if (error.message === 'Member not found') {
         return res.status(404).json({ error: 'Member not found' });
       }
@@ -45,18 +45,18 @@ export class UserSettingsController {
 
     try {
       const request: UpdateUserSettingsRequest = {
-        publicVisibility
+        publicVisibility,
       };
 
       const result = await this.userSettingsService.updateUserSettings(userId, request);
       return res.json(result);
     } catch (error: any) {
       console.error('editSettings error:', error);
-      
+
       if (error.message === "'publicVisibility' must be a boolean") {
         return res.status(400).json({ error: "'publicVisibility' must be a boolean" });
       }
-      
+
       if (error.message === 'Member not found') {
         return res.status(404).json({ error: 'Member not found' });
       }

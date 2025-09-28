@@ -11,58 +11,56 @@ export class DailyLeaderboardRoutes {
   private authMiddleware: AuthMiddleware;
 
   constructor() {
-
-    
     try {
-
       const repository = new DailyLeaderboardRepository();
-      
 
       const service = new DailyLeaderboardService(repository);
-      
 
       this.controller = new DailyLeaderboardController(service);
-      
+
       this.authMiddleware = new AuthMiddleware();
-      
+
       this.setupRoutes();
-      
     } catch (error) {
       throw error;
     }
   }
 
   private setupRoutes() {
-
-    
     // Test route to verify routing is working
     this.router.get('/daily-leaderboard-test', (req, res) => {
-
-      res.json({ 
-        message: 'Daily leaderboard routes are working!', 
-        timestamp: new Date().toISOString() 
+      res.json({
+        message: 'Daily leaderboard routes are working!',
+        timestamp: new Date().toISOString(),
       });
     });
 
     // Debug route to see all registered routes
     this.router.get('/daily-leaderboard-debug', (req, res) => {
-
       res.json({
         message: 'Debug route working',
-        routes: ['GET /daily-leaderboard-test', 'GET /daily-leaderboard-debug', 'GET /daily-leaderboard'],
-        timestamp: new Date().toISOString()
+        routes: [
+          'GET /daily-leaderboard-test',
+          'GET /daily-leaderboard-debug',
+          'GET /daily-leaderboard',
+        ],
+        timestamp: new Date().toISOString(),
       });
     });
 
     // Actual route with debugging
-    this.router.get('/daily-leaderboard', (req, res, next) => {
-      next();
-    }, this.authMiddleware.isAuthenticated, this.controller.getDailyLeaderboard);
-
+    this.router.get(
+      '/daily-leaderboard',
+      (req, res, next) => {
+        next();
+      },
+      this.authMiddleware.isAuthenticated,
+      this.controller.getDailyLeaderboard,
+    );
   }
 
-  getRouter() { 
-    return this.router; 
+  getRouter() {
+    return this.router;
   }
 }
 

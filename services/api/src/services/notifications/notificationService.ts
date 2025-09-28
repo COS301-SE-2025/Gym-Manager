@@ -12,11 +12,6 @@ export class NotificationService {
     const title = 'New User Signup';
     const message = `${user.firstName} ${user.lastName} has registered and needs approval.`;
 
-    await this.notificationRepository.createNotificationWithTarget(
-      { title, message },
-      'admin',
-    );
+    await this.notificationRepository.createNotificationWithTarget({ title, message }, 'admin');
   }
 }
-
-

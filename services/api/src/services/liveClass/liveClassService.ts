@@ -24,7 +24,7 @@ export class LiveClassService implements ILiveClassService {
     this.userRepo = userRepo || new UserRepository();
 
     this.gamificationService = gamificationService || new GamificationService(new GamificationRepository());
-    
+
   }
 
   // --- Session ---
@@ -173,8 +173,6 @@ export class LiveClassService implements ILiveClassService {
   // --- Submit score (coach batch or member single) ---
   async submitScore(userId: number, roles: string[] = [], body: any) {
 
-    
-
     const classId = body?.classId;
     if (!Number.isFinite(classId)) throw new Error('CLASS_ID_REQUIRED');
 
@@ -277,12 +275,9 @@ export class LiveClassService implements ILiveClassService {
 
   async stopLiveClass(classId: number) {
 
-    
     await this.repo.stopSession(classId);
-    // ⬇️ persist final scores for history
     try {
       await this.repo.persistScoresFromLive(classId);
-
       
 
       // Trigger gamification for all participants
@@ -294,10 +289,8 @@ export class LiveClassService implements ILiveClassService {
           const gamificationResult = await this.gamificationService.recordClassAttendance(participant.userId, classId, new Date());
 
         } catch (gamificationError) {
-          console.error(
-            `❌ Gamification failed for user ${participant.userId}:`,
-            gamificationError,
-          );
+          console.error(`Gamification failed for user ${participant.userId}:`, gamificationError);
+
         }
       }
     } catch (e) {
@@ -353,7 +346,6 @@ export class LiveClassService implements ILiveClassService {
     await this.repo.ensureProgressRow(classId, userId);
     await this.repo.setPartialReps(classId, userId, safe);
 
-    //  If the class already ended, recompute & persist finals so leaderboards update
     try {
       const sess = await this.repo.getClassSession(classId);
       if (String(sess?.status ?? '').toLowerCase() === 'ended') {
@@ -655,11 +647,10 @@ export class LiveClassService implements ILiveClassService {
 
     // Trigger gamification updates for class attendance
     try {
-
       const gamificationResult = await this.gamificationService.recordClassAttendance(userId, classId, new Date());
 
     } catch (gamificationError) {
-      console.error('❌ Gamification update failed for scaling:', gamificationError);
+      console.error('Gamification update failed for scaling:', gamificationError);
     }
   }
 

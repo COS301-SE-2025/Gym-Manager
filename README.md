@@ -9,7 +9,7 @@
 ![Build](https://img.shields.io/github/actions/workflow/status/COS301-SE-2025/Gym-Manager/ci.yml?label=Build&logo=github)
 [![Coverage](https://codecov.io/gh/COS301-SE-2025/Gym-Manager/branch/main/graph/badge.svg)](https://codecov.io/gh/COS301-SE-2025/Gym-Manager)
 ![Open Issues](https://img.shields.io/github/issues/COS301-SE-2025/Gym-Manager?logo=github)
-![Uptime](https://img.shields.io/uptimerobot/ratio/m793620257-fa7567f6c9f1e2282d9efa97?label=API%20Uptime)
+![Uptime](https://img.shields.io/uptimerobot/status/m801465365-843700d64b7c53d6c1e77361?label=status)
 
 > Gym manager is a specialized management software solution purpose-built for HIIT (HighIntensity Interval Training) gyms. Unlike other fitness management platforms, this system is designed around the unique workflows, community focus, and performance tracking needs of
 HIIT environments
@@ -84,6 +84,13 @@ Gym-Manager/
     * `dev-mobile` = mobile app development
     * `dev-web` = web frontend development
   * `feature/` branches = day-to-day task-specific work, usually branched off the relevant sub-dev branch.
+
+### Uptime
+[**Full status (details & history)**](https://stats.uptimerobot.com/l8KHTmilDD)
+
+| **Live** | **7 days** | **30 days** |
+|:--:|:--:|:--:|
+| <img alt="API status" src="https://img.shields.io/uptimerobot/status/m801465365-843700d64b7c53d6c1e77361?label=status&style=flat-square" /> | <img alt="Uptime 7d" src="https://img.shields.io/uptimerobot/ratio/7/m801465365-843700d64b7c53d6c1e77361?label=uptime&style=flat-square" /> | <img alt="Uptime 30d" src="https://img.shields.io/uptimerobot/ratio/30/m801465365-843700d64b7c53d6c1e77361?label=uptime&style=flat-square" /> |
 
 
 > © 2025 Rome was built in a day — University of Pretoria COS 301 Capstone Project

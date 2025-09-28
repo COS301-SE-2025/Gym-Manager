@@ -143,7 +143,6 @@ export class GamificationService {
     const levelRange = pointsForNextLevel - pointsForCurrentLevel;
     const progressPercentage = levelRange > 0 ? Math.min(100, (pointsInCurrent / levelRange) * 100) : 100;
 
-
     return {
       currentLevel: actualCurrentLevel,
       nextLevel,

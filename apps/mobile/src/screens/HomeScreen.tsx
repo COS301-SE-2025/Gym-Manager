@@ -169,6 +169,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       const bookedResponse = await apiClient.get<ApiBookedClass[]>('/member/classes');
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
       const formattedBookedClasses: ClassItem[] = bookedResponse.data
         .filter((apiClass) => {
           const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);

@@ -1,5 +1,5 @@
 const js = require('@eslint/js');
-const tseslint = require('@typescript-eslint/eslint-plugin'); // ✅ Fixed line
+const tseslint = require('@typescript-eslint/eslint-plugin'); // Fixed line
 const parser = require('@typescript-eslint/parser');
 const prettier = require('eslint-plugin-prettier');
 

@@ -1,0 +1,73 @@
+name: Manual Remote Availability (/health on deployed API)
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: "Deployed API base URL (e.g. https://api.yourdomain.com)"
+        required: false
+      probes:
+        description: "Number of probes (N)"
+        required: false
+        default: "60"
+      gap_ms:
+        description: "Gap between probes in ms"
+        required: false
+        default: "50"
+      p95_ms:
+        description: "Max allowed p95 latency in ms"
+        required: false
+        default: "300"
+      max_err_rate:
+        description: "Max allowed error rate (0.0..1.0)"
+        required: false
+        default: "0"
+      timeout_ms:
+        description: "Jest test timeout in ms"
+        required: false
+        default: "60000"
+
+jobs:
+  availability-remote:
+    name: Remote availability — /health on deployed API
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: services/api/package-lock.json
+
+      - name: Install API dev deps (for Jest)
+        run: npm ci
+        working-directory: ./services/api
+
+      # Resolve API_URL from: workflow input -> Actions Variable -> Secret
+      - name: Resolve API_URL
+        id: cfg
+        run: |
+          if [ -n "${{ github.event.inputs.api_url }}" ]; then
+            echo "api_url=${{ github.event.inputs.api_url }}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ vars.API_URL }}" ]; then
+            echo "api_url=${{ vars.API_URL }}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ secrets.API_URL }}" ]; then
+            echo "api_url=${{ secrets.API_URL }}" >> $GITHUB_OUTPUT
+          else
+            echo "API_URL not provided (input/variable/secret)."
+            exit 1
+          fi
+
+      - name: Run remote availability probes
+        run: npm run test:integration:availability:remote
+        working-directory: ./services/api
+        env:
+          API_URL:              ${{ steps.cfg.outputs.api_url }}
+          AVAIL_PATH:           /health
+          AVAIL_N:              ${{ github.event.inputs.probes     || '60' }}
+          AVAIL_GAP_MS:         ${{ github.event.inputs.gap_ms     || '50' }}
+          AVAIL_MAX_P95_MS:     ${{ github.event.inputs.p95_ms     || '300' }}
+          AVAIL_MAX_ERR_RATE:   ${{ github.event.inputs.max_err_rate || '0' }}
+          AVAIL_TIMEOUT_MS:     ${{ github.event.inputs.timeout_ms || '60000' }}

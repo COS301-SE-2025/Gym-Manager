@@ -301,7 +301,6 @@ export class GamificationService implements IGamificationService {
 
   // Class attendance tracking - new method for attendance-based gamification
   async recordClassAttendance(userId: number, classId: number, attendanceDate: Date = new Date()): Promise<{ streak: UserStreak; newBadges: UserBadge[] }> {
-    
     // Update user streak based on class attendance
     const updatedStreak = await this.updateUserStreak(userId, attendanceDate);
 

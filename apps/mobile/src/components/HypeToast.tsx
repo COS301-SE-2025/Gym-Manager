@@ -4,9 +4,14 @@ import { Animated, StyleSheet, Text, ViewStyle } from 'react-native';
 export function HypeToast({ text, show, style }: { text: string; show: boolean; style?: ViewStyle }) {
   const anim = useRef(new Animated.Value(0)).current;
 
+  // Debug logging
+  useEffect(() => {
+    console.log('HypeToast received:', { text, show, hasText: !!text });
+  }, [text, show]);
 
   useEffect(() => {
     if (show) {
+      console.log('HypeToast animating in with text:', text);
       Animated.sequence([
         Animated.timing(anim, { toValue: 1, duration: 220, useNativeDriver: true }),
         Animated.delay(1200),

@@ -73,7 +73,6 @@ export class GamificationRepository implements IGamificationRepository {
   }
 
   async updateUserStreak(userId: number, updates: Partial<UserStreak>): Promise<UserStreak> {
-
     const updateData: any = {};
 
     if (updates.currentStreak !== undefined) updateData.currentStreak = updates.currentStreak;
@@ -86,13 +85,11 @@ export class GamificationRepository implements IGamificationRepository {
     if (updates.totalPoints !== undefined) updateData.totalPoints = updates.totalPoints;
     if (updates.level !== undefined) updateData.level = updates.level;
 
-
     const result = await db
       .update(userStreaks)
       .set(updateData)
       .where(eq(userStreaks.userId, userId))
       .returning();
-
 
     const streak = result[0];
     return {

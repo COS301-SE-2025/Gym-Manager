@@ -5,7 +5,7 @@ import {
   WeeklyScheduleRequest,
   AssignRoleRequest,
   RemoveRoleRequest,
-  UpdateUserRequest
+  UpdateUserRequest,
 } from '../../domain/entities/admin.entity';
 import { CreateClassRequest } from '../../domain/entities/class.entity';
 
@@ -71,7 +71,7 @@ export class AdminController {
       return res.json({ success: true });
     } catch (error: any) {
       console.error('assignCoach error:', error);
-      
+
       if (error.message === 'classId and coachId are required') {
         return res.status(400).json({ error: 'classId and coachId are required' });
       }
@@ -99,11 +99,11 @@ export class AdminController {
       return res.json({ success: true, class: updatedClass });
     } catch (error: any) {
       console.error('updateClass error:', error);
-      
+
       if (error.message === 'classId is required') {
         return res.status(400).json({ error: 'classId is required' });
       }
-      
+
       if (error.message === 'Class not found') {
         return res.status(404).json({ error: 'Class not found' });
       }
@@ -127,7 +127,7 @@ export class AdminController {
       return res.json({ success: true, message: 'Class deleted successfully' });
     } catch (error: any) {
       console.error('deleteClass error:', error);
-      
+
       if (error.message === 'classId is required') {
         return res.status(400).json({ error: 'classId is required' });
       }
@@ -148,11 +148,11 @@ export class AdminController {
       return res.json({ success: true });
     } catch (error: any) {
       console.error('assignUserToRole error:', error);
-      
+
       if (error.message === 'Missing userId or role') {
         return res.status(400).json({ error: 'Missing userId or role' });
       }
-      
+
       if (error.message === 'Invalid role') {
         return res.status(400).json({ error: 'Invalid role' });
       }
@@ -178,7 +178,7 @@ export class AdminController {
       return res.json(rows);
     } catch (error: any) {
       console.error('getUsersByRole error:', error);
-      
+
       if (error.message === 'Invalid role') {
         return res.status(400).json({ error: 'Invalid role' });
       }
@@ -204,11 +204,11 @@ export class AdminController {
       return res.json({ success: true });
     } catch (error: any) {
       console.error('removeCoachRole error:', error);
-      
+
       if (error.message === 'Missing userId') {
         return res.status(400).json({ error: 'Missing userId' });
       }
-      
+
       if (error.message === 'Invalid role') {
         return res.status(400).json({ error: 'Invalid role' });
       }
@@ -224,11 +224,11 @@ export class AdminController {
       return res.json({ success: true });
     } catch (error: any) {
       console.error('removeMemberRole error:', error);
-      
+
       if (error.message === 'Missing userId') {
         return res.status(400).json({ error: 'Missing userId' });
       }
-      
+
       if (error.message === 'Invalid role') {
         return res.status(400).json({ error: 'Invalid role' });
       }
@@ -244,11 +244,11 @@ export class AdminController {
       return res.json({ success: true });
     } catch (error: any) {
       console.error('removeAdminRole error:', error);
-      
+
       if (error.message === 'Missing userId') {
         return res.status(400).json({ error: 'Missing userId' });
       }
-      
+
       if (error.message === 'Invalid role') {
         return res.status(400).json({ error: 'Invalid role' });
       }
@@ -264,11 +264,11 @@ export class AdminController {
       return res.json({ success: true });
     } catch (error: any) {
       console.error('removeManagerRole error:', error);
-      
+
       if (error.message === 'Missing userId') {
         return res.status(400).json({ error: 'Missing userId' });
       }
-      
+
       if (error.message === 'Invalid role') {
         return res.status(400).json({ error: 'Invalid role' });
       }
@@ -284,11 +284,11 @@ export class AdminController {
       return res.json(roles);
     } catch (error: any) {
       console.error('getRolesByUserId error:', error);
-      
+
       if (error.message === 'Invalid userId') {
         return res.status(400).json({ error: 'Invalid userId' });
       }
-      
+
       if (error.message === 'No roles found for this user') {
         return res.status(404).json({ error: 'No roles found for this user' });
       }
@@ -304,11 +304,11 @@ export class AdminController {
       return res.json(user);
     } catch (error: any) {
       console.error('getUserById error:', error);
-      
+
       if (error.message === 'Invalid userId') {
         return res.status(400).json({ error: 'Invalid userId' });
       }
-      
+
       if (error.message === 'User not found') {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -330,7 +330,7 @@ export class AdminController {
       return res.status(200).json({ message: 'User updated successfully' });
     } catch (error: any) {
       console.error('updateUserById error:', error);
-      
+
       if (error.message === 'Invalid userId') {
         return res.status(400).json({ error: 'Invalid userId' });
       }

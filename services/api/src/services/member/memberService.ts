@@ -54,7 +54,7 @@ export class MemberService {
     credits: number,
     amount: number,
     paymentMethod: string,
-    transactionId: string
+    transactionId: string,
   ): Promise<CreditPurchaseResult> {
     // Validate that the user exists and is a member
     const memberExists = await this.memberRepository.memberExists(userId);
@@ -83,7 +83,7 @@ export class MemberService {
     return {
       newBalance,
       creditsAdded: credits,
-      transactionId
+      transactionId,
     };
   }
 
@@ -94,7 +94,7 @@ export class MemberService {
     userId: number,
     packageId: number,
     paymentMethod?: string,
-    externalTransactionId?: string
+    externalTransactionId?: string,
   ): Promise<CreditPurchaseResult> {
     // Validate that the user exists and is a member
     const memberExists = await this.memberRepository.memberExists(userId);
@@ -115,8 +115,8 @@ export class MemberService {
 
     // Get package details to add credits
     const packages = await this.paymentPackagesService.getActivePackages();
-    const selectedPackage = packages.find(pkg => pkg.packageId === packageId);
-    
+    const selectedPackage = packages.find((pkg) => pkg.packageId === packageId);
+
     if (!selectedPackage) {
       throw new Error('Payment package not found');
     }
@@ -125,11 +125,14 @@ export class MemberService {
     await this.paymentPackagesService.updateTransactionStatus(
       transactionId,
       'completed',
-      externalTransactionId
+      externalTransactionId,
     );
 
     // Add credits to the user's balance
-    const newBalance = await this.memberRepository.addCredits(userId, selectedPackage.creditsAmount);
+    const newBalance = await this.memberRepository.addCredits(
+      userId,
+      selectedPackage.creditsAmount,
+    );
 
     return {
       newBalance,
@@ -150,7 +153,7 @@ export class MemberService {
    */
   async deductCredits(userId: number, credits: number, tx?: any): Promise<number> {
     const currentBalance = await this.memberRepository.getCreditsBalance(userId);
-    
+
     if (currentBalance < credits) {
       throw new Error('Insufficient credits');
     }

@@ -26,7 +26,6 @@ export class GamificationService {
       const response = await apiClient.get<GamificationStatsResponse>(`${this.baseUrl}/stats`);
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching gamification stats:', error);
       throw error;
     }
   }
@@ -37,7 +36,6 @@ export class GamificationService {
       const response = await apiClient.get<UserStreakResponse>(`${this.baseUrl}/streak`);
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching user streak:', error);
       throw error;
     }
   }
@@ -49,7 +47,6 @@ export class GamificationService {
       const response = await apiClient.get<UserBadgesResponse>(`${this.baseUrl}/badges`, { params });
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching user badges:', error);
       throw error;
     }
   }
@@ -60,7 +57,6 @@ export class GamificationService {
       const response = await apiClient.get<BadgeDefinitionsResponse>(`${this.baseUrl}/badge-definitions`);
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching badge definitions:', error);
       throw error;
     }
   }
@@ -72,7 +68,6 @@ export class GamificationService {
       const response = await apiClient.get<UserActivitiesResponse>(`${this.baseUrl}/activities`, { params });
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching user activities:', error);
       throw error;
     }
   }
@@ -86,7 +81,6 @@ export class GamificationService {
       });
       return response.data.data;
     } catch (error) {
-      console.error('Error recording activity:', error);
       throw error;
     }
   }
@@ -102,7 +96,6 @@ export class GamificationService {
       const response = await apiClient.post<WorkoutCompletionResponse>(`${this.baseUrl}/workout-completed`, workoutData);
       return response.data.data;
     } catch (error) {
-      console.error('Error recording workout completion:', error);
       throw error;
     }
   }
@@ -114,7 +107,6 @@ export class GamificationService {
       const response = await apiClient.get<LeaderboardResponse>(`${this.baseUrl}/leaderboard/streak`, { params });
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching streak leaderboard:', error);
       throw error;
     }
   }
@@ -126,7 +118,6 @@ export class GamificationService {
       const response = await apiClient.get<LeaderboardResponse>(`${this.baseUrl}/leaderboard/points`, { params });
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching points leaderboard:', error);
       throw error;
     }
   }
@@ -151,20 +142,6 @@ export class GamificationService {
     const pointsToNext = Math.max(0, pointsForNextLevel - totalPoints);
     const levelRange = pointsForNextLevel - pointsForCurrentLevel;
     const progressPercentage = levelRange > 0 ? Math.min(100, (pointsInCurrent / levelRange) * 100) : 100;
-
-    // Debug logging
-    console.log('Level Progress Debug:', {
-      totalPoints,
-      actualCurrentLevel,
-      nextLevel,
-      pointsForCurrentLevel,
-      pointsForNextLevel,
-      pointsInCurrent,
-      pointsToNext,
-      levelRange,
-      progressPercentage,
-      backendLevel: currentLevel // The level from backend
-    });
 
     return {
       currentLevel: actualCurrentLevel,
@@ -393,7 +370,6 @@ export class GamificationService {
       );
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching character progress:', error);
       throw error;
     }
   }

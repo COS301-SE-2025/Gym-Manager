@@ -1,5 +1,13 @@
 import { db } from '../../db/client';
-import { analyticsEvents, classes, classattendance, classbookings, workouts, users, members } from '../../db/schema';
+import {
+  analyticsEvents,
+  classes,
+  classattendance,
+  classbookings,
+  workouts,
+  users,
+  members,
+} from '../../db/schema';
 import { LogEntry, CreateLogEntry } from '../../domain/entities/analytics.entity';
 import { IAnalyticsRepository } from '../../domain/interfaces/analytics.interface';
 import { AnalyticsRepository } from '../../repositories/analytics/analyticsRepository';
@@ -59,7 +67,6 @@ export interface CohortRetentionData {
   }>;
 }
 
-
 export class AnalyticsService {
   private analyticsRepository: IAnalyticsRepository;
 
@@ -94,7 +101,7 @@ export class AnalyticsService {
     }>;
   }> {
     const { startDate, endDate } = this.getDateRange(period);
-    
+
     // Convert ISO datetime to date-only where needed for classes.scheduledDate
     const startDateOnly = startDate ? startDate.slice(0, 10) : undefined;
     const endDateOnly = endDate ? endDate.slice(0, 10) : undefined;
@@ -105,60 +112,63 @@ export class AnalyticsService {
     if (endDateOnly) classDateConds.push(lte(classes.scheduledDate, endDateOnly));
 
     const classesInPeriod = await db
-      .select({ 
-        classId: classes.classId, 
+      .select({
+        classId: classes.classId,
         capacity: classes.capacity,
-        scheduledDate: classes.scheduledDate
+        scheduledDate: classes.scheduledDate,
       })
       .from(classes)
-      .where(classDateConds.length ? and(...classDateConds) : undefined as any)
+      .where(classDateConds.length ? and(...classDateConds) : (undefined as any))
       .orderBy(classes.scheduledDate);
 
     if (classesInPeriod.length === 0) {
       return {
         labels: [],
-        datasets: []
+        datasets: [],
       };
     }
 
     // Group classes by date and calculate metrics for each date
-    const dateGroups = new Map<string, {
-      capacity: number;
-      bookings: number;
-      attendance: number;
-      cancellations: number;
-    }>();
+    const dateGroups = new Map<
+      string,
+      {
+        capacity: number;
+        bookings: number;
+        attendance: number;
+        cancellations: number;
+      }
+    >();
 
     // Initialize date groups
-    classesInPeriod.forEach(cls => {
+    classesInPeriod.forEach((cls) => {
       if (!dateGroups.has(cls.scheduledDate)) {
         dateGroups.set(cls.scheduledDate, {
           capacity: 0,
           bookings: 0,
           attendance: 0,
-          cancellations: 0
+          cancellations: 0,
         });
       }
       const group = dateGroups.get(cls.scheduledDate)!;
       group.capacity += cls.capacity;
     });
 
-    const classIds = classesInPeriod.map(c => c.classId);
+    const classIds = classesInPeriod.map((c) => c.classId);
 
     // Get bookings for each class
     if (classIds.length > 0) {
       const bookingsData = await db
         .select({
           classId: classbookings.classId,
-          count: count(classbookings.bookingId)
+          count: count(classbookings.bookingId),
         })
         .from(classbookings)
         .where(sql`${classbookings.classId} IN (${sql.join(classIds, sql`, `)})`)
         .groupBy(classbookings.classId);
 
       // Map bookings to dates
-      bookingsData.forEach(booking => {
-        const classData = classesInPeriod.find(c => c.classId === booking.classId);
+      bookingsData.forEach((booking) => {
+        const classData = classesInPeriod.find((c) => c.classId === booking.classId);
         if (classData) {
           const group = dateGroups.get(classData.scheduledDate)!;
           group.bookings += booking.count;
@@ -171,15 +181,15 @@ export class AnalyticsService {
       const attendanceData = await db
         .select({
           classId: classattendance.classId,
-          count: count(classattendance.memberId)
+          count: count(classattendance.memberId),
         })
         .from(classattendance)
         .where(sql`${classattendance.classId} IN (${sql.join(classIds, sql`, `)})`)
         .groupBy(classattendance.classId);
 
       // Map attendance to dates
-      attendanceData.forEach(attendance => {
-        const classData = classesInPeriod.find(c => c.classId === attendance.classId);
+      attendanceData.forEach((attendance) => {
+        const classData = classesInPeriod.find((c) => c.classId === attendance.classId);
         if (classData) {
           const group = dateGroups.get(classData.scheduledDate)!;
           group.attendance += attendance.count;
@@ -192,20 +202,20 @@ export class AnalyticsService {
       const cancellationData = await db
         .select({
           classId: sql`(${analyticsEvents.properties} ->> 'classId')::int`.as('classId'),
-          count: count(analyticsEvents.id)
+          count: count(analyticsEvents.id),
         })
         .from(analyticsEvents)
         .where(
           and(
             eq(analyticsEvents.eventType, 'class_cancellation'),
-            sql`( ${analyticsEvents.properties} ->> 'classId')::int IN (${sql.join(classIds, sql`, `)})`
-          )
+            sql`( ${analyticsEvents.properties} ->> 'classId')::int IN (${sql.join(classIds, sql`, `)})`,
+          ),
         )
         .groupBy(sql`(${analyticsEvents.properties} ->> 'classId')::int`);
 
       // Map cancellations to dates
-      cancellationData.forEach(cancellation => {
-        const classData = classesInPeriod.find(c => c.classId === cancellation.classId);
+      cancellationData.forEach((cancellation) => {
+        const classData = classesInPeriod.find((c) => c.classId === cancellation.classId);
         if (classData) {
           const group = dateGroups.get(classData.scheduledDate)!;
           group.cancellations += cancellation.count;
@@ -215,19 +225,19 @@ export class AnalyticsService {
 
     // Convert to chart format
     const sortedDates = Array.from(dateGroups.keys()).sort();
-    const labels = sortedDates.map(date => {
+    const labels = sortedDates.map((date) => {
       const dateObj = new Date(date);
-      return dateObj.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric' 
+      return dateObj.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
       });
     });
 
-    const capacityData = sortedDates.map(date => dateGroups.get(date)!.capacity);
-    const bookingsData = sortedDates.map(date => dateGroups.get(date)!.bookings);
-    const attendanceData = sortedDates.map(date => dateGroups.get(date)!.attendance);
-    const cancellationsData = sortedDates.map(date => dateGroups.get(date)!.cancellations);
-    const noShowsData = sortedDates.map(date => {
+    const capacityData = sortedDates.map((date) => dateGroups.get(date)!.capacity);
+    const bookingsData = sortedDates.map((date) => dateGroups.get(date)!.bookings);
+    const attendanceData = sortedDates.map((date) => dateGroups.get(date)!.attendance);
+    const cancellationsData = sortedDates.map((date) => dateGroups.get(date)!.cancellations);
+    const noShowsData = sortedDates.map((date) => {
       const group = dateGroups.get(date)!;
       return group.bookings - group.attendance;
     });
@@ -240,7 +250,7 @@ export class AnalyticsService {
         { label: 'Attendance', data: attendanceData, borderColor: '#22c55e' },
         { label: 'Cancellations', data: cancellationsData, borderColor: '#f97316' },
         { label: 'No-Shows', data: noShowsData, borderColor: '#ef4444' },
-      ]
+      ],
     };
   }
 
@@ -264,9 +274,9 @@ export class AnalyticsService {
     const classesInPeriod = await db
       .select({ classId: classes.classId, capacity: classes.capacity })
       .from(classes)
-      .where(classDateConds.length ? and(...classDateConds) : undefined as any);
+      .where(classDateConds.length ? and(...classDateConds) : (undefined as any));
 
-    const classIds = classesInPeriod.map(c => c.classId);
+    const classIds = classesInPeriod.map((c) => c.classId);
     const totalCapacity = classesInPeriod.reduce((sum, c) => sum + c.capacity, 0);
 
     // Count bookings for classes held in the selected period
@@ -299,14 +309,15 @@ export class AnalyticsService {
           and(
             eq(analyticsEvents.eventType, 'class_cancellation'),
             // properties->>'classId' cast to int should be in classIds
-            sql`( ${analyticsEvents.properties} ->> 'classId')::int IN (${sql.join(classIds, sql`, `)})`
-          )
+            sql`( ${analyticsEvents.properties} ->> 'classId')::int IN (${sql.join(classIds, sql`, `)})`,
+          ),
         );
       totalCancellations = cancellationCountRows[0]?.value ?? 0;
     } else {
       // Fallback to date range if no classes found in period
       const cancellationConditions = [eq(analyticsEvents.eventType, 'class_cancellation')] as any[];
-      if (startDate) cancellationConditions.push(gte(analyticsEvents.createdAt, new Date(startDate)));
+      if (startDate)
+        cancellationConditions.push(gte(analyticsEvents.createdAt, new Date(startDate)));
       if (endDate) cancellationConditions.push(lte(analyticsEvents.createdAt, new Date(endDate)));
       const cancellationCountRows = await db
         .select({ value: count(analyticsEvents.id) })
@@ -319,10 +330,10 @@ export class AnalyticsService {
     // 1. Total Bookings: Total bookings for classes held in the period (already correct)
     // 2. Fill Rate: Percentage of bookings made compared to capacity of classes held in the period
     const fillRate = totalCapacity > 0 ? totalBookings / totalCapacity : 0;
-    
+
     // 3. Cancellation Rate: Number of cancellations compared to total bookings for classes held in the period
     const cancellationRate = totalBookings > 0 ? totalCancellations / totalBookings : 0;
-    
+
     // 4. No Show Rate: Percentage of people who actually attended vs total bookings for classes held in the period
     const noShowRate = totalBookings > 0 ? totalAttendances / totalBookings : 0;
 
@@ -404,9 +415,9 @@ export class AnalyticsService {
       .from(classattendance)
       .where(
         sql`${classattendance.classId} IN (${sql.join(
-          coachClasses.map(c => c.classId),
-          sql`, `
-        )})`
+          coachClasses.map((c) => c.classId),
+          sql`, `,
+        )})`,
       )
       .groupBy(classattendance.classId);
 
@@ -418,15 +429,16 @@ export class AnalyticsService {
 
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const recentClasses = coachClasses.filter(classData => 
-      new Date(classData.scheduledDate) >= thirtyDaysAgo
-    ).sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
 
-    const attendanceTrends = recentClasses.map(classData => {
-      const attendance = attendanceData.find(a => a.classId === classData.classId)?.attendanceCount || 0;
+    const recentClasses = coachClasses
+      .filter((classData) => new Date(classData.scheduledDate) >= thirtyDaysAgo)
+      .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
+
+    const attendanceTrends = recentClasses.map((classData) => {
+      const attendance =
+        attendanceData.find((a) => a.classId === classData.classId)?.attendanceCount || 0;
       const fillRate = classData.capacity > 0 ? (attendance / classData.capacity) * 100 : 0;
-      
+
       return {
         date: classData.scheduledDate,
         attendance,
@@ -479,7 +491,7 @@ export class AnalyticsService {
         .where(eq(classattendance.classId, attendance.classId))
         .orderBy(desc(classattendance.score));
 
-      const position = allParticipants.findIndex(p => p.memberId === memberId) + 1;
+      const position = allParticipants.findIndex((p) => p.memberId === memberId) + 1;
       totalPosition += position;
 
       classPerformance.push({
@@ -492,9 +504,10 @@ export class AnalyticsService {
       });
     }
 
-    const averageLeaderboardPosition = memberAttendance.length > 0 
-      ? Math.round((totalPosition / memberAttendance.length) * 100) / 100 
-      : 0;
+    const averageLeaderboardPosition =
+      memberAttendance.length > 0
+        ? Math.round((totalPosition / memberAttendance.length) * 100) / 100
+        : 0;
 
     return {
       averageLeaderboardPosition,
@@ -512,7 +525,7 @@ export class AnalyticsService {
     }>;
   }> {
     const { startDate, endDate } = this.getDateRange(period);
-    
+
     // Build date conditions
     const dateConds = [] as any[];
     if (startDate) dateConds.push(gte(analyticsEvents.createdAt, new Date(startDate)));
@@ -524,17 +537,11 @@ export class AnalyticsService {
         id: analyticsEvents.id,
         createdAt: analyticsEvents.createdAt,
         eventType: analyticsEvents.eventType,
-        properties: analyticsEvents.properties
+        properties: analyticsEvents.properties,
       })
       .from(analyticsEvents)
-      .where(
-        and(
-          eq(analyticsEvents.eventType, 'user_signup'),
-          ...dateConds
-        )
-      )
+      .where(and(eq(analyticsEvents.eventType, 'user_signup'), ...dateConds))
       .orderBy(analyticsEvents.createdAt);
-
 
     // Get all approval events in the date range
     const allApprovalEvents = await db
@@ -542,24 +549,20 @@ export class AnalyticsService {
         id: analyticsEvents.id,
         createdAt: analyticsEvents.createdAt,
         eventType: analyticsEvents.eventType,
-        properties: analyticsEvents.properties
+        properties: analyticsEvents.properties,
       })
       .from(analyticsEvents)
-      .where(
-        and(
-          eq(analyticsEvents.eventType, 'membership_approval'),
-          ...dateConds
-        )
-      )
+      .where(and(eq(analyticsEvents.eventType, 'membership_approval'), ...dateConds))
       .orderBy(analyticsEvents.createdAt);
-
 
     // Create date range for consistent labels
     const labels: string[] = [];
     const signupData: number[] = [];
     const approvalData: number[] = [];
 
-    const currentDate = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const currentDate = startDate
+      ? new Date(startDate)
+      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const endDateObj = endDate ? new Date(endDate) : new Date();
 
     while (currentDate <= endDateObj) {
@@ -603,22 +606,25 @@ export class AnalyticsService {
 
         switch (period) {
           case 'today':
-            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
-                     eventDate.getMonth() === currentDate.getMonth() &&
-                     eventDate.getDate() === currentDate.getDate() &&
-                     eventDate.getHours() === currentDate.getHours();
+            matches =
+              eventDate.getFullYear() === currentDate.getFullYear() &&
+              eventDate.getMonth() === currentDate.getMonth() &&
+              eventDate.getDate() === currentDate.getDate() &&
+              eventDate.getHours() === currentDate.getHours();
             break;
           case 'lastWeek':
           case 'lastMonth':
-            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
-                     eventDate.getMonth() === currentDate.getMonth() &&
-                     eventDate.getDate() === currentDate.getDate();
+            matches =
+              eventDate.getFullYear() === currentDate.getFullYear() &&
+              eventDate.getMonth() === currentDate.getMonth() &&
+              eventDate.getDate() === currentDate.getDate();
             break;
           case 'lastYear':
           case 'all':
           default:
-            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
-                     eventDate.getMonth() === currentDate.getMonth();
+            matches =
+              eventDate.getFullYear() === currentDate.getFullYear() &&
+              eventDate.getMonth() === currentDate.getMonth();
             break;
         }
 
@@ -631,22 +637,25 @@ export class AnalyticsService {
 
         switch (period) {
           case 'today':
-            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
-                     eventDate.getMonth() === currentDate.getMonth() &&
-                     eventDate.getDate() === currentDate.getDate() &&
-                     eventDate.getHours() === currentDate.getHours();
+            matches =
+              eventDate.getFullYear() === currentDate.getFullYear() &&
+              eventDate.getMonth() === currentDate.getMonth() &&
+              eventDate.getDate() === currentDate.getDate() &&
+              eventDate.getHours() === currentDate.getHours();
             break;
           case 'lastWeek':
           case 'lastMonth':
-            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
-                     eventDate.getMonth() === currentDate.getMonth() &&
-                     eventDate.getDate() === currentDate.getDate();
+            matches =
+              eventDate.getFullYear() === currentDate.getFullYear() &&
+              eventDate.getMonth() === currentDate.getMonth() &&
+              eventDate.getDate() === currentDate.getDate();
             break;
           case 'lastYear':
           case 'all':
           default:
-            matches = eventDate.getFullYear() === currentDate.getFullYear() &&
-                     eventDate.getMonth() === currentDate.getMonth();
+            matches =
+              eventDate.getFullYear() === currentDate.getFullYear() &&
+              eventDate.getMonth() === currentDate.getMonth();
             break;
         }
 
@@ -739,15 +748,30 @@ export class AnalyticsService {
       .where(
         and(
           gte(classes.scheduledDate, startDate.toISOString().slice(0, 10)),
-          lte(classes.scheduledDate, endDate.toISOString().slice(0, 10))
-        )
+          lte(classes.scheduledDate, endDate.toISOString().slice(0, 10)),
+        ),
       )
       .groupBy(classes.classId, classes.scheduledDate, classes.scheduledTime, classes.capacity);
 
     // Create time slots for all business hours (6am to 10pm)
     const timeSlots = [
-      '6am', '7am', '8am', '9am', '10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', 
-      '5pm', '6pm', '7pm', '8pm', '9pm', '10pm'
+      '6am',
+      '7am',
+      '8am',
+      '9am',
+      '10am',
+      '11am',
+      '12pm',
+      '1pm',
+      '2pm',
+      '3pm',
+      '4pm',
+      '5pm',
+      '6pm',
+      '7pm',
+      '8pm',
+      '9pm',
+      '10pm',
     ];
 
     // Days of week
@@ -763,30 +787,33 @@ export class AnalyticsService {
     for (const classData of classesWithBookings) {
       const classDate = new Date(classData.scheduledDate);
       const dayOfWeek = classDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      
+
       // Parse time (format: "HH:MM:SS")
       const timeParts = classData.scheduledTime.split(':');
       const hour = parseInt(timeParts[0]);
-      
+
       // Find the appropriate time slot index based on all business hours
       let timeSlotIndex = -1;
-      if (hour >= 6 && hour <= 22) { // 6am to 10pm (22:00)
+      if (hour >= 6 && hour <= 22) {
+        // 6am to 10pm (22:00)
         timeSlotIndex = hour - 6; // Direct mapping: 6am = 0, 7am = 1, etc.
       }
-      
+
       if (timeSlotIndex >= 0 && timeSlotIndex < timeSlots.length) {
-        const utilization = classData.capacity > 0 ? (classData.bookingCount / classData.capacity) * 100 : 0;
+        const utilization =
+          classData.capacity > 0 ? (classData.bookingCount / classData.capacity) * 100 : 0;
         utilizationMatrix[dayOfWeek][timeSlotIndex] = Math.round(utilization * 100) / 100;
       }
     }
 
     // Calculate average utilization by hour across all days
     const averageUtilizationByHour = timeSlots.map((hour, index) => {
-      const dayUtilizations = utilizationMatrix.map(day => day[index]).filter(val => val > 0);
-      const average = dayUtilizations.length > 0 
-        ? dayUtilizations.reduce((sum, val) => sum + val, 0) / dayUtilizations.length 
-        : 0;
-      
+      const dayUtilizations = utilizationMatrix.map((day) => day[index]).filter((val) => val > 0);
+      const average =
+        dayUtilizations.length > 0
+          ? dayUtilizations.reduce((sum, val) => sum + val, 0) / dayUtilizations.length
+          : 0;
+
       return {
         hour,
         averageUtilization: Math.round(average * 100) / 100,
@@ -804,8 +831,23 @@ export class AnalyticsService {
   async getBookingTimesAnalytics(): Promise<BookingTimesData[]> {
     // Get all time slots from 6am to 10pm (17 hours)
     const timeSlots = [
-      '6am', '7am', '8am', '9am', '10am', '11am', '12pm', 
-      '1pm', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm', '8pm', '9pm', '10pm'
+      '6am',
+      '7am',
+      '8am',
+      '9am',
+      '10am',
+      '11am',
+      '12pm',
+      '1pm',
+      '2pm',
+      '3pm',
+      '4pm',
+      '5pm',
+      '6pm',
+      '7pm',
+      '8pm',
+      '9pm',
+      '10pm',
     ];
 
     // Get all bookings with their class times
@@ -822,7 +864,7 @@ export class AnalyticsService {
     const bookingsByHour = new Map<string, number>();
     const totalBookings = bookingsData.length;
 
-    bookingsData.forEach(booking => {
+    bookingsData.forEach((booking) => {
       const time = booking.scheduledTime;
       if (time) {
         // Convert time to hour format (e.g., "09:00:00" -> "9am")
@@ -837,7 +879,7 @@ export class AnalyticsService {
     const analytics = timeSlots.map((hour, index) => {
       const totalBookingsForHour = bookingsByHour.get(hour) || 0;
       const averageBookings = totalBookings > 0 ? totalBookingsForHour / totalBookings : 0;
-      
+
       return {
         hour,
         averageBookings: Math.round(averageBookings * 100) / 100, // Round to 2 decimal places
@@ -880,7 +922,7 @@ export class AnalyticsService {
    */
   async getCohortRetention(period?: string): Promise<CohortRetentionData> {
     const { startDate, endDate } = this.getDateRange(period);
-    
+
     // Get all members with their first booking date as proxy for signup date
     const membersWithFirstBooking = await db
       .select({
@@ -897,67 +939,66 @@ export class AnalyticsService {
       .orderBy(sql`MIN(${classbookings.bookedAt})`);
 
     // Filter out members who have never booked a class and apply date filtering
-    const activeMembers = membersWithFirstBooking.filter(m => {
+    const activeMembers = membersWithFirstBooking.filter((m) => {
       if (!m.firstBookingDate) return false;
-      
+
       const bookingDate = new Date(m.firstBookingDate);
       if (startDate && bookingDate < new Date(startDate)) return false;
       if (endDate && bookingDate > new Date(endDate)) return false;
-      
+
       return true;
     });
 
     if (activeMembers.length === 0) {
       return {
         labels: [],
-        datasets: []
+        datasets: [],
       };
     }
 
     // Group members by signup month
     const cohorts = new Map<string, Array<{ userId: number; signupDate: string }>>();
-    
-    activeMembers.forEach(member => {
+
+    activeMembers.forEach((member) => {
       const signupDate = new Date(member.firstBookingDate!);
       const cohortKey = `${signupDate.getFullYear()}-${String(signupDate.getMonth() + 1).padStart(2, '0')}`;
-      
+
       if (!cohorts.has(cohortKey)) {
         cohorts.set(cohortKey, []);
       }
       cohorts.get(cohortKey)!.push({
         userId: member.userId,
-        signupDate: member.firstBookingDate!
+        signupDate: member.firstBookingDate!,
       });
     });
 
     // Calculate retention for each cohort
     const cohortRetentionData = new Map<string, number[]>();
     const allCohortKeys = Array.from(cohorts.keys()).sort();
-    
+
     for (const [cohortKey, cohortMembers] of cohorts) {
       const signupDate = new Date(cohortMembers[0].signupDate);
       const retentionRates = [100]; // Month 0 is always 100%
-      
+
       // Calculate retention for months 1, 2, 3, 6, 9, 12
       const retentionMonths = [1, 2, 3, 6, 9, 12];
-      
+
       for (const monthOffset of retentionMonths) {
         const targetDate = new Date(signupDate);
         targetDate.setMonth(targetDate.getMonth() + monthOffset);
-        
+
         // Count active members in this month (those who booked or attended classes)
         const activeMembers = await this.getActiveMembersInMonth(
-          cohortMembers.map(m => m.userId),
-          targetDate
+          cohortMembers.map((m) => m.userId),
+          targetDate,
         );
-        
-        const retentionRate = cohortMembers.length > 0 
-          ? Math.round((activeMembers / cohortMembers.length) * 100)
-          : 0;
-        
+
+        const retentionRate =
+          cohortMembers.length > 0 ? Math.round((activeMembers / cohortMembers.length) * 100) : 0;
+
         retentionRates.push(retentionRate);
       }
-      
+
       cohortRetentionData.set(cohortKey, retentionRates);
     }
 
@@ -973,14 +1014,14 @@ export class AnalyticsService {
     const averageRetention = labels.map((_, index) => {
       let totalRetention = 0;
       let cohortCount = 0;
-      
+
       for (const retentionRates of cohortRetentionData.values()) {
         if (retentionRates[index] !== undefined) {
           totalRetention += retentionRates[index];
           cohortCount++;
         }
       }
-      
+
       return cohortCount > 0 ? Math.round(totalRetention / cohortCount) : 0;
     });
 
@@ -1016,13 +1057,13 @@ export class AnalyticsService {
       .where(
         and(
           gte(classes.scheduledDate, startOfMonth.toISOString().slice(0, 10)),
-          lte(classes.scheduledDate, endOfMonth.toISOString().slice(0, 10))
-        )
+          lte(classes.scheduledDate, endOfMonth.toISOString().slice(0, 10)),
+        ),
       );
 
     if (classesInMonth.length === 0) return 0;
 
-    const classIds = classesInMonth.map(c => c.classId);
+    const classIds = classesInMonth.map((c) => c.classId);
 
     // Count unique members who either booked or attended classes in this month
     const activeMembers = await db
@@ -1031,12 +1072,12 @@ export class AnalyticsService {
       .where(
         and(
           sql`${classbookings.memberId} IN (${sql.join(memberIds, sql`, `)})`,
-          sql`${classbookings.classId} IN (${sql.join(classIds, sql`, `)})`
-        )
+          sql`${classbookings.classId} IN (${sql.join(classIds, sql`, `)})`,
+        ),
       );
 
     // Get unique member IDs
-    const uniqueMemberIds = new Set(activeMembers.map(m => m.memberId));
+    const uniqueMemberIds = new Set(activeMembers.map((m) => m.memberId));
 
     return uniqueMemberIds.size;
   }

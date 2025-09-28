@@ -1,4 +1,3 @@
-// apps/mobile/src/components/HypeToast.tsx
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, ViewStyle } from 'react-native';
 

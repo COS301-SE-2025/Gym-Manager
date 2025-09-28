@@ -60,19 +60,14 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
     const loadUserData = async () => {
       try {
         const user = await getUser();
-        console.log('Loaded user:', user);
         setCurrentUser(user);
         
         // Fetch current credits balance
         if (user?.userId) {
           const url = `/members/${user.userId}/credits`;
-          console.log('Fetching credits for user ID:', user.userId);
-          console.log('API URL:', url);
           const response = await apiClient.get(url);
-          console.log('Credits response:', response.data);
           setCurrentCredits(response.data.creditsBalance || 0);
         } else {
-          console.log('No user ID found, user:', user);
           Alert.alert('Error', 'User ID not found. Please log in again.');
         }
       } catch (error: any) {

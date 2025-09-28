@@ -18,7 +18,10 @@ import { Class, WeeklyScheduleInput } from '../../domain/entities/class.entity';
 type Executor = typeof globalDb;
 
 // Map day -> weekday offset from Monday
-const dayToOffset: Record<'Monday'|'Tuesday'|'Wednesday'|'Thursday'|'Friday'|'Saturday'|'Sunday', number> = {
+const dayToOffset: Record<
+  'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday',
+  number
+> = {
   Monday: 0,
   Tuesday: 1,
   Wednesday: 2,
@@ -48,13 +51,13 @@ export class AdminRepository implements IAdminRepository {
     const baseDate = dateFnsParseISO(startDate);
     const inserted: (typeof classes.$inferSelect)[] = [];
 
-    for (const dayBlock of (weeklySchedule || [])) {
+    for (const dayBlock of weeklySchedule || []) {
       const offset = dayToOffset[dayBlock.day as keyof typeof dayToOffset];
       if (offset === undefined) continue;
 
       const scheduledDate = addDays(baseDate, offset);
 
-      for (const cls of (dayBlock.classes || [])) {
+      for (const cls of dayBlock.classes || []) {
         const payload = {
           scheduledDate: format(scheduledDate, 'yyyy-MM-dd'),
           scheduledTime: cls.time,
@@ -125,7 +128,11 @@ export class AdminRepository implements IAdminRepository {
     return this.mapToClass(created);
   }
 
-  async assignCoachToClass(classId: number, coachId: number, tx?: Executor): Promise<{ ok: boolean; reason?: string }> {
+  async assignCoachToClass(
+    classId: number,
+    coachId: number,
+    tx?: Executor,
+  ): Promise<{ ok: boolean; reason?: string }> {
     const [coach] = await this.exec(tx).select().from(coaches).where(eq(coaches.userId, coachId));
     if (!coach) return { ok: false, reason: 'invalid_coach' };
 
@@ -149,11 +156,11 @@ export class AdminRepository implements IAdminRepository {
       .set(updates)
       .where(eq(classes.classId, classId))
       .returning();
-    
+
     if (!updated) {
       throw new Error('Class not found');
     }
-    
+
     return this.mapToClass(updated);
   }
 
@@ -162,13 +169,17 @@ export class AdminRepository implements IAdminRepository {
       .delete(classes)
       .where(eq(classes.classId, classId))
       .returning({ classId: classes.classId });
-    
+
     return result.length > 0;
   }
 
   /* ============== ROLES & USERS ============== */
 
-  async assignUserToRole(userId: number, role: 'coach'|'member'|'admin'|'manager', tx?: Executor): Promise<{ ok: boolean; reason?: string }> {
+  async assignUserToRole(
+    userId: number,
+    role: 'coach' | 'member' | 'admin' | 'manager',
+    tx?: Executor,
+  ): Promise<{ ok: boolean; reason?: string }> {
     const roleExists = await this.exec(tx)
       .select()
       .from(userroles)
@@ -242,7 +253,10 @@ export class AdminRepository implements IAdminRepository {
       .orderBy(asc(users.userId));
   }
 
-  async getUsersByRole(role: 'coach'|'member'|'admin'|'manager', tx?: Executor): Promise<any[]> {
+  async getUsersByRole(
+    role: 'coach' | 'member' | 'admin' | 'manager',
+    tx?: Executor,
+  ): Promise<any[]> {
     if (role === 'member') return this.getAllMembers(tx);
     if (role === 'coach') return this.getAllCoaches(tx);
     if (role === 'admin') return this.getAllAdmins(tx);
@@ -284,7 +298,11 @@ export class AdminRepository implements IAdminRepository {
       .orderBy(asc(users.lastName), asc(users.firstName));
   }
 
-  async removeRole(userId: number, role: 'coach'|'member'|'admin'|'manager', tx?: Executor): Promise<void> {
+  async removeRole(
+    userId: number,
+    role: 'coach' | 'member' | 'admin' | 'manager',
+    tx?: Executor,
+  ): Promise<void> {
     switch (role) {
       case 'coach':
         await this.exec(tx).delete(coaches).where(eq(coaches.userId, userId));
@@ -310,7 +328,7 @@ export class AdminRepository implements IAdminRepository {
       .select({ role: userroles.userRole })
       .from(userroles)
       .where(eq(userroles.userId, userId));
-    return rows.map(r => r.role);
+    return rows.map((r) => r.role);
   }
 
   async getUserById(userId: number, tx?: Executor): Promise<any> {
@@ -342,7 +360,7 @@ export class AdminRepository implements IAdminRepository {
       lastName: result[0].lastName,
       email: result[0].email,
       phone: result[0].phone,
-      roles: result.map(r => r.roles).filter(Boolean),
+      roles: result.map((r) => r.roles).filter(Boolean),
     };
 
     for (const row of result) {
@@ -358,7 +376,11 @@ export class AdminRepository implements IAdminRepository {
     return base;
   }
 
-  async updateUserById(userId: number, updates: any, tx?: Executor): Promise<{ ok: boolean; reason?: string }> {
+  async updateUserById(
+    userId: number,
+    updates: any,
+    tx?: Executor,
+  ): Promise<{ ok: boolean; reason?: string }> {
     const [userRoleRow] = await this.exec(tx)
       .select({ role: userroles.userRole })
       .from(userroles)

@@ -8,7 +8,7 @@ export class MemberRepository {
    */
   async getCreditsBalance(userId: number): Promise<number> {
     //console.log('Repository: Getting credits balance for user ID:', userId);
-    
+
     const result = await db
       .select({ creditsBalance: members.creditsBalance })
       .from(members)
@@ -44,7 +44,7 @@ export class MemberRepository {
    */
   async addCredits(userId: number, credits: number, tx?: any): Promise<number> {
     const dbInstance = tx || db;
-    
+
     // Get current balance
     const currentResult = await dbInstance
       .select({ creditsBalance: members.creditsBalance })
@@ -73,7 +73,7 @@ export class MemberRepository {
    */
   async deductCredits(userId: number, credits: number, tx?: any): Promise<number> {
     const dbInstance = tx || db;
-    
+
     // Get current balance
     const currentResult = await dbInstance
       .select({ creditsBalance: members.creditsBalance })
@@ -86,7 +86,7 @@ export class MemberRepository {
     }
 
     const currentBalance = currentResult[0].creditsBalance;
-    
+
     if (currentBalance < credits) {
       throw new Error('Insufficient credits');
     }

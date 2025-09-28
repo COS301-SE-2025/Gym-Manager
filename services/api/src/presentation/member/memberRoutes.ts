@@ -19,21 +19,29 @@ export class MemberRoutes {
     this.router.get('/test', (req, res) => {
       res.json({ message: 'Member routes are working!' });
     });
-    
+
     // Get member's credit balance
     this.router.get('/:userId/credits', this.authMiddleware.isAuthenticated, (req, res) => {
       this.memberController.getCredits(req, res);
     });
 
     // Purchase credits (mock payment)
-    this.router.post('/:userId/credits/purchase', this.authMiddleware.isAuthenticated, (req, res) => {
-      this.memberController.purchaseCredits(req, res);
-    });
+    this.router.post(
+      '/:userId/credits/purchase',
+      this.authMiddleware.isAuthenticated,
+      (req, res) => {
+        this.memberController.purchaseCredits(req, res);
+      },
+    );
 
     // Purchase credits using payment packages
-    this.router.post('/:userId/credits/purchase-package', this.authMiddleware.isAuthenticated, (req, res) => {
-      this.memberController.purchaseCreditsWithPackage(req, res);
-    });
+    this.router.post(
+      '/:userId/credits/purchase-package',
+      this.authMiddleware.isAuthenticated,
+      (req, res) => {
+        this.memberController.purchaseCreditsWithPackage(req, res);
+      },
+    );
 
     // Get member profile
     this.router.get('/:userId/profile', this.authMiddleware.isAuthenticated, (req, res) => {
@@ -41,9 +49,13 @@ export class MemberRoutes {
     });
 
     // Get member's attended classes
-    this.router.get('/:userId/attended-classes', this.authMiddleware.isAuthenticated, (req, res) => {
-      this.memberController.getAttendedClasses(req, res);
-    });
+    this.router.get(
+      '/:userId/attended-classes',
+      this.authMiddleware.isAuthenticated,
+      (req, res) => {
+        this.memberController.getAttendedClasses(req, res);
+      },
+    );
   }
 
   getRouter(): Router {

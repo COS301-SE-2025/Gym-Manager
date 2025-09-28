@@ -119,7 +119,7 @@ export class GamificationController {
       const activity = await this.gamificationService.recordActivity(
         userId,
         activityType,
-        activityData || {}
+        activityData || {},
       );
 
       res.json({
@@ -185,7 +185,7 @@ export class GamificationController {
       const activity = await this.gamificationService.recordActivity(
         userId,
         'workout_completed',
-        activityData
+        activityData,
       );
 
       // Get updated stats after recording activity
@@ -228,6 +228,4 @@ export class GamificationController {
       res.status(500).json({ error: 'Internal server error' });
     }
   }
-
-
 }

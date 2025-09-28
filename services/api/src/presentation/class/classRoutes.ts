@@ -20,23 +20,59 @@ export class ClassRoutes {
 
   private setupRoutes(): void {
     // Coach routes (require authentication)
-    this.router.get('/coach/assigned', this.authMiddleware.isAuthenticated, this.classController.getCoachAssignedClasses);
-    this.router.get('/coach/classes-with-workouts', this.authMiddleware.isAuthenticated, this.classController.getCoachClassesWithWorkouts);
-    this.router.post('/coach/assign-workout', this.authMiddleware.isAuthenticated, this.classController.assignWorkoutToClass);
-    this.router.post('/coach/create-workout', this.authMiddleware.isAuthenticated, this.classController.createWorkout);
-    this.router.put('/coach/update-workout/:workoutId', this.authMiddleware.isAuthenticated, this.classController.updateWorkout);
+    this.router.get(
+      '/coach/assigned',
+      this.authMiddleware.isAuthenticated,
+      this.classController.getCoachAssignedClasses,
+    );
+    this.router.get(
+      '/coach/classes-with-workouts',
+      this.authMiddleware.isAuthenticated,
+      this.classController.getCoachClassesWithWorkouts,
+    );
+    this.router.post(
+      '/coach/assign-workout',
+      this.authMiddleware.isAuthenticated,
+      this.classController.assignWorkoutToClass,
+    );
+    this.router.post(
+      '/coach/create-workout',
+      this.authMiddleware.isAuthenticated,
+      this.classController.createWorkout,
+    );
+    this.router.put(
+      '/coach/update-workout/:workoutId',
+      this.authMiddleware.isAuthenticated,
+      this.classController.updateWorkout,
+    );
 
     // Member routes (require authentication)
-    this.router.get('/classes', this.authMiddleware.isAuthenticated, this.classController.getAllClasses);
-    this.router.get('/member/classes', this.authMiddleware.isAuthenticated, this.classController.getMemberClasses);
-    this.router.get('/member/unbookedclasses', this.authMiddleware.isAuthenticated, this.classController.getMemberUnbookedClasses);
+    this.router.get(
+      '/classes',
+      this.authMiddleware.isAuthenticated,
+      this.classController.getAllClasses,
+    );
+    this.router.get(
+      '/member/classes',
+      this.authMiddleware.isAuthenticated,
+      this.classController.getMemberClasses,
+    );
+    this.router.get(
+      '/member/unbookedclasses',
+      this.authMiddleware.isAuthenticated,
+      this.classController.getMemberUnbookedClasses,
+    );
     this.router.post('/book', this.authMiddleware.isAuthenticated, this.classController.bookClass);
 
     // General routes (no authentication required)
     this.router.post('/checkin', this.classController.checkInToClass);
 
     // Require authentication for cancellation so we can infer memberId from token
-    this.router.post('/cancel', this.authMiddleware.isAuthenticated, this.classController.cancelBooking);
+    this.router.post(
+      '/cancel',
+      this.authMiddleware.isAuthenticated,
+      this.classController.cancelBooking,
+    );
   }
 
   getRouter(): express.Router {

@@ -109,11 +109,6 @@ jobs:
         run: npm run test:ci-stable
         working-directory: ./services/api
 
-      - name: Run Coverage Report
-        run: npm run test:coverage
-        working-directory: ./services/api
-
-
   test-availability:
     name: Integration — Availability (/healthz)
     runs-on: ubuntu-latest

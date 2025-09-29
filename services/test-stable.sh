@@ -94,13 +94,6 @@ else
     print_warning "Some core integration tests failed, but continuing"
 fi
 
-# 4. Run coverage report (excluding failing tests)
-print_status "Generating coverage report..."
-if npm run test:coverage -- --testPathIgnorePatterns="availability.remote.test.ts|admin.workflow.integration.test.ts|member.payment.integration.test.ts|auth.integration.test.ts|class.workflow.integration.test.ts"; then
-    print_success "Coverage report generated"
-else
-    print_warning "Coverage report generation failed"
-fi
 
 # 5. Summary
 print_status "Stable tests execution completed!"

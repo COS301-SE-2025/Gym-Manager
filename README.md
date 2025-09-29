@@ -85,7 +85,7 @@ Gym-Manager/
     * `dev-web` = web frontend development
   * `feature/` branches = day-to-day task-specific work, usually branched off the relevant sub-dev branch.
 
-### Uptime
+### Uptime/Availability
 [**Full status (details & history)**](https://stats.uptimerobot.com/l8KHTmilDD)
 
 | **Live** | **7 days** | **30 days** |

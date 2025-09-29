@@ -22,12 +22,12 @@ HIIT environments
 
   | Document Type             | Link |
   |---------------------------|------|
-  | SRS                       | [Gym‑Manager SRS (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v3/SRSv3.pdf) |
-  | Architectural Requirements| [Gym‑Manager Architectural Requirements (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v3/ArchitecturalRequirementsAndDesign.pdf) |
-  | User Manual               | [Gym‑Manager User Manual (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v3/TRAINWISE_USER_MANUAL.pdf) |
-  | Coding Standards             | [Gym‑Manager Coding Standards (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v3/CodingStandardsDocument.pdf) |
-  | Service Contracts            | [Gym‑Manager Service Contracts (MD)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v3/ServiceContracts.md) |
-  | Technical Installation Manual| [Gym‑Manager Technical Installation Manual (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v3/TechnicalInstallationManual.pdf) |
+  | SRS                       | [Gym‑Manager SRS (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/SRSv4.pdf) |
+  | Architectural Requirements| [Gym‑Manager Architectural Requirements (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/ArchitecturalRequirementsAndDesign.pdf) |
+  | User Manual               | [Gym‑Manager User Manual (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/TRAINWISE_User_MANUAL_v4.0.pdf) |
+  | Coding Standards             | [Gym‑Manager Coding Standards (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/CodingStandardsDocument.pdf) |
+  | Service Contracts            | [Gym‑Manager Service Contracts (MD)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/ServiceContracts.md) |
+  | Technical Installation Manual| [Gym‑Manager Technical Installation Manual (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/TechnicalInstallationManual.pdf) |
 
 ---
 

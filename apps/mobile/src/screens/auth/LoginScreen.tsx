@@ -224,16 +224,7 @@ export default function LoginScreen() {
   const handleResetOnboarding = async () => {
     try {
       await AsyncStorage.removeItem('hasCompletedOnboarding');
-      Alert.alert(
-        'Onboarding Reset',
-        'The onboarding has been reset. You will now be taken to the onboarding screen.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Onboarding' as never),
-          },
-        ],
-      );
+      navigation.navigate('Onboarding' as never);
     } catch (e) {
       console.error('Failed to reset onboarding.', e);
       Alert.alert('Error', 'Could not reset onboarding.');

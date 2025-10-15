@@ -162,7 +162,7 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Select Exercise</Text>
         <TouchableOpacity 
@@ -316,17 +316,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#2a2a2a',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
+    padding: 4,
   },
   headerTitle: {
     flex: 1,

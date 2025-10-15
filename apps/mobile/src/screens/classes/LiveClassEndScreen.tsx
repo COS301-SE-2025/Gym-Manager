@@ -130,8 +130,7 @@ export default function LiveClassEndScreen() {
       <View style={s.pad}>
         {/* Back button */}
         <TouchableOpacity style={s.backBtn} onPress={goBackSmart} accessibilityLabel="Back">
-          <Ionicons name="chevron-back" size={20} color="#d8ff3e" />
-          <Text style={s.backText}>Back</Text>
+          <Ionicons name="arrow-back" size={24} color="#d8ff3e" />
         </TouchableOpacity>
 
         <Text style={s.title}>Nice work! 🎉</Text>
@@ -187,12 +186,9 @@ const s = StyleSheet.create({
 
   backBtn: {
     alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
     marginBottom: 10,
+    padding: 4,
   },
-  backText: { color: '#d8ff3e', fontWeight: '900' },
 
   title:{ color:'#d8ff3e', fontWeight:'900', fontSize:28 },
   sub:{ color:'#9aa', marginTop:8 },

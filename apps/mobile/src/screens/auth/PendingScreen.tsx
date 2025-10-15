@@ -8,14 +8,18 @@ import {
   ScrollView,
   RefreshControl,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { CommonActions } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import IconLogo from '../../components/common/IconLogo';
 import { getUserStatus } from './Model/userStatus';
-import { getToken } from '../../utils/authStorage';
+import { getToken, removeToken, removeUser } from '../../utils/authStorage';
 import { getUser, storeUser } from '../../utils/authStorage'
+import { supabase } from '../../lib/supabase';
 import axios from 'axios';
 import config from '../../config';
 
@@ -73,6 +77,23 @@ export default function PendingScreen() {
     await checkStatus();
     setRefreshing(false);
   }, [checkStatus]);
+
+  const handleLogout = async () => {
+    try {
+      await removeToken();
+      await removeUser();
+      await supabase.auth.signOut();
+
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Login' as never }],
+        })
+      );
+    } catch (error) {
+      console.error('Failed to logout:', error);
+    }
+  };
 
 
   useFocusEffect(
@@ -162,6 +183,13 @@ export default function PendingScreen() {
           If account status does not change within 48 hours,{'\n'}
           Contact the gym.
         </Text>
+        <TouchableOpacity 
+          style={styles.logoutButton}
+          onPress={handleLogout}
+          accessibilityLabel="Logout"
+        >
+          <Ionicons name="log-out-outline" size={28} color="#FF6B6B" />
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -177,6 +205,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 40,
     marginBottom: 40,
+  },
+  logoutButton: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    padding: 8,
   },
   scrollContainer: {
     flex: 1,

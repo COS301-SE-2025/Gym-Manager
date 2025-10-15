@@ -99,12 +99,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     try {
       await updateUserVisibility(newValue);
       setIsLeaderboardPublic(newValue);
-
-      Alert.alert(
-        'Settings Updated',
-        `Your leaderboard visibility has been ${newValue ? 'enabled' : 'disabled'}.`,
-        [{ text: 'OK' }],
-      );
     } catch (error) {
       console.error('Failed to update visibility:', error);
       Alert.alert(

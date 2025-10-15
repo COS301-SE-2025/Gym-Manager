@@ -23,8 +23,8 @@ export class LiveClassRepository implements ILiveClassRepository {
   }
 
   // --- Session helpers ---
-  async autoEndIfCapReached(classId: number): Promise<void> {
-    await globalDb.execute(sql`
+  async autoEndIfCapReached(classId: number): Promise<number[]> {
+    const { rows: updatedRows } = await globalDb.execute(sql`
       update public.class_sessions cs
       set status = 'ended', ended_at = now()
       where cs.class_id = ${classId}
@@ -35,9 +35,16 @@ export class LiveClassRepository implements ILiveClassRepository {
           - coalesce(cs.pause_accum_seconds, 0)
           - coalesce(extract(epoch from (now() - cs.paused_at)), 0)
         ) >= cs.time_cap_seconds
+      returning cs.class_id
     `);
 
-    await globalDb.execute(sql`select public.persist_scores_from_live(${classId})`);
+    // If no rows were updated, the class wasn't auto-ended
+    if (!updatedRows || updatedRows.length === 0) {
+      return [];
+    }
+
+    // Use the TypeScript method instead of SQL function to get user IDs
+    return await this.persistScoresFromLive(classId);
   }
 
   async getClassSession(classId: number): Promise<LiveSession | null> {
@@ -1176,7 +1183,7 @@ export class LiveClassRepository implements ILiveClassRepository {
   }
 
   // repositories/liveClass/liveClassRepository.ts
-  async persistScoresFromLive(classId: number) {
+  async persistScoresFromLive(classId: number): Promise<number[]> {
     // find workout type (snapshot)
     const { rows: typ } = await globalDb.execute(sql`
             select w.type
@@ -1186,6 +1193,7 @@ export class LiveClassRepository implements ILiveClassRepository {
             limit 1
         `);
     const type = (typ[0]?.type || '').toString().toUpperCase();
+    const persistedUserIds: number[] = [];
 
     if (type === 'FOR_TIME') {
       const { rows } = await globalDb.execute(sql`
@@ -1225,8 +1233,9 @@ export class LiveClassRepository implements ILiveClassRepository {
           reps: finished ? Number(reps) : Number(reps), // keep achieved reps for display/history
           finished,
         });
+        persistedUserIds.push(Number(r.user_id));
       }
-      return;
+      return persistedUserIds;
     }
 
     if (type === 'AMRAP') {
@@ -1260,8 +1269,9 @@ export class LiveClassRepository implements ILiveClassRepository {
 
       for (const r of rows) {
         await this.upsertFinal(classId, Number(r.user_id), { reps: Number(r.total_reps) });
+        persistedUserIds.push(Number(r.user_id));
       }
-      return;
+      return persistedUserIds;
     }
 
     if (type === 'TABATA' || type === 'INTERVAL') {
@@ -1273,8 +1283,9 @@ export class LiveClassRepository implements ILiveClassRepository {
             `);
       for (const r of rows) {
         await this.upsertFinal(classId, Number(r.user_id), { reps: Number(r.total_reps) });
+        persistedUserIds.push(Number(r.user_id));
       }
-      return;
+      return persistedUserIds;
     }
 
     if (type === 'EMOM') {
@@ -1323,8 +1334,9 @@ export class LiveClassRepository implements ILiveClassRepository {
           seconds: Number(r.total_seconds),
           finished: true,
         });
+        persistedUserIds.push(Number(r.user_id));
       }
-      return;
+      return persistedUserIds;
     }
   }
 }

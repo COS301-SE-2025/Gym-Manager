@@ -30,7 +30,23 @@ export class LiveClassService implements ILiveClassService {
   // --- Session ---
   async getLiveSession(classId: number): Promise<LiveSession | null> {
     if (!Number.isFinite(classId)) throw new Error('INVALID_CLASS_ID');
-    await this.repo.autoEndIfCapReached(classId);
+    const autoEndedUserIds = await this.repo.autoEndIfCapReached(classId);
+    
+    // If the class was auto-ended, trigger gamification for affected users
+    if (autoEndedUserIds.length > 0) {
+      for (const userId of autoEndedUserIds) {
+        try {
+          await this.gamificationService.recordClassAttendance(
+            userId,
+            classId,
+            new Date(),
+          );
+        } catch (gamificationError) {
+          console.error(`Gamification failed for auto-ended class user ${userId}:`, gamificationError);
+        }
+      }
+    }
+    
     return this.repo.getClassSession(classId);
   }
 
@@ -275,20 +291,18 @@ export class LiveClassService implements ILiveClassService {
   async stopLiveClass(classId: number) {
     await this.repo.stopSession(classId);
     try {
-      await this.repo.persistScoresFromLive(classId);
+      const persistedUserIds = await this.repo.persistScoresFromLive(classId);
 
-      // Trigger gamification for all participants
-      // Get all participants who had attendance records created
-      const participants = await this.getParticipantsForClass(classId);
-      for (const participant of participants) {
+      // Trigger gamification for all participants whose scores were persisted
+      for (const userId of persistedUserIds) {
         try {
           const gamificationResult = await this.gamificationService.recordClassAttendance(
-            participant.userId,
+            userId,
             classId,
             new Date(),
           );
         } catch (gamificationError) {
-          console.error(`Gamification failed for user ${participant.userId}:`, gamificationError);
+          console.error(`Gamification failed for user ${userId}:`, gamificationError);
         }
       }
     } catch (e) {
@@ -653,17 +667,4 @@ export class LiveClassService implements ILiveClassService {
     }
   }
 
-  private async getParticipantsForClass(classId: number): Promise<Array<{ userId: number }>> {
-    // Get all users who have attendance records for this class
-    const { db } = await import('../../db/client');
-    const { classattendance } = await import('../../db/schema');
-    const { eq } = await import('drizzle-orm');
-
-    const participants = await db
-      .select({ userId: classattendance.memberId })
-      .from(classattendance)
-      .where(eq(classattendance.classId, classId));
-
-    return participants.map((p) => ({ userId: p.userId }));
-  }
 }

@@ -13,9 +13,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
-import config from '../../config';
+import apiClient from '../../utils/apiClient';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -67,26 +65,13 @@ const LeaderboardScreen = () => {
       }
       setError('');
       
-      const token = await getToken();
-      if (!token) {
-        setError('Not authenticated');
-        if (isInitialLoad) {
-          setLoading(false);
-        }
-        return;
-      }
-
       // Build query parameters
       const params = new URLSearchParams({ date });
       if (scaling !== 'all') {
         params.append('scaling', scaling);
       }
 
-      const response = await axios.get(`${config.BASE_URL}/daily-leaderboard?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await apiClient.get(`/daily-leaderboard?${params}`);
 
       if (response.data.success) {
         setLeaderboard(response.data.leaderboard);

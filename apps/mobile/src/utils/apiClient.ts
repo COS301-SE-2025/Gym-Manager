@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getToken, getRefreshToken, storeToken, storeRefreshToken, removeToken, removeRefreshToken } from './authStorage';
+import { getToken, getRefreshToken, storeToken, storeRefreshToken, removeToken, removeRefreshToken, removeUser } from './authStorage';
 import config from '../config';
 
 class ApiClient {
@@ -27,47 +27,21 @@ class ApiClient {
       (error) => Promise.reject(error)
     );
 
-    // Response interceptor to handle token refresh
+    // Response interceptor to handle token expiry - logout user instead of refreshing
     this.client.interceptors.response.use(
       (response) => response,
       async (error) => {
-        const originalRequest = error.config;
-
-        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
-          originalRequest._retry = true;
-
-          try {
-            const refreshToken = await getRefreshToken();
-            if (!refreshToken) {
-              throw new Error('No refresh token available');
-            }
-
-            const currentToken = await getToken();
-            const refreshResponse = await axios.post(`${config.BASE_URL}/refresh`, 
-              { refreshToken }, 
-              {
-                headers: { Authorization: `Bearer ${currentToken || ''}` }
-              }
-            );
-
-            if (refreshResponse.data?.token) {
-              await storeToken(refreshResponse.data.token);
-              if (refreshResponse.data?.refreshToken) {
-                await storeRefreshToken(refreshResponse.data.refreshToken);
-              }
-
-              // Update the original request with new token
-              originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.token}`;
-              
-              // Retry the original request
-              return this.client(originalRequest);
-            }
-          } catch (refreshError) {
-            console.error('Token refresh failed:', refreshError);
-            // Clear tokens and let the app handle the auth failure
-            await removeToken();
-            await removeRefreshToken();
-          }
+        // If we get 401 or 403, the token has expired - log out the user
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          console.log('Token expired, logging out user');
+          
+          // Clear all stored authentication data
+          await removeToken();
+          await removeRefreshToken();
+          await removeUser();
+          
+          // Note: Navigation to login will be handled by the component that receives this error
+          // or by the ResolveAuthScreen which checks for token existence
         }
 
         return Promise.reject(error);

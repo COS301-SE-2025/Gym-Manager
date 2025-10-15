@@ -11,9 +11,8 @@ import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
 import { useMyProgress } from '../../hooks/useMyProgress';
 import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
-import axios from 'axios';
-import { getToken, getUser } from '../../utils/authStorage';
-import config from '../../config';
+import apiClient from '../../utils/apiClient';
+import { getUser } from '../../utils/authStorage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HypeToast } from '../../components/HypeToast';
 import { useLeaderboardHype } from '../../hooks/useLeaderboardHype';
@@ -161,10 +160,9 @@ export default function ForTimeLiveScreen() {
   }, [askPartial, modalOpen]);
 
   const sendPartial = async () => {
-    const token = await getToken();
-    await axios.post(`${config.BASE_URL}/live/${classId}/partial`, {
+    await apiClient.post(`/live/${classId}/partial`, {
       reps: Math.max(0, Number(partial) || 0)
-    }, { headers: { Authorization: `Bearer ${token}` } });
+    });
     setModalOpen(false);
 
     // If coach already ended the class, go to end now that we have the partial
@@ -182,10 +180,9 @@ export default function ForTimeLiveScreen() {
 
     setLocalIdx(idx => clamp(idx + (dir === 1 ? 1 : -1), 0, steps.length));
     try {
-      const token = await getToken();
-      await axios.post(`${config.BASE_URL}/live/${classId}/advance`, {
+      await apiClient.post(`/live/${classId}/advance`, {
         direction: dir === 1 ? 'next' : 'prev'
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      });
     } catch {
       setLocalIdx(idx => clamp(idx + (dir === 1 ? -1 : 1), 0, steps.length));
     }

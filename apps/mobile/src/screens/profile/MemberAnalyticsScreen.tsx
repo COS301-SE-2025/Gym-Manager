@@ -13,9 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
-import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
-import config from '../../config';
+import apiClient from '../../utils/apiClient';
 import { MemberAnalytics, ClassPerformance } from '../../types';
 import IconLogo from '../../components/common/IconLogo';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,16 +35,7 @@ const MemberAnalyticsScreen: React.FC<MemberAnalyticsScreenProps> = ({ navigatio
     setError(null);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await axios.get<MemberAnalytics>(
-        `${config.BASE_URL}/analytics/member`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+      const response = await apiClient.get<MemberAnalytics>('/analytics/member');
       setAnalytics(response.data);
     } catch (err: any) {
       console.error('Failed to fetch member analytics:', err);

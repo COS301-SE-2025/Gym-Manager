@@ -217,20 +217,12 @@ export default function RegisterScreen() {
       }
 
 
-      Alert.alert(
-        'Registration Successful!',
-        'Your account has been created successfully. Please proceed to select your role.',
-        [
-          {
-            text: 'Continue',
-            onPress: () => navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [{ name: 'Pending' }],
-              })
-            ),
-          },
-        ],
+      // Navigate to pending screen
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Pending' }],
+        })
       );
     } catch (error: any) {
       console.error('Register error:', error);

@@ -371,8 +371,6 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           numberOfRounds: roundsFromMeta,
           subRounds: subRounds,
         });
-
-        Alert.alert('Success!', `Loaded workout "${workoutName}" with ${subRounds.length} sub-rounds.`);
       }
     } catch (error: any) {
       console.error('Failed to load workout:', error);

@@ -94,8 +94,6 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
       setNewExerciseName('');
       setNewExerciseDescription('');
       setShowCreateModal(false);
-      
-      Alert.alert('Success', 'Exercise created successfully!');
     } catch (error: any) {
       console.error('Error creating exercise:', error);
       Alert.alert('Error', 'Failed to create exercise. Please try again.');
@@ -127,8 +125,6 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
 
               // Refresh the exercises list
               await fetchExercises();
-              
-              Alert.alert('Success', 'Exercise deleted successfully!');
             } catch (error: any) {
               console.error('Error deleting exercise:', error);
               Alert.alert('Error', 'Failed to delete exercise. It may be used in a workout.');

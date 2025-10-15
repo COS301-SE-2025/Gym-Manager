@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { CommonActions } from '@react-navigation/native';
 import TrainwiseLogo from '../../components/common/TrainwiseLogo';
 import axios from 'axios';
 import { storeToken, storeUser, storeRefreshToken } from '../../utils/authStorage';
@@ -133,7 +134,12 @@ export default function LoginScreen() {
       try {
         const userStatus = await getUserStatus();
         if (userStatus.membershipStatus === 'pending') {
-          navigation.navigate('Pending' as never);
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Pending' }],
+            })
+          );
           return;
         }
       } catch (statusError) {
@@ -143,18 +149,43 @@ export default function LoginScreen() {
       if (response.data && response.data.user && response.data.user.roles) {
         const roles = response.data.user.roles;
         if (roles.includes('member') && roles.includes('coach')) {
-          navigation.navigate('RoleSelection' as never);
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'RoleSelection' }],
+            })
+          );
         } else if (roles.includes('member')) {
-          navigation.navigate('Home' as never);
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Home' }],
+            })
+          );
         } else if (roles.includes('coach')) {
-          navigation.navigate('Coach' as never);
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Coach' }],
+            })
+          );
         } else {
           console.warn('User roles not recognized for navigation:', roles);
-          navigation.navigate('Home' as never);
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Home' }],
+            })
+          );
         }
       } else {
         console.error('Login response does not contain user roles information.');
-        navigation.navigate('Home' as never);
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          })
+        );
       }
 
       

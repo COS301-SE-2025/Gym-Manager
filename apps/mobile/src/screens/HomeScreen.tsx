@@ -167,13 +167,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setBookedError(null);
     try {
       const bookedResponse = await apiClient.get<ApiBookedClass[]>('/member/classes');
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const now = new Date();
 
       const formattedBookedClasses: ClassItem[] = bookedResponse.data
         .filter((apiClass) => {
-          const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
-          return classDate >= today;
+          // Check if class has ended: current time > class end time
+          const classDateTime = new Date(`${apiClass.scheduledDate}T${apiClass.scheduledTime}`);
+          const classEndTime = new Date(classDateTime.getTime() + (apiClass.durationMinutes || 60) * 60 * 1000);
+          return classEndTime > now; // Only show classes that haven't ended yet
         })
         .sort((a, b) => {
           const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
@@ -210,13 +211,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setUpcomingError(null);
     try {
       const upcomingResponse = await apiClient.get<ApiUpcomingClass[]>('/member/unbookedclasses');
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const now = new Date();
 
       const groupedClasses = upcomingResponse.data
         .filter((apiClass) => {
-          const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
-          return classDate >= today;
+          // Check if class has ended: current time > class end time
+          const classDateTime = new Date(`${apiClass.scheduledDate}T${apiClass.scheduledTime}`);
+          const classEndTime = new Date(classDateTime.getTime() + (apiClass.durationMinutes || 60) * 60 * 1000);
+          return classEndTime > now; // Only show classes that haven't ended yet
         })
         .sort((a, b) => {
           const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);

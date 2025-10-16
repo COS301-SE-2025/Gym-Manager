@@ -16,6 +16,7 @@ import { getToken, getUser } from '../../utils/authStorage';
 import config from '../../config';
 import { HypeToast } from '../../components/HypeToast';
 import { useLeaderboardHype } from '../../hooks/useLeaderboardHype';
+import { calculateWorkoutDuration } from '../../utils/workoutDuration';
 
 
 type R = RouteProp<AuthStackParamList, 'AmrapLive'>;
@@ -111,6 +112,9 @@ export default function AmrapLiveScreen() {
 
   const cap    = session?.time_cap_seconds ?? 0;
   const timeUp = cap > 0 && elapsed >= cap;
+
+  // Calculate workout duration for display
+  const workoutDuration = calculateWorkoutDuration(session);
 
   // AMRAP never "finishes" early; only ends when coach stops or cap reached
   const finished = false;
@@ -225,7 +229,9 @@ export default function AmrapLiveScreen() {
 
       {/* single timer */}
       <View pointerEvents="none" style={s.topOverlay}>
-        <Text style={s.timeTop} pointerEvents="none">{fmt(elapsed)}</Text>
+        <Text style={s.timeTop} pointerEvents="none">
+          {fmt(elapsed)}{workoutDuration > 0 ? ` / ${fmt(workoutDuration)}` : ''}
+        </Text>
       </View>
       {/* hype banner */}
       <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />

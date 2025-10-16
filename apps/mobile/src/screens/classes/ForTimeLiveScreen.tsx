@@ -17,6 +17,7 @@ import config from '../../config';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HypeToast } from '../../components/HypeToast';
 import { useLeaderboardHype } from '../../hooks/useLeaderboardHype';
+import { calculateWorkoutDuration } from '../../utils/workoutDuration';
 
 
 type R = RouteProp<AuthStackParamList, 'ForTimeLive'>;
@@ -138,6 +139,9 @@ export default function ForTimeLiveScreen() {
   const cap = session?.time_cap_seconds ?? 0;
   const timeUp = cap > 0 && elapsed >= cap;
 
+  // Calculate workout duration for display
+  const workoutDuration = calculateWorkoutDuration(session);
+
   const current = ready ? steps[localIdx] : undefined;
   const next = ready ? steps[localIdx + 1] : undefined;
   const finished =
@@ -231,7 +235,9 @@ export default function ForTimeLiveScreen() {
 
       {/* single timer */}
       <View pointerEvents="none" style={s.topOverlay}>
-        <Text style={s.timeTop} pointerEvents="none">{fmt(elapsed)}</Text>
+        <Text style={s.timeTop} pointerEvents="none">
+          {fmt(elapsed)}{workoutDuration > 0 ? ` / ${fmt(workoutDuration)}` : ''}
+        </Text>
       </View>
 
       <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />

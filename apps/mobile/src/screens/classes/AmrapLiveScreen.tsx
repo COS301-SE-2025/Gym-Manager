@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, Pressable, StatusBar,
-  Modal, TextInput, TouchableOpacity, ActivityIndicator, Animated
+  TextInput, TouchableOpacity, ActivityIndicator, Animated, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -370,48 +370,46 @@ export default function AmrapLiveScreen() {
         </View>
       )}
 
-      {/* partial reps prompt */}
-      <Modal 
-        visible={modalOpen} 
-        transparent 
-        animationType="fade" 
-        onRequestClose={handleModalClose}
-        statusBarTranslucent={true}
-        presentationStyle="overFullScreen"
-      >
-        <View style={s.modalWrap}>
-          <TouchableOpacity 
-            style={StyleSheet.absoluteFillObject} 
-            activeOpacity={1} 
-            onPress={handleModalClose}
-          />
-          <View style={s.modalCard}>
-            <Text style={s.modalTitle}>Time's up — last exercise reps</Text>
-            <TextInput
-              value={partial} 
-              onChangeText={setPartial} 
-              keyboardType="numeric"
-              style={s.modalInput} 
-              placeholder="0" 
-              placeholderTextColor="#7a7a7a"
-              autoFocus={false}
-              selectTextOnFocus={true}
-              returnKeyType="done"
-              onSubmitEditing={sendPartial}
-              editable={!isSubmitting}
-            />
+      {/* partial reps prompt - Custom overlay instead of Modal */}
+      {modalOpen && (
+        <View style={s.customModalOverlay}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={s.keyboardAvoidingView}
+          >
             <TouchableOpacity 
-              style={[s.modalBtn, isSubmitting && s.modalBtnDisabled]} 
-              onPress={sendPartial}
-              disabled={isSubmitting}
-            >
-              <Text style={s.modalBtnText}>
-                {isSubmitting ? 'Submitting...' : 'Submit'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+              style={s.modalBackdrop} 
+              activeOpacity={1} 
+              onPress={handleModalClose}
+            />
+            <View style={s.modalCard}>
+              <Text style={s.modalTitle}>Time's up — last exercise reps</Text>
+              <TextInput
+                value={partial} 
+                onChangeText={setPartial} 
+                keyboardType="numeric"
+                style={s.modalInput} 
+                placeholder="0" 
+                placeholderTextColor="#7a7a7a"
+                autoFocus={false}
+                selectTextOnFocus={true}
+                returnKeyType="done"
+                onSubmitEditing={sendPartial}
+                editable={!isSubmitting}
+              />
+              <TouchableOpacity 
+                style={[s.modalBtn, isSubmitting && s.modalBtnDisabled]} 
+                onPress={sendPartial}
+                disabled={isSubmitting}
+              >
+                <Text style={s.modalBtnText}>
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
         </View>
-      </Modal>
+      )}
       </SafeAreaView>
     </View>
   );
@@ -452,8 +450,34 @@ const s = StyleSheet.create({
   pausedTitle: { color:'#fff', fontWeight:'900', fontSize: 44, letterSpacing: 2, textAlign:'center' },
   pausedSub:   { color:'#eaeaea', fontWeight:'700', marginTop: 6, fontSize: 14, textAlign:'center' },
 
-  modalWrap: { flex:1, backgroundColor:'rgba(0,0,0,0.65)', alignItems:'center', justifyContent:'center' },
-  modalCard: { backgroundColor:'#151515', borderRadius:14, padding:18, width:'80%' },
+  customModalOverlay: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    bottom: 0, 
+    zIndex: 1000, 
+    backgroundColor: 'rgba(0,0,0,0.65)' 
+  },
+  keyboardAvoidingView: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  modalBackdrop: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    bottom: 0 
+  },
+  modalCard: { 
+    backgroundColor: '#151515', 
+    borderRadius: 14, 
+    padding: 18, 
+    width: '80%', 
+    maxWidth: 400 
+  },
   modalTitle:{ color:'#fff', fontWeight:'800', marginBottom:12, textAlign:'center' },
   modalInput:{ backgroundColor:'#222', borderRadius:10, color:'#fff', fontSize:24, fontWeight:'900', paddingVertical:8, textAlign:'center' },
   modalBtn:{ backgroundColor:'#d8ff3e', borderRadius:10, paddingVertical:14, marginTop:12 },

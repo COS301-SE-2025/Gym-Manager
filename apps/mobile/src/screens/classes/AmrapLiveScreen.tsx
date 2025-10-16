@@ -144,7 +144,21 @@ export default function AmrapLiveScreen() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [partial, setPartial] = useState('');
-  useEffect(() => { if (askPartial && !modalOpen) setModalOpen(true); }, [askPartial, modalOpen]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  useEffect(() => { 
+    if (askPartial && !modalOpen && !isSubmitting) {
+      setModalOpen(true);
+    }
+  }, [askPartial, modalOpen, isSubmitting]);
+  
+  // Cleanup modal state when component unmounts or navigation occurs
+  useEffect(() => {
+    return () => {
+      setModalOpen(false);
+      setIsSubmitting(false);
+    };
+  }, []);
 
   // Tutorial overlay state
   const [showTutorial, setShowTutorial] = useState(true);
@@ -165,14 +179,33 @@ export default function AmrapLiveScreen() {
   }, [showTutorial]);
 
   const sendPartial = async () => {
-    const token = await getToken();
-    await axios.post(`${config.BASE_URL}/live/${classId}/partial`, {
-      reps: Math.max(0, Number(partial) || 0)
-    }, { headers: { Authorization: `Bearer ${token}` } });
-    setModalOpen(false);
-    if (session?.status === 'ended' && !hasNavigatedRef.current) {
-      hasNavigatedRef.current = true;
-      nav.replace('LiveClassEnd', { classId });
+    if (isSubmitting) return; // Prevent double submission
+    
+    setIsSubmitting(true);
+    try {
+      const token = await getToken();
+      await axios.post(`${config.BASE_URL}/live/${classId}/partial`, {
+        reps: Math.max(0, Number(partial) || 0)
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      
+      setModalOpen(false);
+      
+      if (session?.status === 'ended' && !hasNavigatedRef.current) {
+        hasNavigatedRef.current = true;
+        nav.replace('LiveClassEnd', { classId });
+      }
+    } catch (error) {
+      console.error('Error submitting partial reps:', error);
+      // Still close modal on error to prevent getting stuck
+      setModalOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleModalClose = () => {
+    if (!isSubmitting) {
+      setModalOpen(false);
     }
   };
 
@@ -338,16 +371,43 @@ export default function AmrapLiveScreen() {
       )}
 
       {/* partial reps prompt */}
-      <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={()=>{}}>
+      <Modal 
+        visible={modalOpen} 
+        transparent 
+        animationType="fade" 
+        onRequestClose={handleModalClose}
+        statusBarTranslucent={true}
+        presentationStyle="overFullScreen"
+      >
         <View style={s.modalWrap}>
+          <TouchableOpacity 
+            style={StyleSheet.absoluteFillObject} 
+            activeOpacity={1} 
+            onPress={handleModalClose}
+          />
           <View style={s.modalCard}>
             <Text style={s.modalTitle}>Time's up — last exercise reps</Text>
             <TextInput
-              value={partial} onChangeText={setPartial} keyboardType="numeric"
-              style={s.modalInput} placeholder="0" placeholderTextColor="#7a7a7a"
+              value={partial} 
+              onChangeText={setPartial} 
+              keyboardType="numeric"
+              style={s.modalInput} 
+              placeholder="0" 
+              placeholderTextColor="#7a7a7a"
+              autoFocus={false}
+              selectTextOnFocus={true}
+              returnKeyType="done"
+              onSubmitEditing={sendPartial}
+              editable={!isSubmitting}
             />
-            <TouchableOpacity style={s.modalBtn} onPress={sendPartial}>
-              <Text style={s.modalBtnText}>Submit</Text>
+            <TouchableOpacity 
+              style={[s.modalBtn, isSubmitting && s.modalBtnDisabled]} 
+              onPress={sendPartial}
+              disabled={isSubmitting}
+            >
+              <Text style={s.modalBtnText}>
+                {isSubmitting ? 'Submitting...' : 'Submit'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -397,6 +457,7 @@ const s = StyleSheet.create({
   modalTitle:{ color:'#fff', fontWeight:'800', marginBottom:12, textAlign:'center' },
   modalInput:{ backgroundColor:'#222', borderRadius:10, color:'#fff', fontSize:24, fontWeight:'900', paddingVertical:8, textAlign:'center' },
   modalBtn:{ backgroundColor:'#d8ff3e', borderRadius:10, paddingVertical:14, marginTop:12 },
+  modalBtnDisabled:{ backgroundColor:'#666', opacity:0.6 },
   modalBtnText:{ color:'#111', fontWeight:'900', textAlign:'center' },
 
   tutorialOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100 },

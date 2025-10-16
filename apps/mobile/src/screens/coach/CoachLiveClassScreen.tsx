@@ -1,8 +1,14 @@
 // apps/mobile/src/screens/coach/CoachLiveClassScreen.tsx
 import React, { useMemo, useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, StatusBar,
-  TouchableOpacity, TextInput, Modal, ScrollView
+  View,
+  Text,
+  StyleSheet,
+  StatusBar,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
@@ -18,7 +24,9 @@ type R = RouteProp<AuthStackParamList, 'CoachLive'>;
 
 async function call(path: string, body?: any) {
   const token = await getToken();
-  return axios.post(`${config.BASE_URL}${path}`, body ?? {}, { headers: { Authorization: `Bearer ${token}` }});
+  return axios.post(`${config.BASE_URL}${path}`, body ?? {}, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }
 
 function fmt(seconds: number) {
@@ -54,13 +62,18 @@ export default function CoachLiveClassScreen() {
         if (!stop) setNote(r.data?.note ?? '');
       } catch {}
     })();
-    return () => { stop = true; };
+    return () => {
+      stop = true;
+    };
   }, [classId]);
 
   const saveNote = async () => {
     setSaving(true);
-    try { await call(`/coach/live/${classId}/note`, { note }); }
-    finally { setSaving(false); }
+    try {
+      await call(`/coach/live/${classId}/note`, { note });
+    } finally {
+      setSaving(false);
+    }
   };
 
   // =========================
@@ -72,7 +85,8 @@ export default function CoachLiveClassScreen() {
   // EMOM planned minutes (sum of emom_repeats)
   const plannedMinutes = useMemo(() => {
     const reps = (session as any)?.workout_metadata?.emom_repeats;
-    if (Array.isArray(reps)) return reps.map((n: any) => Number(n) || 0).reduce((a: number, b: number) => a + b, 0);
+    if (Array.isArray(reps))
+      return reps.map((n: any) => Number(n) || 0).reduce((a: number, b: number) => a + b, 0);
     return 0;
   }, [session]);
 
@@ -122,20 +136,32 @@ export default function CoachLiveClassScreen() {
         if (form.ftMode === 'time') {
           const mm = Math.max(0, Number(form.mm || 0));
           const ss = Math.max(0, Math.min(59, Number(form.ss || 0)));
-          const finishSeconds = (mm * 60) + ss;
-          await call(`/coach/live/${classId}/ft/set-finish`, { userId: editUser.user_id, finishSeconds });
+          const finishSeconds = mm * 60 + ss;
+          await call(`/coach/live/${classId}/ft/set-finish`, {
+            userId: editUser.user_id,
+            finishSeconds,
+          });
         } else {
           const totalReps = Math.max(0, Number(form.ftReps || 0));
           await call(`/coach/live/${classId}/ft/set-reps`, { userId: editUser.user_id, totalReps });
         }
       } else if (type === 'AMRAP') {
         const totalReps = Math.max(0, Number(form.amrapReps || 0));
-        await call(`/coach/live/${classId}/amrap/set-total`, { userId: editUser.user_id, totalReps });
+        await call(`/coach/live/${classId}/amrap/set-total`, {
+          userId: editUser.user_id,
+          totalReps,
+        });
       } else if (type === 'INTERVAL' || type === 'TABATA') {
         const totalReps = Math.max(0, Number(form.intervalReps || 0));
-        await call(`/coach/live/${classId}/interval/set-total`, { userId: editUser.user_id, totalReps });
+        await call(`/coach/live/${classId}/interval/set-total`, {
+          userId: editUser.user_id,
+          totalReps,
+        });
       } else if (type === 'EMOM') {
-        const minuteIndex = Math.max(0, Math.min((plannedMinutes || 1) - 1, Number(form.emomMinute || 0)));
+        const minuteIndex = Math.max(
+          0,
+          Math.min((plannedMinutes || 1) - 1, Number(form.emomMinute || 0)),
+        );
         const finished = !!form.emomFinished;
         const finishSeconds = Math.max(0, Math.min(59, Number(form.emomSec || 0)));
         await call(`/coach/live/${classId}/emom/mark`, {
@@ -165,17 +191,23 @@ export default function CoachLiveClassScreen() {
         return;
       }
     } catch {}
-    try { nav.navigate('Home'); return; } catch {}
-    try { nav.navigate('Root'); return; } catch {}
+    try {
+      nav.navigate('Home');
+      return;
+    } catch {}
+    try {
+      nav.navigate('Root');
+      return;
+    } catch {}
     nav.popToTop();
   };
 
   // Only show Start when there is no active/ended session
   const canStart = useMemo(() => {
     const st = String(session?.status || '');
-    if (!session) return true;              // no session row yet
-    if (['live','paused','ended'].includes(st)) return false;
-    if (!!session.started_at) return false; // has history
+    if (!session) return true; // no session row yet
+    if (['live', 'paused', 'ended'].includes(st)) return false;
+    if (session.started_at) return false; // has history
     return true;
   }, [session]);
 
@@ -205,15 +237,24 @@ export default function CoachLiveClassScreen() {
             placeholderTextColor="#777"
             style={s.noteInput}
           />
-          <TouchableOpacity style={[s.btnPrimary, { opacity: saving ? 0.6 : 1 }]} onPress={saveNote} disabled={saving}>
+          <TouchableOpacity
+            style={[s.btnPrimary, { opacity: saving ? 0.6 : 1 }]}
+            onPress={saveNote}
+            disabled={saving}
+          >
             <Ionicons name="save-outline" size={18} color="#111" />
-            <Text style={[s.btnPrimaryText, { marginLeft: 8 }]}>{saving ? 'Saving…' : 'Save Notes'}</Text>
+            <Text style={[s.btnPrimaryText, { marginLeft: 8 }]}>
+              {saving ? 'Saving…' : 'Save Notes'}
+            </Text>
           </TouchableOpacity>
         </View>
 
         <View style={{ height: 12 }} />
         {canStart ? (
-          <TouchableOpacity style={s.btnPrimary} onPress={() => call(`/coach/live/${classId}/start`)}>
+          <TouchableOpacity
+            style={s.btnPrimary}
+            onPress={() => call(`/coach/live/${classId}/start`)}
+          >
             <Ionicons name="play-circle-outline" size={20} color="#111" />
             <Text style={[s.btnPrimaryText, { marginLeft: 8 }]}>Start Workout</Text>
           </TouchableOpacity>
@@ -225,24 +266,35 @@ export default function CoachLiveClassScreen() {
               <Ionicons name="pause-circle-outline" size={20} color="#fff" />
               <Text style={[s.btnText, { marginLeft: 6 }]}>Pause</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[s.btn, s.btnDanger]} onPress={() => call(`/coach/live/${classId}/stop`)}>
+            <TouchableOpacity
+              style={[s.btn, s.btnDanger]}
+              onPress={() => call(`/coach/live/${classId}/stop`)}
+            >
               <Ionicons name="stop-circle-outline" size={20} color="#fff" />
               <Text style={[s.btnTextAlt, { marginLeft: 6 }]}>Stop</Text>
             </TouchableOpacity>
           </View>
         ) : null}
 
-        {(session?.status === 'paused' || (session?.status === 'live' && allFinished)) ? (
+        {session?.status === 'paused' || (session?.status === 'live' && allFinished) ? (
           <View style={{ gap: 10, marginTop: 8 }}>
             {session?.status === 'paused' && (
-              <TouchableOpacity style={s.btnPrimary} onPress={() => call(`/coach/live/${classId}/resume`)}>
+              <TouchableOpacity
+                style={s.btnPrimary}
+                onPress={() => call(`/coach/live/${classId}/resume`)}
+              >
                 <Ionicons name="play-forward-outline" size={20} color="#111" />
                 <Text style={[s.btnPrimaryText, { marginLeft: 8 }]}>Resume</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={[s.btnPrimary, { backgroundColor: '#ff5c5c' }]} onPress={() => call(`/coach/live/${classId}/stop`)}>
+            <TouchableOpacity
+              style={[s.btnPrimary, { backgroundColor: '#ff5c5c' }]}
+              onPress={() => call(`/coach/live/${classId}/stop`)}
+            >
               <Ionicons name="flag-outline" size={20} color="#fff" />
-              <Text style={[s.btnPrimaryText, { color: '#fff', marginLeft: 8 }]}>Finish Workout</Text>
+              <Text style={[s.btnPrimaryText, { color: '#fff', marginLeft: 8 }]}>
+                Finish Workout
+              </Text>
             </TouchableOpacity>
           </View>
         ) : null}
@@ -251,8 +303,10 @@ export default function CoachLiveClassScreen() {
         <Text style={s.section}>Leaderboard</Text>
 
         {/* RX/SC filter */}
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 6, marginBottom: 8 }}>
-          {(['ALL', 'RX', 'SC'] as const).map(opt => (
+        <View
+          style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 6, marginBottom: 8 }}
+        >
+          {(['ALL', 'RX', 'SC'] as const).map((opt) => (
             <TouchableOpacity
               key={opt}
               onPress={() => setScope(opt)}
@@ -267,8 +321,26 @@ export default function CoachLiveClassScreen() {
                 borderColor: scope === opt ? '#d8ff3e' : '#2a2a2a',
               }}
             >
-              <Ionicons name={opt === 'ALL' ? 'people-outline' : opt === 'RX' ? 'flash-outline' : 'barbell-outline'} size={16} color={scope === opt ? '#d8ff3e' : '#9aa'} />
-              <Text style={{ color: scope === opt ? '#d8ff3e' : '#9aa', fontWeight: '800', marginLeft: 6 }}>{opt}</Text>
+              <Ionicons
+                name={
+                  opt === 'ALL'
+                    ? 'people-outline'
+                    : opt === 'RX'
+                      ? 'flash-outline'
+                      : 'barbell-outline'
+                }
+                size={16}
+                color={scope === opt ? '#d8ff3e' : '#9aa'}
+              />
+              <Text
+                style={{
+                  color: scope === opt ? '#d8ff3e' : '#9aa',
+                  fontWeight: '800',
+                  marginLeft: 6,
+                }}
+              >
+                {opt}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -276,7 +348,7 @@ export default function CoachLiveClassScreen() {
         <View style={s.lb}>
           {lb.map((r: any, i: number) => {
             const name =
-              (r.first_name || r.last_name)
+              r.first_name || r.last_name
                 ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
                 : (r.name ?? `User ${r.user_id}`);
 
@@ -302,8 +374,16 @@ export default function CoachLiveClassScreen() {
 
                 {/* Edit icon (only after class ended) */}
                 {isEnded && (
-                  <TouchableOpacity style={s.editIconBtn} onPress={() => openEdit(r)} accessibilityLabel="Edit score">
-                    <Ionicons name={type === 'EMOM' ? 'timer-outline' : 'pencil'} size={18} color="#fff" />
+                  <TouchableOpacity
+                    style={s.editIconBtn}
+                    onPress={() => openEdit(r)}
+                    accessibilityLabel="Edit score"
+                  >
+                    <Ionicons
+                      name={type === 'EMOM' ? 'timer-outline' : 'pencil'}
+                      size={18}
+                      color="#fff"
+                    />
                   </TouchableOpacity>
                 )}
               </View>
@@ -313,7 +393,12 @@ export default function CoachLiveClassScreen() {
       </ScrollView>
 
       {/* Edit Modal */}
-      <Modal visible={editOpen} transparent animationType="fade" onRequestClose={() => setEditOpen(false)}>
+      <Modal
+        visible={editOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditOpen(false)}
+      >
         <View style={s.modalWrap}>
           <View style={s.modalCard}>
             <Text style={s.modalTitle}>Edit — {type}</Text>
@@ -322,15 +407,15 @@ export default function CoachLiveClassScreen() {
               <>
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
                   <TouchableOpacity
-                    style={[s.toggle, (form.ftMode === 'time') && s.toggleOn]}
-                    onPress={() => setForm(f => ({ ...f, ftMode: 'time' }))}
+                    style={[s.toggle, form.ftMode === 'time' && s.toggleOn]}
+                    onPress={() => setForm((f) => ({ ...f, ftMode: 'time' }))}
                   >
                     <Ionicons name="time-outline" size={16} color="#fff" />
                     <Text style={[s.toggleText, { marginLeft: 6 }]}>Score by Time</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[s.toggle, (form.ftMode === 'reps') && s.toggleOn]}
-                    onPress={() => setForm(f => ({ ...f, ftMode: 'reps' }))}
+                    style={[s.toggle, form.ftMode === 'reps' && s.toggleOn]}
+                    onPress={() => setForm((f) => ({ ...f, ftMode: 'reps' }))}
                   >
                     <Ionicons name="repeat-outline" size={16} color="#fff" />
                     <Text style={[s.toggleText, { marginLeft: 6 }]}>Score by Reps</Text>
@@ -345,7 +430,7 @@ export default function CoachLiveClassScreen() {
                       placeholderTextColor="#666"
                       keyboardType="numeric"
                       value={form.mm ?? ''}
-                      onChangeText={v => setForm(f => ({ ...f, mm: v.replace(/[^0-9]/g, '') }))}
+                      onChangeText={(v) => setForm((f) => ({ ...f, mm: v.replace(/[^0-9]/g, '') }))}
                     />
                     <TextInput
                       style={s.modalInput}
@@ -353,7 +438,7 @@ export default function CoachLiveClassScreen() {
                       placeholderTextColor="#666"
                       keyboardType="numeric"
                       value={form.ss ?? ''}
-                      onChangeText={v => setForm(f => ({ ...f, ss: v.replace(/[^0-9]/g, '') }))}
+                      onChangeText={(v) => setForm((f) => ({ ...f, ss: v.replace(/[^0-9]/g, '') }))}
                     />
                   </View>
                 ) : (
@@ -365,7 +450,9 @@ export default function CoachLiveClassScreen() {
                       placeholderTextColor="#666"
                       keyboardType="numeric"
                       value={form.ftReps ?? ''}
-                      onChangeText={v => setForm(f => ({ ...f, ftReps: v.replace(/[^0-9]/g, '') }))}
+                      onChangeText={(v) =>
+                        setForm((f) => ({ ...f, ftReps: v.replace(/[^0-9]/g, '') }))
+                      }
                     />
                   </>
                 )}
@@ -381,7 +468,9 @@ export default function CoachLiveClassScreen() {
                   placeholderTextColor="#666"
                   keyboardType="numeric"
                   value={form.amrapReps ?? ''}
-                  onChangeText={v => setForm(f => ({ ...f, amrapReps: v.replace(/[^0-9]/g, '') }))}
+                  onChangeText={(v) =>
+                    setForm((f) => ({ ...f, amrapReps: v.replace(/[^0-9]/g, '') }))
+                  }
                 />
               </>
             )}
@@ -395,7 +484,9 @@ export default function CoachLiveClassScreen() {
                   placeholderTextColor="#666"
                   keyboardType="numeric"
                   value={form.intervalReps ?? ''}
-                  onChangeText={v => setForm(f => ({ ...f, intervalReps: v.replace(/[^0-9]/g, '') }))}
+                  onChangeText={(v) =>
+                    setForm((f) => ({ ...f, intervalReps: v.replace(/[^0-9]/g, '') }))
+                  }
                 />
               </>
             )}
@@ -406,16 +497,29 @@ export default function CoachLiveClassScreen() {
                 <View style={s.pagerRow}>
                   <TouchableOpacity
                     style={s.pagerBtn}
-                    onPress={() => setForm(f => ({ ...f, emomMinute: Math.max(0, Number(f.emomMinute ?? 0) - 1) }))}
+                    onPress={() =>
+                      setForm((f) => ({
+                        ...f,
+                        emomMinute: Math.max(0, Number(f.emomMinute ?? 0) - 1),
+                      }))
+                    }
                   >
                     <Ionicons name="chevron-back" size={20} color="#fff" />
                   </TouchableOpacity>
                   <Text style={s.pagerText}>
-                    {(Number(form.emomMinute ?? 0) + 1)} / {Math.max(plannedMinutes, 1)}
+                    {Number(form.emomMinute ?? 0) + 1} / {Math.max(plannedMinutes, 1)}
                   </Text>
                   <TouchableOpacity
                     style={s.pagerBtn}
-                    onPress={() => setForm(f => ({ ...f, emomMinute: Math.min(Math.max(plannedMinutes, 1) - 1, Number(f.emomMinute ?? 0) + 1) }))}
+                    onPress={() =>
+                      setForm((f) => ({
+                        ...f,
+                        emomMinute: Math.min(
+                          Math.max(plannedMinutes, 1) - 1,
+                          Number(f.emomMinute ?? 0) + 1,
+                        ),
+                      }))
+                    }
                   >
                     <Ionicons name="chevron-forward" size={20} color="#fff" />
                   </TouchableOpacity>
@@ -424,10 +528,16 @@ export default function CoachLiveClassScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 }}>
                   <TouchableOpacity
                     style={[s.toggle, form.emomFinished ? s.toggleOn : null]}
-                    onPress={() => setForm(f => ({ ...f, emomFinished: !f.emomFinished }))}
+                    onPress={() => setForm((f) => ({ ...f, emomFinished: !f.emomFinished }))}
                   >
-                    <Ionicons name={form.emomFinished ? 'checkmark-circle-outline' : 'close-circle-outline'} size={18} color="#fff" />
-                    <Text style={[s.toggleText, { marginLeft: 6 }]}>{form.emomFinished ? 'Finished' : 'Not finished'}</Text>
+                    <Ionicons
+                      name={form.emomFinished ? 'checkmark-circle-outline' : 'close-circle-outline'}
+                      size={18}
+                      color="#fff"
+                    />
+                    <Text style={[s.toggleText, { marginLeft: 6 }]}>
+                      {form.emomFinished ? 'Finished' : 'Not finished'}
+                    </Text>
                   </TouchableOpacity>
 
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -442,7 +552,7 @@ export default function CoachLiveClassScreen() {
                         const cv = v.replace(/[^0-9]/g, '');
                         let n = Number(cv || 0);
                         if (n > 59) n = 59;
-                        setForm(f => ({ ...f, emomSec: String(n) }));
+                        setForm((f) => ({ ...f, emomSec: String(n) }));
                       }}
                     />
                   </View>
@@ -530,9 +640,20 @@ const s = StyleSheet.create({
   noteInput: { minHeight: 80, color: '#fff', textAlignVertical: 'top' },
 
   // Modal
-  modalWrap: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center' },
+  modalWrap: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   modalCard: { backgroundColor: '#151515', borderRadius: 14, padding: 18, width: '86%' },
-  modalTitle: { color: '#fff', fontWeight: '900', marginBottom: 12, fontSize: 16, textAlign: 'center' },
+  modalTitle: {
+    color: '#fff',
+    fontWeight: '900',
+    marginBottom: 12,
+    fontSize: 16,
+    textAlign: 'center',
+  },
   modalLabel: { color: '#bbb', marginTop: 6, marginBottom: 6 },
   modalInput: {
     backgroundColor: '#222',
@@ -544,7 +665,13 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
   },
 
-  toggle: { backgroundColor: '#2a2a2a', borderRadius: 10, padding: 10, alignItems: 'center', flexDirection: 'row' },
+  toggle: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 10,
+    padding: 10,
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
   toggleOn: { backgroundColor: '#26531f' },
   toggleText: { color: '#fff', fontWeight: '800' },
 

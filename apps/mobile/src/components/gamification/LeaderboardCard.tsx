@@ -10,24 +10,22 @@ interface LeaderboardCardProps {
   type: 'streak' | 'points';
 }
 
-export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ 
-  entry, 
-  rank, 
-  onPress, 
-  type 
-}) => {
+export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ entry, rank, onPress, type }) => {
   const { user, streak } = entry;
   const displayValue = type === 'streak' ? streak.currentStreak : streak.totalPoints;
-  const displayText = type === 'streak' 
-    ? `${displayValue} days` 
-    : gamificationService.formatPointsText(displayValue);
-  
+  const displayText =
+    type === 'streak' ? `${displayValue} days` : gamificationService.formatPointsText(displayValue);
+
   const getRankColor = (rank: number) => {
     switch (rank) {
-      case 1: return '#FFD700'; // Gold
-      case 2: return '#C0C0C0'; // Silver
-      case 3: return '#CD7F32'; // Bronze
-      default: return '#888';
+      case 1:
+        return '#FFD700'; // Gold
+      case 2:
+        return '#C0C0C0'; // Silver
+      case 3:
+        return '#CD7F32'; // Bronze
+      default:
+        return '#888';
     }
   };
 
@@ -38,22 +36,22 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.rankContainer}>
-        <Text style={[styles.rankText, { color: getRankColor(rank) }]}>
-          {getRankEmoji(rank)}
-        </Text>
+        <Text style={[styles.rankText, { color: getRankColor(rank) }]}>{getRankEmoji(rank)}</Text>
       </View>
-      
+
       <View style={styles.userInfo}>
         <Text style={styles.userName}>
           {user.firstName} {user.lastName}
         </Text>
         <Text style={styles.userLevel}>Level {streak.level}</Text>
       </View>
-      
+
       <View style={styles.statsContainer}>
         <Text style={styles.mainStat}>{displayText}</Text>
         <Text style={styles.subStat}>
-          {type === 'streak' ? `${streak.totalWorkouts} workouts` : `${streak.currentStreak} day streak`}
+          {type === 'streak'
+            ? `${streak.totalWorkouts} workouts`
+            : `${streak.currentStreak} day streak`}
         </Text>
       </View>
     </TouchableOpacity>

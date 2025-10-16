@@ -1,5 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Modal, Animated, ActivityIndicator, FlatList } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Modal,
+  Animated,
+  ActivityIndicator,
+  FlatList,
+} from 'react-native';
 import apiClient from '../utils/apiClient';
 
 const { height } = Dimensions.get('window');
@@ -23,7 +33,11 @@ interface WorkoutSelectSheetProps {
   onSelectWorkout: (workoutId: number, workoutName: string) => void;
 }
 
-export default function WorkoutSelectSheet({ visible, onClose, onSelectWorkout }: WorkoutSelectSheetProps) {
+export default function WorkoutSelectSheet({
+  visible,
+  onClose,
+  onSelectWorkout,
+}: WorkoutSelectSheetProps) {
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(height)).current;
 
@@ -37,7 +51,11 @@ export default function WorkoutSelectSheet({ visible, onClose, onSelectWorkout }
       setError(null);
       setWorkouts([]);
       loadWorkoutHistory();
-      Animated.timing(backdropOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+      Animated.timing(backdropOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
       Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
     } else {
       Animated.parallel([
@@ -51,15 +69,13 @@ export default function WorkoutSelectSheet({ visible, onClose, onSelectWorkout }
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.get<ApiClassWithWorkout[]>(
-        '/coach/classes-with-workouts'
-      );
+      const res = await apiClient.get<ApiClassWithWorkout[]>('/coach/classes-with-workouts');
 
       // Get unique workouts (by workoutId) and sort by most recent
       const uniqueWorkouts = res.data
-        .filter(c => c.workoutId != null && c.workoutName != null)
+        .filter((c) => c.workoutId != null && c.workoutName != null)
         .reduce((acc, current) => {
-          const existing = acc.find(item => item.workoutId === current.workoutId);
+          const existing = acc.find((item) => item.workoutId === current.workoutId);
           if (!existing) {
             acc.push(current);
           }
@@ -88,7 +104,7 @@ export default function WorkoutSelectSheet({ visible, onClose, onSelectWorkout }
   };
 
   const toggleExpanded = (workoutId: number) => {
-    setExpandedWorkouts(prev => {
+    setExpandedWorkouts((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(workoutId)) {
         newSet.delete(workoutId);
@@ -101,29 +117,29 @@ export default function WorkoutSelectSheet({ visible, onClose, onSelectWorkout }
 
   const formatWorkoutMetadata = (metadata: any, workoutType: string) => {
     if (!metadata) return null;
-    
+
     const details = [];
-    
+
     // Duration for FOR_TIME and AMRAP
     if ((workoutType === 'FOR_TIME' || workoutType === 'AMRAP') && metadata.time_limit) {
       details.push(`Duration: ${metadata.time_limit} minutes`);
     }
-    
+
     // Number of rounds for FOR_TIME and TABATA
     if ((workoutType === 'FOR_TIME' || workoutType === 'TABATA') && metadata.number_of_rounds) {
       details.push(`Rounds: ${metadata.number_of_rounds}`);
     }
-    
+
     // Number of subrounds
     if (metadata.number_of_subrounds) {
       details.push(`Sub-rounds: ${metadata.number_of_subrounds}`);
     }
-    
+
     // EMOM repeats
     if (workoutType === 'EMOM' && metadata.emom_repeats && Array.isArray(metadata.emom_repeats)) {
       details.push(`EMOM repeats: ${metadata.emom_repeats.join(', ')}`);
     }
-    
+
     return details;
   };
 
@@ -133,76 +149,74 @@ export default function WorkoutSelectSheet({ visible, onClose, onSelectWorkout }
     const timeStr = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const isExpanded = expandedWorkouts.has(item.workoutId!);
     const metadataDetails = formatWorkoutMetadata(item.workoutMetadata, item.workoutType || '');
-    
+
     return (
       <View style={styles.workoutCard}>
-        <TouchableOpacity 
-          style={styles.workoutHeader}
-          onPress={() => handleSelectWorkout(item)}
-        >
+        <TouchableOpacity style={styles.workoutHeader} onPress={() => handleSelectWorkout(item)}>
           <View style={styles.workoutHeaderContent}>
             <Text style={styles.workoutName}>{item.workoutName}</Text>
             <View style={styles.workoutBadge}>
               <Text style={styles.workoutBadgeText}>#{item.workoutId}</Text>
             </View>
           </View>
-          <Text style={styles.workoutDate}>{dateStr} • {timeStr}</Text>
+          <Text style={styles.workoutDate}>
+            {dateStr} • {timeStr}
+          </Text>
           <Text style={styles.workoutClassId}>Class ID #{item.classId}</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.expandButton}
           onPress={() => toggleExpanded(item.workoutId!)}
         >
           <Text style={styles.expandButtonText}>
             {isExpanded ? 'Hide Details' : 'Show Details'}
           </Text>
-          <Text style={[styles.expandIcon, isExpanded && styles.expandIconRotated]}>
-            ▼
-          </Text>
+          <Text style={[styles.expandIcon, isExpanded && styles.expandIconRotated]}>▼</Text>
         </TouchableOpacity>
-        
+
         {isExpanded && (
           <View style={styles.workoutDetails}>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Workout Type:</Text>
               <Text style={styles.detailValue}>{item.workoutType || 'N/A'}</Text>
             </View>
-            
+
             {item.durationMinutes && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Class Duration:</Text>
                 <Text style={styles.detailValue}>{item.durationMinutes} minutes</Text>
               </View>
             )}
-            
+
             {item.capacity && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Capacity:</Text>
                 <Text style={styles.detailValue}>{item.capacity} people</Text>
               </View>
             )}
-            
+
             {item.bookingsCount !== undefined && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Bookings:</Text>
-                <Text style={styles.detailValue}>{item.bookingsCount} / {item.capacity || 'N/A'}</Text>
+                <Text style={styles.detailValue}>
+                  {item.bookingsCount} / {item.capacity || 'N/A'}
+                </Text>
               </View>
             )}
-            
+
             {metadataDetails && metadataDetails.length > 0 && (
               <View style={styles.metadataSection}>
                 <Text style={styles.metadataTitle}>Workout Details:</Text>
                 {metadataDetails.map((detail, index) => (
-                  <Text key={index} style={styles.metadataDetail}>• {detail}</Text>
+                  <Text key={index} style={styles.metadataDetail}>
+                    • {detail}
+                  </Text>
                 ))}
               </View>
             )}
-            
-            <TouchableOpacity 
-              style={styles.selectButton}
-              onPress={() => handleSelectWorkout(item)}
-            >
+
+            <TouchableOpacity style={styles.selectButton} onPress={() => handleSelectWorkout(item)}>
               <Text style={styles.selectButtonText}>Load This Workout</Text>
             </TouchableOpacity>
           </View>
@@ -219,7 +233,7 @@ export default function WorkoutSelectSheet({ visible, onClose, onSelectWorkout }
 
         <Animated.View style={[styles.sheetContainer, { transform: [{ translateY: slideAnim }] }]}>
           <View style={styles.handle} />
-          
+
           <View style={styles.header}>
             <Text style={styles.title}>Load Previous Workout</Text>
             <Text style={styles.subtitle}>Select a workout from your history</Text>
@@ -262,23 +276,30 @@ export default function WorkoutSelectSheet({ visible, onClose, onSelectWorkout }
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)' },
-  backdropTouchable: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  sheetContainer: { 
-    backgroundColor: '#2a2a2a', 
-    borderTopLeftRadius: 24, 
-    borderTopRightRadius: 24, 
-    maxHeight: height * 0.8,
-    paddingBottom: 16 
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  handle: { 
-    width: 40, 
-    height: 4, 
-    backgroundColor: '#555', 
-    borderRadius: 2, 
-    alignSelf: 'center', 
-    marginTop: 12, 
-    marginBottom: 8 
+  backdropTouchable: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  sheetContainer: {
+    backgroundColor: '#2a2a2a',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: height * 0.8,
+    paddingBottom: 16,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#555',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 8,
   },
   header: {
     paddingHorizontal: 20,
@@ -287,9 +308,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#333',
     marginBottom: 16,
   },
-  title: { 
-    color: 'white', 
-    fontSize: 20, 
+  title: {
+    color: 'white',
+    fontSize: 20,
     fontWeight: '700',
     marginBottom: 4,
   },

@@ -68,17 +68,42 @@ const MOCK_WORKOUTS: WorkoutData[] = [
 ];
 
 const MOCK_HEART_RATE: HeartRateData[] = [
-  { value: 145, startDate: new Date().toISOString(), endDate: new Date().toISOString(), source: 'Mock' },
-  { value: 152, startDate: new Date().toISOString(), endDate: new Date().toISOString(), source: 'Mock' },
-  { value: 138, startDate: new Date().toISOString(), endDate: new Date().toISOString(), source: 'Mock' },
-  { value: 162, startDate: new Date().toISOString(), endDate: new Date().toISOString(), source: 'Mock' },
-  { value: 149, startDate: new Date().toISOString(), endDate: new Date().toISOString(), source: 'Mock' },
+  {
+    value: 145,
+    startDate: new Date().toISOString(),
+    endDate: new Date().toISOString(),
+    source: 'Mock',
+  },
+  {
+    value: 152,
+    startDate: new Date().toISOString(),
+    endDate: new Date().toISOString(),
+    source: 'Mock',
+  },
+  {
+    value: 138,
+    startDate: new Date().toISOString(),
+    endDate: new Date().toISOString(),
+    source: 'Mock',
+  },
+  {
+    value: 162,
+    startDate: new Date().toISOString(),
+    endDate: new Date().toISOString(),
+    source: 'Mock',
+  },
+  {
+    value: 149,
+    startDate: new Date().toISOString(),
+    endDate: new Date().toISOString(),
+    source: 'Mock',
+  },
 ];
 
 class HealthService {
   private isInitialized = false;
   private platformSupported = false;
-  
+
   constructor() {
     this.platformSupported = Platform.OS === 'ios';
   }
@@ -121,7 +146,7 @@ class HealthService {
   async getWorkouts(startDate: Date, endDate: Date): Promise<WorkoutData[]> {
     if (!this.platformSupported) {
       console.log('Returning mock workouts for non-iOS platform');
-      return MOCK_WORKOUTS.filter(w => {
+      return MOCK_WORKOUTS.filter((w) => {
         const workoutStart = new Date(w.startDate);
         return workoutStart >= startDate && workoutStart <= endDate;
       });
@@ -141,32 +166,35 @@ class HealthService {
 
       console.log('Fetching workouts for period:', options);
 
-      healthKit.getSamples({
-        type: Constants.Activities.Running, // We'll need to query multiple types
-        startDate: options.startDate,
-        endDate: options.endDate,
-      }, (error: string, results: any[]) => {
-        if (error) {
-          console.error('Error fetching workouts:', error);
-          resolve([]); // Return empty array instead of rejecting
-          return;
-        }
+      healthKit.getSamples(
+        {
+          type: Constants.Activities.Running, // We'll need to query multiple types
+          startDate: options.startDate,
+          endDate: options.endDate,
+        },
+        (error: string, results: any[]) => {
+          if (error) {
+            console.error('Error fetching workouts:', error);
+            resolve([]); // Return empty array instead of rejecting
+            return;
+          }
 
-        console.log('Workout results:', results);
+          console.log('Workout results:', results);
 
-        const workouts: WorkoutData[] = (results || []).map((workout: any) => ({
-          id: workout.uuid || `workout_${Date.now()}`,
-          type: this.mapWorkoutType(workout.activityType || workout.type),
-          startDate: workout.startDate,
-          endDate: workout.endDate,
-          duration: this.calculateDuration(workout.startDate, workout.endDate),
-          calories: workout.totalEnergyBurned || undefined,
-          distance: workout.totalDistance || undefined,
-          source: workout.sourceName || 'Apple Health',
-        }));
+          const workouts: WorkoutData[] = (results || []).map((workout: any) => ({
+            id: workout.uuid || `workout_${Date.now()}`,
+            type: this.mapWorkoutType(workout.activityType || workout.type),
+            startDate: workout.startDate,
+            endDate: workout.endDate,
+            duration: this.calculateDuration(workout.startDate, workout.endDate),
+            calories: workout.totalEnergyBurned || undefined,
+            distance: workout.totalDistance || undefined,
+            source: workout.sourceName || 'Apple Health',
+          }));
 
-        resolve(workouts);
-      });
+          resolve(workouts);
+        },
+      );
     });
   }
 
@@ -218,27 +246,39 @@ class HealthService {
    * Get detailed workout data including heart rate zones
    * This is what you'd call when a user taps on a class to see detailed stats
    */
-  async getDetailedWorkoutData(classStartTime: Date, classEndTime: Date): Promise<DetailedWorkoutData | null> {
+  async getDetailedWorkoutData(
+    classStartTime: Date,
+    classEndTime: Date,
+  ): Promise<DetailedWorkoutData | null> {
     try {
       // First, check if there's a workout session during the class time
       const workouts = await this.getWorkouts(classStartTime, classEndTime);
-      
+
       // Get heart rate data for the entire class period (whether workout was tracked or not)
       const heartRateData = await this.getHeartRateData(classStartTime, classEndTime);
 
       // If there's a tracked workout, use its data; otherwise create a class-based workout
-      const baseWorkout: WorkoutData = workouts.length > 0 ? workouts[0] : {
-        id: `class_${classStartTime.getTime()}`,
-        type: 'Gym Class',
-        startDate: classStartTime.toISOString(),
-        endDate: classEndTime.toISOString(),
-        duration: this.calculateDuration(classStartTime.toISOString(), classEndTime.toISOString()),
-        source: 'Class Attendance',
-      };
+      const baseWorkout: WorkoutData =
+        workouts.length > 0
+          ? workouts[0]
+          : {
+              id: `class_${classStartTime.getTime()}`,
+              type: 'Gym Class',
+              startDate: classStartTime.toISOString(),
+              endDate: classEndTime.toISOString(),
+              duration: this.calculateDuration(
+                classStartTime.toISOString(),
+                classEndTime.toISOString(),
+              ),
+              source: 'Class Attendance',
+            };
 
       // Calculate heart rate statistics
-      const hrValues = heartRateData.map(hr => hr.value);
-      const averageHeartRate = hrValues.length > 0 ? Math.round(hrValues.reduce((a, b) => a + b, 0) / hrValues.length) : undefined;
+      const hrValues = heartRateData.map((hr) => hr.value);
+      const averageHeartRate =
+        hrValues.length > 0
+          ? Math.round(hrValues.reduce((a, b) => a + b, 0) / hrValues.length)
+          : undefined;
       const maxHeartRate = hrValues.length > 0 ? Math.max(...hrValues) : undefined;
       const minHeartRate = hrValues.length > 0 ? Math.min(...hrValues) : undefined;
 
@@ -277,7 +317,7 @@ class HealthService {
     if (typeof activityType === 'number') {
       return typeMap[activityType] || `Activity ${activityType}`;
     }
-    
+
     return activityType || 'Unknown Workout';
   }
 
@@ -306,17 +346,17 @@ class HealthService {
 
     // Assuming max HR = 220 - age (we'll use 190 as average for gym members)
     const estimatedMaxHR = 190;
-    
+
     const zones = {
-      resting: 0,   // < 50% max HR
-      fatBurn: 0,   // 50-60% max HR
-      cardio: 0,    // 60-70% max HR
-      peak: 0,      // > 70% max HR
+      resting: 0, // < 50% max HR
+      fatBurn: 0, // 50-60% max HR
+      cardio: 0, // 60-70% max HR
+      peak: 0, // > 70% max HR
     };
 
-    heartRateData.forEach(hr => {
+    heartRateData.forEach((hr) => {
       const percentage = (hr.value / estimatedMaxHR) * 100;
-      
+
       if (percentage < 50) {
         zones.resting++;
       } else if (percentage < 60) {

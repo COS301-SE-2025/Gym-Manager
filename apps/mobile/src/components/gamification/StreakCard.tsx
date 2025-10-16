@@ -58,19 +58,17 @@ export const StreakCard: React.FC<StreakCardProps> = ({ streak, onPress, compact
         <View style={styles.levelHeader}>
           <Text style={styles.levelText}>Level {streak.level}</Text>
           <Text style={styles.progressText}>
-            {levelProgress.pointsInCurrent} / {levelProgress.pointsInCurrent + levelProgress.pointsToNext} XP
+            {levelProgress.pointsInCurrent} /{' '}
+            {levelProgress.pointsInCurrent + levelProgress.pointsToNext} XP
           </Text>
         </View>
         <View style={styles.progressBar}>
-          <View 
-            style={[
-              styles.progressFill, 
-              { width: `${levelProgress.progressPercentage}%` }
-            ]} 
-          />
+          <View style={[styles.progressFill, { width: `${levelProgress.progressPercentage}%` }]} />
         </View>
         <Text style={styles.nextLevelText}>
-          {levelProgress.pointsToNext > 0 ? `${levelProgress.pointsToNext} XP to Level ${levelProgress.nextLevel}` : 'Ready for next level!'}
+          {levelProgress.pointsToNext > 0
+            ? `${levelProgress.pointsToNext} XP to Level ${levelProgress.nextLevel}`
+            : 'Ready for next level!'}
         </Text>
       </View>
     </TouchableOpacity>

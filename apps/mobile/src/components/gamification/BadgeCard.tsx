@@ -13,14 +13,19 @@ interface BadgeCardProps {
 export const BadgeCard: React.FC<BadgeCardProps> = ({ badge, onPress, compact = false }) => {
   const badgeIconName = gamificationService.getBadgeIcon(
     badge.badge?.badgeType || 'achievement',
-    badge.badge?.name
+    badge.badge?.name,
   );
   const earnedDate = new Date(badge.earnedAt).toLocaleDateString();
 
   if (compact) {
     return (
       <TouchableOpacity style={styles.compactContainer} onPress={onPress} activeOpacity={0.7}>
-        <Ionicons name={badgeIconName as any} size={24} color="#D8FF3E" style={styles.compactIcon} />
+        <Ionicons
+          name={badgeIconName as any}
+          size={24}
+          color="#D8FF3E"
+          style={styles.compactIcon}
+        />
         <View style={styles.compactContent}>
           <Text style={styles.compactName} numberOfLines={1}>
             {badge.badge?.name || 'Unknown Badge'}
@@ -40,11 +45,11 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ badge, onPress, compact = 
           <Text style={styles.points}>+{badge.badge?.pointsValue || 0} pts</Text>
         </View>
       </View>
-      
+
       <Text style={styles.description} numberOfLines={2}>
         {badge.badge?.description || 'No description available'}
       </Text>
-      
+
       <View style={styles.footer}>
         <Text style={styles.earnedDate}>Earned {earnedDate}</Text>
         <View style={styles.typeContainer}>

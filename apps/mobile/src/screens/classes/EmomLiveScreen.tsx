@@ -1,7 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, StatusBar,
-  ActivityIndicator, Animated, TouchableOpacity
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  StatusBar,
+  ActivityIndicator,
+  Animated,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -16,13 +22,14 @@ import config from '../../config';
 import { HypeToast } from '../../components/HypeToast';
 import { useLeaderboardHype } from '../../hooks/useLeaderboardHype';
 
-
-
 type R = RouteProp<AuthStackParamList, 'EmomLive'>;
 
 function useNowSec() {
   const [now, setNow] = useState(Math.floor(Date.now() / 1000));
-  useEffect(() => { const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 250); return () => clearInterval(id); }, []);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 250);
+    return () => clearInterval(id);
+  }, []);
   return now;
 }
 const fmt = (t: number) => {
@@ -39,9 +46,19 @@ export default function EmomLiveScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      (async () => { try { await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_LEFT); } catch {} })();
-      return () => { (async () => { try { await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP); } catch {} })(); };
-    }, [])
+      (async () => {
+        try {
+          await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_LEFT);
+        } catch {}
+      })();
+      return () => {
+        (async () => {
+          try {
+            await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+          } catch {}
+        })();
+      };
+    }, []),
   );
 
   if (!classId) {
@@ -52,7 +69,8 @@ export default function EmomLiveScreen() {
           <View style={{ padding: 20 }}>
             <Text style={{ color: '#fff', fontWeight: '900', fontSize: 18 }}>Missing classId</Text>
             <Text style={{ color: '#aaa', marginTop: 6 }}>
-              Ensure AuthStackParamList includes {'{ EmomLive: { classId: number } }'} and the navigator passes it.
+              Ensure AuthStackParamList includes {'{ EmomLive: { classId: number } }'} and the
+              navigator passes it.
             </Text>
           </View>
         </SafeAreaView>
@@ -78,7 +96,7 @@ export default function EmomLiveScreen() {
   useEffect(() => {
     if (!showTutorial) return;
     const interval = setInterval(() => {
-      setTutorialStep(prev => (prev + 1) % 2);
+      setTutorialStep((prev) => (prev + 1) % 2);
     }, 800); // Switch every 800ms
     return () => clearInterval(interval);
   }, [showTutorial]);
@@ -94,15 +112,14 @@ export default function EmomLiveScreen() {
     fetchUserId();
   }, []);
 
-  const hypeOptedOut =
-    (session as any)?.workout_metadata?.hype_opt_out === true ||
-    false;
+  const hypeOptedOut = (session as any)?.workout_metadata?.hype_opt_out === true || false;
 
   const hype = useLeaderboardHype(lb, myUserId || undefined, hypeOptedOut);
 
-
   // --- Steps with metadata fallback ---
-  const stepsFromSession: any[] = Array.isArray((session as any)?.steps) ? ((session as any).steps as any[]) : [];
+  const stepsFromSession: any[] = Array.isArray((session as any)?.steps)
+    ? ((session as any).steps as any[])
+    : [];
 
   // Optional metadata fallback: workout_metadata.emom_rounds = [ [ex, ex...], [ex, ex...] ]
   // Each ex can be a string or { name: string }
@@ -144,15 +161,17 @@ export default function EmomLiveScreen() {
       byRound[r] ??= [];
       byRound[r].push(s);
     }
-    for (const k of Object.keys(byRound)) byRound[Number(k)].sort((a, b) => Number(a.index) - Number(b.index));
+    for (const k of Object.keys(byRound))
+      byRound[Number(k)].sort((a, b) => Number(a.index) - Number(b.index));
     return byRound;
   }, [steps]);
 
   // repeats from metadata (workout_metadata.emom_repeats) or default 1× per round
   const repeats: number[] = useMemo(() => {
     const j = (session as any)?.workout_metadata?.emom_repeats;
-    if (Array.isArray(j) && j.every(x => Number.isFinite(Number(x)))) return j.map((x: any) => Number(x));
-    const maxRound = Math.max(0, ...Object.keys(rounds).map(n => Number(n)));
+    if (Array.isArray(j) && j.every((x) => Number.isFinite(Number(x))))
+      return j.map((x: any) => Number(x));
+    const maxRound = Math.max(0, ...Object.keys(rounds).map((n) => Number(n)));
     return Array.from({ length: maxRound }, () => 1);
   }, [session, rounds]);
 
@@ -160,7 +179,10 @@ export default function EmomLiveScreen() {
   const minutePlan: number[] = useMemo(() => {
     const arr: number[] = [];
     let r = 1;
-    for (const rep of repeats) { for (let i = 0; i < rep; i++) arr.push(r); r += 1; }
+    for (const rep of repeats) {
+      for (let i = 0; i < rep; i++) arr.push(r);
+      r += 1;
+    }
     return arr;
   }, [repeats]);
   const totalMinutes = minutePlan.length;
@@ -168,20 +190,23 @@ export default function EmomLiveScreen() {
   // pause-aware elapsed
   const nowSec = useNowSec();
   const startedAtSec = Number((session as any)?.started_at_s ?? 0);
-  const pausedAtSec  = Number((session as any)?.paused_at_s  ?? 0);
-  const pauseAccum   = Number((session as any)?.pause_accum_seconds ?? 0);
-  const extraPaused  = session?.status === 'paused' && pausedAtSec ? Math.max(0, nowSec - pausedAtSec) : 0;
-  const elapsed      = startedAtSec ? Math.max(0, (nowSec - startedAtSec) - (pauseAccum + extraPaused)) : 0;
+  const pausedAtSec = Number((session as any)?.paused_at_s ?? 0);
+  const pauseAccum = Number((session as any)?.pause_accum_seconds ?? 0);
+  const extraPaused =
+    session?.status === 'paused' && pausedAtSec ? Math.max(0, nowSec - pausedAtSec) : 0;
+  const elapsed = startedAtSec
+    ? Math.max(0, nowSec - startedAtSec - (pauseAccum + extraPaused))
+    : 0;
 
   // time -> minute index (no wrap)
   const minuteIdxRaw = Math.floor(elapsed / 60);
-  const minuteIdx    = Math.min(Math.max(0, minuteIdxRaw), Math.max(0, totalMinutes - 1));
-  const secIntoMin   = elapsed - minuteIdx * 60;
-  const plannedDone  = totalMinutes > 0 && elapsed >= totalMinutes * 60;
+  const minuteIdx = Math.min(Math.max(0, minuteIdxRaw), Math.max(0, totalMinutes - 1));
+  const secIntoMin = elapsed - minuteIdx * 60;
+  const plannedDone = totalMinutes > 0 && elapsed >= totalMinutes * 60;
 
   const currentRoundNo = totalMinutes > 0 ? minutePlan[minuteIdx] : 1;
-  const currentRound   = rounds[currentRoundNo] ?? [];
-  const totalInRound   = currentRound.length;
+  const currentRound = rounds[currentRoundNo] ?? [];
+  const totalInRound = currentRound.length;
 
   // local within the current minute
   const [localIdx, setLocalIdx] = useState(0);
@@ -191,29 +216,38 @@ export default function EmomLiveScreen() {
   const canAct =
     !!session?.class_id &&
     (session?.status === 'live' || session?.status === 'paused' || session?.status === 'ended') &&
-    (totalMinutes > 0);
+    totalMinutes > 0;
 
   // submit mark helper
-  const mark = useCallback(async (finished: boolean, mIdx: number, completed: number, total: number, finishSeconds?: number) => {
-    if (!canAct) return;
-    try {
-      const token = await getToken();
-      await axios.post(
-        `${config.BASE_URL}/live/${classId}/emom/mark`,
-        {
-          minuteIndex: mIdx,
-          finished,
-          finishSeconds: finished ? Math.max(0, Math.floor(finishSeconds || 0)) : null,
-          exercisesCompleted: Math.max(0, completed),
-          exercisesTotal: Math.max(0, total)
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      sentForMinute.current.add(mIdx);
-    } catch {
-      // retry on next tick / boundary if needed
-    }
-  }, [canAct, classId]);
+  const mark = useCallback(
+    async (
+      finished: boolean,
+      mIdx: number,
+      completed: number,
+      total: number,
+      finishSeconds?: number,
+    ) => {
+      if (!canAct) return;
+      try {
+        const token = await getToken();
+        await axios.post(
+          `${config.BASE_URL}/live/${classId}/emom/mark`,
+          {
+            minuteIndex: mIdx,
+            finished,
+            finishSeconds: finished ? Math.max(0, Math.floor(finishSeconds || 0)) : null,
+            exercisesCompleted: Math.max(0, completed),
+            exercisesTotal: Math.max(0, total),
+          },
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        sentForMinute.current.add(mIdx);
+      } catch {
+        // retry on next tick / boundary if needed
+      }
+    },
+    [canAct, classId],
+  );
 
   // react to minute change: if we left the previous minute without finishing, submit a 60s (penalized) mark
   const prevMinuteRef = useRef<number>(minuteIdx);
@@ -222,9 +256,11 @@ export default function EmomLiveScreen() {
     const prev = prevMinuteRef.current;
     if (prev !== minuteIdx && !sentForMinute.current.has(prev) && !plannedDone) {
       const prevRoundNo = minutePlan[prev] ?? currentRoundNo;
-      const totalPrev   = (rounds[prevRoundNo] ?? []).length;
-      const completed   = Math.max(0, Math.min(localIdx, totalPrev));
-      (async () => { await mark(false, prev, completed, totalPrev, 60); })();
+      const totalPrev = (rounds[prevRoundNo] ?? []).length;
+      const completed = Math.max(0, Math.min(localIdx, totalPrev));
+      (async () => {
+        await mark(false, prev, completed, totalPrev, 60);
+      })();
     }
     if (prev !== minuteIdx) {
       prevMinuteRef.current = minuteIdx;
@@ -239,9 +275,20 @@ export default function EmomLiveScreen() {
     if (finishedThisMinute) return;
     if (localIdx >= totalInRound) {
       setFinishedThisMinute(true);
-      (async () => { await mark(true, minuteIdx, totalInRound, totalInRound, secIntoMin); })();
+      (async () => {
+        await mark(true, minuteIdx, totalInRound, totalInRound, secIntoMin);
+      })();
     }
-  }, [localIdx, finishedThisMinute, canAct, plannedDone, minuteIdx, totalInRound, secIntoMin, mark]);
+  }, [
+    localIdx,
+    finishedThisMinute,
+    canAct,
+    plannedDone,
+    minuteIdx,
+    totalInRound,
+    secIntoMin,
+    mark,
+  ]);
 
   // if plan is done: submit last partial (if not sent) then navigate to end screen
   const endNavRef = useRef(false);
@@ -256,7 +303,7 @@ export default function EmomLiveScreen() {
     (async () => {
       const prev = prevMinuteRef.current;
       if (!sentForMinute.current.has(prev)) {
-        const roundNo   = minutePlan[prev] ?? currentRoundNo;
+        const roundNo = minutePlan[prev] ?? currentRoundNo;
         const totalLast = (rounds[roundNo] ?? []).length;
         const completed = Math.max(0, Math.min(localIdx, totalLast));
         await mark(false, prev, completed, totalLast, 60);
@@ -286,19 +333,24 @@ export default function EmomLiveScreen() {
   // within-minute navigation (no wrap)
   const go = async (dir: 1 | -1) => {
     if (!canAct || session?.status !== 'live' || plannedDone) return;
-    setLocalIdx(idx => Math.max(0, Math.min(totalInRound, idx + (dir === 1 ? 1 : -1))));
+    setLocalIdx((idx) => Math.max(0, Math.min(totalInRound, idx + (dir === 1 ? 1 : -1))));
   };
 
   // pause overlay animation
   const pausedAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(pausedAnim, { toValue: session?.status === 'paused' ? 1 : 0, duration: 250, useNativeDriver: true }).start();
+    Animated.timing(pausedAnim, {
+      toValue: session?.status === 'paused' ? 1 : 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
   }, [session?.status]);
   const fadeOpacity = pausedAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.55] });
-  const scaleIn     = pausedAnim.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] });
+  const scaleIn = pausedAnim.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] });
 
   const current = totalInRound > 0 && localIdx < totalInRound ? currentRound[localIdx] : undefined;
-  const next    = totalInRound > 0 && localIdx + 1 < totalInRound ? currentRound[localIdx + 1] : undefined;
+  const next =
+    totalInRound > 0 && localIdx + 1 < totalInRound ? currentRound[localIdx + 1] : undefined;
 
   const elapsedClamped = Math.min(elapsed, totalMinutes * 60 || elapsed);
 
@@ -308,138 +360,203 @@ export default function EmomLiveScreen() {
     <View style={s.root}>
       <StatusBar hidden={true} />
       <SafeAreaView style={s.safeArea} edges={['left', 'right']}>
+        {/* timer */}
+        <View pointerEvents="none" style={s.topOverlay}>
+          <Text style={s.timeTop} pointerEvents="none">
+            {fmt(elapsedClamped)}
+          </Text>
+        </View>
 
-      {/* timer */}
-      <View pointerEvents="none" style={s.topOverlay}>
-        <Text style={s.timeTop} pointerEvents="none">{fmt(elapsedClamped)}</Text>
-      </View>
+        <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />
 
-      <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />
+        {/* centered content */}
+        <View pointerEvents="box-none" style={s.centerOverlay}>
+          {!ready ? (
+            <>
+              <ActivityIndicator size="large" color="#D8FF3E" pointerEvents="none" />
+              <Text
+                style={{ color: '#a5a5a5', marginTop: 10, fontWeight: '700' }}
+                pointerEvents="none"
+              >
+                Getting class ready…
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={s.stepCounter} pointerEvents="none">
+                {totalMinutes > 0 ? (
+                  <>
+                    Round {String(Math.min(minuteIdx + 1, totalMinutes)).padStart(2, '0')} /{' '}
+                    {String(totalMinutes).padStart(2, '0')}
+                  </>
+                ) : (
+                  <>Waiting for coach…</>
+                )}
+              </Text>
 
-      {/* centered content */}
-      <View pointerEvents="box-none" style={s.centerOverlay}>
-        {!ready ? (
-          <>
-            <ActivityIndicator size="large" color="#D8FF3E" pointerEvents="none" />
-            <Text style={{ color: '#a5a5a5', marginTop: 10, fontWeight: '700' }} pointerEvents="none">Getting class ready…</Text>
-          </>
-        ) : (
-          <>
-            <Text style={s.stepCounter} pointerEvents="none">
-              {totalMinutes > 0 ? (
-                <>Round {String(Math.min(minuteIdx + 1, totalMinutes)).padStart(2,'0')} / {String(totalMinutes).padStart(2,'0')}</>
+              <Text style={s.score} pointerEvents="none">
+                {totalInRound > 0
+                  ? `${String(Math.min(localIdx, totalInRound)).padStart(2, '0')} / ${String(totalInRound).padStart(2, '0')} exercises`
+                  : 'No exercises yet'}
+              </Text>
+
+              {plannedDone ? (
+                <>
+                  <Text style={s.current} pointerEvents="none">
+                    CLASS ENDED
+                  </Text>
+                  <Text style={s.nextLabel} pointerEvents="none">
+                    Great work — leaderboard updating…
+                  </Text>
+                </>
+              ) : finishedThisMinute ? (
+                <>
+                  <Text style={s.current} pointerEvents="none">
+                    WAIT FOR NEXT ROUND
+                  </Text>
+                  <Text style={s.nextLabel} pointerEvents="none">
+                    Starts at {fmt((minuteIdx + 1) * 60)}
+                  </Text>
+                </>
               ) : (
-                <>Waiting for coach…</>
+                <>
+                  <Text style={s.current} pointerEvents="none">
+                    {current?.name ?? '—'}
+                  </Text>
+                  <Text style={s.nextLabel} pointerEvents="none">
+                    Next: {next?.name ?? '—'}
+                  </Text>
+                </>
               )}
-            </Text>
 
-            <Text style={s.score} pointerEvents="none">
-              {totalInRound > 0
-                ? `${String(Math.min(localIdx, totalInRound)).padStart(2,'0')} / ${String(totalInRound).padStart(2,'0')} exercises`
-                : 'No exercises yet'}
-            </Text>
+              <View style={[s.lb, { zIndex: 50, elevation: 6 }]} pointerEvents="box-none">
+                <Text style={s.lbTitle} pointerEvents="none">
+                  Leaderboard
+                </Text>
 
-            {plannedDone ? (
-              <>
-                <Text style={s.current} pointerEvents="none">CLASS ENDED</Text>
-                <Text style={s.nextLabel} pointerEvents="none">Great work — leaderboard updating…</Text>
-              </>
-            ) : finishedThisMinute ? (
-              <>
-                <Text style={s.current} pointerEvents="none">WAIT FOR NEXT ROUND</Text>
-                <Text style={s.nextLabel} pointerEvents="none">Starts at {fmt((minuteIdx + 1) * 60)}</Text>
-              </>
-            ) : (
-              <>
-                <Text style={s.current} pointerEvents="none">{current?.name ?? '—'}</Text>
-                <Text style={s.nextLabel} pointerEvents="none">Next: {next?.name ?? '—'}</Text>
-              </>
+                {/* RX/SC filter */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: 6,
+                    marginBottom: 8,
+                  }}
+                  pointerEvents="auto"
+                >
+                  {(['ALL', 'RX', 'SC'] as const).map((opt) => (
+                    <TouchableOpacity
+                      key={opt}
+                      onPress={() => setScope(opt)}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 999,
+                        backgroundColor: scope === opt ? '#2e3500' : '#1f1f1f',
+                        borderWidth: 1,
+                        borderColor: scope === opt ? '#d8ff3e' : '#2a2a2a',
+                      }}
+                    >
+                      <Text
+                        style={{ color: scope === opt ? '#d8ff3e' : '#9aa', fontWeight: '800' }}
+                      >
+                        {opt}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {lb.slice(0, 3).map((r: any, i: number) => {
+                  const displayName =
+                    r.first_name || r.last_name
+                      ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
+                      : (r.name ?? `User ${r.user_id}`);
+                  return (
+                    <View key={`${r.user_id}-${i}`} style={s.lbRow} pointerEvents="none">
+                      <Text style={s.lbPos} pointerEvents="none">
+                        {i + 1}
+                      </Text>
+                      <Text style={s.lbUser} pointerEvents="none">
+                        {displayName}{' '}
+                        <Text style={{ color: '#9aa' }} pointerEvents="none">
+                          ({r.scaling ?? 'RX'})
+                        </Text>
+                      </Text>
+                      <Text style={s.lbScore} pointerEvents="none">
+                        {fmt(Number(r.elapsed_seconds ?? 0))}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* press zones */}
+        <View style={s.row}>
+          <Pressable
+            style={s.back}
+            android_ripple={{ color: '#000' }}
+            onPress={() => go(-1)}
+            disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound === 0}
+          />
+          <Pressable
+            style={s.next}
+            android_ripple={{ color: '#0a0' }}
+            onPress={() => go(1)}
+            disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound === 0}
+          />
+        </View>
+
+        {/* tutorial overlay */}
+        {showTutorial && (
+          <View style={s.tutorialOverlay} pointerEvents="none">
+            {/* Green region highlight */}
+            {tutorialStep === 0 && (
+              <Animated.View
+                style={[s.tutorialHighlight, s.tutorialGreenHighlight]}
+                pointerEvents="none"
+              >
+                <View style={s.tutorialLabelContainer}>
+                  <Text style={s.tutorialLabel}>TAP FOR NEXT</Text>
+                </View>
+              </Animated.View>
             )}
 
-            <View style={[s.lb, { zIndex: 50, elevation: 6 }]} pointerEvents="box-none">
-              <Text style={s.lbTitle} pointerEvents="none">Leaderboard</Text>
-
-              {/* RX/SC filter */}
-              <View style={{ flexDirection:'row', justifyContent:'center', gap:6, marginBottom:8 }} pointerEvents="auto">
-                {(['ALL','RX','SC'] as const).map(opt => (
-                  <TouchableOpacity
-                    key={opt}
-                    onPress={()=>setScope(opt)}
-                    style={{
-                      paddingHorizontal:10, paddingVertical:6, borderRadius:999,
-                      backgroundColor: scope===opt ? '#2e3500' : '#1f1f1f',
-                      borderWidth:1, borderColor: scope===opt ? '#d8ff3e' : '#2a2a2a'
-                    }}
-                  >
-                    <Text style={{ color: scope===opt ? '#d8ff3e' : '#9aa', fontWeight:'800' }}>{opt}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {lb.slice(0, 3).map((r: any, i: number) => {
-                const displayName =
-                  (r.first_name || r.last_name)
-                    ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
-                    : (r.name ?? `User ${r.user_id}`);
-                return (
-                  <View key={`${r.user_id}-${i}`} style={s.lbRow} pointerEvents="none">
-                    <Text style={s.lbPos} pointerEvents="none">{i+1}</Text>
-                    <Text style={s.lbUser} pointerEvents="none">
-                      {displayName} <Text style={{ color:'#9aa' }} pointerEvents="none">({(r.scaling ?? 'RX')})</Text>
-                    </Text>
-                    <Text style={s.lbScore} pointerEvents="none">{fmt(Number(r.elapsed_seconds ?? 0))}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          </>
+            {/* Red region highlight */}
+            {tutorialStep === 1 && (
+              <Animated.View
+                style={[s.tutorialHighlight, s.tutorialRedHighlight]}
+                pointerEvents="none"
+              >
+                <View style={s.tutorialLabelContainer}>
+                  <Text style={s.tutorialLabel}>TAP FOR BACK</Text>
+                </View>
+              </Animated.View>
+            )}
+          </View>
         )}
-      </View>
 
-      {/* press zones */}
-      <View style={s.row}>
-        <Pressable style={s.back} android_ripple={{color:'#000'}} onPress={() => go(-1)} disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0} />
-        <Pressable style={s.next} android_ripple={{color:'#0a0'}} onPress={() => go(1)} disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0} />
-      </View>
-
-      {/* tutorial overlay */}
-      {showTutorial && (
-        <View style={s.tutorialOverlay} pointerEvents="none">
-          {/* Green region highlight */}
-          {tutorialStep === 0 && (
-            <Animated.View style={[s.tutorialHighlight, s.tutorialGreenHighlight]} pointerEvents="none">
-              <View style={s.tutorialLabelContainer}>
-                <Text style={s.tutorialLabel}>TAP FOR NEXT</Text>
-              </View>
+        {/* PAUSE overlay */}
+        {session?.status === 'paused' && (
+          <View style={s.pausedOverlay} pointerEvents="auto">
+            <Animated.View
+              style={[
+                StyleSheet.absoluteFillObject,
+                { backgroundColor: '#000', opacity: fadeOpacity },
+              ]}
+            />
+            <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFillObject} />
+            <Animated.View style={{ alignItems: 'center', transform: [{ scale: scaleIn }] }}>
+              <Text style={s.pausedTitle}>PAUSED</Text>
+              <Text style={s.pausedSub}>waiting for coach...</Text>
             </Animated.View>
-          )}
-          
-          {/* Red region highlight */}
-          {tutorialStep === 1 && (
-            <Animated.View style={[s.tutorialHighlight, s.tutorialRedHighlight]} pointerEvents="none">
-              <View style={s.tutorialLabelContainer}>
-                <Text style={s.tutorialLabel}>TAP FOR BACK</Text>
-              </View>
-            </Animated.View>
-          )}
-        </View>
-      )}
-
-      {/* PAUSE overlay */}
-      {session?.status === 'paused' && (
-        <View style={s.pausedOverlay} pointerEvents="auto">
-          <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor:'#000', opacity: fadeOpacity }]} />
-          <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFillObject} />
-          <Animated.View style={{ alignItems:'center', transform:[{ scale: scaleIn }] }}>
-            <Text style={s.pausedTitle}>PAUSED</Text>
-            <Text style={s.pausedSub}>waiting for coach...</Text>
-          </Animated.View>
-        </View>
-      )}
+          </View>
+        )}
       </SafeAreaView>
     </View>
   );
-
 }
 
 const s = StyleSheet.create({
@@ -450,29 +567,53 @@ const s = StyleSheet.create({
   next: { flex: 3, backgroundColor: '#0f1a13' },
 
   topOverlay: { position: 'absolute', top: 8, left: 0, right: 0, alignItems: 'center', zIndex: 10 },
-  centerOverlay: { position: 'absolute', top: '20%', left: 20, right: 20, alignItems: 'center', zIndex: 9 },
+  centerOverlay: {
+    position: 'absolute',
+    top: '20%',
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+    zIndex: 9,
+  },
 
-  timeTop: { color:'#e6e6e6', fontWeight:'900', fontSize: 26 },
-  stepCounter: { color:'#d8ff3e', fontWeight:'900', marginBottom: 6 },
-  score: { color:'#cfd7cf', fontWeight:'900', marginTop: 2 },
-  current: { color:'#fff', fontSize: 44, fontWeight:'900', marginTop: 6, textAlign:'center' },
-  nextLabel: { color:'#9aa59b', fontWeight:'800', marginTop: 6 },
+  timeTop: { color: '#e6e6e6', fontWeight: '900', fontSize: 26 },
+  stepCounter: { color: '#d8ff3e', fontWeight: '900', marginBottom: 6 },
+  score: { color: '#cfd7cf', fontWeight: '900', marginTop: 2 },
+  current: { color: '#fff', fontSize: 44, fontWeight: '900', marginTop: 6, textAlign: 'center' },
+  nextLabel: { color: '#9aa59b', fontWeight: '800', marginTop: 6 },
 
-  lb: { marginTop: 16, width:'80%', backgroundColor:'#111', borderRadius:12, padding:12 },
-  lbTitle: { color:'#fff', fontWeight:'800', marginBottom: 6, textAlign:'center' },
-  lbRow: { flexDirection:'row', alignItems:'center', paddingVertical:4 },
-  lbPos: { width: 22, color:'#d8ff3e', fontWeight:'900' },
-  lbUser:{ flex:1, color:'#dedede' },
-  lbScore:{ color:'#fff', fontWeight:'800' },
+  lb: { marginTop: 16, width: '80%', backgroundColor: '#111', borderRadius: 12, padding: 12 },
+  lbTitle: { color: '#fff', fontWeight: '800', marginBottom: 6, textAlign: 'center' },
+  lbRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
+  lbPos: { width: 22, color: '#d8ff3e', fontWeight: '900' },
+  lbUser: { flex: 1, color: '#dedede' },
+  lbScore: { color: '#fff', fontWeight: '800' },
 
-  pausedOverlay: { ...StyleSheet.absoluteFillObject, alignItems:'center', justifyContent:'center', zIndex: 20 },
-  pausedTitle: { color:'#fff', fontWeight:'900', fontSize: 44, letterSpacing: 2, textAlign:'center' },
-  pausedSub:   { color:'#eaeaea', fontWeight:'700', marginTop: 6, fontSize: 14, textAlign:'center' },
+  pausedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+  },
+  pausedTitle: {
+    color: '#fff',
+    fontWeight: '900',
+    fontSize: 44,
+    letterSpacing: 2,
+    textAlign: 'center',
+  },
+  pausedSub: {
+    color: '#eaeaea',
+    fontWeight: '700',
+    marginTop: 6,
+    fontSize: 14,
+    textAlign: 'center',
+  },
 
   tutorialOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100 },
-  tutorialHighlight: { 
-    position: 'absolute', 
-    borderWidth: 4, 
+  tutorialHighlight: {
+    position: 'absolute',
+    borderWidth: 4,
     borderRadius: 8,
     shadowColor: '#fff',
     shadowOffset: { width: 0, height: 0 },
@@ -480,18 +621,18 @@ const s = StyleSheet.create({
     shadowRadius: 10,
     elevation: 20,
   },
-  tutorialGreenHighlight: { 
-    top: 0, 
-    right: 0, 
-    bottom: 0, 
+  tutorialGreenHighlight: {
+    top: 0,
+    right: 0,
+    bottom: 0,
     left: '25%', // Green area is flex: 3, so starts at 25%
     borderColor: '#4CAF50',
     backgroundColor: 'rgba(76, 175, 80, 0.15)',
   },
-  tutorialRedHighlight: { 
-    top: 0, 
-    left: 0, 
-    bottom: 0, 
+  tutorialRedHighlight: {
+    top: 0,
+    left: 0,
+    bottom: 0,
     right: '75%', // Red area is flex: 1, so takes 25% of screen
     borderColor: '#F44336',
     backgroundColor: 'rgba(244, 67, 54, 0.15)',

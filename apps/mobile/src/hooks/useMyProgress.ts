@@ -31,7 +31,7 @@ export function useMyProgress(classId?: number, refreshSignal: number = 0) {
     const fetchOnce = async () => {
       try {
         const r = await apiClient.get(`/live/${classId}/me`);
-        if (!stop) setProg(prev => ({ ...prev, ...r.data }));
+        if (!stop) setProg((prev) => ({ ...prev, ...r.data }));
       } catch (err: any) {
         console.error('Failed to fetch progress:', err);
       }
@@ -42,39 +42,52 @@ export function useMyProgress(classId?: number, refreshSignal: number = 0) {
       const userId = me?.userId;
       if (!userId) return;
 
-      const ch = supabase.channel(`me-${classId}-${userId}`)
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'live_progress',
-          filter: `class_id=eq.${classId},user_id=eq.${userId}`
-        }, payload => {
-          if (stop) return;
-          if (payload?.new) {
-            const n = payload.new as any;
-            setProg(prev => ({
-              ...prev,
-              current_step: Number(n.current_step ?? 0),
-              finished_at: n.finished_at ?? null,
-              finished_at_s: n.finished_at ? Math.floor(new Date(n.finished_at).getTime() / 1000) : null,
-              dnf_partial_reps: Number(n.dnf_partial_reps ?? 0),
-              rounds_completed: Number(n.rounds_completed ?? 0),
-            }));
-          } else {
-            fetchOnce();
-          }
-        })
+      const ch = supabase
+        .channel(`me-${classId}-${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'live_progress',
+            filter: `class_id=eq.${classId},user_id=eq.${userId}`,
+          },
+          (payload) => {
+            if (stop) return;
+            if (payload?.new) {
+              const n = payload.new as any;
+              setProg((prev) => ({
+                ...prev,
+                current_step: Number(n.current_step ?? 0),
+                finished_at: n.finished_at ?? null,
+                finished_at_s: n.finished_at
+                  ? Math.floor(new Date(n.finished_at).getTime() / 1000)
+                  : null,
+                dnf_partial_reps: Number(n.dnf_partial_reps ?? 0),
+                rounds_completed: Number(n.rounds_completed ?? 0),
+              }));
+            } else {
+              fetchOnce();
+            }
+          },
+        )
         .subscribe();
       return ch;
     };
 
     let chRef: any;
-    (async () => { chRef = await subRealtime(); })();
+    (async () => {
+      chRef = await subRealtime();
+    })();
 
     const poll = setInterval(fetchOnce, 1500);
     fetchOnce();
 
-    return () => { stop = true; if (chRef) supabase.removeChannel(chRef); clearInterval(poll); };
+    return () => {
+      stop = true;
+      if (chRef) supabase.removeChannel(chRef);
+      clearInterval(poll);
+    };
   }, [classId, refreshSignal]);
 
   return prog;

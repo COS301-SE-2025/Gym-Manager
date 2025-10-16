@@ -89,10 +89,7 @@ export default function GamificationScreen() {
     // integer physical pixels per source pixel, at least 1
     const k = Math.max(
       1,
-      Math.min(
-        Math.floor(maxWidthPx / SPRITE_PX),
-        Math.floor(maxHeightPx / SPRITE_PX)
-      )
+      Math.min(Math.floor(maxWidthPx / SPRITE_PX), Math.floor(maxHeightPx / SPRITE_PX)),
     );
 
     // convert back to dp for the style width/height
@@ -121,18 +118,14 @@ export default function GamificationScreen() {
   // Pull level from user_streaks; default to 1 if missing, cap sprite at 5
 
   const actualLevel = Math.max(1, Number(stats?.userStreak?.level ?? 1));
-  const spriteKey = (Math.min(5, actualLevel) as 1 | 2 | 3 | 4 | 5);
+  const spriteKey = Math.min(5, actualLevel) as 1 | 2 | 3 | 4 | 5;
   const workoutsAttended = Number(stats?.userStreak?.totalWorkouts ?? 0);
 
   return (
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl 
-          refreshing={refreshing} 
-          onRefresh={onRefresh}
-          tintColor="#D8FF3E"
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D8FF3E" />
       }
     >
       {/* Pixel-art hero (top of screen) */}
@@ -181,9 +174,7 @@ export default function GamificationScreen() {
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>No badges earned yet</Text>
-            <Text style={styles.emptyStateSubtext}>
-              Complete workouts to start earning badges!
-            </Text>
+            <Text style={styles.emptyStateSubtext}>Complete workouts to start earning badges!</Text>
           </View>
         )}
       </View>

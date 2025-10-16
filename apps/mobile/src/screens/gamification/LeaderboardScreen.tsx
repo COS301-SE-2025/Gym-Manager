@@ -90,7 +90,7 @@ export default function LeaderboardScreen() {
             Streaks
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.tab, activeTab === 'points' && styles.activeTab]}
           onPress={() => setActiveTab('points')}
@@ -110,13 +110,15 @@ export default function LeaderboardScreen() {
             <View style={[styles.podiumItem, styles.secondPlace]}>
               <Text style={styles.podiumRank}>2</Text>
               <Text style={styles.podiumName} numberOfLines={1}>
-                {getCurrentLeaderboard()[1]?.user.firstName} {getCurrentLeaderboard()[1]?.user.lastName}
+                {getCurrentLeaderboard()[1]?.user.firstName}{' '}
+                {getCurrentLeaderboard()[1]?.user.lastName}
               </Text>
               <Text style={styles.podiumValue}>
-                {activeTab === 'streak' 
+                {activeTab === 'streak'
                   ? `${getCurrentLeaderboard()[1]?.streak.currentStreak} days`
-                  : gamificationService.formatPointsText(getCurrentLeaderboard()[1]?.streak.totalPoints || 0)
-                }
+                  : gamificationService.formatPointsText(
+                      getCurrentLeaderboard()[1]?.streak.totalPoints || 0,
+                    )}
               </Text>
             </View>
 
@@ -124,13 +126,15 @@ export default function LeaderboardScreen() {
             <View style={[styles.podiumItem, styles.firstPlace]}>
               <Text style={styles.podiumRank}>1</Text>
               <Text style={styles.podiumName} numberOfLines={1}>
-                {getCurrentLeaderboard()[0]?.user.firstName} {getCurrentLeaderboard()[0]?.user.lastName}
+                {getCurrentLeaderboard()[0]?.user.firstName}{' '}
+                {getCurrentLeaderboard()[0]?.user.lastName}
               </Text>
               <Text style={styles.podiumValue}>
-                {activeTab === 'streak' 
+                {activeTab === 'streak'
                   ? `${getCurrentLeaderboard()[0]?.streak.currentStreak} days`
-                  : gamificationService.formatPointsText(getCurrentLeaderboard()[0]?.streak.totalPoints || 0)
-                }
+                  : gamificationService.formatPointsText(
+                      getCurrentLeaderboard()[0]?.streak.totalPoints || 0,
+                    )}
               </Text>
             </View>
 
@@ -138,13 +142,15 @@ export default function LeaderboardScreen() {
             <View style={[styles.podiumItem, styles.thirdPlace]}>
               <Text style={styles.podiumRank}>3</Text>
               <Text style={styles.podiumName} numberOfLines={1}>
-                {getCurrentLeaderboard()[2]?.user.firstName} {getCurrentLeaderboard()[2]?.user.lastName}
+                {getCurrentLeaderboard()[2]?.user.firstName}{' '}
+                {getCurrentLeaderboard()[2]?.user.lastName}
               </Text>
               <Text style={styles.podiumValue}>
-                {activeTab === 'streak' 
+                {activeTab === 'streak'
                   ? `${getCurrentLeaderboard()[2]?.streak.currentStreak} days`
-                  : gamificationService.formatPointsText(getCurrentLeaderboard()[2]?.streak.totalPoints || 0)
-                }
+                  : gamificationService.formatPointsText(
+                      getCurrentLeaderboard()[2]?.streak.totalPoints || 0,
+                    )}
               </Text>
             </View>
           </View>
@@ -159,11 +165,7 @@ export default function LeaderboardScreen() {
           renderItem={renderLeaderboardItem}
           keyExtractor={(item, index) => `${activeTab}-${index}`}
           refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={onRefresh}
-              tintColor="#D8FF3E"
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D8FF3E" />
           }
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}

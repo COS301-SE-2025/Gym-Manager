@@ -11,7 +11,6 @@ import WorkoutHistoryScreen from '../screens/coach/WorkoutHistoryScreen';
 import CoachAnalyticsScreen from '../screens/coach/CoachAnalyticsScreen';
 import ExerciseSelectScreen from '../screens/coach/ExerciseSelectScreen';
 
-
 export type CoachTabParamList = {
   CoachHome: undefined;
   History: undefined;
@@ -53,7 +52,9 @@ function CoachTabNavigator() {
         component={CoachHomeScreen}
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" color={color} size={size} />
+          ),
         }}
       />
       <Tab.Screen
@@ -61,14 +62,18 @@ function CoachTabNavigator() {
         component={WorkoutHistoryScreen}
         options={{
           title: 'History',
-          tabBarIcon: ({ color, size }) => <Ionicons name="time-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="time-outline" color={color} size={size} />
+          ),
         }}
-        />
+      />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" color={color} size={size} />
+          ),
         }}
       />
     </Tab.Navigator>

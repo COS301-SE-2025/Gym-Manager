@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, StatusBar,
-  ActivityIndicator, Animated, TouchableOpacity
+  ActivityIndicator, Animated, TouchableOpacity, Platform,
+  TouchableNativeFeedback
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -404,8 +405,39 @@ export default function EmomLiveScreen() {
 
       {/* press zones */}
       <View style={s.row}>
-        <Pressable style={s.back} android_ripple={{color:'#000'}} onPress={() => go(-1)} disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0} />
-        <Pressable style={s.next} android_ripple={{color:'#0a0'}} onPress={() => go(1)} disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0} />
+        {Platform.OS === 'android' ? (
+          <>
+            <TouchableNativeFeedback
+              onPress={() => go(-1)}
+              disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0}
+              background={TouchableNativeFeedback.Ripple('#ff6464', false)}
+              useForeground={true}
+            >
+              <View style={s.back} />
+            </TouchableNativeFeedback>
+            <TouchableNativeFeedback
+              onPress={() => go(1)}
+              disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0}
+              background={TouchableNativeFeedback.Ripple('#64ff64', false)}
+              useForeground={true}
+            >
+              <View style={s.next} />
+            </TouchableNativeFeedback>
+          </>
+        ) : (
+          <>
+            <Pressable
+              onPress={() => go(-1)}
+              disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0}
+              style={({pressed}) => [s.back, pressed && {opacity: 0.7}]}
+            />
+            <Pressable
+              onPress={() => go(1)}
+              disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0}
+              style={({pressed}) => [s.next, pressed && {opacity: 0.7}]}
+            />
+          </>
+        )}
       </View>
 
       {/* tutorial overlay */}

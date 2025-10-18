@@ -63,7 +63,7 @@ Or watch [HERE]().
 
 ## 📚 Research & Contribution
 
-Research Background & Contribution: [Read the full write-up](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/ResearchAndContribution)
+Research Background & Contribution: [Read the full write-up](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/ResearchAndContribution.md)
 
 <!-- 
 

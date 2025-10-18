@@ -56,15 +56,9 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 
 ## 🎥 System Demo
 
-<div align="center">
 
-<video src="documents/SystemDemo_RWBIAD.mp4" controls width="720" style="border-radius:12px;">
-  Your browser does not support the video tag. You can download the video
-  <a href="documents/SystemDemo_RWBIAD.mp4">here</a>.
-  
-</video>
+https://github.com/user-attachments/assets/d8b17ba1-d6c7-44a3-9e94-10e0920d1e0a
 
-</div>
 
 <!-- 
 

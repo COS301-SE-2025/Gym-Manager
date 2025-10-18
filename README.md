@@ -26,7 +26,7 @@ HIIT environments
   | Architectural Requirements| [Gym‑Manager Architectural Requirements (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/ArchitecturalRequirementsAndDesign.pdf) |
   | Coding Standards             | [Gym‑Manager Coding Standards (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/CodingStandardsDocument.pdf) |
   | Testing Policy| [Gym‑Manager Testing Policy (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/TestingPolicy.pdf) |
-  | Project Management| [Project Management Tools (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/TestingPolicy.pdf) |
+  | Project Management| [Project Management (MD)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/ProjectManagement.md) |
   | User Manual               | [Gym‑Manager User Manual (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/TRAINWISE_User_MANUAL_v4.0.pdf) |
   | Service Contracts            | [Gym‑Manager Service Contracts (MD)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/ServiceContracts.md) |
   | Technical Installation Manual| [Gym‑Manager Technical Installation Manual (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/TechnicalInstallationManual.pdf) |

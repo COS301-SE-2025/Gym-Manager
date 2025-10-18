@@ -54,7 +54,19 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 ---
 
 
----
+## 🎥 System Demo
+
+<div align="center">
+
+<video src="documents/SystemDemo_RWBIAD.mp4" controls width="720" style="border-radius:12px;">
+  Your browser does not support the video tag. You can download the video
+  <a href="documents/SystemDemo_RWBIAD.mp4">here</a>.
+  
+</video>
+
+</div>
+
+<!-- 
 
 ## 🗂️ Repository Structure & Branching
 
@@ -93,7 +105,7 @@ Gym-Manager/
 
 | **Live** | **7 days** | **30 days** |
 |:--:|:--:|:--:|
-| <img alt="API status" src="https://img.shields.io/uptimerobot/status/m801465365-843700d64b7c53d6c1e77361?label=status&style=flat-square" /> | <img alt="Uptime 7d" src="https://img.shields.io/uptimerobot/ratio/7/m801465365-843700d64b7c53d6c1e77361?label=uptime&style=flat-square" /> | <img alt="Uptime 30d" src="https://img.shields.io/uptimerobot/ratio/30/m801465365-843700d64b7c53d6c1e77361?label=uptime&style=flat-square" /> |
+| <img alt="API status" src="https://img.shields.io/uptimerobot/status/m801465365-843700d64b7c53d6c1e77361?label=status&style=flat-square" /> | <img alt="Uptime 7d" src="https://img.shields.io/uptimerobot/ratio/7/m801465365-843700d64b7c53d6c1e77361?label=uptime&style=flat-square" /> | <img alt="Uptime 30d" src="https://img.shields.io/uptimerobot/ratio/30/m801465365-843700d64b7c53d6c1e77361?label=uptime&style=flat-square" /> | -->
 
 
 > © 2025 Rome was built in a day — University of Pretoria COS 301 Capstone Project

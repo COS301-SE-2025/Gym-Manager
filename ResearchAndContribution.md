@@ -19,7 +19,7 @@ In addition, we performed **independent domain research** into HIIT methodologie
 - **Timing mechanisms** and **performance tracking principles**.  
 
 This research shaped the design of our **workout builder**, **leaderboard systems**, and the overall session logic. The result was an application experience specifically optimized for the tempo and competitiveness characteristic of HIIT training environments.  
-*(A detailed section on our HIIT research findings can be found [HERE](documents/v4/HIIT_Research.pdf).)*
+<p><strong><span style="color:#d73a49;">A detailed section on our HIIT research findings can be found <a href="documents/v4/HIIT_Research.pdf">HERE</a>.</span></strong></p>
 
 ---
 

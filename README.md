@@ -59,7 +59,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 
 https://github.com/user-attachments/assets/d8b17ba1-d6c7-44a3-9e94-10e0920d1e0a
 
-Or watch on [HERE]().
+Or watch [HERE]().
 
 <!-- 
 

@@ -61,6 +61,10 @@ https://github.com/user-attachments/assets/d8b17ba1-d6c7-44a3-9e94-10e0920d1e0a
 
 Or watch [HERE]().
 
+## 📚 Research & Contribution
+
+- Research Background & Contribution: [Read the full write-up](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/ResearchAndContribution)
+
 <!-- 
 
 ## 🗂️ Repository Structure & Branching

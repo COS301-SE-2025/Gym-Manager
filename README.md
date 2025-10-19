@@ -178,8 +178,8 @@ Easily access **TrainWise** on your preferred platform — iOS, Android, Web, or
 |-----------|---------|--------------|
 | 🍎 **iOS (TestFlight)** | [Join on TestFlight](https://testflight.apple.com/join/THhUcHa2) | Install **TestFlight**, then open the link to join and test the app. |
 | 🤖 **Android (APK)** | [Download APK](./TrainWise.apk) | Download and install the APK directly on your Android device. |
-| 💻 **Web Dashboard** | [Open Dashboard](https://gym-manager-web.vercel.app/) | For managers and coaches — access sessions, members, and analytics. |
-| ⚙️ **API Endpoint** | [View API](https://gym-manager-api-new.vercel.app/) | For developers — use the API for integration and backend access. |
+| 💻 **Web Dashboard** | [Open Dashboard](https://gym-manager-web.vercel.app/) | For managers and admins: access sessions, members, and analytics. |
+| ⚙️ **API Endpoint** | [View API](https://gym-manager-api-new.vercel.app/) | For developers: use the API for integration and backend access. |
 
 ---
 

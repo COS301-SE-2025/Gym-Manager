@@ -42,10 +42,9 @@ const MemberAnalyticsScreen: React.FC<MemberAnalyticsScreenProps> = ({ navigatio
         throw new Error('No authentication token found');
       }
 
-      const response = await axios.get<MemberAnalytics>(
-        `${config.BASE_URL}/analytics/member`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await axios.get<MemberAnalytics>(`${config.BASE_URL}/analytics/member`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       setAnalytics(response.data);
     } catch (err: any) {
@@ -123,10 +122,7 @@ const MemberAnalyticsScreen: React.FC<MemberAnalyticsScreenProps> = ({ navigatio
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="#D8FF3E" />
           </TouchableOpacity>
           <IconLogo width={50} height={46} />
@@ -144,10 +140,7 @@ const MemberAnalyticsScreen: React.FC<MemberAnalyticsScreenProps> = ({ navigatio
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="#D8FF3E" />
           </TouchableOpacity>
           <IconLogo width={50} height={46} />
@@ -164,10 +157,7 @@ const MemberAnalyticsScreen: React.FC<MemberAnalyticsScreenProps> = ({ navigatio
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#D8FF3E" />
         </TouchableOpacity>
         <IconLogo width={50} height={46} />
@@ -188,13 +178,9 @@ const MemberAnalyticsScreen: React.FC<MemberAnalyticsScreenProps> = ({ navigatio
             {renderStatCard(
               'Avg Position',
               analytics?.averageLeaderboardPosition.toFixed(1) || '0',
-              'on leaderboard'
+              'on leaderboard',
             )}
-            {renderStatCard(
-              'Classes Attended',
-              analytics?.totalClassesAttended || 0,
-              'total'
-            )}
+            {renderStatCard('Classes Attended', analytics?.totalClassesAttended || 0, 'total')}
           </View>
         </View>
 
@@ -204,7 +190,7 @@ const MemberAnalyticsScreen: React.FC<MemberAnalyticsScreenProps> = ({ navigatio
           {analytics?.classPerformance && analytics.classPerformance.length > 0 ? (
             <View style={styles.performanceList}>
               {analytics.classPerformance.map((performance, index) =>
-                renderClassPerformanceItem(performance, index)
+                renderClassPerformanceItem(performance, index),
               )}
             </View>
           ) : (

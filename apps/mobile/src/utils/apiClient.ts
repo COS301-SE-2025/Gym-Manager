@@ -1,5 +1,12 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getToken, getRefreshToken, storeToken, storeRefreshToken, removeToken, removeRefreshToken } from './authStorage';
+import {
+  getToken,
+  getRefreshToken,
+  storeToken,
+  storeRefreshToken,
+  removeToken,
+  removeRefreshToken,
+} from './authStorage';
 import config from '../config';
 
 class ApiClient {
@@ -24,7 +31,7 @@ class ApiClient {
         }
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => Promise.reject(error),
     );
 
     // Response interceptor to handle token refresh
@@ -33,7 +40,10 @@ class ApiClient {
       async (error) => {
         const originalRequest = error.config;
 
-        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+        if (
+          (error.response?.status === 401 || error.response?.status === 403) &&
+          !originalRequest._retry
+        ) {
           originalRequest._retry = true;
 
           try {
@@ -43,11 +53,12 @@ class ApiClient {
             }
 
             const currentToken = await getToken();
-            const refreshResponse = await axios.post(`${config.BASE_URL}/refresh`, 
-              { refreshToken }, 
+            const refreshResponse = await axios.post(
+              `${config.BASE_URL}/refresh`,
+              { refreshToken },
               {
-                headers: { Authorization: `Bearer ${currentToken || ''}` }
-              }
+                headers: { Authorization: `Bearer ${currentToken || ''}` },
+              },
             );
 
             if (refreshResponse.data?.token) {
@@ -58,7 +69,7 @@ class ApiClient {
 
               // Update the original request with new token
               originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.token}`;
-              
+
               // Retry the original request
               return this.client(originalRequest);
             }
@@ -71,7 +82,7 @@ class ApiClient {
         }
 
         return Promise.reject(error);
-      }
+      },
     );
   }
 
@@ -80,11 +91,19 @@ class ApiClient {
     return this.client.get<T>(url, config);
   }
 
-  async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+  async post<T = any>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<T>> {
     return this.client.post<T>(url, data, config);
   }
 
-  async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+  async put<T = any>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<T>> {
     return this.client.put<T>(url, data, config);
   }
 
@@ -92,7 +111,11 @@ class ApiClient {
     return this.client.delete<T>(url, config);
   }
 
-  async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+  async patch<T = any>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<T>> {
     return this.client.patch<T>(url, data, config);
   }
 

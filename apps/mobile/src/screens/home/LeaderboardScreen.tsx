@@ -56,17 +56,21 @@ const LeaderboardScreen = () => {
   const [showScalingDropdown, setShowScalingDropdown] = useState(false); // Changed from modal to dropdown
   const loadingRef = useRef(false);
 
-  const fetchDailyLeaderboard = async (date: string, scaling: ScalingType = 'all', isInitialLoad = false) => {
+  const fetchDailyLeaderboard = async (
+    date: string,
+    scaling: ScalingType = 'all',
+    isInitialLoad = false,
+  ) => {
     // Prevent multiple simultaneous calls
     if (loadingRef.current) return;
-    
+
     try {
       loadingRef.current = true;
       if (isInitialLoad) {
         setLoading(true);
       }
       setError('');
-      
+
       const token = await getToken();
       if (!token) {
         setError('Not authenticated');
@@ -117,24 +121,27 @@ const LeaderboardScreen = () => {
     }
   }, [selectedDate, selectedScaling]);
 
-  const navigateDate = useCallback((direction: 'prev' | 'next') => {
-    const currentDate = new Date(selectedDate);
-    const newDate = new Date(currentDate);
-    
-    if (direction === 'prev') {
-      newDate.setDate(currentDate.getDate() - 1);
-    } else {
-      newDate.setDate(currentDate.getDate() + 1);
-    }
-    
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    if (newDate > today) return;
-    
-    const newDateString = newDate.toISOString().slice(0, 10);
-    setSelectedDate(newDateString);
-    fetchDailyLeaderboard(newDateString, selectedScaling, true);
-  }, [selectedDate, selectedScaling]);
+  const navigateDate = useCallback(
+    (direction: 'prev' | 'next') => {
+      const currentDate = new Date(selectedDate);
+      const newDate = new Date(currentDate);
+
+      if (direction === 'prev') {
+        newDate.setDate(currentDate.getDate() - 1);
+      } else {
+        newDate.setDate(currentDate.getDate() + 1);
+      }
+
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      if (newDate > today) return;
+
+      const newDateString = newDate.toISOString().slice(0, 10);
+      setSelectedDate(newDateString);
+      fetchDailyLeaderboard(newDateString, selectedScaling, true);
+    },
+    [selectedDate, selectedScaling],
+  );
 
   const handleScalingSelect = (scaling: ScalingType) => {
     setSelectedScaling(scaling);
@@ -151,11 +158,11 @@ const LeaderboardScreen = () => {
 
     if (dateString === today) return 'Today';
     if (dateString === yesterdayString) return 'Yesterday';
-    
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
-      year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+      year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
     });
   };
 
@@ -165,7 +172,7 @@ const LeaderboardScreen = () => {
   };
 
   const getCurrentScalingOption = () => {
-    return scalingOptions.find(option => option.value === selectedScaling) || scalingOptions[0];
+    return scalingOptions.find((option) => option.value === selectedScaling) || scalingOptions[0];
   };
 
   const renderMedalIcon = (index: number) => {
@@ -177,28 +184,25 @@ const LeaderboardScreen = () => {
 
   const ScalingDropdown = () => (
     <View style={styles.scalingDropdownContainer}>
-      <Pressable 
-        style={[
-          styles.scalingDropdown,
-          showScalingDropdown && styles.scalingDropdownActive
-        ]} 
+      <Pressable
+        style={[styles.scalingDropdown, showScalingDropdown && styles.scalingDropdownActive]}
         onPress={() => setShowScalingDropdown(!showScalingDropdown)}
       >
         <View style={styles.scalingDropdownContent}>
-          <Ionicons 
-            name={getCurrentScalingOption().icon as any} 
-            size={18} 
-            color={getCurrentScalingOption().color} 
+          <Ionicons
+            name={getCurrentScalingOption().icon as any}
+            size={18}
+            color={getCurrentScalingOption().color}
           />
           <Text style={styles.scalingDropdownText}>{getCurrentScalingOption().label}</Text>
-          <Ionicons 
-            name={showScalingDropdown ? "chevron-up" : "chevron-down"} 
-            size={16} 
-            color="#888" 
+          <Ionicons
+            name={showScalingDropdown ? 'chevron-up' : 'chevron-down'}
+            size={16}
+            color="#888"
           />
         </View>
       </Pressable>
-      
+
       {/* Dropdown Options - Animated expansion */}
       {showScalingDropdown && (
         <View style={styles.dropdownOptions}>
@@ -208,15 +212,17 @@ const LeaderboardScreen = () => {
               style={[
                 styles.dropdownOption,
                 selectedScaling === option.value && styles.dropdownOptionSelected,
-                index === scalingOptions.length - 1 && styles.dropdownOptionLast
+                index === scalingOptions.length - 1 && styles.dropdownOptionLast,
               ]}
               onPress={() => handleScalingSelect(option.value as ScalingType)}
             >
               <Ionicons name={option.icon as any} size={18} color={option.color} />
-              <Text style={[
-                styles.dropdownOptionText,
-                selectedScaling === option.value && styles.dropdownOptionTextSelected
-              ]}>
+              <Text
+                style={[
+                  styles.dropdownOptionText,
+                  selectedScaling === option.value && styles.dropdownOptionTextSelected,
+                ]}
+              >
                 {option.label}
               </Text>
               {selectedScaling === option.value && (
@@ -240,28 +246,23 @@ const LeaderboardScreen = () => {
       {/* Date Navigation */}
       <View style={styles.dateSection}>
         <View style={styles.dateNavigation}>
-          <Pressable 
-            style={styles.dateButton} 
-            onPress={() => navigateDate('prev')}
-          >
+          <Pressable style={styles.dateButton} onPress={() => navigateDate('prev')}>
             <Ionicons name="chevron-back" size={18} color="#D8FF3E" />
           </Pressable>
-          
+
           <View style={styles.dateContainer}>
             <Text style={styles.dateText}>{formatDate(selectedDate)}</Text>
-            <Text style={styles.dateSubtext}>{new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' })}</Text>
+            <Text style={styles.dateSubtext}>
+              {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' })}
+            </Text>
           </View>
-          
-          <Pressable 
-            style={[styles.dateButton, !canGoNext() && styles.dateButtonDisabled]} 
+
+          <Pressable
+            style={[styles.dateButton, !canGoNext() && styles.dateButtonDisabled]}
             onPress={() => navigateDate('next')}
             disabled={!canGoNext()}
           >
-            <Ionicons 
-              name="chevron-forward" 
-              size={18} 
-              color={canGoNext() ? "#D8FF3E" : "#555"} 
-            />
+            <Ionicons name="chevron-forward" size={18} color={canGoNext() ? '#D8FF3E' : '#555'} />
           </Pressable>
         </View>
 
@@ -284,7 +285,7 @@ const LeaderboardScreen = () => {
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>
-              {leaderboard.length > 0 ? Math.max(...leaderboard.map(e => e.totalScore)) : 0}
+              {leaderboard.length > 0 ? Math.max(...leaderboard.map((e) => e.totalScore)) : 0}
             </Text>
             <Text style={styles.statLabel}>Top Score</Text>
           </View>
@@ -316,16 +317,15 @@ const LeaderboardScreen = () => {
             <View key={user.userId} style={styles.leaderboardCard}>
               {/* Ranking Section */}
               <View style={styles.rankSection}>
-                <View style={[
-                  styles.rankBadge,
-                  idx === 0 && styles.goldBadge,
-                  idx === 1 && styles.silverBadge,
-                  idx === 2 && styles.bronzeBadge,
-                ]}>
-                  <Text style={[
-                    styles.rankText,
-                    idx <= 2 && styles.podiumRankText
-                  ]}>
+                <View
+                  style={[
+                    styles.rankBadge,
+                    idx === 0 && styles.goldBadge,
+                    idx === 1 && styles.silverBadge,
+                    idx === 2 && styles.bronzeBadge,
+                  ]}
+                >
+                  <Text style={[styles.rankText, idx <= 2 && styles.podiumRankText]}>
                     {idx + 1}
                   </Text>
                 </View>
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0a0a0a', // Darker, more premium background
   },
-  
+
   // Compact Premium Header
   header: {
     alignItems: 'center',

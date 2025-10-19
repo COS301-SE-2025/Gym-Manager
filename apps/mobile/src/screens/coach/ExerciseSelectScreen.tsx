@@ -1,5 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, StatusBar, TouchableOpacity, TextInput, FlatList, ActivityIndicator, Alert, Modal } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  StatusBar,
+  TouchableOpacity,
+  TextInput,
+  FlatList,
+  ActivityIndicator,
+  Alert,
+  Modal,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackScreenProps } from '@react-navigation/stack';
 import { CoachStackParamList } from '../../navigation/CoachNavigator';
@@ -33,10 +44,11 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
       setIsLoading(true);
       setError(null);
       try {
-        const base = supabase.from('exercises').select('exercise_id, name, description').order('name');
-        const q = debouncedSearch
-          ? base.ilike('name', `%${debouncedSearch}%`)
-          : base;
+        const base = supabase
+          .from('exercises')
+          .select('exercise_id, name, description')
+          .order('name');
+        const q = debouncedSearch ? base.ilike('name', `%${debouncedSearch}%`) : base;
         const { data, error } = await q;
         if (error) throw error;
         if (!isActive) return;
@@ -80,7 +92,7 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
           {
             name: newExerciseName.trim(),
             description: newExerciseDescription.trim() || null,
-          }
+          },
         ])
         .select()
         .single();
@@ -89,12 +101,12 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
 
       // Refresh the exercises list
       await fetchExercises();
-      
+
       // Reset form and close modal
       setNewExerciseName('');
       setNewExerciseDescription('');
       setShowCreateModal(false);
-      
+
       Alert.alert('Success', 'Exercise created successfully!');
     } catch (error: any) {
       console.error('Error creating exercise:', error);
@@ -127,7 +139,7 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
 
               // Refresh the exercises list
               await fetchExercises();
-              
+
               Alert.alert('Success', 'Exercise deleted successfully!');
             } catch (error: any) {
               console.error('Error deleting exercise:', error);
@@ -135,7 +147,7 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -143,10 +155,11 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
     setIsLoading(true);
     setError(null);
     try {
-      const base = supabase.from('exercises').select('exercise_id, name, description').order('name');
-      const q = debouncedSearch
-        ? base.ilike('name', `%${debouncedSearch}%`)
-        : base;
+      const base = supabase
+        .from('exercises')
+        .select('exercise_id, name, description')
+        .order('name');
+      const q = debouncedSearch ? base.ilike('name', `%${debouncedSearch}%`) : base;
       const { data, error } = await q;
       if (error) throw error;
       setExercises((data ?? []) as ExerciseRow[]);
@@ -165,10 +178,7 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Select Exercise</Text>
-        <TouchableOpacity 
-          onPress={() => setShowCreateModal(true)} 
-          style={styles.createButton}
-        >
+        <TouchableOpacity onPress={() => setShowCreateModal(true)} style={styles.createButton}>
           <Ionicons name="add" size={20} color="#D8FF3E" />
         </TouchableOpacity>
       </View>
@@ -191,7 +201,7 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
       )}
 
       {!isLoading && error && (
-        <View style={styles.center}> 
+        <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
@@ -202,10 +212,7 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
           keyExtractor={(item) => item.exercise_id.toString()}
           renderItem={({ item }) => (
             <View style={styles.itemContainer}>
-              <TouchableOpacity 
-                style={styles.item} 
-                onPress={() => handleSelect(item)}
-              >
+              <TouchableOpacity style={styles.item} onPress={() => handleSelect(item)}>
                 <View style={styles.itemContent}>
                   <Text style={styles.itemText}>{item.name}</Text>
                   {item.description && (
@@ -213,7 +220,7 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
                   )}
                 </View>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.deleteButton}
                 onPress={() => handleDeleteExercise(item)}
               >
@@ -223,9 +230,7 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           contentContainerStyle={exercises.length === 0 ? styles.emptyList : undefined}
-          ListEmptyComponent={() => (
-            <Text style={styles.emptyText}>No exercises found</Text>
-          )}
+          ListEmptyComponent={() => <Text style={styles.emptyText}>No exercises found</Text>}
         />
       )}
 
@@ -240,7 +245,7 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Create New Exercise</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShowCreateModal(false)}
                 style={styles.modalCloseButton}
               >
@@ -277,14 +282,14 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
             </View>
 
             <View style={styles.modalActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => setShowCreateModal(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[styles.createModalButton, isCreating && styles.disabledButton]}
                 onPress={handleCreateExercise}
                 disabled={isCreating}
@@ -506,5 +511,3 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 });
-
-

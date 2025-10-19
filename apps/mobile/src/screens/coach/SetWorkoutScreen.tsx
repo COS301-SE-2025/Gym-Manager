@@ -171,9 +171,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
     try {
       // Use classes-with-workouts to get capacity, bookingsCount, coach names, and duration
-      const response = await apiClient.get<ClassDetails[]>(
-        `/coach/classes-with-workouts`,
-      );
+      const response = await apiClient.get<ClassDetails[]>(`/coach/classes-with-workouts`);
 
       const classData = response.data.find((c) => c.classId === classId);
       if (!classData) {
@@ -184,10 +182,12 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
       // Pre-fill workout name if it exists
       if (classData.workoutName) {
-        setWorkouts(prev => prev.map(w => ({ 
-          ...w, 
-          workoutName: classData.workoutName || 'Workout 1' 
-        })));
+        setWorkouts((prev) =>
+          prev.map((w) => ({
+            ...w,
+            workoutName: classData.workoutName || 'Workout 1',
+          })),
+        );
       }
     } catch (error: any) {
       console.error('Failed to fetch class details:', error);
@@ -204,12 +204,10 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
   const currentWorkout = workouts[currentWorkoutIndex];
 
   const setCurrentWorkout = (updates: Partial<Workout>) => {
-    setWorkouts(prev => 
-      prev.map((workout, index) => 
-        index === currentWorkoutIndex 
-          ? { ...workout, ...updates }
-          : workout
-      )
+    setWorkouts((prev) =>
+      prev.map((workout, index) =>
+        index === currentWorkoutIndex ? { ...workout, ...updates } : workout,
+      ),
     );
   };
 
@@ -220,9 +218,9 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       Alert.alert('Cannot Remove', 'At least one workout is required.');
       return;
     }
-    
-    setWorkouts(prev => prev.filter((_, index) => index !== workoutIndex));
-    
+
+    setWorkouts((prev) => prev.filter((_, index) => index !== workoutIndex));
+
     // Adjust current index if needed
     if (currentWorkoutIndex >= workoutIndex) {
       setCurrentWorkoutIndex(Math.max(0, currentWorkoutIndex - 1));
@@ -236,48 +234,52 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
   // Update subround functions to work with current workout
   const toggleSubRound = (subRoundId: string) => {
     setCurrentWorkout({
-      subRounds: currentWorkout.subRounds.map(sr => 
-        sr.id === subRoundId 
-          ? { ...sr, isExpanded: !sr.isExpanded }
-          : sr
-      )
+      subRounds: currentWorkout.subRounds.map((sr) =>
+        sr.id === subRoundId ? { ...sr, isExpanded: !sr.isExpanded } : sr,
+      ),
     });
   };
 
   const addExercise = (subRoundId: string) => {
     const newExerciseId = Date.now().toString();
     setCurrentWorkout({
-      subRounds: currentWorkout.subRounds.map(sr => 
-        sr.id === subRoundId 
-          ? { 
-              ...sr, 
-              exercises: [...sr.exercises, { 
-                id: newExerciseId, 
-                name: '', 
-                reps: '',
-                quantityType: 'reps' as const,
-                notes: '',
-              }]
+      subRounds: currentWorkout.subRounds.map((sr) =>
+        sr.id === subRoundId
+          ? {
+              ...sr,
+              exercises: [
+                ...sr.exercises,
+                {
+                  id: newExerciseId,
+                  name: '',
+                  reps: '',
+                  quantityType: 'reps' as const,
+                  notes: '',
+                },
+              ],
             }
-          : sr
-      )
+          : sr,
+      ),
     });
   };
 
-  const updateExercise = (subRoundId: string, exerciseId: string, field: 'name' | 'reps' | 'quantityType' | 'notes', value: string) => {
+  const updateExercise = (
+    subRoundId: string,
+    exerciseId: string,
+    field: 'name' | 'reps' | 'quantityType' | 'notes',
+    value: string,
+  ) => {
     setCurrentWorkout({
-      subRounds: currentWorkout.subRounds.map(sr => 
-        sr.id === subRoundId 
-          ? { 
-              ...sr, 
-              exercises: sr.exercises.map(ex => 
-                ex.id === exerciseId 
-                  ? { ...ex, [field]: value }
-                  : ex
-              )
+      subRounds: currentWorkout.subRounds.map((sr) =>
+        sr.id === subRoundId
+          ? {
+              ...sr,
+              exercises: sr.exercises.map((ex) =>
+                ex.id === exerciseId ? { ...ex, [field]: value } : ex,
+              ),
             }
-          : sr
-      )
+          : sr,
+      ),
     });
   };
 
@@ -293,40 +295,39 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           isExpanded: false,
           subroundNumber: currentWorkout.subRounds.length + 1,
           repeats: '1',
-        }
-      ]
+        },
+      ],
     });
   };
 
   const removeSubRound = (subRoundId: string) => {
     setCurrentWorkout({
       subRounds: currentWorkout.subRounds
-        .filter(sr => sr.id !== subRoundId)
+        .filter((sr) => sr.id !== subRoundId)
         .map((sr, index) => ({
           ...sr,
           name: `Sub Round ${index + 1}`,
           subroundNumber: index + 1,
-        }))
+        })),
     });
   };
 
   const removeExercise = (subRoundId: string, exerciseId: string) => {
     setCurrentWorkout({
-      subRounds: currentWorkout.subRounds.map(sr => 
-        sr.id === subRoundId 
-          ? { 
-              ...sr, 
-              exercises: sr.exercises.filter(ex => ex.id !== exerciseId)
+      subRounds: currentWorkout.subRounds.map((sr) =>
+        sr.id === subRoundId
+          ? {
+              ...sr,
+              exercises: sr.exercises.filter((ex) => ex.id !== exerciseId),
             }
-          : sr
-      )
+          : sr,
+      ),
     });
   };
 
   const handleWorkoutTypeSelect = (type: WorkoutType) => {
     setCurrentWorkout({ workoutType: type });
   };
-
 
   const handleLoadWorkout = async (workoutId: number, workoutName: string) => {
     try {
@@ -340,27 +341,27 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       // Parse the workout data and populate the form
       if (workoutData && workoutData.steps) {
         const steps = workoutData.steps;
-        
+
         // Group steps by round and subround
         const roundsMap = new Map<number, Map<number, any[]>>();
-        
+
         steps.forEach((step: any) => {
           const roundNum = step.round || step.roundNumber || 1;
           const subroundNum = step.subround || step.subroundNumber || 1;
-          
+
           if (!roundsMap.has(roundNum)) {
             roundsMap.set(roundNum, new Map());
           }
-          
+
           const subroundsMap = roundsMap.get(roundNum)!;
           if (!subroundsMap.has(subroundNum)) {
             subroundsMap.set(subroundNum, []);
           }
-          
+
           // Extract clean exercise name by removing reps and duration information
           const rawName = step.name || step.title || step.exerciseName || 'Exercise';
           const cleanName = cleanExerciseName(rawName);
-          
+
           subroundsMap.get(subroundNum)!.push({
             id: Date.now().toString() + Math.random(),
             name: cleanName,
@@ -372,12 +373,13 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
 
         // Extract metadata from the workout data first
         const metadata = workoutData.metadata || {};
-        const emomRepeats: number[] = Array.isArray(metadata.emom_repeats) ? metadata.emom_repeats : [];
+        const emomRepeats: number[] = Array.isArray(metadata.emom_repeats)
+          ? metadata.emom_repeats
+          : [];
         const timeLimit = Number(metadata.time_limit ?? 0);
         const minutes = timeLimit; // time_limit stores minutes directly
-        const roundsFromMeta = metadata.number_of_rounds != null
-          ? String(metadata.number_of_rounds)
-          : '1';
+        const roundsFromMeta =
+          metadata.number_of_rounds != null ? String(metadata.number_of_rounds) : '1';
 
         // Convert to workout structure
         const subRounds: SubRound[] = [];
@@ -406,7 +408,10 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           subRounds: subRounds,
         });
 
-        Alert.alert('Success!', `Loaded workout "${workoutName}" with ${subRounds.length} sub-rounds.`);
+        Alert.alert(
+          'Success!',
+          `Loaded workout "${workoutName}" with ${subRounds.length} sub-rounds.`,
+        );
       }
     } catch (error: any) {
       console.error('Failed to load workout:', error);
@@ -428,27 +433,27 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       // Parse the workout data and populate the form
       if (workoutData && workoutData.steps) {
         const steps = workoutData.steps;
-        
+
         // Group steps by round and subround
         const roundsMap = new Map<number, Map<number, any[]>>();
-        
+
         steps.forEach((step: any) => {
           const roundNum = step.round || step.roundNumber || 1;
           const subroundNum = step.subround || step.subroundNumber || 1;
-          
+
           if (!roundsMap.has(roundNum)) {
             roundsMap.set(roundNum, new Map());
           }
-          
+
           const subroundsMap = roundsMap.get(roundNum)!;
           if (!subroundsMap.has(subroundNum)) {
             subroundsMap.set(subroundNum, []);
           }
-          
+
           // Extract clean exercise name by removing reps and duration information
           const rawName = step.name || step.title || step.exerciseName || 'Exercise';
           const cleanName = cleanExerciseName(rawName);
-          
+
           subroundsMap.get(subroundNum)!.push({
             id: Date.now().toString() + Math.random(),
             name: cleanName,
@@ -465,7 +470,9 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         // Extract metadata from the workout data
         const metadata = workoutData.metadata || {};
         const existingType = workoutData.workoutType || 'FOR_TIME';
-        const emomRepeats: number[] = Array.isArray(metadata.emom_repeats) ? metadata.emom_repeats : [];
+        const emomRepeats: number[] = Array.isArray(metadata.emom_repeats)
+          ? metadata.emom_repeats
+          : [];
 
         roundsMap.forEach((subroundsMap, roundNum) => {
           subroundsMap.forEach((exercises, subroundNum) => {
@@ -485,13 +492,14 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         const timeLimit = Number(metadata.time_limit ?? 0);
         const minutes = timeLimit; // time_limit stores minutes directly
 
-        const roundsFromMeta = metadata.number_of_rounds != null
-          ? String(metadata.number_of_rounds)
-          : (currentWorkout.numberOfRounds || '1');
+        const roundsFromMeta =
+          metadata.number_of_rounds != null
+            ? String(metadata.number_of_rounds)
+            : currentWorkout.numberOfRounds || '1';
 
         setCurrentWorkout({
           workoutName: classDetails?.workoutName || 'Workout',
-          workoutType: (existingType as any),
+          workoutType: existingType as any,
           workoutMinutes: minutes,
           numberOfRounds: roundsFromMeta,
           subRounds: subRounds,
@@ -519,8 +527,8 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         if (!workout.subRounds.length) {
           throw new Error(`Workout ${i + 1}: At least one sub-round is required`);
         }
-        const subRoundsWithExercises = workout.subRounds.filter(sr => 
-          sr.exercises.some(ex => ex.name.trim())
+        const subRoundsWithExercises = workout.subRounds.filter((sr) =>
+          sr.exercises.some((ex) => ex.name.trim()),
         );
         if (subRoundsWithExercises.length === 0) {
           throw new Error(`Workout ${i + 1}: At least one sub-round must have exercises`);
@@ -547,21 +555,29 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           workoutName: workout.workoutName.trim(),
           type: workout.workoutType,
           metadata: {
-            ...(workout.workoutType === 'FOR_TIME' || workout.workoutType === 'AMRAP' ? {
-              time_limit: workout.workoutMinutes,
-            } : {}),
-            ...(workout.workoutType === 'FOR_TIME' ? {
-              number_of_rounds: parseInt(workout.numberOfRounds) || 1,
-            } : {}),
-            ...(workout.workoutType === 'TABATA' ? {
-              number_of_rounds: parseInt(workout.numberOfRounds) || 1,
-            } : {}),
-            ...(workout.workoutType === 'EMOM' ? {
-              emom_repeats: workout.subRounds.map(sr => {
-                const n = parseInt((sr.repeats ?? '').trim() || '0');
-                return n > 0 ? n : 1;
-              }),
-            } : {}),
+            ...(workout.workoutType === 'FOR_TIME' || workout.workoutType === 'AMRAP'
+              ? {
+                  time_limit: workout.workoutMinutes,
+                }
+              : {}),
+            ...(workout.workoutType === 'FOR_TIME'
+              ? {
+                  number_of_rounds: parseInt(workout.numberOfRounds) || 1,
+                }
+              : {}),
+            ...(workout.workoutType === 'TABATA'
+              ? {
+                  number_of_rounds: parseInt(workout.numberOfRounds) || 1,
+                }
+              : {}),
+            ...(workout.workoutType === 'EMOM'
+              ? {
+                  emom_repeats: workout.subRounds.map((sr) => {
+                    const n = parseInt((sr.repeats ?? '').trim() || '0');
+                    return n > 0 ? n : 1;
+                  }),
+                }
+              : {}),
             number_of_subrounds: workout.subRounds.length,
           },
           rounds: [
@@ -570,7 +586,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
               subrounds: workout.subRounds.map((subRound, index) => ({
                 subroundNumber: index + 1,
                 exercises: subRound.exercises
-                  .filter(ex => ex.name.trim())
+                  .filter((ex) => ex.name.trim())
                   .map((exercise, exIndex) => ({
                     exerciseName: exercise.name.trim(),
                     position: exIndex + 1,
@@ -599,10 +615,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         } else {
           // Create new workout
 
-          const createResponse = await apiClient.post(
-            `/coach/create-workout`,
-            workoutData,
-          );
+          const createResponse = await apiClient.post(`/coach/create-workout`, workoutData);
 
           if (createResponse.data.success) {
             createdWorkoutIds.push(createResponse.data.workoutId);
@@ -616,13 +629,10 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       if (classDetails && createdWorkoutIds.length > 0) {
         // For now, assign the first workout to the class
         // You might want to modify the API to support multiple workouts per class
-        const assignResponse = await apiClient.post(
-          `/coach/assign-workout`,
-          {
-            classId: classDetails.classId,
-            workoutId: createdWorkoutIds[0], // Assign the first workout
-          },
-        );
+        const assignResponse = await apiClient.post(`/coach/assign-workout`, {
+          classId: classDetails.classId,
+          workoutId: createdWorkoutIds[0], // Assign the first workout
+        });
 
         if (assignResponse.data.success) {
           const action = editMode ? 'Updated' : 'Created';
@@ -646,8 +656,8 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         axios.isAxiosError(error) && error.response?.data?.error
           ? error.response.data.error
           : axios.isAxiosError(error) && error.response?.status === 401
-          ? 'Session expired. Please login again.'
-          : 'Failed to save workouts. Please try again.';
+            ? 'Session expired. Please login again.'
+            : 'Failed to save workouts. Please try again.';
       setError(errorMessage);
     } finally {
       setIsSaving(false);
@@ -696,7 +706,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     if (date.toDateString() === tomorrow.toDateString()) {
       return 'Tomorrow';
     }
@@ -743,7 +753,10 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                 const first = classDetails.coachFirstName ?? user?.firstName ?? ''; // if no coach name, use user name
                 const last = classDetails.coachLastName ?? user?.lastName ?? ''; // if no coach name, use user name
                 const name = `${first} ${last}`.trim();
-                const dur = typeof classDetails.durationMinutes === 'number' ? ` • ${classDetails.durationMinutes} min` : '';
+                const dur =
+                  typeof classDetails.durationMinutes === 'number'
+                    ? ` • ${classDetails.durationMinutes} min`
+                    : '';
                 return (name || 'Coach') + dur;
               })()}
             </Text>
@@ -771,21 +784,19 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           {/* Set Workout Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Set Workout</Text>
-            
+
             {/* Type of workout */}
             <View style={styles.settingRow}>
               <Text style={styles.settingLabel}>Type of workout</Text>
               <View style={styles.dropdownContainer}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.dropdownButton}
                   onPress={() => setShowWorkoutTypeDropdown(!showWorkoutTypeDropdown)}
                 >
                   <Text style={styles.dropdownText}>{currentWorkout.workoutType}</Text>
-                  <Text style={styles.dropdownArrow}>
-                    {showWorkoutTypeDropdown ? '▲' : '▼'}
-                  </Text>
+                  <Text style={styles.dropdownArrow}>{showWorkoutTypeDropdown ? '▲' : '▼'}</Text>
                 </TouchableOpacity>
-                
+
                 {showWorkoutTypeDropdown && (
                   <View style={styles.dropdownMenu}>
                     {WORKOUT_TYPES.map((type) => (
@@ -793,14 +804,16 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                         key={type}
                         style={[
                           styles.dropdownItem,
-                          currentWorkout.workoutType === type && styles.dropdownItemSelected
+                          currentWorkout.workoutType === type && styles.dropdownItemSelected,
                         ]}
                         onPress={() => handleWorkoutTypeSelect(type)}
                       >
-                        <Text style={[
-                          styles.dropdownItemText,
-                          currentWorkout.workoutType === type && styles.dropdownItemTextSelected
-                        ]}>
+                        <Text
+                          style={[
+                            styles.dropdownItemText,
+                            currentWorkout.workoutType === type && styles.dropdownItemTextSelected,
+                          ]}
+                        >
                           {type}
                         </Text>
                       </TouchableOpacity>
@@ -811,7 +824,8 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             </View>
 
             {/* Time - Only show for certain workout types */}
-            {(currentWorkout.workoutType === 'FOR_TIME' || currentWorkout.workoutType === 'AMRAP') && (
+            {(currentWorkout.workoutType === 'FOR_TIME' ||
+              currentWorkout.workoutType === 'AMRAP') && (
               <View style={styles.settingRow}>
                 <Text style={styles.settingLabel}>Duration (Minutes)</Text>
                 <TextInput
@@ -830,7 +844,8 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             )}
 
             {/* Number of Rounds - Only show for certain workout types */}
-            {(currentWorkout.workoutType === 'TABATA' || currentWorkout.workoutType === 'FOR_TIME') && (
+            {(currentWorkout.workoutType === 'TABATA' ||
+              currentWorkout.workoutType === 'FOR_TIME') && (
               <View style={styles.settingRow}>
                 <Text style={styles.settingLabel}>Number of Rounds</Text>
                 <TextInput
@@ -888,36 +903,31 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           <View style={[styles.section, styles.subRoundsSection]}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Sub Rounds</Text>
-              <TouchableOpacity 
-                style={styles.addSubRoundButton}
-                onPress={addSubRound}
-              >
+              <TouchableOpacity style={styles.addSubRoundButton} onPress={addSubRound}>
                 <Text style={styles.addSubRoundIcon}>+</Text>
                 <Text style={styles.addSubRoundText}>Add Sub Round</Text>
               </TouchableOpacity>
             </View>
-            
+
             {currentWorkout.subRounds.map((subRound) => (
               <View key={subRound.id} style={styles.subRoundContainer}>
                 <View style={styles.subRoundHeaderContainer}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.subRoundHeader}
                     onPress={() => toggleSubRound(subRound.id)}
                   >
                     <Text style={styles.subRoundTitle}>{subRound.name}</Text>
-                    <Text style={styles.subRoundArrow}>
-                      {subRound.isExpanded ? '▲' : '▼'}
-                    </Text>
+                    <Text style={styles.subRoundArrow}>{subRound.isExpanded ? '▲' : '▼'}</Text>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.removeSubRoundButton}
                     onPress={() => removeSubRound(subRound.id)}
                   >
                     <Ionicons name="trash-outline" size={18} color="white" />
                   </TouchableOpacity>
                 </View>
-                
+
                 {subRound.isExpanded && (
                   <View style={styles.subRoundContent}>
                     {subRound.exercises.map((exercise) => (
@@ -941,8 +951,12 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                         <TextInput
                           style={styles.repsInput}
                           value={exercise.reps}
-                          onChangeText={(value) => updateExercise(subRound.id, exercise.id, 'reps', value)}
-                          placeholder={currentWorkout.workoutType === 'TABATA' ? 'No of secs' : 'No. of reps'}
+                          onChangeText={(value) =>
+                            updateExercise(subRound.id, exercise.id, 'reps', value)
+                          }
+                          placeholder={
+                            currentWorkout.workoutType === 'TABATA' ? 'No of secs' : 'No. of reps'
+                          }
                           placeholderTextColor="#888"
                           keyboardType="numeric"
                           editable={!isSaving}
@@ -958,8 +972,8 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                             {exercise.quantityType === 'reps' ? 'Reps' : 'Sec'}
                           </Text>
                         </TouchableOpacity>
-                        
-                        <TouchableOpacity 
+
+                        <TouchableOpacity
                           style={styles.removeExerciseButton}
                           onPress={() => removeExercise(subRound.id, exercise.id)}
                         >
@@ -967,7 +981,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                         </TouchableOpacity>
                       </View>
                     ))}
-                    
+
                     {currentWorkout.workoutType === 'EMOM' && (
                       <View style={styles.emomRepeatsRow}>
                         <Text style={styles.settingLabel}>Repeats</Text>
@@ -978,7 +992,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                             const digits = value.replace(/[^0-9]/g, '');
                             setCurrentWorkout({
                               subRounds: currentWorkout.subRounds.map((sr) =>
-                                sr.id === subRound.id ? { ...sr, repeats: digits } : sr
+                                sr.id === subRound.id ? { ...sr, repeats: digits } : sr,
                               ),
                             });
                           }}
@@ -990,7 +1004,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                       </View>
                     )}
 
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.addExerciseButton}
                       onPress={() => addExercise(subRound.id)}
                     >
@@ -1001,14 +1015,11 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
                 )}
               </View>
             ))}
-            
+
             {currentWorkout.subRounds.length === 0 && (
               <View style={styles.emptySubRoundsContainer}>
                 <Text style={styles.emptySubRoundsText}>No sub rounds added yet</Text>
-                <TouchableOpacity 
-                  style={styles.addFirstSubRoundButton}
-                  onPress={addSubRound}
-                >
+                <TouchableOpacity style={styles.addFirstSubRoundButton} onPress={addSubRound}>
                   <Text style={styles.addFirstSubRoundText}>Add Your First Sub Round</Text>
                 </TouchableOpacity>
               </View>
@@ -1029,7 +1040,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           >
             <Text style={styles.loadWorkoutButtonText}>Load Workout</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[styles.setWorkoutButton, isSaving && styles.disabledButton]}
             onPress={handleSaveWorkout}
@@ -1045,7 +1056,6 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           </TouchableOpacity>
         </View>
       </View>
-
 
       {/* Workout Select Sheet */}
       <WorkoutSelectSheet

@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import TrainwiseLogo from '../../components/common/TrainwiseLogo';
 import axios from 'axios';
 import config from '../../config';
-import {storeToken, storeUser } from '../../utils/authStorage';
+import { storeToken, storeUser } from '../../utils/authStorage';
 
 const { width } = Dimensions.get('window');
 
@@ -249,7 +249,6 @@ export default function RegisterScreen() {
       if (response.data?.user) {
         await storeUser(response.data.user);
       }
-
 
       Alert.alert(
         'Registration Successful!',

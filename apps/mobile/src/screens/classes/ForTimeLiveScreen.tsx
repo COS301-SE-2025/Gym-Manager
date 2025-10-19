@@ -20,7 +20,6 @@ import { HypeToast } from '../../components/HypeToast';
 import { useLeaderboardHype } from '../../hooks/useLeaderboardHype';
 import { calculateWorkoutDuration } from '../../utils/workoutDuration';
 
-
 type R = RouteProp<AuthStackParamList, 'ForTimeLive'>;
 
 function useNowSec() {
@@ -39,7 +38,7 @@ function toEpochSecMaybe(ts: any): number {
   const hasTZ = /[zZ]|[+\-]\d{2}:\d{2}$/.test(s);
   const iso = hasTZ ? s : s + 'Z';
   const ms = Date.parse(iso);
-  return Number.isFinite(ms) ? Math.floor(ms/1000) : 0;
+  return Number.isFinite(ms) ? Math.floor(ms / 1000) : 0;
 }
 
 // The database already stores exercise names with quantity info (e.g., "12x Situps", "Squats 10s")
@@ -52,7 +51,7 @@ function fmt(t: number) {
   const s = Math.max(0, Math.floor(t));
   const m = Math.floor(s / 60);
   const ss = s % 60;
-  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  return `${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
 }
 
 export default function ForTimeLiveScreen() {
@@ -64,20 +63,23 @@ export default function ForTimeLiveScreen() {
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        try { await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_LEFT); } catch {}
+        try {
+          await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_LEFT);
+        } catch {}
       })();
       return () => {
         (async () => {
-          try { await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP); } catch {}
+          try {
+            await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+          } catch {}
         })();
       };
-    }, [])
+    }, []),
   );
-
 
   const session = useSession(classId);
   const progress = useMyProgress(classId);
-  
+
   const [scope, setScope] = useState<LbFilter>('ALL');
   const lb = useLeaderboardRealtime(classId, scope);
 
@@ -94,7 +96,7 @@ export default function ForTimeLiveScreen() {
   useEffect(() => {
     if (!showTutorial) return;
     const interval = setInterval(() => {
-      setTutorialStep(prev => (prev + 1) % 2);
+      setTutorialStep((prev) => (prev + 1) % 2);
     }, 800); // Switch every 800ms
     return () => clearInterval(interval);
   }, [showTutorial]);
@@ -117,7 +119,6 @@ export default function ForTimeLiveScreen() {
 
   const hype = useLeaderboardHype(lb, myUserId || undefined, hypeOptedOut);
 
-
   const steps: any[] = (session?.steps as any[]) ?? [];
   const cum: number[] = (session?.steps_cum_reps as any[]) ?? [];
   const ready = Array.isArray(steps) && steps.length > 0;
@@ -131,11 +132,16 @@ export default function ForTimeLiveScreen() {
 
   // pause-aware elapsed seconds (robust if epoch helpers missing)
   const nowSec = useNowSec();
-  const startedAtSec = Number((session as any)?.started_at_s ?? 0) || toEpochSecMaybe((session as any)?.started_at);
-  const pausedAtSec  = Number((session as any)?.paused_at_s  ?? 0) || toEpochSecMaybe((session as any)?.paused_at);
-  const pauseAccum   = Number((session as any)?.pause_accum_seconds ?? 0);
-  const extraPaused  = session?.status === 'paused' && pausedAtSec ? Math.max(0, nowSec - pausedAtSec) : 0;
-  const elapsed      = startedAtSec ? Math.max(0, (nowSec - startedAtSec) - (pauseAccum + extraPaused)) : 0;
+  const startedAtSec =
+    Number((session as any)?.started_at_s ?? 0) || toEpochSecMaybe((session as any)?.started_at);
+  const pausedAtSec =
+    Number((session as any)?.paused_at_s ?? 0) || toEpochSecMaybe((session as any)?.paused_at);
+  const pauseAccum = Number((session as any)?.pause_accum_seconds ?? 0);
+  const extraPaused =
+    session?.status === 'paused' && pausedAtSec ? Math.max(0, nowSec - pausedAtSec) : 0;
+  const elapsed = startedAtSec
+    ? Math.max(0, nowSec - startedAtSec - (pauseAccum + extraPaused))
+    : 0;
 
   const cap = session?.time_cap_seconds ?? 0;
   const timeUp = cap > 0 && elapsed >= cap;
@@ -215,14 +221,18 @@ export default function ForTimeLiveScreen() {
     if (!ready) return;
     if (session?.status !== 'live') return; // locked during pause/ended
 
-    setLocalIdx(idx => clamp(idx + (dir === 1 ? 1 : -1), 0, steps.length));
+    setLocalIdx((idx) => clamp(idx + (dir === 1 ? 1 : -1), 0, steps.length));
     try {
       const token = await getToken();
-      await axios.post(`${config.BASE_URL}/live/${classId}/advance`, {
-        direction: dir === 1 ? 'next' : 'prev'
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(
+        `${config.BASE_URL}/live/${classId}/advance`,
+        {
+          direction: dir === 1 ? 'next' : 'prev',
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
     } catch {
-      setLocalIdx(idx => clamp(idx + (dir === 1 ? -1 : 1), 0, steps.length));
+      setLocalIdx((idx) => clamp(idx + (dir === 1 ? -1 : 1), 0, steps.length));
     }
   };
 
@@ -263,6 +273,12 @@ export default function ForTimeLiveScreen() {
     <View style={s.root}>
       <StatusBar hidden={true} />
       <SafeAreaView style={s.safeArea} edges={['left', 'right']}>
+        {/* single timer */}
+        <View pointerEvents="none" style={s.topOverlay}>
+          <Text style={s.timeTop} pointerEvents="none">
+            {fmt(elapsed)}
+          </Text>
+        </View>
 
       {/* single timer */}
       <View pointerEvents="none" style={s.topOverlay}>
@@ -384,20 +400,24 @@ export default function ForTimeLiveScreen() {
               <View style={s.tutorialLabelContainer}>
                 <Text style={s.tutorialLabel}>TAP FOR BACK</Text>
               </View>
-            </Animated.View>
+            </>
           )}
         </View>
-      )}
 
-      {/* PAUSE overlay */}
-      {session?.status === 'paused' && (
-        <View style={s.pausedOverlay} pointerEvents="auto">
-          <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor:'#000', opacity: fadeOpacity }]} />
-          <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFillObject} />
-          <Animated.View style={{ alignItems:'center', transform:[{ scale: scaleIn }] }}>
-            <Text style={s.pausedTitle}>PAUSED</Text>
-            <Text style={s.pausedSub}>waiting for coach...</Text>
-          </Animated.View>
+        {/* press zones */}
+        <View style={s.row}>
+          <Pressable
+            style={s.back}
+            android_ripple={{ color: '#000' }}
+            onPress={() => go(-1)}
+            disabled={!ready || session?.status !== 'live'}
+          />
+          <Pressable
+            style={s.next}
+            android_ripple={{ color: '#0a0' }}
+            onPress={() => go(1)}
+            disabled={!ready || session?.status !== 'live'}
+          />
         </View>
       )}
 
@@ -444,7 +464,6 @@ export default function ForTimeLiveScreen() {
       </SafeAreaView>
     </View>
   );
-
 }
 
 const s = StyleSheet.create({
@@ -509,9 +528,9 @@ const s = StyleSheet.create({
   modalBtnText:{ color:'#111', fontWeight:'900', textAlign:'center' },
 
   tutorialOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100 },
-  tutorialHighlight: { 
-    position: 'absolute', 
-    borderWidth: 4, 
+  tutorialHighlight: {
+    position: 'absolute',
+    borderWidth: 4,
     borderRadius: 8,
     shadowColor: '#fff',
     shadowOffset: { width: 0, height: 0 },
@@ -519,18 +538,18 @@ const s = StyleSheet.create({
     shadowRadius: 10,
     elevation: 20,
   },
-  tutorialGreenHighlight: { 
-    top: 0, 
-    right: 0, 
-    bottom: 0, 
+  tutorialGreenHighlight: {
+    top: 0,
+    right: 0,
+    bottom: 0,
     left: '25%', // Green area is flex: 3, so starts at 25%
     borderColor: '#4CAF50',
     backgroundColor: 'rgba(76, 175, 80, 0.15)',
   },
-  tutorialRedHighlight: { 
-    top: 0, 
-    left: 0, 
-    bottom: 0, 
+  tutorialRedHighlight: {
+    top: 0,
+    left: 0,
+    bottom: 0,
     right: '75%', // Red area is flex: 1, so takes 25% of screen
     borderColor: '#F44336',
     backgroundColor: 'rgba(244, 67, 54, 0.15)',

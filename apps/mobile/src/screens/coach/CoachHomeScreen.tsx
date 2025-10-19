@@ -27,8 +27,8 @@ const { width } = Dimensions.get('window');
 type CoachHomeNav = CompositeNavigationProp<
   BottomTabScreenProps<CoachTabParamList, 'CoachHome'>['navigation'],
   StackNavigationProp<CoachStackParamList>
-  >;
-type CoachHomeScreenProps = {navigation: CoachHomeNav}
+>;
+type CoachHomeScreenProps = { navigation: CoachHomeNav };
 
 interface WorkoutItem {
   id: string;
@@ -73,9 +73,7 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
     setYourClassesError(null);
 
     try {
-      const response = await apiClient.get<ApiCoachClass[]>(
-        `/coach/classes-with-workouts`,
-      );
+      const response = await apiClient.get<ApiCoachClass[]>(`/coach/classes-with-workouts`);
 
       const sortedClasses = response.data.sort((a, b) => {
         const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
@@ -83,41 +81,41 @@ const CoachHomeScreen = ({ navigation }: CoachHomeScreenProps) => {
         return dateTimeA.getTime() - dateTimeB.getTime();
       });
 
-const now = new Date();
+      const now = new Date();
 
-const classesNeedingWorkout: WorkoutItem[] = sortedClasses
-  .filter((c) => {
-    const classDateTime = new Date(`${c.scheduledDate}T${c.scheduledTime}`);
-    return classDateTime >= now && c.workoutId == null;
-  })
-  .map((c) => ({
-    id: c.classId.toString(),
-    name: 'Setup Workout',
-    time: c.scheduledTime.slice(0, 5),
-    date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    }),
-    capacity: `${c.bookingsCount ?? 0}/${c.capacity}`,
-    instructor: 'You',
-  }));
+      const classesNeedingWorkout: WorkoutItem[] = sortedClasses
+        .filter((c) => {
+          const classDateTime = new Date(`${c.scheduledDate}T${c.scheduledTime}`);
+          return classDateTime >= now && c.workoutId == null;
+        })
+        .map((c) => ({
+          id: c.classId.toString(),
+          name: 'Setup Workout',
+          time: c.scheduledTime.slice(0, 5),
+          date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+          }),
+          capacity: `${c.bookingsCount ?? 0}/${c.capacity}`,
+          instructor: 'You',
+        }));
 
-const classesWithWorkout: WorkoutItem[] = sortedClasses
-  .filter((c) => {
-    const classDateTime = new Date(`${c.scheduledDate}T${c.scheduledTime}`);
-    return classDateTime >= now && c.workoutId !== null;
-  })
-  .map((c) => ({
-    id: c.classId.toString(),
-    name: c.workoutName || 'Workout Assigned',
-    time: c.scheduledTime.slice(0, 5),
-    date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    }),
-    capacity: `${c.bookingsCount ?? 0}/${c.capacity}`,
-    instructor: 'You',
-  }));
+      const classesWithWorkout: WorkoutItem[] = sortedClasses
+        .filter((c) => {
+          const classDateTime = new Date(`${c.scheduledDate}T${c.scheduledTime}`);
+          return classDateTime >= now && c.workoutId !== null;
+        })
+        .map((c) => ({
+          id: c.classId.toString(),
+          name: c.workoutName || 'Workout Assigned',
+          time: c.scheduledTime.slice(0, 5),
+          date: new Date(`${c.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+          }),
+          capacity: `${c.bookingsCount ?? 0}/${c.capacity}`,
+          instructor: 'You',
+        }));
 
       setSetWorkoutsData(classesNeedingWorkout);
       setYourClassesData(classesWithWorkout);
@@ -140,9 +138,7 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
     setIsLoadingLiveClass(true);
     setLiveClassError(null);
     try {
-      const response = await apiClient.get<ApiLiveClassResponse>(
-        `/live/class`,
-      );
+      const response = await apiClient.get<ApiLiveClassResponse>(`/live/class`);
       if (response.data?.ongoing && response.data?.class) {
         setLiveClass(response.data);
       } else {
@@ -169,11 +165,11 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
   useFocusEffect(
     React.useCallback(() => {
       let interval: ReturnType<typeof setInterval> | undefined;
-  
+
       // run immediately - refresh both live class and coach classes
       fetchLiveClass();
       fetchCoachClasses();
-  
+
       interval = setInterval(fetchLiveClass, 10000);
       return () => {
         if (interval) clearInterval(interval);
@@ -196,9 +192,9 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
     const workout = yourClassesData.find((w) => w.id === workoutId);
     if (workout) {
       // Navigate to SetWorkout screen in edit mode
-      navigation.navigate('SetWorkout', { 
+      navigation.navigate('SetWorkout', {
         classId: parseInt(workout.id, 10),
-        editMode: true 
+        editMode: true,
       });
     }
   };
@@ -231,8 +227,8 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
   );
 
   const renderYourClassCard = (workout: WorkoutItem) => (
-    <TouchableOpacity 
-      key={workout.id} 
+    <TouchableOpacity
+      key={workout.id}
       style={styles.yourClassCard}
       onPress={() => handleEditWorkout(workout.id)}
     >
@@ -268,7 +264,8 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeText}>Hey, {user?.firstName || 'Coach'} 👋</Text>
           <Text style={styles.subtitleText}>
-            {setWorkoutsData.length} class{setWorkoutsData.length === 1 ? '' : 'es'} need a workout set
+            {setWorkoutsData.length} class{setWorkoutsData.length === 1 ? '' : 'es'} need a workout
+            set
           </Text>
         </View>
       </View>
@@ -355,41 +352,105 @@ const classesWithWorkout: WorkoutItem[] = sortedClasses
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#1a1a1a' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 30 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 30,
+  },
   welcomeContainer: { flex: 1, marginLeft: 12 },
   welcomeText: { color: 'white', fontSize: 18, fontWeight: '600', marginBottom: 4 },
   switchButton: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#2a2a2a', borderRadius: 24,
-    paddingHorizontal: 16, paddingVertical: 10, gap: 8, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     alignSelf: 'flex-start',
   },
-  switchIcon: { width: 24, height: 14, borderRadius: 7, backgroundColor: '#333', justifyContent: 'center', padding: 2 },
-  switchTrack: { width: '100%', height: '100%', borderRadius: 6, backgroundColor: '#333', justifyContent: 'center', alignItems: 'flex-end', paddingHorizontal: 1 },
-  switchThumb: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#D8FF3E', shadowColor: '#D8FF3E', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.3, shadowRadius: 2, elevation: 2 },
+  switchIcon: {
+    width: 24,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    padding: 2,
+  },
+  switchTrack: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 6,
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingHorizontal: 1,
+  },
+  switchThumb: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#D8FF3E',
+    shadowColor: '#D8FF3E',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 2,
+  },
   switchText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   scrollContainer: { flex: 1, paddingHorizontal: 20 },
   section: { marginBottom: 30 },
   sectionTitle: { color: 'white', fontSize: 16, fontWeight: '600', marginBottom: 15 },
   setWorkoutsContainer: { flexDirection: 'row', paddingRight: 20 },
   setWorkoutsScrollView: { marginHorizontal: -20, paddingLeft: 20 },
-  setWorkoutCard: { backgroundColor: '#2a2a2a', borderRadius: 12, borderWidth: 2, borderColor: '#D8FF3E', padding: 16, width: width * 0.75, height: 150, marginRight: 12, justifyContent: 'space-between' },
-  workoutHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  setWorkoutCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#D8FF3E',
+    padding: 16,
+    width: width * 0.75,
+    height: 150,
+    marginRight: 12,
+    justifyContent: 'space-between',
+  },
+  workoutHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
   workoutDateInfo: { flex: 1 },
   workoutDate: { color: '#D8FF3E', fontSize: 12, fontWeight: '500' },
   workoutTime: { color: '#D8FF3E', fontSize: 12, fontWeight: '500', marginTop: 2 },
   workoutProgressSection: { alignItems: 'flex-end' },
   workoutProgress: { color: '#D8FF3E', fontSize: 12, fontWeight: '500' },
   workoutContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  subtitleText: { color: '#888', fontSize: 14, fontWeight: '500'},
+  subtitleText: { color: '#888', fontSize: 14, fontWeight: '500' },
   workoutDetails: { flex: 1 },
   instructorName: { color: '#888', fontSize: 12, marginBottom: 4 },
   workoutName: { color: 'white', fontSize: 16, fontWeight: '600' },
-  setWorkoutButton: { backgroundColor: '#D8FF3E', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  setWorkoutButton: {
+    backgroundColor: '#D8FF3E',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
   setWorkoutButtonText: { color: '#1a1a1a', fontSize: 12, fontWeight: '600' },
   yourClassesContainer: { gap: 12 },
   yourClassCard: { backgroundColor: '#2a2a2a', borderRadius: 12, padding: 16 },
-  classHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  classHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
   classDateSection: { flex: 1 },
   classDate: { color: '#D8FF3E', fontSize: 12, fontWeight: '500' },
   classTime: { color: '#D8FF3E', fontSize: 12, fontWeight: '500', marginTop: 2 },
@@ -401,16 +462,40 @@ const styles = StyleSheet.create({
   className: { color: 'white', fontSize: 16, fontWeight: '600' },
   editIndicator: { alignItems: 'flex-end' },
   editText: { color: '#D8FF3E', fontSize: 12, fontWeight: '500' },
-  errorText: { color: '#FF6B6B', fontSize: 16, textAlign: 'center', paddingHorizontal: 20, paddingVertical: 10 },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 16,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
   emptyText: { color: '#888', fontSize: 14, textAlign: 'center', paddingVertical: 20 },
   liveClassBanner: {
-    backgroundColor: '#D8FF3E', borderRadius: 12, paddingVertical: 16, paddingHorizontal: 20,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: 20, marginTop: 10,
+    backgroundColor: '#D8FF3E',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 10,
   },
   liveClassLeft: { flexDirection: 'row', alignItems: 'center' },
-  liveIndicator: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#20C934', marginRight: 12 },
-  liveLabel: { color: '#1a1a1a', fontSize: 10, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' },
+  liveIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#20C934',
+    marginRight: 12,
+  },
+  liveLabel: {
+    color: '#1a1a1a',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
   liveClassName: { color: '#1a1a1a', fontSize: 18, fontWeight: '700' },
   liveClassRight: { alignItems: 'flex-end' },
   liveInstructor: { color: '#1a1a1a', fontSize: 12, fontWeight: '500' },

@@ -46,27 +46,17 @@ export function middleware(request: NextRequest) {
       const isExpired = payload.exp && payload.exp < Date.now() / 1000;
 
       if (isExpired) {
-        if (refreshToken) {
-          // Allow through; the client will refresh on first request
-          return NextResponse.next();
-        }
-        const response = NextResponse.redirect(
-          new URL(
-            `/error?error=session&message=${encodeURIComponent('Session expired')}`,
-            request.url,
-          ),
-        );
+        // Token is expired - clear cookies and redirect to login
+        const response = NextResponse.redirect(new URL('/login', request.url));
         response.cookies.delete('authToken');
+        response.cookies.delete('refreshToken');
         return response;
       }
     } catch {
-      const response = NextResponse.redirect(
-        new URL(
-          `/error?error=session&message=${encodeURIComponent('Invalid session')}`,
-          request.url,
-        ),
-      );
+      // Invalid token - clear cookies and redirect to login
+      const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('authToken');
+      response.cookies.delete('refreshToken');
       return response;
     }
   }

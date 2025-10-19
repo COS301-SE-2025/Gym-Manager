@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { CommonActions } from '@react-navigation/native';
 import TrainwiseLogo from '../../components/common/TrainwiseLogo';
 import axios from 'axios';
 import config from '../../config';
@@ -28,6 +30,7 @@ interface ValidationErrors {
   email?: string;
   phone?: string;
   password?: string;
+  confirmPassword?: string;
 }
 
 export default function RegisterScreen() {
@@ -35,7 +38,10 @@ export default function RegisterScreen() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
@@ -108,6 +114,23 @@ export default function RegisterScreen() {
         } else {
           delete newErrors.password;
         }
+        // Re-validate confirm password if it has a value
+        if (confirmPassword) {
+          if (value !== confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match';
+          } else {
+            delete newErrors.confirmPassword;
+          }
+        }
+        break;
+      case 'confirmPassword':
+        if (!value.trim()) {
+          newErrors.confirmPassword = 'Please confirm your password';
+        } else if (value !== password) {
+          newErrors.confirmPassword = 'Passwords do not match';
+        } else {
+          delete newErrors.confirmPassword;
+        }
         break;
     }
 
@@ -151,6 +174,12 @@ export default function RegisterScreen() {
         'Password must contain at least one uppercase letter, one lowercase letter, and one number';
     }
 
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (confirmPassword !== password) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -186,8 +215,15 @@ export default function RegisterScreen() {
 
   const handlePasswordChange = (value: string) => {
     setPassword(value);
-    if (errors.password) {
+    if (errors.password || (confirmPassword && errors.confirmPassword)) {
       validateField('password', value);
+    }
+  };
+
+  const handleConfirmPasswordChange = (value: string) => {
+    setConfirmPassword(value);
+    if (errors.confirmPassword) {
+      validateField('confirmPassword', value);
     }
   };
 
@@ -216,15 +252,12 @@ export default function RegisterScreen() {
       }
 
 
-      Alert.alert(
-        'Registration Successful!',
-        'Your account has been created successfully. Please proceed to select your role.',
-        [
-          {
-            text: 'Continue',
-            onPress: () => navigation.navigate('Pending' as never),
-          },
-        ],
+      // Navigate to pending screen
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Pending' }],
+        })
       );
     } catch (error: any) {
       console.error('Register error:', error);
@@ -267,7 +300,9 @@ export default function RegisterScreen() {
     lastName.trim() &&
     email.trim() &&
     phone.trim() &&
-    password.trim();
+    password.trim() &&
+    confirmPassword.trim() &&
+    password === confirmPassword;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -364,21 +399,64 @@ export default function RegisterScreen() {
             {/* Password Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>PASSWORD</Text>
-              <TextInput
-                style={[styles.input, errors.password && styles.inputError]}
-                value={password}
-                onChangeText={handlePasswordChange}
-                onBlur={() => validateField('password', password)}
-                placeholder="Enter a strong password"
-                placeholderTextColor="#666"
-                secureTextEntry
-                autoCapitalize="none"
-                editable={!isLoading}
-              />
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={[styles.passwordInput, errors.password && styles.inputError]}
+                  value={password}
+                  onChangeText={handlePasswordChange}
+                  onBlur={() => validateField('password', password)}
+                  placeholder="Enter a strong password"
+                  placeholderTextColor="#666"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                >
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={24}
+                    color="#888"
+                  />
+                </TouchableOpacity>
+              </View>
               {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
               <Text style={styles.passwordHint}>
                 Password must be at least 8 characters with uppercase, lowercase, and number
               </Text>
+            </View>
+
+            {/* Confirm Password Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>CONFIRM PASSWORD</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={[styles.passwordInput, errors.confirmPassword && styles.inputError]}
+                  value={confirmPassword}
+                  onChangeText={handleConfirmPasswordChange}
+                  onBlur={() => validateField('confirmPassword', confirmPassword)}
+                  placeholder="Re-enter your password"
+                  placeholderTextColor="#666"
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={isLoading}
+                >
+                  <Ionicons
+                    name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={24}
+                    color="#888"
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
             </View>
 
             {/* Register Button */}
@@ -453,6 +531,26 @@ const styles = StyleSheet.create({
     color: 'white',
     borderWidth: 1,
     borderColor: '#3a3a3a',
+  },
+  passwordContainer: {
+    position: 'relative',
+  },
+  passwordInput: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingRight: 56,
+    fontSize: 16,
+    color: 'white',
+    borderWidth: 1,
+    borderColor: '#3a3a3a',
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    transform: [{ translateY: -12 }],
   },
   inputError: {
     borderColor: '#FF6B6B',

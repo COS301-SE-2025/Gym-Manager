@@ -94,8 +94,6 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
       setNewExerciseName('');
       setNewExerciseDescription('');
       setShowCreateModal(false);
-      
-      Alert.alert('Success', 'Exercise created successfully!');
     } catch (error: any) {
       console.error('Error creating exercise:', error);
       Alert.alert('Error', 'Failed to create exercise. Please try again.');
@@ -127,8 +125,6 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
 
               // Refresh the exercises list
               await fetchExercises();
-              
-              Alert.alert('Success', 'Exercise deleted successfully!');
             } catch (error: any) {
               console.error('Error deleting exercise:', error);
               Alert.alert('Error', 'Failed to delete exercise. It may be used in a workout.');
@@ -162,7 +158,7 @@ export default function ExerciseSelectScreen({ navigation, route }: Props) {
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Select Exercise</Text>
         <TouchableOpacity 
@@ -316,17 +312,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#2a2a2a',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
+    padding: 4,
   },
   headerTitle: {
     flex: 1,

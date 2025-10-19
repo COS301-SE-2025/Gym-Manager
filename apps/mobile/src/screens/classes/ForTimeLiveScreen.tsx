@@ -2,7 +2,8 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, Pressable, StatusBar,
-  Modal, TextInput, TouchableOpacity, ActivityIndicator, Animated
+  TextInput, TouchableOpacity, ActivityIndicator, Animated, KeyboardAvoidingView, Platform,
+  TouchableNativeFeedback
 } from 'react-native';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -11,12 +12,12 @@ import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
 import { useMyProgress } from '../../hooks/useMyProgress';
 import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardRealtime';
-import axios from 'axios';
-import { getToken, getUser } from '../../utils/authStorage';
-import config from '../../config';
+import apiClient from '../../utils/apiClient';
+import { getUser } from '../../utils/authStorage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HypeToast } from '../../components/HypeToast';
 import { useLeaderboardHype } from '../../hooks/useLeaderboardHype';
+import { calculateWorkoutDuration } from '../../utils/workoutDuration';
 
 
 type R = RouteProp<AuthStackParamList, 'ForTimeLive'>;
@@ -138,6 +139,9 @@ export default function ForTimeLiveScreen() {
   const cap = session?.time_cap_seconds ?? 0;
   const timeUp = cap > 0 && elapsed >= cap;
 
+  // Calculate workout duration for display
+  const workoutDuration = calculateWorkoutDuration(session);
+
   const current = ready ? steps[localIdx] : undefined;
   const next = ready ? steps[localIdx + 1] : undefined;
   const finished =
@@ -156,21 +160,49 @@ export default function ForTimeLiveScreen() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [partial, setPartial] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   useEffect(() => {
-    if (askPartial && !modalOpen) setModalOpen(true);
-  }, [askPartial, modalOpen]);
+    if (askPartial && !modalOpen && !isSubmitting) {
+      setModalOpen(true);
+    }
+  }, [askPartial, modalOpen, isSubmitting]);
+  
+  // Cleanup modal state when component unmounts or navigation occurs
+  useEffect(() => {
+    return () => {
+      setModalOpen(false);
+      setIsSubmitting(false);
+    };
+  }, []);
 
   const sendPartial = async () => {
-    const token = await getToken();
-    await axios.post(`${config.BASE_URL}/live/${classId}/partial`, {
-      reps: Math.max(0, Number(partial) || 0)
-    }, { headers: { Authorization: `Bearer ${token}` } });
-    setModalOpen(false);
+    if (isSubmitting) return; // Prevent double submission
+    
+    setIsSubmitting(true);
+    try {
+      await apiClient.post(`/live/${classId}/partial`, {
+        reps: Math.max(0, Number(partial) || 0)
+      });
+      setModalOpen(false);
 
-    // If coach already ended the class, go to end now that we have the partial
-    if (session?.status === 'ended' && !hasNavigatedRef.current) {
-      hasNavigatedRef.current = true;
-      nav.replace('LiveClassEnd', { classId });
+      // If coach already ended the class, go to end now that we have the partial
+      if (session?.status === 'ended' && !hasNavigatedRef.current) {
+        hasNavigatedRef.current = true;
+        nav.replace('LiveClassEnd', { classId });
+      }
+    } catch (error) {
+      console.error('Error submitting partial reps:', error);
+      // Still close modal on error to prevent getting stuck
+      setModalOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleModalClose = () => {
+    if (!isSubmitting) {
+      setModalOpen(false);
     }
   };
 
@@ -182,10 +214,9 @@ export default function ForTimeLiveScreen() {
 
     setLocalIdx(idx => clamp(idx + (dir === 1 ? 1 : -1), 0, steps.length));
     try {
-      const token = await getToken();
-      await axios.post(`${config.BASE_URL}/live/${classId}/advance`, {
+      await apiClient.post(`/live/${classId}/advance`, {
         direction: dir === 1 ? 'next' : 'prev'
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      });
     } catch {
       setLocalIdx(idx => clamp(idx + (dir === 1 ? -1 : 1), 0, steps.length));
     }
@@ -231,7 +262,9 @@ export default function ForTimeLiveScreen() {
 
       {/* single timer */}
       <View pointerEvents="none" style={s.topOverlay}>
-        <Text style={s.timeTop} pointerEvents="none">{fmt(elapsed)}</Text>
+        <Text style={s.timeTop} pointerEvents="none">
+          {fmt(elapsed)}{workoutDuration > 0 ? ` / ${fmt(workoutDuration)}` : ''}
+        </Text>
       </View>
 
       <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />
@@ -294,8 +327,39 @@ export default function ForTimeLiveScreen() {
 
       {/* press zones */}
       <View style={s.row}>
-        <Pressable style={s.back} android_ripple={{color:'#000'}} onPress={() => go(-1)} disabled={!ready || session?.status !== 'live'} />
-        <Pressable style={s.next} android_ripple={{color:'#0a0'}} onPress={() => go(1)} disabled={!ready || session?.status !== 'live'} />
+        {Platform.OS === 'android' ? (
+          <>
+            <TouchableNativeFeedback
+              onPress={() => go(-1)}
+              disabled={!ready || session?.status !== 'live'}
+              background={TouchableNativeFeedback.Ripple('#ff6464', false)}
+              useForeground={true}
+            >
+              <View style={s.back} />
+            </TouchableNativeFeedback>
+            <TouchableNativeFeedback
+              onPress={() => go(1)}
+              disabled={!ready || session?.status !== 'live'}
+              background={TouchableNativeFeedback.Ripple('#64ff64', false)}
+              useForeground={true}
+            >
+              <View style={s.next} />
+            </TouchableNativeFeedback>
+          </>
+        ) : (
+          <>
+            <Pressable
+              onPress={() => go(-1)}
+              disabled={!ready || session?.status !== 'live'}
+              style={({pressed}) => [s.back, pressed && {opacity: 0.7}]}
+            />
+            <Pressable
+              onPress={() => go(1)}
+              disabled={!ready || session?.status !== 'live'}
+              style={({pressed}) => [s.next, pressed && {opacity: 0.7}]}
+            />
+          </>
+        )}
       </View>
 
       {/* tutorial overlay */}
@@ -333,21 +397,46 @@ export default function ForTimeLiveScreen() {
         </View>
       )}
 
-      {/* DNF prompt */}
-      <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={()=>{}}>
-        <View style={s.modalWrap}>
-          <View style={s.modalCard}>
-            <Text style={s.modalTitle}>Time’s up — last exercise reps</Text>
-            <TextInput
-              value={partial} onChangeText={setPartial} keyboardType="numeric"
-              style={s.modalInput} placeholder="0" placeholderTextColor="#7a7a7a"
+      {/* DNF prompt - Custom overlay instead of Modal */}
+      {modalOpen && (
+        <View style={s.customModalOverlay}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={s.keyboardAvoidingView}
+          >
+            <TouchableOpacity 
+              style={s.modalBackdrop} 
+              activeOpacity={1} 
+              onPress={handleModalClose}
             />
-            <TouchableOpacity style={s.modalBtn} onPress={sendPartial}>
-              <Text style={s.modalBtnText}>Submit</Text>
-            </TouchableOpacity>
-          </View>
+            <View style={s.modalCard}>
+              <Text style={s.modalTitle}>Time's up — last exercise reps</Text>
+              <TextInput
+                value={partial} 
+                onChangeText={setPartial} 
+                keyboardType="numeric"
+                style={s.modalInput} 
+                placeholder="0" 
+                placeholderTextColor="#7a7a7a"
+                autoFocus={false}
+                selectTextOnFocus={true}
+                returnKeyType="done"
+                onSubmitEditing={sendPartial}
+                editable={!isSubmitting}
+              />
+              <TouchableOpacity 
+                style={[s.modalBtn, isSubmitting && s.modalBtnDisabled]} 
+                onPress={sendPartial}
+                disabled={isSubmitting}
+              >
+                <Text style={s.modalBtnText}>
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
         </View>
-      </Modal>
+      )}
       </SafeAreaView>
     </View>
   );
@@ -381,11 +470,38 @@ const s = StyleSheet.create({
   pausedTitle: { color:'#fff', fontWeight:'900', fontSize: 44, letterSpacing: 2, textAlign:'center' },
   pausedSub:   { color:'#eaeaea', fontWeight:'700', marginTop: 6, fontSize: 14, textAlign:'center' },
 
-  modalWrap: { flex:1, backgroundColor:'rgba(0,0,0,0.65)', alignItems:'center', justifyContent:'center' },
-  modalCard: { backgroundColor:'#151515', borderRadius:14, padding:18, width:'80%' },
+  customModalOverlay: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    bottom: 0, 
+    zIndex: 1000, 
+    backgroundColor: 'rgba(0,0,0,0.65)' 
+  },
+  keyboardAvoidingView: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  modalBackdrop: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    bottom: 0 
+  },
+  modalCard: { 
+    backgroundColor: '#151515', 
+    borderRadius: 14, 
+    padding: 18, 
+    width: '80%', 
+    maxWidth: 400 
+  },
   modalTitle:{ color:'#fff', fontWeight:'800', marginBottom:12, textAlign:'center' },
   modalInput:{ backgroundColor:'#222', borderRadius:10, color:'#fff', fontSize:24, fontWeight:'900', paddingVertical:8, textAlign:'center' },
   modalBtn:{ backgroundColor:'#d8ff3e', borderRadius:10, paddingVertical:14, marginTop:12 },
+  modalBtnDisabled:{ backgroundColor:'#666', opacity:0.6 },
   modalBtnText:{ color:'#111', fontWeight:'900', textAlign:'center' },
 
   tutorialOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100 },

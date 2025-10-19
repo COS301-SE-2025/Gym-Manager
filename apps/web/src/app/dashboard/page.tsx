@@ -11,6 +11,7 @@ import { userRoleService } from '../services/roles';
 import ClassCreationModal from '@/components/modals/CreateClass/CreateClass';
 import ClassDetailsModal from '@/components/modals/AssignCoach/AssignCoach';
 import { ClassResource } from '@/components/modals/AssignCoach/AssignCoach';
+import ScheduleTemplateManager from '@/components/scheduleTemplates/ScheduleTemplateManager';
 import Link from 'next/link';
 import axios from 'axios';
 import { Bell } from 'lucide-react';
@@ -33,36 +34,18 @@ export default function DashboardPage() {
     const interceptor = axios.interceptors.response.use(
       (res) => res,
       async (error) => {
-        const originalRequest = error.config || {};
-        if (
-          (error.response?.status === 401 || error.response?.status === 403) &&
-          !originalRequest._retry
-        ) {
-          originalRequest._retry = true;
-          const refreshToken = localStorage.getItem('refreshToken');
-          if (refreshToken) {
-            try {
-              const r = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_URL}/refresh`,
-                { refreshToken },
-                {
-                  headers: { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` },
-                },
-              );
-              const newToken = r.data.token;
-              const newRefresh = r.data.refreshToken || refreshToken;
-              localStorage.setItem('authToken', newToken);
-              localStorage.setItem('refreshToken', newRefresh);
-              document.cookie = `authToken=${newToken}; path=/; max-age=21600; secure; samesite=strict`;
-              document.cookie = `refreshToken=${newRefresh}; path=/; max-age=${60 * 60 * 24 * 30}; secure; samesite=strict`;
-              originalRequest.headers = originalRequest.headers || {};
-              originalRequest.headers.Authorization = `Bearer ${newToken}`;
-              return axios(originalRequest);
-            } catch (e) {
-              localStorage.removeItem('authToken');
-              localStorage.removeItem('refreshToken');
-            }
-          }
+        // If we get 401 or 403, the token has expired - redirect to login
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          console.log('Token expired, redirecting to login');
+          
+          // Clear all stored authentication data
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('refreshToken');
+          document.cookie = 'authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          document.cookie = 'refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          
+          // Redirect to login page
+          window.location.href = '/login';
         }
         return Promise.reject(error);
       },
@@ -72,6 +55,34 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData();
+    
+    // Listen for schedule generation events to refresh calendar
+    const handleScheduleGenerated: EventListener = (event) => {
+      const customEvent = event as CustomEvent;
+      fetchData();
+      toast.success(`Successfully generated ${customEvent.detail?.classesCreated || 0} new classes!`);
+    };
+    
+    window.addEventListener('scheduleGenerated', handleScheduleGenerated);
+    
+    // Check for localStorage refresh trigger (for cross-page communication)
+    const checkForRefresh = () => {
+      const shouldRefresh = localStorage.getItem('refreshCalendar');
+      if (shouldRefresh === 'true') {
+        fetchData();
+        localStorage.removeItem('refreshCalendar');
+      }
+    };
+    
+    checkForRefresh();
+    
+    // Set up interval to check for refresh trigger
+    const refreshInterval = setInterval(checkForRefresh, 1000);
+    
+    return () => {
+      window.removeEventListener('scheduleGenerated', handleScheduleGenerated);
+      clearInterval(refreshInterval);
+    };
   }, []);
 
   useEffect(() => {
@@ -490,6 +501,10 @@ export default function DashboardPage() {
       >
         <div style={{ flexShrink: 0 }}>
           <WeeklyCalendar events={events} onSelectEvent={handleEventClick} loading={loading} />
+        </div>
+
+        <div style={{ marginTop: '16px', flexShrink: 0, height: 'auto', minHeight: 'auto' }}>
+          <ScheduleTemplateManager />
         </div>
 
         <div style={{ marginTop: '16px', flexShrink: 0 }}>

@@ -56,6 +56,7 @@ export class App {
     const analyticsRoutes = this.container.getAnalyticsRoutes();
     const paymentPackagesRoutes = this.container.getPaymentPackagesRoutes();
     const gamificationRoutes = this.container.getGamificationRoutes();
+    const scheduleTemplateRoutes = this.container.getScheduleTemplateRoutes();
 
     const dailyLeaderboardRoutes = this.container.getDailyLeaderboardRoutes();
 
@@ -70,6 +71,7 @@ export class App {
     this.app.use('/analytics', analyticsRoutes.getRouter());
     this.app.use('/payments', paymentPackagesRoutes.getRouter());
     this.app.use('/gamification', gamificationRoutes.getRouter());
+    this.app.use('/schedule-templates', scheduleTemplateRoutes.getRouter());
 
     this.app.get('/health', (req, res) => {
       res.json({ status: 'OK', timestamp: new Date().toISOString() });
@@ -94,7 +96,24 @@ export class App {
   }
 
   start(port: number = 3000): void {
-    this.app.listen(port, () => {});
+    this.app.listen(port, () => {
+      console.log(`🚀 Server running on port ${port}`);
+      console.log(`📚 API Documentation: http://localhost:${port}/api-docs`);
+      console.log(`🏥 Health Check: http://localhost:${port}/health`);
+      console.log(`🔍 Available Endpoints:`);
+      console.log(`   • Auth: /auth/*`);
+      console.log(`   • Classes: /classes/*`);
+      console.log(`   • Admin: /admin/*`);
+      console.log(`   • Live Classes: /live-classes/*`);
+      console.log(`   • User Settings: /user-settings/*`);
+      console.log(`   • Health: /health, /healthz`);
+      console.log(`   • Members: /members/*`);
+      console.log(`   • Analytics: /analytics/*`);
+      console.log(`   • Payments: /payments/*`);
+      console.log(`   • Gamification: /gamification/*`);
+      console.log(`   • Schedule Templates: /schedule-templates/*`);
+      console.log(`   • Daily Leaderboard: /daily-leaderboard/*`);
+    });
   }
 }
 

@@ -12,7 +12,7 @@ import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
 import { BlurView } from 'expo-blur';
-import { useImmersiveBars } from '../../hooks/useImmersiveBars';
+import { calculateWorkoutDuration } from '../../utils/workoutDuration';
 
 
 type R = RouteProp<AuthStackParamList, 'IntervalLive'>;
@@ -88,6 +88,9 @@ export default function IntervalLiveScreen() {
   
   const [scope, setScope] = useState<LbFilter>('ALL');
   const lb = useLeaderboardRealtime(classId, scope);
+
+  // Calculate workout duration for display
+  const workoutDuration = calculateWorkoutDuration(session);
 
 
   const steps: any[] = (session?.steps as any[]) ?? [];
@@ -207,7 +210,9 @@ export default function IntervalLiveScreen() {
       <SafeAreaView style={s.safeArea} edges={['left', 'right']}>
 
       <View style={s.topHeader}>
-        <Text style={s.timer}>{fmtClock(displayElapsed)}</Text>
+        <Text style={s.timer}>
+          {fmtClock(displayElapsed)}{workoutDuration > 0 ? ` / ${fmtClock(workoutDuration)}` : ''}
+        </Text>
 
         {!ready ? (
           <View style={{ alignItems:'center', paddingVertical: 16 }}>

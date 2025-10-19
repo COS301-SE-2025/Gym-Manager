@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { GamificationStats } from '../../types/gamification';
 import { gamificationService } from '../../services/gamificationService';
 import { StreakCard } from '../../components/gamification/StreakCard';
@@ -60,14 +61,10 @@ export default function GamificationScreen() {
   };
 
   const handleStreakPress = () => {
-    navigation.navigate('GamificationScreen');
+    // Already on the gamification screen, no need to navigate
   };
 
   const handleBadgePress = (badge: any) => {
-    navigation.navigate('BadgesScreen');
-  };
-
-  const handleViewAllBadges = () => {
     navigation.navigate('BadgesScreen');
   };
 
@@ -165,9 +162,6 @@ export default function GamificationScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Badges</Text>
-          <TouchableOpacity onPress={handleViewAllBadges}>
-            <Text style={styles.viewAllText}>View All</Text>
-          </TouchableOpacity>
         </View>
 
         {stats.recentBadges.length > 0 ? (
@@ -188,16 +182,17 @@ export default function GamificationScreen() {
         )}
       </View>
 
-      {/* Quick Actions */}
+      {/* Hall of Fame */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-
-        <TouchableOpacity style={styles.actionButton} onPress={handleViewLeaderboard}>
-          <Text style={styles.actionButtonText}>View Leaderboard</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton} onPress={handleViewAllBadges}>
-          <Text style={styles.actionButtonText}>All Badges</Text>
+        <TouchableOpacity style={styles.hallOfFameButton} onPress={handleViewLeaderboard}>
+          <View style={styles.hallOfFameContent}>
+            <Ionicons name="trophy" size={28} color="#1a1a1a" />
+            <View style={styles.hallOfFameTextContainer}>
+              <Text style={styles.hallOfFameText}>The Hall of Fame</Text>
+              <Text style={styles.hallOfFameSubtext}>View the champions</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#1a1a1a" />
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -329,6 +324,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
     fontWeight: '600',
+  },
+  hallOfFameButton: {
+    backgroundColor: '#D8FF3E',
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 12,
+    shadowColor: '#D8FF3E',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 12,
+    borderWidth: 2,
+    borderColor: '#E5FF66',
+  },
+  hallOfFameContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  hallOfFameTextContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  hallOfFameText: {
+    fontSize: 20,
+    color: '#1a1a1a',
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  hallOfFameSubtext: {
+    fontSize: 13,
+    color: '#1a1a1a',
+    opacity: 0.7,
+    fontWeight: '600',
+    marginTop: 2,
   },
   bottomSpacing: {
     height: 40,

@@ -5,9 +5,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSession } from '../../hooks/useSession';
-import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
-import config from '../../config';
+import apiClient from '../../utils/apiClient';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -24,18 +22,12 @@ type FlatStep = {
 };
 
 async function setMyScaling(classId: number, scaling: 'RX' | 'SC') {
-  const token = await getToken();
-  await axios.post(`${config.BASE_URL}/live/${classId}/scaling`, { scaling }, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
+  await apiClient.post(`/live/${classId}/scaling`, { scaling });
 }
 
 async function getMyScaling(classId: number): Promise<'RX'|'SC'> {
-  const token = await getToken();
   try {
-    const { data } = await axios.get(`${config.BASE_URL}/live/${classId}/scaling`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const { data } = await apiClient.get(`/live/${classId}/scaling`);
     const s = (data?.scaling ?? 'RX').toUpperCase();
     return s === 'SC' ? 'SC' : 'RX';
   } catch { return 'RX'; }
@@ -91,11 +83,7 @@ export default function OverviewScreen() {
     (async () => {
       try {
         setFallbackLoading(true);
-        const token = await getToken();
-        const { data } = await axios.get(
-          `${config.BASE_URL}/workout/${preWorkoutId}/steps`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const { data } = await apiClient.get(`/workout/${preWorkoutId}/steps`);
         if (stop) return;
         const steps: FlatStep[] = Array.isArray(data?.steps) ? data.steps : [];
         setBuilderSteps(steps.map((s,i) => ({
@@ -218,8 +206,7 @@ export default function OverviewScreen() {
 
         {/* Back button */}
         <TouchableOpacity style={s.backBtn} onPress={goBackSmart} accessibilityLabel="Back">
-          <Ionicons name="chevron-back" size={20} color="#d8ff3e" />
-          <Text style={s.backText}>Back</Text>
+          <Ionicons name="arrow-back" size={24} color="#d8ff3e" />
         </TouchableOpacity>
 
         <View style={s.headerBadge}>
@@ -317,12 +304,9 @@ const s = StyleSheet.create({
 
   backBtn: {
     alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
     marginBottom: 10,
+    padding: 4,
   },
-  backText: { color: '#d8ff3e', fontWeight: '900' },
 
   headerBadge: {
     backgroundColor: '#d8ff3e',

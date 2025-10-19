@@ -6,14 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
   Dimensions,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeModules, Platform } from 'react-native';
 import config from '../../config';
 import { getUser, getToken } from '../../utils/authStorage';
+import ClassDetailsSheet from '../../components/ClassDetailsSheet';
 
 // Safe loading of react-native-health constants
 let Constants: any = null;
@@ -47,6 +48,8 @@ interface AttendedClass {
   durationMinutes: number;
   coachFirstName: string;
   coachLastName: string;
+  workoutId?: number | null;
+  workoutType?: string;
   attendance?: {
     checkedInAt?: string;
     checkedOutAt?: string;
@@ -65,6 +68,8 @@ const StatsScreen = ({ navigation }: any) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<AttendedClass | null>(null);
+  const [showClassDetails, setShowClassDetails] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === 'ios') {
@@ -310,6 +315,8 @@ const StatsScreen = ({ navigation }: any) => {
           durationMinutes: item.durationMinutes,
           coachFirstName: item.coachFirstName || 'Unknown',
           coachLastName: item.coachLastName || 'Coach',
+          workoutId: item.workoutId || null,
+          workoutType: item.workoutType || undefined,
           attendance: {
             checkedInAt: item.attendedAt, // Use attendedAt as checkedInAt
             // Calculate checkout time based on scheduled time + duration
@@ -400,6 +407,16 @@ const StatsScreen = ({ navigation }: any) => {
     });
   };
 
+  const handleViewClassDetails = (classItem: AttendedClass) => {
+    setSelectedClass(classItem);
+    setShowClassDetails(true);
+  };
+
+  const handleCloseClassDetails = () => {
+    setShowClassDetails(false);
+    setSelectedClass(null);
+  };
+
   const getStepGoalProgress = () => {
     const dailyGoal = 10000; // 10,000 steps goal
     return Math.min((todayMetrics.steps / dailyGoal) * 100, 100);
@@ -410,74 +427,72 @@ const StatsScreen = ({ navigation }: any) => {
     return Math.round(weeklyTotal / stepData.length);
   };
 
-  const renderAttendedClass = (classItem: AttendedClass) => (
-    <TouchableOpacity
-      key={classItem.classId}
-      style={styles.attendedClassCard}
-      onPress={() => handleClassPress(classItem)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.classHeader}>
-        <View style={styles.classInfo}>
-          <Text style={styles.classDate}>{formatClassDate(classItem.scheduledDate)}</Text>
-          <Text style={styles.classTime}>{formatClassTime(classItem.scheduledTime)}</Text>
-        </View>
-        <View style={styles.durationContainer}>
-          <Ionicons name="time-outline" size={14} color="#D8FF3E" />
-          <Text style={styles.classDuration}>{classItem.durationMinutes}min</Text>
-        </View>
-      </View>
-      <View style={styles.classContent}>
-        <View style={styles.classInfo}>
-          <Text style={styles.classInstructor}>
-            {classItem.coachFirstName} {classItem.coachLastName}
-          </Text>
-          <Text style={styles.className}>{classItem.workoutName}</Text>
-        </View>
-        <View style={styles.viewStatsButton}>
-          <Ionicons name="stats-chart-outline" size={16} color="#1a1a1a" />
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  // Android compatibility check
-  if (Platform.OS === 'android') {
+  const renderAttendedClass = (classItem: AttendedClass) => {
+    const isAndroid = Platform.OS === 'android';
+    
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.androidMessageContainer}>
-          <View style={styles.androidMessageCard}>
-            <Ionicons name="phone-portrait-outline" size={48} color="#D8FF3E" />
-            <Text style={styles.androidMessageTitle}>Stats Coming Soon</Text>
-            <Text style={styles.androidMessageText}>
-              Health tracking and detailed stats are currently only available on iOS devices. 
-              We're working on bringing this feature to Android soon!
-            </Text>
-            <View style={styles.androidMessageFooter}>
-              <Ionicons name="information-circle-outline" size={16} color="#888" />
-              <Text style={styles.androidMessageFooterText}>
-                iOS users can track steps, calories, heart rate, and workout analytics
-              </Text>
-            </View>
+      <View key={classItem.classId} style={styles.attendedClassCard}>
+        <View style={styles.classHeader}>
+          <View style={styles.classInfo}>
+            <Text style={styles.classDate}>{formatClassDate(classItem.scheduledDate)}</Text>
+            <Text style={styles.classTime}>{formatClassTime(classItem.scheduledTime)}</Text>
+          </View>
+          <View style={styles.durationContainer}>
+            <Ionicons name="time-outline" size={14} color="#D8FF3E" />
+            <Text style={styles.classDuration}>{classItem.durationMinutes}min</Text>
           </View>
         </View>
-      </SafeAreaView>
+        <View style={styles.classContent}>
+          <View style={styles.classInfo}>
+            <Text style={styles.classInstructor}>
+              {classItem.coachFirstName} {classItem.coachLastName}
+            </Text>
+            <Text style={styles.className}>{classItem.workoutName}</Text>
+          </View>
+          <View style={styles.classActions}>
+            {/* View Details button - available for both iOS and Android */}
+            <TouchableOpacity
+              style={styles.viewDetailsButton}
+              onPress={() => handleViewClassDetails(classItem)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="information-circle-outline" size={18} color="#1a1a1a" />
+            </TouchableOpacity>
+            
+            {/* Health Stats button - iOS only */}
+            {!isAndroid && (
+              <TouchableOpacity
+                style={styles.viewStatsButton}
+                onPress={() => handleClassPress(classItem)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="stats-chart-outline" size={18} color="#1a1a1a" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  if (isLoading && Platform.OS === 'ios') {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#D8FF3E" />
+            <Text style={styles.loadingText}>Loading your stats...</Text>
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
     );
   }
 
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#D8FF3E" />
-          <Text style={styles.loadingText}>Loading your stats...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const isAndroid = Platform.OS === 'android';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
@@ -490,53 +505,72 @@ const StatsScreen = ({ navigation }: any) => {
         }
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Today's Stats</Text>
-          <TouchableOpacity onPress={loadData} style={styles.refreshButton}>
-            <Ionicons name="refresh-outline" size={24} color="#D8FF3E" />
-          </TouchableOpacity>
+          <Text style={styles.title}>{isAndroid ? 'Class History' : 'Today\'s Stats'}</Text>
+          {!isAndroid && (
+            <TouchableOpacity onPress={loadData} style={styles.refreshButton}>
+              <Ionicons name="refresh-outline" size={24} color="#D8FF3E" />
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Main Health Metrics */}
-        <View style={styles.metricsContainer}>
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeader}>
-              <Ionicons name="footsteps-outline" size={24} color="#D8FF3E" />
-              <Text style={styles.metricLabel}>Steps</Text>
+        {/* Android Health Integration Banner */}
+        {isAndroid && (
+          <View style={styles.androidBanner}>
+            <View style={styles.androidBannerIconContainer}>
+              <Ionicons name="fitness-outline" size={24} color="#D8FF3E" />
             </View>
-            <Text style={styles.metricValue}>{todayMetrics.steps.toLocaleString()}</Text>
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View 
-                  style={[
-                    styles.progressFill, 
-                    { width: `${getStepGoalProgress()}%` }
-                  ]} 
-                />
-              </View>
-              <Text style={styles.progressText}>
-                {getStepGoalProgress().toFixed(0)}% of goal
+            <View style={styles.androidBannerContent}>
+              <Text style={styles.androidBannerTitle}>Health Integration Coming Soon</Text>
+              <Text style={styles.androidBannerText}>
+                Step tracking and detailed health metrics will be available for Android soon!
               </Text>
             </View>
           </View>
+        )}
 
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeader}>
-              <Ionicons name="flame-outline" size={24} color="#D8FF3E" />
-              <Text style={styles.metricLabel}>Calories</Text>
+        {/* Main Health Metrics - iOS Only */}
+        {!isAndroid && (
+          <View style={styles.metricsContainer}>
+            <View style={styles.metricCard}>
+              <View style={styles.metricHeader}>
+                <Ionicons name="footsteps-outline" size={24} color="#D8FF3E" />
+                <Text style={styles.metricLabel}>Steps</Text>
+              </View>
+              <Text style={styles.metricValue}>{todayMetrics.steps.toLocaleString()}</Text>
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[
+                      styles.progressFill, 
+                      { width: `${getStepGoalProgress()}%` }
+                    ]} 
+                  />
+                </View>
+                <Text style={styles.progressText}>
+                  {getStepGoalProgress().toFixed(0)}% of goal
+                </Text>
+              </View>
             </View>
-            <Text style={styles.metricValue}>{todayMetrics.calories.toLocaleString()}</Text>
-            <Text style={styles.metricSubtext}>Active energy</Text>
-          </View>
 
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeader}>
-              <Ionicons name="location-outline" size={24} color="#D8FF3E" />
-              <Text style={styles.metricLabel}>Distance</Text>
+            <View style={styles.metricCard}>
+              <View style={styles.metricHeader}>
+                <Ionicons name="flame-outline" size={24} color="#D8FF3E" />
+                <Text style={styles.metricLabel}>Calories</Text>
+              </View>
+              <Text style={styles.metricValue}>{todayMetrics.calories.toLocaleString()}</Text>
+              <Text style={styles.metricSubtext}>Active energy</Text>
             </View>
-            <Text style={styles.metricValue}>{(todayMetrics.distance / 1000).toFixed(2)}</Text>
-            <Text style={styles.metricSubtext}>km today</Text>
+
+            <View style={styles.metricCard}>
+              <View style={styles.metricHeader}>
+                <Ionicons name="location-outline" size={24} color="#D8FF3E" />
+                <Text style={styles.metricLabel}>Distance</Text>
+              </View>
+              <Text style={styles.metricValue}>{(todayMetrics.distance / 1000).toFixed(2)}</Text>
+              <Text style={styles.metricSubtext}>km today</Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Class History Section */}
         <View style={styles.section}>
@@ -567,7 +601,25 @@ const StatsScreen = ({ navigation }: any) => {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+
+      {/* Class Details Modal */}
+      <ClassDetailsSheet
+        visible={showClassDetails}
+        classItem={selectedClass ? {
+          classId: selectedClass.classId,
+          scheduledDate: selectedClass.scheduledDate,
+          scheduledTime: selectedClass.scheduledTime,
+          durationMinutes: selectedClass.durationMinutes,
+          coachFirstName: selectedClass.coachFirstName,
+          coachLastName: selectedClass.coachLastName,
+          workoutName: selectedClass.workoutName,
+          workoutId: selectedClass.workoutId,
+          workoutType: selectedClass.workoutType,
+        } : null}
+        onClose={handleCloseClassDetails}
+      />
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 
@@ -755,6 +807,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  classActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  viewDetailsButton: {
+    backgroundColor: '#D8FF3E',
+    padding: 8,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   viewStatsButton: {
     backgroundColor: '#D8FF3E',
     padding: 8,
@@ -823,52 +886,37 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 20,
   },
-  // Android compatibility styles
-  androidMessageContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  androidMessageCard: {
+  // Android banner styles
+  androidBanner: {
     backgroundColor: '#2a2a2a',
-    borderRadius: 20,
-    padding: 32,
-    alignItems: 'center',
-    maxWidth: 350,
-    borderWidth: 1,
-    borderColor: '#3a3a3a',
-  },
-  androidMessageTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#D8FF3E',
-    marginTop: 20,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  androidMessageText: {
-    fontSize: 16,
-    color: '#fff',
-    textAlign: 'center',
-    lineHeight: 24,
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 24,
-  },
-  androidMessageFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#3a3a3a',
+    borderColor: '#D8FF3E',
+    borderLeftWidth: 4,
   },
-  androidMessageFooterText: {
-    fontSize: 14,
-    color: '#888',
-    marginLeft: 8,
+  androidBannerIconContainer: {
+    backgroundColor: 'rgba(216, 255, 62, 0.1)',
+    padding: 12,
+    borderRadius: 12,
+    marginRight: 16,
+  },
+  androidBannerContent: {
     flex: 1,
+  },
+  androidBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#D8FF3E',
+    marginBottom: 4,
+  },
+  androidBannerText: {
+    fontSize: 14,
+    color: '#fff',
+    lineHeight: 20,
   },
 });
 

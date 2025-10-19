@@ -10,9 +10,12 @@ import {
   ActivityIndicator,
   Linking,
   Alert,
+  useWindowDimensions,
+  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { CommonActions } from '@react-navigation/native';
 import IconLogo from '../../components/common/IconLogo';
 import { getUser, User, removeToken, removeUser } from '../../utils/authStorage';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -23,6 +26,19 @@ import { supabase } from '../../lib/supabase';
 import { StreakCard } from '../../components/gamification/StreakCard';
 import { gamificationService } from '../../services/gamificationService';
 import { GamificationStats } from '../../types/gamification';
+import PasswordChangeModal from '../../components/auth/PasswordChangeModal';
+import { Image } from 'expo-image';
+
+const SPRITE_PX = 23 as const;
+
+// Static requires so Metro bundles the animated sprites
+const CHARACTER_SOURCES: Record<1 | 2 | 3 | 4 | 5, any> = {
+  1: require('../../../assets/character_level_1.gif'),
+  2: require('../../../assets/character_level_2.gif'),
+  3: require('../../../assets/character_level_3.gif'),
+  4: require('../../../assets/character_level_4.gif'),
+  5: require('../../../assets/character_level_5.gif'),
+};
 
 type ProfileScreenNavigationProp = StackNavigationProp<AuthStackParamList & CoachStackParamList>;
 
@@ -31,16 +47,40 @@ interface ProfileScreenProps {
 }
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
+  const { width } = useWindowDimensions();
   const [isLeaderboardPublic, setIsLeaderboardPublic] = useState<boolean | null>(null);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [gamificationStats, setGamificationStats] = useState<GamificationStats | null>(null);
   const [isLoadingGamification, setIsLoadingGamification] = useState(false);
+  
+  // Password change state
+  const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
 
   const isCoach = !!currentUser?.roles?.includes('coach');
   const isMember = !!currentUser?.roles?.includes('member');
   const showLeaderboardSettings = isMember;
+
+  // Compute sprite size for character avatar
+  const spriteSizeDp = (() => {
+    const maxWidthDp = Math.max(0, width - 40);
+    const maxHeightDp = 200; // Smaller than the full progress page
+
+    const pr = PixelRatio.get();
+    const maxWidthPx = Math.floor(maxWidthDp * pr);
+    const maxHeightPx = Math.floor(maxHeightDp * pr);
+
+    const k = Math.max(
+      1,
+      Math.min(
+        Math.floor(maxWidthPx / SPRITE_PX),
+        Math.floor(maxHeightPx / SPRITE_PX)
+      )
+    );
+
+    return (SPRITE_PX * k) / pr;
+  })();
 
 
   useEffect(() => {
@@ -79,6 +119,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             setIsLoadingGamification(false);
           }
         }
+
       } catch (error) {
         console.error('Failed to load user data:', error);
       } finally {
@@ -98,12 +139,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     try {
       await updateUserVisibility(newValue);
       setIsLeaderboardPublic(newValue);
-
-      Alert.alert(
-        'Settings Updated',
-        `Your leaderboard visibility has been ${newValue ? 'enabled' : 'disabled'}.`,
-        [{ text: 'OK' }],
-      );
     } catch (error) {
       console.error('Failed to update visibility:', error);
       Alert.alert(
@@ -122,7 +157,12 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       await removeUser();
       await supabase.auth.signOut();
 
-      navigation.navigate('Login');
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        })
+      );
     } catch (error) {
       console.error('Failed to logout:', error);
     }
@@ -155,6 +195,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         [{ text: 'OK' }],
       );
     }
+  };
+
+  // Password change handler
+  const handlePasswordChanged = () => {
+    Alert.alert('Success', 'Password changed successfully!');
   };
 
   const getInitials = () => {
@@ -243,14 +288,26 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               </View>
             ) : gamificationStats ? (
               <View>
+                {/* Character Avatar */}
+                <View style={styles.characterContainer}>
+                  <Image
+                    source={CHARACTER_SOURCES[Math.min(5, Math.max(1, Number(gamificationStats.userStreak?.level ?? 1))) as 1 | 2 | 3 | 4 | 5]}
+                    style={{ width: spriteSizeDp, height: spriteSizeDp }}
+                    contentFit="contain"
+                    allowDownscaling={false}
+                  />
+                  <Text style={styles.characterLevel}>Level {Math.max(1, Number(gamificationStats.userStreak?.level ?? 1))}</Text>
+                  <Text style={styles.characterSub}>{Number(gamificationStats.userStreak?.totalWorkouts ?? 0)} classes completed</Text>
+                </View>
+
                 <StreakCard 
                   streak={gamificationStats.userStreak} 
-                  onPress={() => navigation.navigate('MemberTabs', { screen: 'Progress' })}
+                  onPress={() => navigation.navigate('GamificationMain')}
                 />
                 
                 <TouchableOpacity
                   style={styles.settingItem}
-                  onPress={() => navigation.navigate('MemberTabs', { screen: 'Progress' })}
+                  onPress={() => navigation.navigate('GamificationMain')}
                 >
                   <View style={styles.settingLeft}>
                     <Ionicons name="trophy-outline" size={24} color="#D8FF3E" />
@@ -343,12 +400,32 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <Ionicons name="chevron-forward" size={24} color="#888" />
           </TouchableOpacity>
 
+          {/* Security Section */}
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => setShowPasswordChangeModal(true)}
+          >
+            <View style={styles.settingLeft}>
+              <Ionicons name="key-outline" size={24} color="#D8FF3E" />
+              <View style={styles.settingText}>
+                <Text style={styles.settingTitle}>Change Password</Text>
+                <Text style={styles.settingDescription}>Update your account password</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#888" />
+          </TouchableOpacity>
+
 
           {/* Role Swap - Only show if user has multiple roles */}
           {currentUser?.roles && currentUser.roles.length > 1 && (
             <TouchableOpacity
               style={styles.settingItem}
-              onPress={() => navigation.navigate('RoleSelection')}
+              onPress={() => navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'RoleSelection' }],
+                })
+              )}
             >
               <View style={styles.settingLeft}>
                 <Ionicons name="swap-horizontal-outline" size={24} color="#D8FF3E" />
@@ -397,6 +474,13 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Password Change Modal */}
+      <PasswordChangeModal
+        visible={showPasswordChangeModal}
+        onClose={() => setShowPasswordChangeModal(false)}
+        onPasswordChanged={handlePasswordChanged}
+      />
     </SafeAreaView>
   );
 }
@@ -578,5 +662,24 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 14,
     textAlign: 'center',
+  },
+  characterContainer: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  characterLevel: {
+    marginTop: 12,
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  characterSub: {
+    marginTop: 4,
+    color: '#888',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

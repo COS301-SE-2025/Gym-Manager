@@ -153,6 +153,49 @@ export class UserRepository implements IUserRepository {
     }
   }
 
+  // MFA and password management methods
+  async updatePassword(userId: number, newPasswordHash: string, tx?: Executor): Promise<void> {
+    await this.exec(tx)
+      .update(users)
+      .set({ passwordHash: newPasswordHash })
+      .where(eq(users.userId, userId));
+  }
+
+  async updateMfaSettings(
+    userId: number,
+    mfaEnabled: boolean,
+    mfaSecret?: string,
+    backupCodes?: string[],
+    tx?: Executor,
+  ): Promise<void> {
+    const updates: any = { mfaEnabled };
+    if (mfaSecret !== undefined) updates.mfaSecret = mfaSecret;
+    if (backupCodes !== undefined) updates.mfaBackupCodes = backupCodes;
+
+    await this.exec(tx)
+      .update(users)
+      .set(updates)
+      .where(eq(users.userId, userId));
+  }
+
+  async getMfaSettings(userId: number, tx?: Executor): Promise<{ mfaEnabled: boolean; mfaSecret?: string; backupCodes?: string[] }> {
+    const [row] = await this.exec(tx)
+      .select({
+        mfaEnabled: users.mfaEnabled,
+        mfaSecret: users.mfaSecret,
+        mfaBackupCodes: users.mfaBackupCodes,
+      })
+      .from(users)
+      .where(eq(users.userId, userId))
+      .limit(1);
+
+    return {
+      mfaEnabled: row?.mfaEnabled || false,
+      mfaSecret: row?.mfaSecret || undefined,
+      backupCodes: row?.mfaBackupCodes || undefined,
+    };
+  }
+
   // Utility method to map database row to domain entity
   private mapToUser(row: UserRow): User {
     return {
@@ -162,6 +205,9 @@ export class UserRepository implements IUserRepository {
       email: row.email,
       phone: row.phone || undefined,
       passwordHash: row.passwordHash || undefined,
+      mfaEnabled: row.mfaEnabled || false,
+      mfaSecret: row.mfaSecret || undefined,
+      mfaBackupCodes: (row.mfaBackupCodes as string[]) || undefined,
     };
   }
 }

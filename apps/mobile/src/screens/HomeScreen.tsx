@@ -162,99 +162,101 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   };
 
   // Extracted fetch logic to be reusable
-  const fetchBookedClasses = async () => {
-    setIsLoadingBooked(true);
-    setBookedError(null);
-    try {
-      const bookedResponse = await apiClient.get<ApiBookedClass[]>('/member/classes');
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+const fetchBookedClasses = async () => {
+  setIsLoadingBooked(true);
+  setBookedError(null);
+  try {
+    const bookedResponse = await apiClient.get<ApiBookedClass[]>('/member/classes');
+    const now = new Date();
 
-      const formattedBookedClasses: ClassItem[] = bookedResponse.data
-        .filter((apiClass) => {
-          const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
-          return classDate >= today;
-        })
-        .sort((a, b) => {
-          const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
-          const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
-          return dateTimeA.getTime() - dateTimeB.getTime();
-        })
-        .map((apiClass) => ({
-          id: String(apiClass.classId),
+    const formattedBookedClasses: ClassItem[] = bookedResponse.data
+      .filter((apiClass) => {
+        // Check if class has ended: current time > class end time
+        const classDateTime = new Date(`${apiClass.scheduledDate}T${apiClass.scheduledTime}`);
+        const classEndTime = new Date(classDateTime.getTime() + (apiClass.durationMinutes || 60) * 60 * 1000);
+        return classEndTime > now; // Only show classes that haven't ended yet
+      })
+      .sort((a, b) => {
+        const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
+        const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
+        return dateTimeA.getTime() - dateTimeB.getTime();
+      })
+      .map((apiClass) => ({
+        id: String(apiClass.classId),
+        name: apiClass.workoutName || 'Workout',
+        time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
+        date: apiClass.scheduledDate
+          ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : 'N/A',
+        capacity: `${apiClass.bookingsCount ?? 0}/${apiClass.capacity}`,
+        instructor: `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
+        duration: apiClass.durationMinutes ?? 0,
+        isBooked: true,
+      }));
+    setBookedClasses(formattedBookedClasses);
+  } catch (error: any) {
+    console.error('Failed to fetch booked classes:', error);
+    if (error.response?.status === 401) {
+      setBookedError('Session expired. Please login again.');
+    } else {
+      setBookedError('Failed to load your booked classes.');
+    }
+  } finally {
+    setIsLoadingBooked(false);
+  }
+};
+
+const fetchUpcomingClasses = async () => {
+  setIsLoadingUpcoming(true);
+  setUpcomingError(null);
+  try {
+    const upcomingResponse = await apiClient.get<ApiUpcomingClass[]>('/member/unbookedclasses');
+    const now = new Date();
+
+    const groupedClasses = upcomingResponse.data
+      .filter((apiClass) => {
+        // Check if class has ended: current time > class end time
+        const classDateTime = new Date(`${apiClass.scheduledDate}T${apiClass.scheduledTime}`);
+        const classEndTime = new Date(classDateTime.getTime() + (apiClass.durationMinutes || 60) * 60 * 1000);
+        return classEndTime > now; // Only show classes that haven't ended yet
+      })
+      .sort((a, b) => {
+        const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
+        const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
+        return dateTimeA.getTime() - dateTimeB.getTime();
+      })
+      .reduce((acc: { [key: string]: ClassItem[] }, apiClass) => {
+        const dateKey = apiClass.scheduledDate;
+        if (!acc[dateKey]) {
+          acc[dateKey] = [];
+        }
+        acc[dateKey].push({
+          id: apiClass.classId.toString(),
           name: apiClass.workoutName || 'Workout',
           time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
-          date: apiClass.scheduledDate
-            ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-            : 'N/A',
+          date: formatDateForCard(apiClass.scheduledDate),
           capacity: `${apiClass.bookingsCount ?? 0}/${apiClass.capacity}`,
-          instructor: `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
-          duration: apiClass.durationMinutes ?? 0,
-          isBooked: true,
-        }));
-      setBookedClasses(formattedBookedClasses);
-    } catch (error: any) {
-      console.error('Failed to fetch booked classes:', error);
-      if (error.response?.status === 401) {
-        setBookedError('Session expired. Please login again.');
-      } else {
-        setBookedError('Failed to load your booked classes.');
-      }
-    } finally {
-      setIsLoadingBooked(false);
+          instructor:
+            `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
+            duration: apiClass.durationMinutes || 60,
+          isBooked: false,
+          
+        });
+        return acc;
+      }, {});
+
+    setUpcomingClasses(groupedClasses);
+  } catch (error: any) {
+    console.error('Failed to fetch upcoming classes:', error);
+    if (error.response?.status === 401) {
+      setUpcomingError('Session expired. Please login again.');
+    } else {
+      setUpcomingError('Failed to load upcoming classes.');
     }
-  };
-
-  const fetchUpcomingClasses = async () => {
-    setIsLoadingUpcoming(true);
-    setUpcomingError(null);
-    try {
-      const upcomingResponse = await apiClient.get<ApiUpcomingClass[]>('/member/unbookedclasses');
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const groupedClasses = upcomingResponse.data
-        .filter((apiClass) => {
-          const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
-          return classDate >= today;
-        })
-        .sort((a, b) => {
-          const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
-          const dateTimeB = new Date(`${b.scheduledDate}T${b.scheduledTime}`);
-          return dateTimeA.getTime() - dateTimeB.getTime();
-        })
-        .reduce((acc: { [key: string]: ClassItem[] }, apiClass) => {
-          const dateKey = apiClass.scheduledDate;
-          if (!acc[dateKey]) {
-            acc[dateKey] = [];
-          }
-          acc[dateKey].push({
-            id: apiClass.classId.toString(),
-            name: apiClass.workoutName || 'Workout',
-            time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
-            date: formatDateForCard(apiClass.scheduledDate),
-            capacity: `${apiClass.bookingsCount ?? 0}/${apiClass.capacity}`,
-            instructor:
-              `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
-              duration: apiClass.durationMinutes || 60,
-            isBooked: false,
-            
-          });
-          return acc;
-        }, {});
-
-      setUpcomingClasses(groupedClasses);
-    } catch (error: any) {
-      console.error('Failed to fetch upcoming classes:', error);
-      if (error.response?.status === 401) {
-        setUpcomingError('Session expired. Please login again.');
-      } else {
-        setUpcomingError('Failed to load upcoming classes.');
-      }
-    } finally {
-      setIsLoadingUpcoming(false);
-    }
-  };
+  } finally {
+    setIsLoadingUpcoming(false);
+  }
+};
 
   const fetchLiveClass = async () => {
     setIsLoadingLiveClass(true);
@@ -333,8 +335,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       const response = await apiClient.post('/book', { classId: classId });
 
       if (response.data.success) {
-        Alert.alert('Success!', 'Class booked successfully.');
-
         // Remove the booked class from the upcoming list
         const numericClassId = parseInt(classId, 10);
         setUpcomingClasses((prev) => {
@@ -393,8 +393,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       const response = await apiClient.post('/cancel', { classId: parseInt(classId, 10) });
 
       if (response.data?.success) {
-        Alert.alert('Cancelled', 'Your booking has been cancelled.');
-
+        Alert.alert('Cancellation Successful', 'Your booking has been cancelled.');
         // Remove from booked list
         setBookedClasses((prev) => prev.filter((c) => c.id !== classId));
 

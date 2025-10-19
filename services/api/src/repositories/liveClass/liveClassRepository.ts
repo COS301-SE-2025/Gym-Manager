@@ -23,8 +23,8 @@ export class LiveClassRepository implements ILiveClassRepository {
   }
 
   // --- Session helpers ---
-  async autoEndIfCapReached(classId: number): Promise<void> {
-    await globalDb.execute(sql`
+  async autoEndIfCapReached(classId: number): Promise<number[]> {
+    const { rows: updatedRows } = await globalDb.execute(sql`
       update public.class_sessions cs
       set status = 'ended', ended_at = now()
       where cs.class_id = ${classId}
@@ -35,9 +35,16 @@ export class LiveClassRepository implements ILiveClassRepository {
           - coalesce(cs.pause_accum_seconds, 0)
           - coalesce(extract(epoch from (now() - cs.paused_at)), 0)
         ) >= cs.time_cap_seconds
+      returning cs.class_id
     `);
 
-    await globalDb.execute(sql`select public.persist_scores_from_live(${classId})`);
+    // If no rows were updated, the class wasn't auto-ended
+    if (!updatedRows || updatedRows.length === 0) {
+      return [];
+    }
+
+    // Use the TypeScript method instead of SQL function to get user IDs
+    return await this.persistScoresFromLive(classId);
   }
 
   async getClassSession(classId: number): Promise<LiveSession | null> {
@@ -63,8 +70,8 @@ export class LiveClassRepository implements ILiveClassRepository {
   async getFinalLeaderboard(classId: number) {
     const leaderboard = await globalDb
       .select({
-        classId: classattendance.classId,
-        memberId: classattendance.memberId,
+        classId: sql<number>`${classId}`.as('classId'),
+        memberId: classbookings.memberId,
         score: classattendance.score, // legacy/compat
         scoreSeconds: classattendance.scoreSeconds, // time for FT/EMOM
         scoreReps: classattendance.scoreReps, // reps for DNFs / AMRAP / INTERVAL / TABATA
@@ -74,10 +81,14 @@ export class LiveClassRepository implements ILiveClassRepository {
         firstName: users.firstName,
         lastName: users.lastName,
       })
-      .from(classattendance)
-      .innerJoin(users, eq(classattendance.memberId, users.userId))
+      .from(classbookings)
+      .innerJoin(users, eq(classbookings.memberId, users.userId))
       .innerJoin(members, eq(users.userId, members.userId))
-      .where(and(eq(classattendance.classId, Number(classId)), eq(members.publicVisibility, true)));
+      .leftJoin(classattendance, and(
+        eq(classattendance.classId, classbookings.classId),
+        eq(classattendance.memberId, classbookings.memberId)
+      ))
+      .where(and(eq(classbookings.classId, Number(classId)), eq(members.publicVisibility, true)));
 
     return leaderboard;
   }
@@ -510,43 +521,58 @@ export class LiveClassRepository implements ILiveClassRepository {
 
   async realtimeAmrapLeaderboard(classId: number) {
     const { rows } = await globalDb.execute(sql`
-      with base as (
+      with members as (
+        select cb.member_id as user_id
+        from public.classbookings cb
+        where cb.class_id = ${classId}
+      ),
+      sess as (
+        select class_id, steps_cum_reps
+        from public.class_sessions
+        where class_id = ${classId}
+        limit 1
+      ),
+      progress as (
         select
           lp.user_id,
           lp.current_step,
           lp.rounds_completed,
-          lp.dnf_partial_reps,
-          cs.class_id,
-          cs.steps_cum_reps
+          lp.dnf_partial_reps
         from public.live_progress lp
-        join public.class_sessions cs on cs.class_id = lp.class_id
         where lp.class_id = ${classId}
       ),
       calc as (
         select
-          b.*,
+          m.user_id,
+          s.class_id,
+          s.steps_cum_reps,
+          coalesce(p.current_step, 0) as current_step,
+          coalesce(p.rounds_completed, 0) as rounds_completed,
+          coalesce(p.dnf_partial_reps, 0) as dnf_partial_reps,
           coalesce(
-            (b.steps_cum_reps ->> greatest(jsonb_array_length(b.steps_cum_reps) - 1, 0))::int,
+            (s.steps_cum_reps ->> greatest(jsonb_array_length(s.steps_cum_reps) - 1, 0))::int,
             0
           ) as reps_per_round,
-          case when b.current_step > 0
-            then (b.steps_cum_reps ->> (b.current_step - 1))::int
+          case when coalesce(p.current_step, 0) > 0
+            then (s.steps_cum_reps ->> (coalesce(p.current_step, 0) - 1))::int
             else 0 end as within_round_reps
-        from base b
+        from members m
+        cross join sess s
+        left join progress p on p.user_id = m.user_id
       )
       select
-        c.class_id,
+        coalesce(c.class_id, ${classId})::int as class_id,
         c.user_id,
         u.first_name,
         u.last_name,
         false as finished,
         null::numeric as elapsed_seconds,
-        (c.rounds_completed * c.reps_per_round + c.within_round_reps + coalesce(c.dnf_partial_reps, 0))::int as total_reps,
+        (c.rounds_completed * c.reps_per_round + c.within_round_reps + c.dnf_partial_reps)::int as total_reps,
         coalesce(ca.scaling, 'RX') as scaling
       from calc c
       join public.users u on u.user_id = c.user_id
       join public.members m on m.user_id = c.user_id
-      left join public.classattendance ca on ca.class_id = c.class_id and ca.member_id = c.user_id
+      left join public.classattendance ca on ca.class_id = coalesce(c.class_id, ${classId}) and ca.member_id = c.user_id
       where m.public_visibility = true
       order by total_reps desc, u.first_name asc
     `);
@@ -555,43 +581,63 @@ export class LiveClassRepository implements ILiveClassRepository {
 
   async realtimeForTimeLeaderboard(classId: number) {
     const { rows } = await globalDb.execute(sql`
-      with base as (
+      with members as (
+        select cb.member_id as user_id
+        from public.classbookings cb
+        where cb.class_id = ${classId}
+      ),
+      sess as (
+        select class_id, started_at, steps_cum_reps
+        from public.class_sessions
+        where class_id = ${classId}
+        limit 1
+      ),
+      progress as (
         select
           lp.user_id,
           lp.current_step,
           lp.finished_at,
-          lp.dnf_partial_reps,
-          cs.class_id,
-          cs.started_at,
-          cs.steps_cum_reps
+          lp.dnf_partial_reps
         from public.live_progress lp
-        join public.class_sessions cs on cs.class_id = lp.class_id
         where lp.class_id = ${classId}
+      ),
+      calc as (
+        select
+          m.user_id,
+          s.class_id,
+          s.started_at,
+          s.steps_cum_reps,
+          p.current_step,
+          p.finished_at,
+          coalesce(p.dnf_partial_reps, 0) as dnf_partial_reps
+        from members m
+        cross join sess s
+        left join progress p on p.user_id = m.user_id
       )
       select
-        b.class_id,
-        b.user_id,
+        coalesce(c.class_id, ${classId})::int as class_id,
+        c.user_id,
         u.first_name,
         u.last_name,
-        (b.finished_at is not null) as finished,
-        case when b.finished_at is not null
-          then extract(epoch from (b.finished_at - b.started_at))::bigint
+        (c.finished_at is not null) as finished,
+        case when c.finished_at is not null and c.started_at is not null
+          then extract(epoch from (c.finished_at - c.started_at))::bigint
           else null::bigint
         end as elapsed_seconds,
         (
-          (case when b.current_step > 0
-                then ((b.steps_cum_reps ->> (b.current_step - 1))::int)
+          (case when coalesce(c.current_step, 0) > 0
+                then ((c.steps_cum_reps ->> (c.current_step - 1))::int)
                 else 0 end)
-          + coalesce(b.dnf_partial_reps, 0)
+          + c.dnf_partial_reps
         ) as total_reps,
         coalesce(ca.scaling, 'RX') as scaling
-      from base b
-      join public.users u on u.user_id = b.user_id
-      join public.members m on m.user_id = b.user_id
-      left join public.classattendance ca on ca.class_id = b.class_id and ca.member_id = b.user_id
+      from calc c
+      join public.users u on u.user_id = c.user_id
+      join public.members m on m.user_id = c.user_id
+      left join public.classattendance ca on ca.class_id = coalesce(c.class_id, ${classId}) and ca.member_id = c.user_id
       where m.public_visibility = true
       order by
-        case when b.finished_at is not null then 0 else 1 end,
+        case when c.finished_at is not null then 0 else 1 end,
         elapsed_seconds asc nulls last,
         total_reps desc nulls last
     `);
@@ -603,6 +649,7 @@ export class LiveClassRepository implements ILiveClassRepository {
     // - Past minutes [0..full_minutes-1]: finished -> finish_seconds (0..59), else 60
     // - Current minute (= full_minutes): include ONLY if finished; else 0
     // - Future minutes: 0
+    // - When ended: use ALL planned minutes for accurate final scores
     const { rows } = await globalDb.execute(sql`
         with sess as (
         select
@@ -656,7 +703,11 @@ export class LiveClassRepository implements ILiveClassRepository {
         select
             class_id,
             planned_minutes,
-            least(planned_minutes, greatest(0, (elapsed_seconds / 60)::int)) as full_minutes,
+            -- When ended, use all planned minutes; otherwise use elapsed
+            case 
+              when status = 'ended' then planned_minutes
+              else least(planned_minutes, greatest(0, (elapsed_seconds / 60)::int))
+            end as full_minutes,
             status
         from mins
         ),
@@ -733,16 +784,29 @@ export class LiveClassRepository implements ILiveClassRepository {
         t.user_id,
         u.first_name,
         u.last_name,
-        true as finished,                 -- force time display path
-        t.total_time as elapsed_seconds,  -- cumulative seconds so far
-        null::int as total_reps
+        true::boolean as finished,        -- force time display path  
+        t.total_time::numeric as elapsed_seconds,  -- cumulative seconds so far
+        null::int as total_reps,
+        coalesce(ca.scaling, 'RX') as scaling
       from totals t
       left join public.users u on u.user_id = t.user_id
       left join public.members m on m.user_id = t.user_id
+      left join public.classattendance ca on ca.class_id = ${classId} and ca.member_id = t.user_id
       where m.public_visibility = true
       order by t.total_time asc, u.first_name asc nulls last;
     `);
-    return rows;
+    
+    // Map to ensure proper type conversion and handle Postgres boolean serialization
+    return rows.map((r: any) => ({
+      class_id: Number(r.class_id),
+      user_id: Number(r.user_id),
+      first_name: r.first_name,
+      last_name: r.last_name,
+      finished: true, // ALWAYS true for EMOM (shows time)
+      elapsed_seconds: Number(r.elapsed_seconds ?? 0),
+      total_reps: null,
+      scaling: String(r.scaling ?? 'RX').toUpperCase(),
+    }));
   }
 
   // --- My progress ---
@@ -1176,7 +1240,7 @@ export class LiveClassRepository implements ILiveClassRepository {
   }
 
   // repositories/liveClass/liveClassRepository.ts
-  async persistScoresFromLive(classId: number) {
+  async persistScoresFromLive(classId: number): Promise<number[]> {
     // find workout type (snapshot)
     const { rows: typ } = await globalDb.execute(sql`
             select w.type
@@ -1186,6 +1250,7 @@ export class LiveClassRepository implements ILiveClassRepository {
             limit 1
         `);
     const type = (typ[0]?.type || '').toString().toUpperCase();
+    const persistedUserIds: number[] = [];
 
     if (type === 'FOR_TIME') {
       const { rows } = await globalDb.execute(sql`
@@ -1225,8 +1290,9 @@ export class LiveClassRepository implements ILiveClassRepository {
           reps: finished ? Number(reps) : Number(reps), // keep achieved reps for display/history
           finished,
         });
+        persistedUserIds.push(Number(r.user_id));
       }
-      return;
+      return persistedUserIds;
     }
 
     if (type === 'AMRAP') {
@@ -1260,8 +1326,9 @@ export class LiveClassRepository implements ILiveClassRepository {
 
       for (const r of rows) {
         await this.upsertFinal(classId, Number(r.user_id), { reps: Number(r.total_reps) });
+        persistedUserIds.push(Number(r.user_id));
       }
-      return;
+      return persistedUserIds;
     }
 
     if (type === 'TABATA' || type === 'INTERVAL') {
@@ -1273,8 +1340,9 @@ export class LiveClassRepository implements ILiveClassRepository {
             `);
       for (const r of rows) {
         await this.upsertFinal(classId, Number(r.user_id), { reps: Number(r.total_reps) });
+        persistedUserIds.push(Number(r.user_id));
       }
-      return;
+      return persistedUserIds;
     }
 
     if (type === 'EMOM') {
@@ -1323,8 +1391,12 @@ export class LiveClassRepository implements ILiveClassRepository {
           seconds: Number(r.total_seconds),
           finished: true,
         });
+        persistedUserIds.push(Number(r.user_id));
       }
-      return;
+      return persistedUserIds;
     }
+
+    // Return empty array for unhandled workout types
+    return [];
   }
 }

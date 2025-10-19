@@ -19,7 +19,9 @@ export interface MemberProfile {
 
 export interface AttendedClass {
   classId: number;
+  workoutId: number | null;
   workoutName: string | null;
+  workoutType: string | null;
   scheduledDate: string;
   scheduledTime: string;
   durationMinutes: number;

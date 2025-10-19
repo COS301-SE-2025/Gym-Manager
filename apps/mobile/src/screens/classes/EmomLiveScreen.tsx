@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, StatusBar,
-  ActivityIndicator, Animated, TouchableOpacity
+  ActivityIndicator, Animated, TouchableOpacity, Platform,
+  TouchableNativeFeedback
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -15,6 +16,7 @@ import { getToken, getUser } from '../../utils/authStorage';
 import config from '../../config';
 import { HypeToast } from '../../components/HypeToast';
 import { useLeaderboardHype } from '../../hooks/useLeaderboardHype';
+import { calculateWorkoutDuration } from '../../utils/workoutDuration';
 
 
 
@@ -173,6 +175,9 @@ export default function EmomLiveScreen() {
   const extraPaused  = session?.status === 'paused' && pausedAtSec ? Math.max(0, nowSec - pausedAtSec) : 0;
   const elapsed      = startedAtSec ? Math.max(0, (nowSec - startedAtSec) - (pauseAccum + extraPaused)) : 0;
 
+  // Calculate workout duration for display
+  const workoutDuration = calculateWorkoutDuration(session);
+
   // time -> minute index (no wrap)
   const minuteIdxRaw = Math.floor(elapsed / 60);
   const minuteIdx    = Math.min(Math.max(0, minuteIdxRaw), Math.max(0, totalMinutes - 1));
@@ -311,7 +316,9 @@ export default function EmomLiveScreen() {
 
       {/* timer */}
       <View pointerEvents="none" style={s.topOverlay}>
-        <Text style={s.timeTop} pointerEvents="none">{fmt(elapsedClamped)}</Text>
+        <Text style={s.timeTop} pointerEvents="none">
+          {fmt(elapsedClamped)}{workoutDuration > 0 ? ` / ${fmt(workoutDuration)}` : ''}
+        </Text>
       </View>
 
       <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />
@@ -398,8 +405,39 @@ export default function EmomLiveScreen() {
 
       {/* press zones */}
       <View style={s.row}>
-        <Pressable style={s.back} android_ripple={{color:'#000'}} onPress={() => go(-1)} disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0} />
-        <Pressable style={s.next} android_ripple={{color:'#0a0'}} onPress={() => go(1)} disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0} />
+        {Platform.OS === 'android' ? (
+          <>
+            <TouchableNativeFeedback
+              onPress={() => go(-1)}
+              disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0}
+              background={TouchableNativeFeedback.Ripple('#ff6464', false)}
+              useForeground={true}
+            >
+              <View style={s.back} />
+            </TouchableNativeFeedback>
+            <TouchableNativeFeedback
+              onPress={() => go(1)}
+              disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0}
+              background={TouchableNativeFeedback.Ripple('#64ff64', false)}
+              useForeground={true}
+            >
+              <View style={s.next} />
+            </TouchableNativeFeedback>
+          </>
+        ) : (
+          <>
+            <Pressable
+              onPress={() => go(-1)}
+              disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0}
+              style={({pressed}) => [s.back, pressed && {opacity: 0.7}]}
+            />
+            <Pressable
+              onPress={() => go(1)}
+              disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0}
+              style={({pressed}) => [s.next, pressed && {opacity: 0.7}]}
+            />
+          </>
+        )}
       </View>
 
       {/* tutorial overlay */}

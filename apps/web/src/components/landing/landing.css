@@ -263,6 +263,8 @@
   padding: 18px;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  align-items: stretch;
 }
 
 .plan-head {
@@ -286,6 +288,7 @@
   margin: 8px 0 14px;
   display: grid;
   gap: 6px;
+  flex-grow: 1;
 }
 
 .plan-list li {
@@ -310,6 +313,7 @@
   border: 1px solid var(--accent);
   color: var(--text);
   border-radius: 999px;
+  margin-top: auto;
 }
 
 .about {
@@ -338,6 +342,9 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 .trainer-card .img-placeholder {
   height: 160px;
@@ -352,8 +359,10 @@
 }
 .trainer-info {
   padding: 12px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  flex-grow: 1;
 }
 .trainer-info h4 {
   margin: 0;
@@ -386,6 +395,41 @@
   color: var(--text);
 }
 
+/* Hamburger menu styles */
+.hamburger-menu {
+  display: none;
+  flex-direction: column;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 8px;
+  z-index: 20;
+  position: relative;
+}
+
+.bar {
+  display: block;
+  width: 25px;
+  height: 3px;
+  margin: 3px 0;
+  background-color: var(--text);
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+/* Hamburger animation when menu is open */
+.hamburger-menu[aria-expanded="true"] .bar:nth-child(1) {
+  transform: rotate(45deg) translate(6px, 6px);
+}
+
+.hamburger-menu[aria-expanded="true"] .bar:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-menu[aria-expanded="true"] .bar:nth-child(3) {
+  transform: rotate(-45deg) translate(6px, -6px);
+}
+
 @media (max-width: 960px) {
   .hero-inner,
   .about-grid {
@@ -412,5 +456,57 @@
   }
   .download-btn {
     min-width: 250px;
+  }
+}
+
+@media (max-width: 640px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+  .trainer-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile navigation styles */
+@media (max-width: 768px) {
+  .hamburger-menu {
+    display: flex;
+  }
+
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 20px 24px;
+    gap: 16px;
+    z-index: 15;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .nav-links.active {
+    display: flex;
+  }
+
+  .nav-links a {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 16px;
+  }
+
+  .nav-links a:last-child {
+    border-bottom: none;
+  }
+
+  .nav-cta {
+    margin-top: 8px;
+    text-align: center;
+    padding: 12px 16px !important;
   }
 }

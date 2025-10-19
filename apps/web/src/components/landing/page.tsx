@@ -1,9 +1,46 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import './landing.css';
 
 export default function LandingPage() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.nav') && isMenuOpen) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
+  // Close menu on escape key
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isMenuOpen) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isMenuOpen]);
+
   return (
     <main className="landing-root">
       <header className="landing-header">
@@ -13,15 +50,25 @@ export default function LandingPage() {
               <Image src="/trainwiselogo.svg" alt="Trainwise" width={177} height={40} priority />
             </Link>
           </div>
-          <nav className="nav-links">
-            <a href="#reasons">Why Trainwise</a>
-            <a href="#membership">Pricing</a>
-            <a href="#trainers">Features</a>
-            <a href="#about">About</a>
-            <a className="nav-cta" href="/signup">
+          <button 
+            className="hamburger-menu" 
+            aria-label="Toggle navigation"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-expanded={isMenuOpen}
+          >
+            <span className="bar"></span>
+            <span className="bar"></span>
+            <span className="bar"></span>
+          </button>
+          <nav className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
+            <a href="#reasons" onClick={() => setIsMenuOpen(false)}>Why Trainwise</a>
+            <a href="#membership" onClick={() => setIsMenuOpen(false)}>Pricing</a>
+            <a href="#trainers" onClick={() => setIsMenuOpen(false)}>Features</a>
+            <a href="#about" onClick={() => setIsMenuOpen(false)}>About</a>
+            <a className="nav-cta" href="/signup" onClick={() => setIsMenuOpen(false)}>
               Get Started
             </a>
-            <a href="/login">
+            <a href="/login" onClick={() => setIsMenuOpen(false)}>
               Login
             </a>
           </nav>

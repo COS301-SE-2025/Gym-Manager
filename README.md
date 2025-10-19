@@ -30,6 +30,7 @@ HIIT environments
   | User Manual               | [Gym‑Manager User Manual (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/TRAINWISE_User_MANUAL_v4.0.pdf) |
   | Service Contracts            | [Gym‑Manager Service Contracts (MD)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/ServiceContracts.md) |
   | Technical Installation Manual| [Gym‑Manager Technical Installation Manual (PDF)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/documents/v4/TechnicalInstallationManual.pdf) |
+  | Research & Contribution      | [Research Background & Contribution (MD)](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/ResearchAndContribution.md) |
   
 
 ---
@@ -165,9 +166,7 @@ https://github.com/user-attachments/assets/d8b17ba1-d6c7-44a3-9e94-10e0920d1e0a
 
 Or watch [HERE]().
 
-## 📚 Research & Contribution
-
-Research Background & Contribution: [Read the full write-up](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/ResearchAndContribution.md)
+ 
 
 
 # 🚀 Access the TrainWise System
@@ -179,7 +178,7 @@ Easily access **TrainWise** on your preferred platform -- iOS, Android, Web, or 
 | 🍎 **iOS (TestFlight)** | [Join on TestFlight](https://testflight.apple.com/join/THhUcHa2) | Install **TestFlight**, then open the link to join and test the app. |
 | 🤖 **Android (APK)** | [Download APK](./TrainWise.apk) | Download and install the APK directly on your Android device. |
 | 💻 **Web Dashboard** | [Open Dashboard](https://gym-manager-web.vercel.app/) | For managers and admins: access sessions, members, and analytics. |
-| ⚙️ **API Endpoint** | [View API](https://gym-manager-api-new.vercel.app/) | For developers: use the API for integration and backend access. |
+| ⚙️ **API Endpoint** | [View API](https://gym-manager-api-new.vercel.app/health) | For developers: use the API for integration and backend access. |
 
 ---
 

@@ -63,7 +63,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
     <td style="vertical-align:top; padding:12px;">
       <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
         <img
-          src="https://github.com/user-attachments/assets/58b0d878-079d-4c9c-8b63-e05fff5b479f"
+          src="Vansh.jpeg"
           alt="Vansh Sood"
           style="width:100%; height:100%; object-fit:cover; display:block;"
         />
@@ -85,7 +85,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
     <td style="vertical-align:top; padding:12px;">
       <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
         <img
-          src="https://github.com/user-attachments/assets/21cab385-bfe2-4511-b286-b9a03117331c"
+          src="Jason.jpeg"
           alt="Jason Mayo"
           style="width:100%; height:100%; object-fit:cover; display:block;"
         />
@@ -107,7 +107,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
     <td style="vertical-align:top; padding:12px;">
       <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
         <img
-          src="https://github.com/user-attachments/assets/797d7150-5dc4-4b59-b0b3-fbc0a16a5b4c"
+          src="Denis.jpeg"
           alt="Denis Woolley"
           style="width:100%; height:100%; object-fit:cover; display:block;"
         />
@@ -115,7 +115,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
     </td>
     <td style="vertical-align:top; padding:12px;">
       <strong>Denis Woolley</strong><br/>
-      DevOps, Services Engineer, Architect.
+      I've always had an interest in programming, and it led me to study Computer Science, develop games, and produce videos where I teach coding skills.
       <p style="margin-top:8px;">
         <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/denis-woolley-981aa6202/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
@@ -129,7 +129,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
     <td style="vertical-align:top; padding:12px;">
       <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
         <img
-          src="https://github.com/user-attachments/assets/3c1e0f65-a0ee-4f0b-bcf6-7279a11d9275"
+          src="Amadeus.jpg"
           alt="Amadeus Fidos"
           style="width:100%; height:100%; object-fit:cover; display:block;"
         />
@@ -151,7 +151,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
     <td style="vertical-align:top; padding:12px;">
       <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
         <img
-          src="https://github.com/user-attachments/assets/7fff96a3-9d24-421e-b2c7-c66812b6b5ac"
+          src="Jared.jpeg"
           alt="Jared Hürlimann"
           style="width:100%; height:100%; object-fit:cover; display:block;"
         />

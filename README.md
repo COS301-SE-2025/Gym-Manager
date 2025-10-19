@@ -188,15 +188,22 @@ Research Background & Contribution: [Read the full write-up](https://github.com/
 
 ## 🚀 Try TrainWise
 
-- iOS (TestFlight): [Join the beta](https://testflight.apple.com/join/THhUcHa2)
-- Android (APK): [Download APK](https://github.com/COS301-SE-2025/Gym-Manager/releases/latest/download/trainwise.apk)
-- Web Dashboard: [Open Web App](https://gym-manager-web.vercel.app/)
-- REST API: [Explore API](https://gym-manager-api-new.vercel.app/)
+<div align="center">
 
-Instructions
-- If you’re on Apple, install TestFlight, open the link above, accept the invite, then install the beta build. You’ll become a tester and receive new builds automatically. Learn more about TestFlight on Apple’s site.
-- For Android, download the APK and install it on your device.
-- For managers, access the web dashboard using the link above.
+<p style="margin: 8px 0 16px 0;">
+  If you're on Apple, install TestFlight, open the link, accept the invite, then install the beta build. For Android, download and install the APK. Managers can use the web dashboard.
+</p>
+
+<p>
+  <a href="https://testflight.apple.com/join/THhUcHa2" style="text-decoration:none;background:#111827;color:#ffffff;padding:10px 16px;border-radius:10px;margin:6px;display:inline-block;">TestFlight (iOS)</a>
+  <a href="https://github.com/COS301-SE-2025/Gym-Manager/releases/latest/download/trainwise.apk" style="text-decoration:none;background:#2563eb;color:#ffffff;padding:10px 16px;border-radius:10px;margin:6px;display:inline-block;">Android APK</a>
+  <a href="https://gym-manager-web.vercel.app/" style="text-decoration:none;background:#059669;color:#ffffff;padding:10px 16px;border-radius:10px;margin:6px;display:inline-block;">Web Dashboard</a>
+  <a href="https://gym-manager-api-new.vercel.app/" style="text-decoration:none;background:#6b7280;color:#ffffff;padding:10px 16px;border-radius:10px;margin:6px;display:inline-block;">REST API</a>
+</p>
+
+<p style="font-size:12px;color:#6b7280;margin-top:8px;">Note: TestFlight betas may be full at times. You can try again later.</p>
+
+</div>
 
 <!-- 
 

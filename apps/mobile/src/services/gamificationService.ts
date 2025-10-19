@@ -44,7 +44,9 @@ export class GamificationService {
   async getUserBadges(limit?: number): Promise<UserBadge[]> {
     try {
       const params = limit ? { limit } : {};
-      const response = await apiClient.get<UserBadgesResponse>(`${this.baseUrl}/badges`, { params });
+      const response = await apiClient.get<UserBadgesResponse>(`${this.baseUrl}/badges`, {
+        params,
+      });
       return response.data.data;
     } catch (error) {
       throw error;
@@ -54,7 +56,9 @@ export class GamificationService {
   // Get all available badge definitions
   async getBadgeDefinitions(): Promise<BadgeDefinition[]> {
     try {
-      const response = await apiClient.get<BadgeDefinitionsResponse>(`${this.baseUrl}/badge-definitions`);
+      const response = await apiClient.get<BadgeDefinitionsResponse>(
+        `${this.baseUrl}/badge-definitions`,
+      );
       return response.data.data;
     } catch (error) {
       throw error;
@@ -65,7 +69,9 @@ export class GamificationService {
   async getUserActivities(limit?: number): Promise<UserActivity[]> {
     try {
       const params = limit ? { limit } : {};
-      const response = await apiClient.get<UserActivitiesResponse>(`${this.baseUrl}/activities`, { params });
+      const response = await apiClient.get<UserActivitiesResponse>(`${this.baseUrl}/activities`, {
+        params,
+      });
       return response.data.data;
     } catch (error) {
       throw error;
@@ -93,7 +99,10 @@ export class GamificationService {
     score?: number;
   }): Promise<{ activity: UserActivity; stats: GamificationStats }> {
     try {
-      const response = await apiClient.post<WorkoutCompletionResponse>(`${this.baseUrl}/workout-completed`, workoutData);
+      const response = await apiClient.post<WorkoutCompletionResponse>(
+        `${this.baseUrl}/workout-completed`,
+        workoutData,
+      );
       return response.data.data;
     } catch (error) {
       throw error;
@@ -104,7 +113,10 @@ export class GamificationService {
   async getStreakLeaderboard(limit?: number): Promise<LeaderboardEntry[]> {
     try {
       const params = limit ? { limit } : {};
-      const response = await apiClient.get<LeaderboardResponse>(`${this.baseUrl}/leaderboard/streak`, { params });
+      const response = await apiClient.get<LeaderboardResponse>(
+        `${this.baseUrl}/leaderboard/streak`,
+        { params },
+      );
       return response.data.data;
     } catch (error) {
       throw error;
@@ -115,7 +127,10 @@ export class GamificationService {
   async getPointsLeaderboard(limit?: number): Promise<LeaderboardEntry[]> {
     try {
       const params = limit ? { limit } : {};
-      const response = await apiClient.get<LeaderboardResponse>(`${this.baseUrl}/leaderboard/points`, { params });
+      const response = await apiClient.get<LeaderboardResponse>(
+        `${this.baseUrl}/leaderboard/points`,
+        { params },
+      );
       return response.data.data;
     } catch (error) {
       throw error;
@@ -123,7 +138,10 @@ export class GamificationService {
   }
 
   // Utility methods for UI
-  getLevelProgress(currentLevel: number, totalPoints: number): {
+  getLevelProgress(
+    currentLevel: number,
+    totalPoints: number,
+  ): {
     currentLevel: number;
     nextLevel: number;
     pointsToNext: number;
@@ -133,15 +151,16 @@ export class GamificationService {
     // Use the same level calculation as backend
     const actualCurrentLevel = this.calculateLevel(totalPoints);
     const nextLevel = actualCurrentLevel + 1;
-    
+
     // Calculate points needed for current and next level
     const pointsForCurrentLevel = this.getPointsRequiredForLevel(actualCurrentLevel);
     const pointsForNextLevel = this.getPointsRequiredForLevel(nextLevel);
-    
+
     const pointsInCurrent = totalPoints - pointsForCurrentLevel;
     const pointsToNext = Math.max(0, pointsForNextLevel - totalPoints);
     const levelRange = pointsForNextLevel - pointsForCurrentLevel;
-    const progressPercentage = levelRange > 0 ? Math.min(100, (pointsInCurrent / levelRange) * 100) : 100;
+    const progressPercentage =
+      levelRange > 0 ? Math.min(100, (pointsInCurrent / levelRange) * 100) : 100;
 
     return {
       currentLevel: actualCurrentLevel,
@@ -201,7 +220,7 @@ export class GamificationService {
     // Create a comprehensive mapping of specific badge names to unique icons
     if (badgeName) {
       const name = badgeName.toLowerCase().trim();
-      
+
       // Specific badge name mappings for unique icons
       const specificBadgeIcons: Record<string, string> = {
         // Streak badges
@@ -213,7 +232,7 @@ export class GamificationService {
         '100 day streak': 'infinite',
         'streak master': 'lightning',
         'streak champion': 'bolt',
-        
+
         // Attendance badges
         'first class': 'person-add',
         'welcome aboard': 'hand-left',
@@ -224,28 +243,28 @@ export class GamificationService {
         'attendance champion': 'people',
         'never miss': 'time',
         'dedicated member': 'heart',
-        
+
         // Achievement badges
         'perfect score': 'star',
         'challenge accepted': 'shield',
         'achievement unlocked': 'ribbon',
         'goal crusher': 'trophy',
-        'overachiever': 'medal',
-        'excellence': 'award',
+        overachiever: 'medal',
+        excellence: 'award',
         'master performer': 'diamond',
-        'legendary': 'crown',
-        
+        legendary: 'crown',
+
         // Milestone badges
-        'beginner': 'play-circle',
+        beginner: 'play-circle',
         'getting started': 'rocket',
         'level up': 'trending-up',
-        'intermediate': 'arrow-up',
-        'advanced': 'trophy',
-        'expert': 'star-half',
-        'master': 'diamond',
-        'grandmaster': 'crown',
+        intermediate: 'arrow-up',
+        advanced: 'trophy',
+        expert: 'star-half',
+        master: 'diamond',
+        grandmaster: 'crown',
         'comeback kid': 'refresh',
-        
+
         // Workout type badges
         'cardio king': 'fitness',
         'strength warrior': 'barbell',
@@ -255,7 +274,7 @@ export class GamificationService {
         'power lifter': 'battery-charging',
         'speed demon': 'speedometer',
         'balance master': 'balance',
-        
+
         // Time-based badges
         'early bird': 'sunny',
         'morning warrior': 'sunrise',
@@ -264,30 +283,30 @@ export class GamificationService {
         'weekend warrior': 'cafe',
         'dawn patrol': 'partly-sunny',
         'midnight runner': 'cloudy-night',
-        
+
         // Special achievement badges
         'perfect attendance': 'checkmark-done-circle',
         'century club': 'trophy',
         'iron will': 'barbell',
-        'unstoppable': 'flash',
-        'phenomenal': 'sparkles',
-        'incredible': 'star',
-        'amazing': 'heart',
-        'outstanding': 'trophy',
-        'exceptional': 'diamond',
-        'extraordinary': 'crown',
-        
+        unstoppable: 'flash',
+        phenomenal: 'sparkles',
+        incredible: 'star',
+        amazing: 'heart',
+        outstanding: 'trophy',
+        exceptional: 'diamond',
+        extraordinary: 'crown',
+
         // Social badges
         'team player': 'people',
         'social butterfly': 'chatbubbles',
-        'motivator': 'megaphone',
-        'inspiration': 'bulb',
-        'mentor': 'school',
-        'leader': 'flag',
-        'champion': 'trophy',
-        'hero': 'shield',
-        'legend': 'star',
-        
+        motivator: 'megaphone',
+        inspiration: 'bulb',
+        mentor: 'school',
+        leader: 'flag',
+        champion: 'trophy',
+        hero: 'shield',
+        legend: 'star',
+
         // Special event badges
         'holiday hero': 'gift',
         'new year warrior': 'calendar',
@@ -295,21 +314,21 @@ export class GamificationService {
         'winter warrior': 'snow',
         'spring starter': 'flower',
         'autumn achiever': 'leaf',
-        
+
         // Difficulty badges
         'easy does it': 'checkmark',
         'getting stronger': 'trending-up',
-        'challenging': 'flame',
-        'extreme': 'flash',
-        'impossible': 'diamond',
-        'legendary': 'crown',
-        
+        challenging: 'flame',
+        extreme: 'flash',
+        impossible: 'diamond',
+        legendary: 'crown',
+
         // Frequency badges
         'daily warrior': 'calendar',
         'weekly hero': 'time',
         'monthly master': 'calendar-outline',
         'yearly legend': 'trophy',
-        
+
         // Performance badges
         'personal best': 'trending-up',
         'record breaker': 'flash',
@@ -317,7 +336,7 @@ export class GamificationService {
         'endurance king': 'battery-charging',
         'strength master': 'barbell',
         'flexibility guru': 'flower',
-        
+
         // Special recognition
         'coach favorite': 'heart',
         'member of the month': 'star',
@@ -326,12 +345,12 @@ export class GamificationService {
         'role model': 'school',
         'gym ambassador': 'flag',
       };
-      
+
       // Check for exact matches first
       if (specificBadgeIcons[name]) {
         return specificBadgeIcons[name];
       }
-      
+
       // Check for partial matches
       for (const [badgeKey, icon] of Object.entries(specificBadgeIcons)) {
         if (name.includes(badgeKey) || badgeKey.includes(name)) {
@@ -339,16 +358,16 @@ export class GamificationService {
         }
       }
     }
-    
+
     // Fallback to badge type icons
     const iconMap: Record<string, string> = {
-      'streak': 'flash',
-      'attendance': 'checkmark-circle',
-      'achievement': 'ribbon',
-      'milestone': 'rocket',
-      'special': 'diamond',
+      streak: 'flash',
+      attendance: 'checkmark-circle',
+      achievement: 'ribbon',
+      milestone: 'rocket',
+      special: 'diamond',
     };
-    
+
     return iconMap[badgeType] || 'medal';
   }
 
@@ -362,19 +381,18 @@ export class GamificationService {
     if (points < 1000) return `${points} pts`;
     return `${(points / 1000).toFixed(1)}k pts`;
   }
-  
-  async getCharacter(): Promise<{ level: 1|2|3|4|5; workoutsAttended: number }> {
+
+  async getCharacter(): Promise<{ level: 1 | 2 | 3 | 4 | 5; workoutsAttended: number }> {
     try {
-      const response = await apiClient.get<{ success: boolean; data: { level: 1|2|3|4|5; workoutsAttended: number } }>(
-        `${this.baseUrl}/character`
-      );
+      const response = await apiClient.get<{
+        success: boolean;
+        data: { level: 1 | 2 | 3 | 4 | 5; workoutsAttended: number };
+      }>(`${this.baseUrl}/character`);
       return response.data.data;
     } catch (error) {
       throw error;
     }
   }
-
-
 }
 
 // Export singleton instance

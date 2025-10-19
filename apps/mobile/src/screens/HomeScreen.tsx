@@ -148,7 +148,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   // Fetch credit balance
   const fetchCreditBalance = async () => {
     if (!currentUser?.userId) return;
-    
+
     setIsLoadingCredits(true);
     try {
       const response = await apiClient.get(`/members/${currentUser.userId}/credits`);
@@ -167,13 +167,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setBookedError(null);
     try {
       const bookedResponse = await apiClient.get<ApiBookedClass[]>('/member/classes');
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const now = new Date();
 
       const formattedBookedClasses: ClassItem[] = bookedResponse.data
         .filter((apiClass) => {
-          const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
-          return classDate >= today;
+          // Check if class has ended: current time > class end time
+          const classDateTime = new Date(`${apiClass.scheduledDate}T${apiClass.scheduledTime}`);
+          const classEndTime = new Date(
+            classDateTime.getTime() + (apiClass.durationMinutes || 60) * 60 * 1000,
+          );
+          return classEndTime > now; // Only show classes that haven't ended yet
         })
         .sort((a, b) => {
           const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
@@ -185,10 +188,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           name: apiClass.workoutName || 'Workout',
           time: apiClass.scheduledTime ? apiClass.scheduledTime.slice(0, 5) : 'N/A',
           date: apiClass.scheduledDate
-            ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            ? new Date(`${apiClass.scheduledDate}T00:00:00`).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })
             : 'N/A',
           capacity: `${apiClass.bookingsCount ?? 0}/${apiClass.capacity}`,
-          instructor: `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
+          instructor:
+            `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
           duration: apiClass.durationMinutes ?? 0,
           isBooked: true,
         }));
@@ -210,13 +217,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     setUpcomingError(null);
     try {
       const upcomingResponse = await apiClient.get<ApiUpcomingClass[]>('/member/unbookedclasses');
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const now = new Date();
 
       const groupedClasses = upcomingResponse.data
         .filter((apiClass) => {
-          const classDate = new Date(`${apiClass.scheduledDate}T00:00:00`);
-          return classDate >= today;
+          // Check if class has ended: current time > class end time
+          const classDateTime = new Date(`${apiClass.scheduledDate}T${apiClass.scheduledTime}`);
+          const classEndTime = new Date(
+            classDateTime.getTime() + (apiClass.durationMinutes || 60) * 60 * 1000,
+          );
+          return classEndTime > now; // Only show classes that haven't ended yet
         })
         .sort((a, b) => {
           const dateTimeA = new Date(`${a.scheduledDate}T${a.scheduledTime}`);
@@ -236,9 +246,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             capacity: `${apiClass.bookingsCount ?? 0}/${apiClass.capacity}`,
             instructor:
               `${apiClass.coachFirstName || ''} ${apiClass.coachLastName || ''}`.trim() || 'Coach',
-              duration: apiClass.durationMinutes || 60,
+            duration: apiClass.durationMinutes || 60,
             isBooked: false,
-            
           });
           return acc;
         }, {});
@@ -328,7 +337,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   };
 
   const handleConfirmBooking = async (classId: string): Promise<boolean> => {
-
     try {
       const response = await apiClient.post('/book', { classId: classId });
 
@@ -380,7 +388,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           error.response.status === 400 &&
           error.response.data.error === 'Insufficient credits'
         ) {
-          errorMessage = 'You don\'t have enough credits to book this class. Purchase more credits in your profile.';
+          errorMessage =
+            "You don't have enough credits to book this class. Purchase more credits in your profile.";
         }
       }
       Alert.alert('Booking Error', errorMessage);
@@ -497,7 +506,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               ) : (
                 <>
                   <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${Math.min((creditBalance / 10) * 100, 100)}%` }]} />
+                    <View
+                      style={[
+                        styles.progressFill,
+                        { width: `${Math.min((creditBalance / 10) * 100, 100)}%` },
+                      ]}
+                    />
                   </View>
                   <Text style={styles.progressText}>{creditBalance}</Text>
                 </>
@@ -518,7 +532,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D8FF3E" />
         }
       >
-
         {/* Live Class Banner */}
         {!isLoadingLiveClass && !liveClassError && liveClass && (
           <TouchableOpacity
@@ -538,7 +551,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 });
               }
             }}
-
           >
             <View style={styles.liveClassLeft}>
               <View style={styles.liveIndicator} />
@@ -577,9 +589,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
               {bookedClasses.map((classItem) => (
                 // set the key here on the immediate child returned from map
-                <React.Fragment key={`booked-${classItem.id}`}>{renderBookedClass(classItem)}</React.Fragment>
+                <React.Fragment key={`booked-${classItem.id}`}>
+                  {renderBookedClass(classItem)}
+                </React.Fragment>
               ))}
-
             </ScrollView>
           ) : (
             <View style={styles.emptyStateContainer}>
@@ -643,7 +656,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                           {renderUpcomingClass(classItem)}
                         </React.Fragment>
                       ))}
-
                     </View>
                   </View>
                 );

@@ -68,7 +68,6 @@ export type AuthStackParamList = {
   WorkoutDetails: { workout: WorkoutData };
 };
 
-
 const Stack = createStackNavigator<AuthStackParamList>();
 const Tab = createBottomTabNavigator();
 const ProgressStack = createStackNavigator();
@@ -84,21 +83,21 @@ function ProgressStackNavigator() {
         headerBackTitleVisible: false,
       }}
     >
-      <ProgressStack.Screen 
-        name="GamificationMain" 
+      <ProgressStack.Screen
+        name="GamificationMain"
         component={GamificationScreen}
-        options={{ 
+        options={{
           title: 'Your Progress',
           headerLeft: () => null, // Remove back button from main screen
         }}
       />
-      <ProgressStack.Screen 
-        name="BadgesScreen" 
+      <ProgressStack.Screen
+        name="BadgesScreen"
         component={BadgesScreen}
         options={{ title: 'All Badges' }}
       />
-      <ProgressStack.Screen 
-        name="LeaderboardScreen" 
+      <ProgressStack.Screen
+        name="LeaderboardScreen"
         component={GamificationLeaderboardScreen}
         options={{ title: 'Leaderboard' }}
       />
@@ -179,10 +178,7 @@ function HomeAliasScreen({ navigation }: any) {
 
 export default function AuthNavigator() {
   return (
-    <Stack.Navigator
-      initialRouteName="ResolveAuth"
-      screenOptions={{ headerShown: false }}
-    >
+    <Stack.Navigator initialRouteName="ResolveAuth" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ResolveAuth" component={ResolveAuthScreen} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
 

@@ -86,7 +86,7 @@ export default function LoginScreen() {
   };
 
   const handleEmailChange = (value: string) => {
-    setEmail(value); 
+    setEmail(value);
     if (errors.email) {
       validateField('email', value);
     }
@@ -111,7 +111,6 @@ export default function LoginScreen() {
         email: email.trim().toLowerCase(),
         password,
       });
-
 
       if (response.data && response.data.token) {
         await storeToken(response.data.token);
@@ -156,8 +155,6 @@ export default function LoginScreen() {
         console.error('Login response does not contain user roles information.');
         navigation.navigate('Home' as never);
       }
-
-      
     } catch (error: any) {
       console.error('Login error:', error);
       let errorMessage = 'An unexpected error occurred. Please try again.';

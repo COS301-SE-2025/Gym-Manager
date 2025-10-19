@@ -41,6 +41,7 @@ interface DailyMetrics {
 
 interface AttendedClass {
   classId: number;
+  workoutId?: number;
   workoutName: string;
   scheduledDate: string;
   scheduledTime: string;
@@ -81,7 +82,7 @@ const StatsScreen = ({ navigation }: any) => {
       }
 
       const healthKit = NativeModules.RCTAppleHealthKit;
-      
+
       if (!healthKit) {
         console.log('RCTAppleHealthKit module not found');
         return;
@@ -96,19 +97,19 @@ const StatsScreen = ({ navigation }: any) => {
         console.log('HealthKit Constants not available');
         return;
       }
-      
+
       console.log('Attempting to initialize HealthKit...');
-      
+
       const permissions = {
         permissions: {
           read: [
-            Constants.Permissions.Steps, 
+            Constants.Permissions.Steps,
             Constants.Permissions.HeartRate,
             Constants.Permissions.ActiveEnergyBurned,
-            Constants.Permissions.DistanceWalkingRunning
+            Constants.Permissions.DistanceWalkingRunning,
           ],
           write: [],
-        }
+        },
       };
 
       healthKit.initHealthKit(permissions, (error: string) => {
@@ -128,10 +129,7 @@ const StatsScreen = ({ navigation }: any) => {
   }, []);
 
   const loadData = async () => {
-    await Promise.all([
-      loadStepData(),
-      loadAttendedClasses(),
-    ]);
+    await Promise.all([loadStepData(), loadAttendedClasses()]);
   };
 
   const onRefresh = async () => {
@@ -150,7 +148,7 @@ const StatsScreen = ({ navigation }: any) => {
     try {
       setIsLoading(true);
       const healthKit = NativeModules.RCTAppleHealthKit;
-      
+
       if (!healthKit) {
         console.log('HealthKit not available');
         setIsLoading(false);
@@ -158,7 +156,11 @@ const StatsScreen = ({ navigation }: any) => {
       }
 
       // Check if required methods exist
-      if (!healthKit.getStepCount || !healthKit.getActiveEnergyBurned || !healthKit.getDistanceWalkingRunning) {
+      if (
+        !healthKit.getStepCount ||
+        !healthKit.getActiveEnergyBurned ||
+        !healthKit.getDistanceWalkingRunning
+      ) {
         console.log('Required HealthKit methods not available');
         setIsLoading(false);
         return;
@@ -177,17 +179,17 @@ const StatsScreen = ({ navigation }: any) => {
       const caloriesOptions = {
         startDate: startOfDay.toISOString(),
         endDate: endOfDay.toISOString(),
-      }
+      };
 
       const distanceOptions = {
         date: new Date().toISOString(),
-      }
+      };
 
-      console.log('Getting today\'s health metrics...');
-      
+      console.log("Getting today's health metrics...");
+
       // Add timeout for health data calls to prevent hanging
       const timeoutDuration = 10000; // 10 seconds
-      
+
       // Get today's steps with timeout
       const stepTimeout = setTimeout(() => {
         console.log('Step count request timed out');
@@ -197,13 +199,13 @@ const StatsScreen = ({ navigation }: any) => {
       healthKit.getStepCount(stepOptions, (error: string, results: any) => {
         clearTimeout(stepTimeout);
         if (error) {
-          console.log('Error getting today\'s steps:', error);
+          console.log("Error getting today's steps:", error);
         } else {
-          console.log('Today\'s step results:', results);
+          console.log("Today's step results:", results);
           if (results && results.value !== undefined) {
-            setTodayMetrics(prev => ({
+            setTodayMetrics((prev) => ({
               ...prev,
-              steps: Math.round(results.value)
+              steps: Math.round(results.value),
             }));
           }
         }
@@ -217,14 +219,14 @@ const StatsScreen = ({ navigation }: any) => {
       healthKit.getActiveEnergyBurned(caloriesOptions, (error: string, results: any) => {
         clearTimeout(caloriesTimeout);
         if (error) {
-          console.log('Error getting today\'s calories:', error);
+          console.log("Error getting today's calories:", error);
         } else {
-          console.log('Today\'s calorie results:', results);
+          console.log("Today's calorie results:", results);
           if (results && Array.isArray(results) && results.length > 0) {
             const totalCalories = results.reduce((sum, item) => sum + (item.value || 0), 0);
-            setTodayMetrics(prev => ({
+            setTodayMetrics((prev) => ({
               ...prev,
-              calories: Math.round(totalCalories) // Fix: ensure it's a number, not string
+              calories: Math.round(totalCalories), // Fix: ensure it's a number, not string
             }));
           }
         }
@@ -238,18 +240,17 @@ const StatsScreen = ({ navigation }: any) => {
       healthKit.getDistanceWalkingRunning(distanceOptions, (error: string, results: any) => {
         clearTimeout(distanceTimeout);
         if (error) {
-          console.log('Error getting today\'s distance:', error);
+          console.log("Error getting today's distance:", error);
         } else {
-          console.log('Today\'s distance results:', results);
+          console.log("Today's distance results:", results);
           if (results && results.value !== undefined) {
-            setTodayMetrics(prev => ({
+            setTodayMetrics((prev) => ({
               ...prev,
-              distance: results.value
+              distance: results.value,
             }));
           }
         }
       });
-
     } catch (error) {
       console.error('Error loading step data:', error);
     } finally {
@@ -263,7 +264,7 @@ const StatsScreen = ({ navigation }: any) => {
   const loadAttendedClasses = async () => {
     try {
       setIsLoadingClasses(true);
-      
+
       // Get current user to fetch their attended classes
       const user = await getUser();
       if (!user) {
@@ -280,7 +281,7 @@ const StatsScreen = ({ navigation }: any) => {
       }
 
       console.log('Fetching attended classes for user:', userId);
-      
+
       // Get authentication token
       const token = await getToken();
       if (!token) {
@@ -292,7 +293,7 @@ const StatsScreen = ({ navigation }: any) => {
       // Call the real API endpoint
       const response = await fetch(`${config.BASE_URL}/members/${userId}/attended-classes`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -300,7 +301,7 @@ const StatsScreen = ({ navigation }: any) => {
       if (response.ok) {
         const data = await response.json();
         console.log('Attended classes data:', data);
-        
+
         // Transform the API data to match our interface
         const transformedClasses: AttendedClass[] = data.map((item: any) => ({
           classId: item.classId,
@@ -314,10 +315,10 @@ const StatsScreen = ({ navigation }: any) => {
             checkedInAt: item.attendedAt, // Use attendedAt as checkedInAt
             // Calculate checkout time based on scheduled time + duration
             checkedOutAt: new Date(
-              new Date(`${item.scheduledDate}T${item.scheduledTime}`).getTime() + 
-              (item.durationMinutes * 60 * 1000)
+              new Date(`${item.scheduledDate}T${item.scheduledTime}`).getTime() +
+                item.durationMinutes * 60 * 1000,
             ).toISOString(),
-          }
+          },
         }));
 
         setAttendedClasses(transformedClasses);
@@ -326,7 +327,6 @@ const StatsScreen = ({ navigation }: any) => {
         // Fall back to empty array if API fails
         setAttendedClasses([]);
       }
-
     } catch (error) {
       console.error('Error loading attended classes:', error);
       setAttendedClasses([]);
@@ -361,10 +361,10 @@ const StatsScreen = ({ navigation }: any) => {
     } else if (date.toDateString() === yesterday.toDateString()) {
       return 'Yesterday';
     } else {
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric' 
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
       });
     }
   };
@@ -384,8 +384,9 @@ const StatsScreen = ({ navigation }: any) => {
     // Calculate start and end times for health data
     const classDateTime = new Date(`${classItem.scheduledDate}T${classItem.scheduledTime}`);
     const startTime = classItem.attendance?.checkedInAt || classDateTime.toISOString();
-    const endTime = classItem.attendance?.checkedOutAt || 
-      new Date(classDateTime.getTime() + (classItem.durationMinutes * 60 * 1000)).toISOString();
+    const endTime =
+      classItem.attendance?.checkedOutAt ||
+      new Date(classDateTime.getTime() + classItem.durationMinutes * 60 * 1000).toISOString();
 
     // Navigate to WorkoutDetailsScreen with health data period
     navigation.navigate('WorkoutDetails', {
@@ -396,7 +397,8 @@ const StatsScreen = ({ navigation }: any) => {
         endDate: endTime,
         duration: classItem.durationMinutes,
         source: `${classItem.coachFirstName} ${classItem.coachLastName}`,
-      }
+        workoutId: classItem.workoutId,
+      },
     });
   };
 
@@ -450,8 +452,8 @@ const StatsScreen = ({ navigation }: any) => {
             <Ionicons name="phone-portrait-outline" size={48} color="#D8FF3E" />
             <Text style={styles.androidMessageTitle}>Stats Coming Soon</Text>
             <Text style={styles.androidMessageText}>
-              Health tracking and detailed stats are currently only available on iOS devices. 
-              We're working on bringing this feature to Android soon!
+              Health tracking and detailed stats are currently only available on iOS devices. We're
+              working on bringing this feature to Android soon!
             </Text>
             <View style={styles.androidMessageFooter}>
               <Ionicons name="information-circle-outline" size={16} color="#888" />
@@ -478,15 +480,11 @@ const StatsScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView} 
+      <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh} 
-            tintColor="#D8FF3E" 
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#D8FF3E" />
         }
       >
         <View style={styles.header}>
@@ -506,16 +504,9 @@ const StatsScreen = ({ navigation }: any) => {
             <Text style={styles.metricValue}>{todayMetrics.steps.toLocaleString()}</Text>
             <View style={styles.progressContainer}>
               <View style={styles.progressBar}>
-                <View 
-                  style={[
-                    styles.progressFill, 
-                    { width: `${getStepGoalProgress()}%` }
-                  ]} 
-                />
+                <View style={[styles.progressFill, { width: `${getStepGoalProgress()}%` }]} />
               </View>
-              <Text style={styles.progressText}>
-                {getStepGoalProgress().toFixed(0)}% of goal
-              </Text>
+              <Text style={styles.progressText}>{getStepGoalProgress().toFixed(0)}% of goal</Text>
             </View>
           </View>
 
@@ -542,11 +533,9 @@ const StatsScreen = ({ navigation }: any) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Class History</Text>
-            <Text style={styles.sectionSubtext}>
-              {attendedClasses.length} classes attended
-            </Text>
+            <Text style={styles.sectionSubtext}>{attendedClasses.length} classes attended</Text>
           </View>
-          
+
           {isLoadingClasses ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#D8FF3E" />

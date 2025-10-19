@@ -52,15 +52,14 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 | <img src="Amadeus.jpg" alt="Amadeus Fidos" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Amadeus Fidos**<br>Architect, Designer, UI Engineer<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/amadeus-fidos-b22512356/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:amadeusfidos@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> |
 | <img src="Jared.jpeg" alt="Jared Hürlimann" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Jared Hürlimann**<br>DevOps, Services Engineer, Integration Engineer<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:jaredhurlimann@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> | -->
 
-
 <table style="width:100%; table-layout:fixed; border-collapse:collapse;">
   <colgroup>
     <col style="width:220px; min-width:220px; max-width:220px;">
     <col>
   </colgroup>
 
+  <!-- Vansh -->
   <tr>
-    <!-- avatar column: fixed width, contains a fixed-size wrapper -->
     <td style="vertical-align:top; padding:12px;">
       <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
         <img
@@ -77,6 +76,94 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
         <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/vansh-sood-783519352/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
         <a href="mailto:vanshsood4@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+      </p>
+    </td>
+  </tr>
+
+  <!-- Jason -->
+  <tr>
+    <td style="vertical-align:top; padding:12px;">
+      <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
+        <img
+          src="https://github.com/user-attachments/assets/21cab385-bfe2-4511-b286-b9a03117331c"
+          alt="Jason Mayo"
+          style="width:100%; height:100%; object-fit:cover; display:block;"
+        />
+      </div>
+    </td>
+    <td style="vertical-align:top; padding:12px;">
+      <strong>Jason Mayo</strong><br/>
+      Designer, UI Engineer, Integration Engineer.
+      <p style="margin-top:8px;">
+        <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
+        <a href="http://linkedin.com/in/jason-mayo-7a8063210" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
+        <a href="mailto:jason.m1122332@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+      </p>
+    </td>
+  </tr>
+
+  <!-- Denis -->
+  <tr>
+    <td style="vertical-align:top; padding:12px;">
+      <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
+        <img
+          src="https://github.com/user-attachments/assets/797d7150-5dc4-4b59-b0b3-fbc0a16a5b4c"
+          alt="Denis Woolley"
+          style="width:100%; height:100%; object-fit:cover; display:block;"
+        />
+      </div>
+    </td>
+    <td style="vertical-align:top; padding:12px;">
+      <strong>Denis Woolley</strong><br/>
+      DevOps, Services Engineer, Architect.
+      <p style="margin-top:8px;">
+        <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
+        <a href="https://www.linkedin.com/in/denis-woolley-981aa6202/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
+        <a href="mailto:denisjnr88@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+      </p>
+    </td>
+  </tr>
+
+  <!-- Amadeus -->
+  <tr>
+    <td style="vertical-align:top; padding:12px;">
+      <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
+        <img
+          src="https://github.com/user-attachments/assets/3c1e0f65-a0ee-4f0b-bcf6-7279a11d9275"
+          alt="Amadeus Fidos"
+          style="width:100%; height:100%; object-fit:cover; display:block;"
+        />
+      </div>
+    </td>
+    <td style="vertical-align:top; padding:12px;">
+      <strong>Amadeus Fidos</strong><br/>
+      Architect, Designer, UI Engineer.
+      <p style="margin-top:8px;">
+        <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
+        <a href="https://www.linkedin.com/in/amadeus-fidos-b22512356/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
+        <a href="mailto:amadeusfidos@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+      </p>
+    </td>
+  </tr>
+
+  <!-- Jared -->
+  <tr>
+    <td style="vertical-align:top; padding:12px;">
+      <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
+        <img
+          src="https://github.com/user-attachments/assets/7fff96a3-9d24-421e-b2c7-c66812b6b5ac"
+          alt="Jared Hürlimann"
+          style="width:100%; height:100%; object-fit:cover; display:block;"
+        />
+      </div>
+    </td>
+    <td style="vertical-align:top; padding:12px;">
+      <strong>Jared Hürlimann</strong><br/>
+      DevOps, Services Engineer, Integration Engineer.
+      <p style="margin-top:8px;">
+        <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
+        <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
+        <a href="mailto:jaredhurlimann@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
       </p>
     </td>
   </tr>

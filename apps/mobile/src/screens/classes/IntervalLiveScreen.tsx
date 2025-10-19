@@ -19,7 +19,7 @@ import axios from 'axios';
 import { getToken } from '../../utils/authStorage';
 import config from '../../config';
 import { BlurView } from 'expo-blur';
-import { useImmersiveBars } from '../../hooks/useImmersiveBars';
+import { calculateWorkoutDuration } from '../../utils/workoutDuration';
 
 type R = RouteProp<AuthStackParamList, 'IntervalLive'>;
 
@@ -100,6 +100,10 @@ export default function IntervalLiveScreen() {
 
   const [scope, setScope] = useState<LbFilter>('ALL');
   const lb = useLeaderboardRealtime(classId, scope);
+
+  // Calculate workout duration for display
+  const workoutDuration = calculateWorkoutDuration(session);
+
 
   const steps: any[] = (session?.steps as any[]) ?? [];
   const ready = Array.isArray(steps) && steps.length > 0;
@@ -252,19 +256,55 @@ export default function IntervalLiveScreen() {
           )}
         </View>
 
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 26 }}>
-          {Object.keys(grouped)
-            .map(Number)
-            .sort((a, b) => a - b)
-            .map((r) => {
-              const subs = grouped[r];
-              return (
-                <View key={`round-${r}`} style={s.roundBox}>
-                  {Object.keys(subs)
-                    .map(Number)
-                    .sort((a, b) => a - b)
-                    .map((sr) => {
-                      const exs = subs[sr];
+      <View style={s.topHeader}>
+        <Text style={s.timer}>
+          {fmtClock(displayElapsed)}{workoutDuration > 0 ? ` / ${fmtClock(workoutDuration)}` : ''}
+        </Text>
+
+        {!ready ? (
+          <View style={{ alignItems:'center', paddingVertical: 16 }}>
+            <ActivityIndicator size="large" color="#D8FF3E" />
+            <Text style={{ color:'#8d8d8d', marginTop:8, fontWeight:'700' }}>Getting class ready…</Text>
+          </View>
+        ) : done ? (
+          <View style={s.endedBanner}>
+            <Text style={s.endedBannerText}>Class ended — enter your reps and tap Finish</Text>
+          </View>
+        ) : (
+          <>
+            <Text style={s.curLabel}>Current exercise:</Text>
+            <Text style={s.current}>{current?.name ?? '—'}</Text>
+            <Text style={s.next}>Next: {next?.name ?? '—'}</Text>
+          </>
+        )}
+
+        {!canSubmit && (
+          <View style={s.notice}>
+            <Text style={s.noticeText}>Waiting for coach to start…</Text>
+          </View>
+        )}
+        {session?.status === 'ended' && !done && (
+          <View style={s.notice}>
+            <Text style={s.noticeText}>Coach ended session — finish when ready</Text>
+          </View>
+        )}
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 26 }}>
+        {Object.keys(grouped).map(Number).sort((a, b) => a - b).map(r => {
+          const subs = grouped[r];
+          return (
+            <View key={`round-${r}`} style={s.roundBox}>
+              {Object.keys(subs).map(Number).sort((a, b) => a - b).map(sr => {
+                const exs = subs[sr];
+                return (
+                  <View key={`sub-${r}-${sr}`} style={s.subBox}>
+                    {exs.map((e: any) => {
+                      const i = Number(e.index);
+                      const isLive = !done && i === liveIdx;
+                      const rest = isRestStep(e);
+                      const timeOnly = !rest && isTimeOnlyStep(e);
+                      const showError = !!errors[i];
                       return (
                         <View key={`sub-${r}-${sr}`} style={s.subBox}>
                           {exs.map((e: any) => {

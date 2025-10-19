@@ -116,6 +116,40 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       .trim();
   };
 
+  // Helper function to calculate workout duration in seconds
+  const calculateWorkoutDuration = (workout: Workout): number => {
+    const workoutType = workout.workoutType;
+
+    // EMOM: total repeats × 60
+    if (workoutType === 'EMOM') {
+      const totalRepeats = workout.subRounds.reduce((sum, subRound) => {
+        const repeats = parseInt(subRound.repeats || '1') || 1;
+        return sum + repeats;
+      }, 0);
+      return totalRepeats * 60;
+    }
+
+    // TABATA: sum durations of all exercises (all exercises are scored by seconds)
+    if (workoutType === 'TABATA') {
+      let totalDuration = 0;
+      const rounds = parseInt(workout.numberOfRounds) || 1;
+      
+      for (let round = 0; round < rounds; round++) {
+        workout.subRounds.forEach(subRound => {
+          subRound.exercises.forEach(exercise => {
+            // For TABATA, all exercises are scored by seconds regardless of quantityType
+            const duration = parseInt(exercise.reps) || 0;
+            totalDuration += duration;
+          });
+        });
+      }
+      return totalDuration;
+    }
+
+    // FOR_TIME / AMRAP: use workoutMinutes converted to seconds
+    return workout.workoutMinutes * 60;
+  };
+
   useEffect(() => {
     (async () => {
       const u = await getUser();
@@ -499,6 +533,19 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         if (subRoundsWithExercises.length === 0) {
           throw new Error(`Workout ${i + 1}: At least one sub-round must have exercises`);
         }
+
+        // Check if workout duration exceeds class duration
+        const workoutDurationSeconds = calculateWorkoutDuration(workout);
+        const classDurationSeconds = (classDetails?.durationMinutes || 0) * 60;
+        
+        if (workoutDurationSeconds > classDurationSeconds && classDurationSeconds > 0) {
+          const workoutDurationMinutes = Math.ceil(workoutDurationSeconds / 60);
+          const classDurationMinutes = classDetails?.durationMinutes || 0;
+          
+          throw new Error(
+            `Workout "${workout.workoutName}" duration (${workoutDurationMinutes} minutes) exceeds class duration (${classDurationMinutes} minutes). Please reduce the workout duration to fit within the class time.`
+          );
+        }
       }
 
       // Create or update workouts
@@ -816,8 +863,44 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
             {/* Number of Sub Rounds removed (computed from subRounds length) */}
           </View>
 
+          {/* Duration Warning */}
+          {(() => {
+            const workoutDurationSeconds = calculateWorkoutDuration(currentWorkout);
+            const classDurationSeconds = (classDetails?.durationMinutes || 0) * 60;
+            const workoutDurationMinutes = Math.ceil(workoutDurationSeconds / 60);
+            const classDurationMinutes = classDetails?.durationMinutes || 0;
+            const exceedsClassDuration = workoutDurationSeconds > classDurationSeconds && classDurationSeconds > 0;
+            
+            if (workoutDurationSeconds > 0 && classDurationSeconds > 0) {
+              return (
+                <View style={styles.durationWarningContainer}>
+                  <View style={styles.durationInfoRow}>
+                    <Text style={styles.durationInfoLabel}>Workout Duration:</Text>
+                    <Text style={[styles.durationInfoValue, exceedsClassDuration && styles.durationWarning]}>
+                      {workoutDurationMinutes} min
+                    </Text>
+                  </View>
+                  <View style={styles.durationInfoRow}>
+                    <Text style={styles.durationInfoLabel}>Class Duration:</Text>
+                    <Text style={styles.durationInfoValue}>
+                      {classDurationMinutes} min
+                    </Text>
+                  </View>
+                  {exceedsClassDuration && (
+                    <View style={styles.warningMessage}>
+                      <Text style={styles.warningText}>
+                        ⚠️ Workout duration exceeds class duration. Please reduce the workout duration to fit within the class time.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            }
+            return null;
+          })()}
+
           {/* Sub Rounds Section */}
-          <View style={styles.section}>
+          <View style={[styles.section, styles.subRoundsSection]}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Sub Rounds</Text>
               <TouchableOpacity style={styles.addSubRoundButton} onPress={addSubRound}>
@@ -1071,6 +1154,9 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+  },
+  subRoundsSection: {
+    marginTop: 24,
   },
   sectionTitle: {
     color: 'white',
@@ -1418,4 +1504,46 @@ const styles = StyleSheet.create({
   workoutContent: {
     // Container for the current workout's content
   },
+  durationWarningContainer: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#444',
+  },
+  durationInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  durationInfoLabel: {
+    color: '#ccc',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  durationInfoValue: {
+    color: '#D8FF3E',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  durationWarning: {
+    color: '#ff6b6b',
+  },
+  warningMessage: {
+    backgroundColor: '#3d1a1a',
+    borderRadius: 6,
+    padding: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#ff6b6b',
+  },
+  warningText: {
+    color: '#ff6b6b',
+    fontSize: 11,
+    fontWeight: '500',
+    lineHeight: 16,
+  },
+
 });

@@ -1,13 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  StatusBar,
-  ActivityIndicator,
-  Animated,
-  TouchableOpacity,
+  View, Text, StyleSheet, Pressable, StatusBar,
+  ActivityIndicator, Animated, TouchableOpacity, Platform,
+  TouchableNativeFeedback
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -21,6 +16,7 @@ import { getToken, getUser } from '../../utils/authStorage';
 import config from '../../config';
 import { HypeToast } from '../../components/HypeToast';
 import { useLeaderboardHype } from '../../hooks/useLeaderboardHype';
+import { calculateWorkoutDuration } from '../../utils/workoutDuration';
 
 type R = RouteProp<AuthStackParamList, 'EmomLive'>;
 
@@ -198,6 +194,9 @@ export default function EmomLiveScreen() {
     ? Math.max(0, nowSec - startedAtSec - (pauseAccum + extraPaused))
     : 0;
 
+  // Calculate workout duration for display
+  const workoutDuration = calculateWorkoutDuration(session);
+
   // time -> minute index (no wrap)
   const minuteIdxRaw = Math.floor(elapsed / 60);
   const minuteIdx = Math.min(Math.max(0, minuteIdxRaw), Math.max(0, totalMinutes - 1));
@@ -367,57 +366,27 @@ export default function EmomLiveScreen() {
           </Text>
         </View>
 
-        <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />
+      {/* timer */}
+      <View pointerEvents="none" style={s.topOverlay}>
+        <Text style={s.timeTop} pointerEvents="none">
+          {fmt(elapsedClamped)}{workoutDuration > 0 ? ` / ${fmt(workoutDuration)}` : ''}
+        </Text>
+      </View>
 
-        {/* centered content */}
-        <View pointerEvents="box-none" style={s.centerOverlay}>
-          {!ready ? (
-            <>
-              <ActivityIndicator size="large" color="#D8FF3E" pointerEvents="none" />
-              <Text
-                style={{ color: '#a5a5a5', marginTop: 10, fontWeight: '700' }}
-                pointerEvents="none"
-              >
-                Getting class ready…
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text style={s.stepCounter} pointerEvents="none">
-                {totalMinutes > 0 ? (
-                  <>
-                    Round {String(Math.min(minuteIdx + 1, totalMinutes)).padStart(2, '0')} /{' '}
-                    {String(totalMinutes).padStart(2, '0')}
-                  </>
-                ) : (
-                  <>Waiting for coach…</>
-                )}
-              </Text>
+      <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />
 
-              <Text style={s.score} pointerEvents="none">
-                {totalInRound > 0
-                  ? `${String(Math.min(localIdx, totalInRound)).padStart(2, '0')} / ${String(totalInRound).padStart(2, '0')} exercises`
-                  : 'No exercises yet'}
-              </Text>
-
-              {plannedDone ? (
-                <>
-                  <Text style={s.current} pointerEvents="none">
-                    CLASS ENDED
-                  </Text>
-                  <Text style={s.nextLabel} pointerEvents="none">
-                    Great work — leaderboard updating…
-                  </Text>
-                </>
-              ) : finishedThisMinute ? (
-                <>
-                  <Text style={s.current} pointerEvents="none">
-                    WAIT FOR NEXT ROUND
-                  </Text>
-                  <Text style={s.nextLabel} pointerEvents="none">
-                    Starts at {fmt((minuteIdx + 1) * 60)}
-                  </Text>
-                </>
+      {/* centered content */}
+      <View pointerEvents="box-none" style={s.centerOverlay}>
+        {!ready ? (
+          <>
+            <ActivityIndicator size="large" color="#D8FF3E" pointerEvents="none" />
+            <Text style={{ color: '#a5a5a5', marginTop: 10, fontWeight: '700' }} pointerEvents="none">Getting class ready…</Text>
+          </>
+        ) : (
+          <>
+            <Text style={s.stepCounter} pointerEvents="none">
+              {totalMinutes > 0 ? (
+                <>Round {String(Math.min(minuteIdx + 1, totalMinutes)).padStart(2,'0')} / {String(totalMinutes).padStart(2,'0')}</>
               ) : (
                 <>
                   <Text style={s.current} pointerEvents="none">
@@ -538,19 +507,61 @@ export default function EmomLiveScreen() {
           </View>
         )}
 
-        {/* PAUSE overlay */}
-        {session?.status === 'paused' && (
-          <View style={s.pausedOverlay} pointerEvents="auto">
-            <Animated.View
-              style={[
-                StyleSheet.absoluteFillObject,
-                { backgroundColor: '#000', opacity: fadeOpacity },
-              ]}
+      {/* press zones */}
+      <View style={s.row}>
+        {Platform.OS === 'android' ? (
+          <>
+            <TouchableNativeFeedback
+              onPress={() => go(-1)}
+              disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0}
+              background={TouchableNativeFeedback.Ripple('#ff6464', false)}
+              useForeground={true}
+            >
+              <View style={s.back} />
+            </TouchableNativeFeedback>
+            <TouchableNativeFeedback
+              onPress={() => go(1)}
+              disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0}
+              background={TouchableNativeFeedback.Ripple('#64ff64', false)}
+              useForeground={true}
+            >
+              <View style={s.next} />
+            </TouchableNativeFeedback>
+          </>
+        ) : (
+          <>
+            <Pressable
+              onPress={() => go(-1)}
+              disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0}
+              style={({pressed}) => [s.back, pressed && {opacity: 0.7}]}
             />
-            <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFillObject} />
-            <Animated.View style={{ alignItems: 'center', transform: [{ scale: scaleIn }] }}>
-              <Text style={s.pausedTitle}>PAUSED</Text>
-              <Text style={s.pausedSub}>waiting for coach...</Text>
+            <Pressable
+              onPress={() => go(1)}
+              disabled={!ready || session?.status !== 'live' || plannedDone || totalInRound===0}
+              style={({pressed}) => [s.next, pressed && {opacity: 0.7}]}
+            />
+          </>
+        )}
+      </View>
+
+      {/* tutorial overlay */}
+      {showTutorial && (
+        <View style={s.tutorialOverlay} pointerEvents="none">
+          {/* Green region highlight */}
+          {tutorialStep === 0 && (
+            <Animated.View style={[s.tutorialHighlight, s.tutorialGreenHighlight]} pointerEvents="none">
+              <View style={s.tutorialLabelContainer}>
+                <Text style={s.tutorialLabel}>TAP FOR NEXT</Text>
+              </View>
+            </Animated.View>
+          )}
+          
+          {/* Red region highlight */}
+          {tutorialStep === 1 && (
+            <Animated.View style={[s.tutorialHighlight, s.tutorialRedHighlight]} pointerEvents="none">
+              <View style={s.tutorialLabelContainer}>
+                <Text style={s.tutorialLabel}>TAP FOR BACK</Text>
+              </View>
             </Animated.View>
           </View>
         )}

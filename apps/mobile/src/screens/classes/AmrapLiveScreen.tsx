@@ -1,15 +1,9 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  StatusBar,
-  Modal,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-  Animated,
+  View, Text, StyleSheet, Pressable, StatusBar,
+  TextInput, TouchableOpacity, ActivityIndicator, Animated, KeyboardAvoidingView, Platform,
+  TouchableNativeFeedback
+
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -24,6 +18,7 @@ import { getToken, getUser } from '../../utils/authStorage';
 import config from '../../config';
 import { HypeToast } from '../../components/HypeToast';
 import { useLeaderboardHype } from '../../hooks/useLeaderboardHype';
+import { calculateWorkoutDuration } from '../../utils/workoutDuration';
 
 type R = RouteProp<AuthStackParamList, 'AmrapLive'>;
 
@@ -125,6 +120,9 @@ export default function AmrapLiveScreen() {
   const cap = session?.time_cap_seconds ?? 0;
   const timeUp = cap > 0 && elapsed >= cap;
 
+  // Calculate workout duration for display
+  const workoutDuration = calculateWorkoutDuration(session);
+
   // AMRAP never "finishes" early; only ends when coach stops or cap reached
   const finished = false;
 
@@ -153,9 +151,21 @@ export default function AmrapLiveScreen() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [partial, setPartial] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  useEffect(() => { 
+    if (askPartial && !modalOpen && !isSubmitting) {
+      setModalOpen(true);
+    }
+  }, [askPartial, modalOpen, isSubmitting]);
+  
+  // Cleanup modal state when component unmounts or navigation occurs
   useEffect(() => {
-    if (askPartial && !modalOpen) setModalOpen(true);
-  }, [askPartial, modalOpen]);
+    return () => {
+      setModalOpen(false);
+      setIsSubmitting(false);
+    };
+  }, []);
 
   // Tutorial overlay state
   const [showTutorial, setShowTutorial] = useState(true);
@@ -176,18 +186,33 @@ export default function AmrapLiveScreen() {
   }, [showTutorial]);
 
   const sendPartial = async () => {
-    const token = await getToken();
-    await axios.post(
-      `${config.BASE_URL}/live/${classId}/partial`,
-      {
-        reps: Math.max(0, Number(partial) || 0),
-      },
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    setModalOpen(false);
-    if (session?.status === 'ended' && !hasNavigatedRef.current) {
-      hasNavigatedRef.current = true;
-      nav.replace('LiveClassEnd', { classId });
+    if (isSubmitting) return; // Prevent double submission
+    
+    setIsSubmitting(true);
+    try {
+      const token = await getToken();
+      await axios.post(`${config.BASE_URL}/live/${classId}/partial`, {
+        reps: Math.max(0, Number(partial) || 0)
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      
+      setModalOpen(false);
+      
+      if (session?.status === 'ended' && !hasNavigatedRef.current) {
+        hasNavigatedRef.current = true;
+        nav.replace('LiveClassEnd', { classId });
+      }
+    } catch (error) {
+      console.error('Error submitting partial reps:', error);
+      // Still close modal on error to prevent getting stuck
+      setModalOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleModalClose = () => {
+    if (!isSubmitting) {
+      setModalOpen(false);
     }
   };
 
@@ -249,11 +274,122 @@ export default function AmrapLiveScreen() {
     <View style={s.root}>
       <StatusBar hidden={true} />
       <SafeAreaView style={s.safeArea} edges={['left', 'right']}>
-        {/* single timer */}
-        <View pointerEvents="none" style={s.topOverlay}>
-          <Text style={s.timeTop} pointerEvents="none">
-            {fmt(elapsed)}
-          </Text>
+
+      {/* single timer */}
+      <View pointerEvents="none" style={s.topOverlay}>
+        <Text style={s.timeTop} pointerEvents="none">
+          {fmt(elapsed)}{workoutDuration > 0 ? ` / ${fmt(workoutDuration)}` : ''}
+        </Text>
+      </View>
+      {/* hype banner */}
+      <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />
+
+
+      {/* centered content */}
+      <View pointerEvents="box-none" style={s.centerOverlay}>
+        {!ready ? (
+          <>
+            <ActivityIndicator size="large" color="#D8FF3E" pointerEvents="none" />
+            <Text style={{ color: '#a5a5a5', marginTop: 10, fontWeight: '700' }} pointerEvents="none">Getting class ready…</Text>
+          </>
+        ) : (
+          <>
+            <Text style={s.stepCounter} pointerEvents="none">
+              {String(localIdx + 1).padStart(2,'0')} / {String(stepCount).padStart(2,'0')}
+              {typeof progress.rounds_completed === 'number' ? `   •   Rounds: ${progress.rounds_completed}` : ''}
+            </Text>
+            {!!scoreSoFar && <Text style={s.score} pointerEvents="none">{scoreSoFar} reps</Text>}
+            <Text style={s.current} pointerEvents="none">{current?.name ?? '—'}</Text>
+            <Text style={s.nextLabel} pointerEvents="none">Next: {next?.name ?? '—'}</Text>
+
+            <View style={[s.lb, { zIndex: 50, elevation: 6 }]} pointerEvents="box-none">
+              <Text style={s.lbTitle} pointerEvents="none">Leaderboard</Text>
+
+              {/* RX/SC filter */}
+              <View style={{ flexDirection:'row', justifyContent:'center', gap:6, marginBottom:8 }} pointerEvents="auto">
+                {(['ALL','RX','SC'] as const).map(opt => (
+                  <TouchableOpacity
+                    key={opt}
+                    onPress={()=>setScope(opt)}
+                    style={{
+                      paddingHorizontal:10, paddingVertical:6, borderRadius:999,
+                      backgroundColor: scope===opt ? '#2e3500' : '#1f1f1f',
+                      borderWidth:1, borderColor: scope===opt ? '#d8ff3e' : '#2a2a2a'
+                    }}
+                  >
+                    <Text style={{ color: scope===opt ? '#d8ff3e' : '#9aa', fontWeight:'800' }}>{opt}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {lb.slice(0, 3).map((r: any, i: number) => {
+                const displayName =
+                  (r.first_name || r.last_name)
+                    ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
+                    : (r.name ?? `User ${r.user_id}`);
+                return (
+                  <View key={`${r.user_id}-${i}`} style={s.lbRow} pointerEvents="none">
+                    <Text style={s.lbPos} pointerEvents="none">{i+1}</Text>
+                    <Text style={s.lbUser} pointerEvents="none">
+                      {displayName} <Text style={{ color:'#9aa' }} pointerEvents="none">({(r.scaling ?? 'RX')})</Text>
+                    </Text>
+                    <Text style={s.lbScore} pointerEvents="none">
+                      {r.finished ? fmt(Number(r.elapsed_seconds ?? 0)) : `${Number(r.total_reps ?? 0)} reps`}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </>
+        )}
+      </View>
+
+      {/* press zones */}
+      <View style={s.row}>
+        {Platform.OS === 'android' ? (
+          <>
+            <TouchableNativeFeedback
+              onPress={() => go(-1)}
+              disabled={!ready || session?.status !== 'live'}
+              background={TouchableNativeFeedback.Ripple('#ff6464', false)}
+              useForeground={true}
+            >
+              <View style={s.back} />
+            </TouchableNativeFeedback>
+            <TouchableNativeFeedback
+              onPress={() => go(1)}
+              disabled={!ready || session?.status !== 'live'}
+              background={TouchableNativeFeedback.Ripple('#64ff64', false)}
+              useForeground={true}
+            >
+              <View style={s.next} />
+            </TouchableNativeFeedback>
+          </>
+        ) : (
+          <>
+            <Pressable
+              onPress={() => go(-1)}
+              disabled={!ready || session?.status !== 'live'}
+              style={({pressed}) => [s.back, pressed && {opacity: 0.7}]}
+            />
+            <Pressable
+              onPress={() => go(1)}
+              disabled={!ready || session?.status !== 'live'}
+              style={({pressed}) => [s.next, pressed && {opacity: 0.7}]}
+            />
+          </>
+        )}
+      </View>
+
+      {/* pause overlay */}
+      {session?.status === 'paused' && (
+        <View style={s.pausedOverlay} pointerEvents="auto">
+          <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor:'#000', opacity: fadeOpacity }]} />
+          <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFillObject} />
+          <Animated.View style={{ alignItems:'center', transform:[{ scale: scaleIn }] }}>
+            <Text style={s.pausedTitle}>PAUSED</Text>
+            <Text style={s.pausedSub}>waiting for coach...</Text>
+          </Animated.View>
         </View>
         {/* hype banner */}
         <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />
@@ -355,88 +491,48 @@ export default function AmrapLiveScreen() {
             </>
           )}
         </View>
+      )}
 
-        {/* press zones */}
-        <View style={s.row}>
-          <Pressable
-            style={s.back}
-            android_ripple={{ color: '#000' }}
-            onPress={() => go(-1)}
-            disabled={!ready || session?.status !== 'live'}
-          />
-          <Pressable
-            style={s.next}
-            android_ripple={{ color: '#0a0' }}
-            onPress={() => go(1)}
-            disabled={!ready || session?.status !== 'live'}
-          />
-        </View>
-
-        {/* pause overlay */}
-        {session?.status === 'paused' && (
-          <View style={s.pausedOverlay} pointerEvents="auto">
-            <Animated.View
-              style={[
-                StyleSheet.absoluteFillObject,
-                { backgroundColor: '#000', opacity: fadeOpacity },
-              ]}
+      {/* partial reps prompt - Custom overlay instead of Modal */}
+      {modalOpen && (
+        <View style={s.customModalOverlay}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={s.keyboardAvoidingView}
+          >
+            <TouchableOpacity 
+              style={s.modalBackdrop} 
+              activeOpacity={1} 
+              onPress={handleModalClose}
             />
-            <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFillObject} />
-            <Animated.View style={{ alignItems: 'center', transform: [{ scale: scaleIn }] }}>
-              <Text style={s.pausedTitle}>PAUSED</Text>
-              <Text style={s.pausedSub}>waiting for coach...</Text>
-            </Animated.View>
-          </View>
-        )}
-
-        {/* tutorial overlay */}
-        {showTutorial && (
-          <View style={s.tutorialOverlay} pointerEvents="none">
-            {/* Green region highlight */}
-            {tutorialStep === 0 && (
-              <Animated.View
-                style={[s.tutorialHighlight, s.tutorialGreenHighlight]}
-                pointerEvents="none"
-              >
-                <View style={s.tutorialLabelContainer}>
-                  <Text style={s.tutorialLabel}>TAP FOR NEXT</Text>
-                </View>
-              </Animated.View>
-            )}
-
-            {/* Red region highlight */}
-            {tutorialStep === 1 && (
-              <Animated.View
-                style={[s.tutorialHighlight, s.tutorialRedHighlight]}
-                pointerEvents="none"
-              >
-                <View style={s.tutorialLabelContainer}>
-                  <Text style={s.tutorialLabel}>TAP FOR BACK</Text>
-                </View>
-              </Animated.View>
-            )}
-          </View>
-        )}
-
-        {/* partial reps prompt */}
-        <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={() => {}}>
-          <View style={s.modalWrap}>
             <View style={s.modalCard}>
               <Text style={s.modalTitle}>Time's up — last exercise reps</Text>
               <TextInput
-                value={partial}
-                onChangeText={setPartial}
+                value={partial} 
+                onChangeText={setPartial} 
                 keyboardType="numeric"
-                style={s.modalInput}
-                placeholder="0"
+                style={s.modalInput} 
+                placeholder="0" 
                 placeholderTextColor="#7a7a7a"
+                autoFocus={false}
+                selectTextOnFocus={true}
+                returnKeyType="done"
+                onSubmitEditing={sendPartial}
+                editable={!isSubmitting}
               />
-              <TouchableOpacity style={s.modalBtn} onPress={sendPartial}>
-                <Text style={s.modalBtnText}>Submit</Text>
+              <TouchableOpacity 
+                style={[s.modalBtn, isSubmitting && s.modalBtnDisabled]} 
+                onPress={sendPartial}
+                disabled={isSubmitting}
+              >
+                <Text style={s.modalBtnText}>
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </Modal>
+          </KeyboardAvoidingView>
+        </View>
+      )}
       </SafeAreaView>
     </View>
   );
@@ -457,68 +553,58 @@ const s = StyleSheet.create({
   next: { flex: 3, backgroundColor: '#0f1a13' },
 
   topOverlay: { position: 'absolute', top: 8, left: 0, right: 0, alignItems: 'center', zIndex: 10 },
-  centerOverlay: {
-    position: 'absolute',
-    top: '20%',
-    left: 20,
-    right: 20,
-    alignItems: 'center',
-    zIndex: 9,
-  },
+  centerOverlay: { position: 'absolute', top: '20%', left: 20, right: 20, alignItems: 'center', zIndex: 9 },
 
-  timeTop: { color: '#e6e6e6', fontWeight: '900', fontSize: 26 },
-  stepCounter: { color: '#d8ff3e', fontWeight: '900', marginBottom: 6 },
-  score: { color: '#cfd7cf', fontWeight: '900', marginTop: 2 },
-  current: { color: '#fff', fontSize: 44, fontWeight: '900', marginTop: 6, textAlign: 'center' },
-  nextLabel: { color: '#9aa59b', fontWeight: '800', marginTop: 6 },
+  timeTop: { color:'#e6e6e6', fontWeight:'900', fontSize: 26 },
+  stepCounter: { color:'#d8ff3e', fontWeight:'900', marginBottom: 6 },
+  score: { color:'#cfd7cf', fontWeight:'900', marginTop: 2 },
+  current: { color:'#fff', fontSize: 44, fontWeight:'900', marginTop: 6, textAlign:'center' },
+  nextLabel: { color:'#9aa59b', fontWeight:'800', marginTop: 6 },
 
-  lb: { marginTop: 16, width: '80%', backgroundColor: '#111', borderRadius: 12, padding: 12 },
-  lbTitle: { color: '#fff', fontWeight: '800', marginBottom: 6, textAlign: 'center' },
-  lbRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
-  lbPos: { width: 22, color: '#d8ff3e', fontWeight: '900' },
-  lbUser: { flex: 1, color: '#dedede' },
-  lbScore: { color: '#fff', fontWeight: '800' },
+  lb: { marginTop: 16, width:'80%', backgroundColor:'#111', borderRadius:12, padding:12 },
+  lbTitle: { color:'#fff', fontWeight:'800', marginBottom: 6, textAlign:'center' },
+  lbRow: { flexDirection:'row', alignItems:'center', paddingVertical:4 },
+  lbPos: { width: 22, color:'#d8ff3e', fontWeight:'900' },
+  lbUser:{ flex:1, color:'#dedede' },
+  lbScore:{ color:'#fff', fontWeight:'800' },
 
-  pausedOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 20,
-  },
-  pausedTitle: {
-    color: '#fff',
-    fontWeight: '900',
-    fontSize: 44,
-    letterSpacing: 2,
-    textAlign: 'center',
-  },
-  pausedSub: {
-    color: '#eaeaea',
-    fontWeight: '700',
-    marginTop: 6,
-    fontSize: 14,
-    textAlign: 'center',
-  },
+  pausedOverlay: { ...StyleSheet.absoluteFillObject, alignItems:'center', justifyContent:'center', zIndex: 20 },
+  pausedTitle: { color:'#fff', fontWeight:'900', fontSize: 44, letterSpacing: 2, textAlign:'center' },
+  pausedSub:   { color:'#eaeaea', fontWeight:'700', marginTop: 6, fontSize: 14, textAlign:'center' },
 
-  modalWrap: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  customModalOverlay: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    bottom: 0, 
+    zIndex: 1000, 
+    backgroundColor: 'rgba(0,0,0,0.65)' 
   },
-  modalCard: { backgroundColor: '#151515', borderRadius: 14, padding: 18, width: '80%' },
-  modalTitle: { color: '#fff', fontWeight: '800', marginBottom: 12, textAlign: 'center' },
-  modalInput: {
-    backgroundColor: '#222',
-    borderRadius: 10,
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: '900',
-    paddingVertical: 8,
-    textAlign: 'center',
+  keyboardAvoidingView: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
   },
-  modalBtn: { backgroundColor: '#d8ff3e', borderRadius: 10, paddingVertical: 14, marginTop: 12 },
-  modalBtnText: { color: '#111', fontWeight: '900', textAlign: 'center' },
+  modalBackdrop: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    bottom: 0 
+  },
+  modalCard: { 
+    backgroundColor: '#151515', 
+    borderRadius: 14, 
+    padding: 18, 
+    width: '80%', 
+    maxWidth: 400 
+  },
+  modalTitle:{ color:'#fff', fontWeight:'800', marginBottom:12, textAlign:'center' },
+  modalInput:{ backgroundColor:'#222', borderRadius:10, color:'#fff', fontSize:24, fontWeight:'900', paddingVertical:8, textAlign:'center' },
+  modalBtn:{ backgroundColor:'#d8ff3e', borderRadius:10, paddingVertical:14, marginTop:12 },
+  modalBtnDisabled:{ backgroundColor:'#666', opacity:0.6 },
+  modalBtnText:{ color:'#111', fontWeight:'900', textAlign:'center' },
 
   tutorialOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100 },
   tutorialHighlight: {

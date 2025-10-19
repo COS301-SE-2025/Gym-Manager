@@ -73,7 +73,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
       <strong>Vansh Sood</strong><br/>
       I’ve always been fascinated by how technology works, the kind of kid who’d rather take apart the remote than actually change the channel. That same curiosity now drives my passion for coding and software engineering. I take pride in my strong academic performance and approach every challenge with persistence and a mindset of continuous learning. My philosophy is simple: always keep improving, both the work and myself.
       <p style="margin-top:8px;">
-        <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
+        <a href="https://github.com/Vansh-Sood" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/vansh-sood-783519352/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
         <a href="mailto:vanshsood4@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
       </p>
@@ -93,11 +93,11 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
     </td>
     <td style="vertical-align:top; padding:12px;">
       <strong>Jason Mayo</strong><br/>
-      Designer, UI Engineer, Integration Engineer.
+      A passionate software developer who believes, as Steve Jobs said, “the world around you is made up by people no smarter than you and I.” That idea has fueled my drive to build meaningful software that challenges limits and helps people live with purpose. I’m currently completing my Computer Science degree and have developed two mobile apps with over 40 000+ downloads. I’m a people oriented developer who thrives in collaboration, leadership, and building technology that truly impacts lives.
       <p style="margin-top:8px;">
-        <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
+        <a href="https://github.com/JasonMayo23587572" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="http://linkedin.com/in/jason-mayo-7a8063210" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
-        <a href="mailto:jason.m1122332@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+        <a href="mailto:Jason@tryonething.app" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
       </p>
     </td>
   </tr>
@@ -117,7 +117,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
       <strong>Denis Woolley</strong><br/>
       I've always had an interest in programming, and it led me to study Computer Science, develop games, and produce videos where I teach coding skills.
       <p style="margin-top:8px;">
-        <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
+        <a href="https://github.com/denis-woolley" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/denis-woolley-981aa6202/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
         <a href="mailto:denisjnr88@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
       </p>
@@ -137,9 +137,9 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
     </td>
     <td style="vertical-align:top; padding:12px;">
       <strong>Amadeus Fidos</strong><br/>
-      Architect, Designer, UI Engineer.
+      Computer science student passionate about coding and interested in full-stack software development.
       <p style="margin-top:8px;">
-        <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
+        <a href="https://github.com/u22526162" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/amadeus-fidos-b22512356/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
         <a href="mailto:amadeusfidos@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
       </p>
@@ -161,7 +161,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
       <strong>Jared Hürlimann</strong><br/>
       I wasn’t always into technology. Growing up, I was the kind of kid who spent most of my time outside, playing sports, exploring, and rarely thinking about what was going on behind a screen. It wasn’t until the during COVID pandemic that I picked up coding out of curiosity. That curiosity quickly turned into a passion. Teaching myself how to code opened up a whole new world of problem-solving, creativity, and constant learning. Since then, I’ve been hooked. What started as a way to pass the time has become something I genuinely love, building things, solving problems, and continuously pushing myself to grow as a developer. 
       <p style="margin-top:8px;">
-        <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
+        <a href="https://github.com/Jared-Hurlimann" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
         <a href="mailto:jaredhurlimann@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
       </p>

@@ -23,6 +23,7 @@ import { supabase } from '../../lib/supabase';
 import { StreakCard } from '../../components/gamification/StreakCard';
 import { gamificationService } from '../../services/gamificationService';
 import { GamificationStats } from '../../types/gamification';
+import PasswordChangeModal from '../../components/auth/PasswordChangeModal';
 
 type ProfileScreenNavigationProp = StackNavigationProp<AuthStackParamList & CoachStackParamList>;
 
@@ -37,6 +38,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [gamificationStats, setGamificationStats] = useState<GamificationStats | null>(null);
   const [isLoadingGamification, setIsLoadingGamification] = useState(false);
+  
+  // Password change state
+  const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
 
   const isCoach = !!currentUser?.roles?.includes('coach');
   const isMember = !!currentUser?.roles?.includes('member');
@@ -79,6 +83,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             setIsLoadingGamification(false);
           }
         }
+
       } catch (error) {
         console.error('Failed to load user data:', error);
       } finally {
@@ -155,6 +160,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         [{ text: 'OK' }],
       );
     }
+  };
+
+  // Password change handler
+  const handlePasswordChanged = () => {
+    Alert.alert('Success', 'Password changed successfully!');
   };
 
   const getInitials = () => {
@@ -245,12 +255,12 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               <View>
                 <StreakCard 
                   streak={gamificationStats.userStreak} 
-                  onPress={() => navigation.navigate('MemberTabs', { screen: 'Progress' })}
+                  onPress={() => {/* TODO: Fix navigation to Progress screen */}}
                 />
                 
                 <TouchableOpacity
                   style={styles.settingItem}
-                  onPress={() => navigation.navigate('MemberTabs', { screen: 'Progress' })}
+                  onPress={() => {/* TODO: Fix navigation to Progress screen */}}
                 >
                   <View style={styles.settingLeft}>
                     <Ionicons name="trophy-outline" size={24} color="#D8FF3E" />
@@ -343,6 +353,21 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <Ionicons name="chevron-forward" size={24} color="#888" />
           </TouchableOpacity>
 
+          {/* Security Section */}
+          <TouchableOpacity
+            style={styles.settingItem}
+            onPress={() => setShowPasswordChangeModal(true)}
+          >
+            <View style={styles.settingLeft}>
+              <Ionicons name="key-outline" size={24} color="#D8FF3E" />
+              <View style={styles.settingText}>
+                <Text style={styles.settingTitle}>Change Password</Text>
+                <Text style={styles.settingDescription}>Update your account password</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#888" />
+          </TouchableOpacity>
+
 
           {/* Role Swap - Only show if user has multiple roles */}
           {currentUser?.roles && currentUser.roles.length > 1 && (
@@ -397,6 +422,13 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Password Change Modal */}
+      <PasswordChangeModal
+        visible={showPasswordChangeModal}
+        onClose={() => setShowPasswordChangeModal(false)}
+        onPasswordChanged={handlePasswordChanged}
+      />
     </SafeAreaView>
   );
 }

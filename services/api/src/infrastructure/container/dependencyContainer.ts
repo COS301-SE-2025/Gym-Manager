@@ -70,6 +70,12 @@ import { GamificationService } from '../../services/gamification/gamificationSer
 import { GamificationRepository } from '../../repositories/gamification/gamificationRepository';
 import { GamificationRoutes } from '../../presentation/gamification/gamificationRoutes';
 
+// Schedule Template-related imports
+import { ScheduleTemplateController } from '../../controllers/scheduleTemplate/scheduleTemplateController';
+import { ScheduleTemplateService } from '../../services/scheduleTemplate/scheduleTemplateService';
+import { ScheduleTemplateRepository } from '../repositories/scheduleTemplateRepository';
+import { ScheduleTemplateRoutes } from '../../presentation/scheduleTemplate/scheduleTemplateRoutes';
+
 /**
  * Dependency Container - Infrastructure Layer
  * Manages dependency injection and object creation
@@ -106,6 +112,7 @@ export class DependencyContainer {
     this.services.set('dailyLeaderboardRepository', new DailyLeaderboardRepository());
     this.services.set('memberRepository', new MemberRepository());
     this.services.set('gamificationRepository', new GamificationRepository());
+    this.services.set('scheduleTemplateRepository', new ScheduleTemplateRepository());
 
     // Service layer
     this.services.set(
@@ -169,6 +176,11 @@ export class DependencyContainer {
       new GamificationService(this.services.get('gamificationRepository')),
     );
 
+    this.services.set(
+      'scheduleTemplateService',
+      new ScheduleTemplateService(this.services.get('scheduleTemplateRepository')),
+    );
+
     // Analytics service
     this.services.set('analyticsRepository', new AnalyticsRepository());
     this.services.set(
@@ -217,6 +229,11 @@ export class DependencyContainer {
       new GamificationController(this.services.get('gamificationService')),
     );
 
+    this.services.set(
+      'scheduleTemplateController',
+      new ScheduleTemplateController(this.services.get('scheduleTemplateService')),
+    );
+
     // Presentation layer
     this.services.set('authRoutes', new AuthRoutes());
     this.services.set('classRoutes', new ClassRoutes());
@@ -233,6 +250,11 @@ export class DependencyContainer {
     this.services.set(
       'gamificationRoutes',
       new GamificationRoutes(this.services.get('gamificationController')),
+    );
+
+    this.services.set(
+      'scheduleTemplateRoutes',
+      new ScheduleTemplateRoutes(this.services.get('scheduleTemplateController')),
     );
   }
 
@@ -347,5 +369,9 @@ export class DependencyContainer {
 
   getGamificationRoutes(): GamificationRoutes {
     return this.get<GamificationRoutes>('gamificationRoutes');
+  }
+
+  getScheduleTemplateRoutes(): ScheduleTemplateRoutes {
+    return this.get<ScheduleTemplateRoutes>('scheduleTemplateRoutes');
   }
 }

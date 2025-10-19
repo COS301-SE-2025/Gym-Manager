@@ -33,6 +33,15 @@ export class AuthRoutes {
 
     // ME route
     this.router.get('/me', this.authMiddleware.isAuthenticated, this.authController.getMe);
+
+    // Password change route (requires authentication)
+    this.router.post('/change-password', this.authMiddleware.isAuthenticated, this.authController.changePassword);
+
+    // MFA routes (require authentication)
+    this.router.get('/mfa/status', this.authMiddleware.isAuthenticated, this.authController.getMfaStatus);
+    this.router.post('/mfa/generate-secret', this.authMiddleware.isAuthenticated, this.authController.generateMfaSecret);
+    this.router.post('/mfa/enable', this.authMiddleware.isAuthenticated, this.authController.enableMfa);
+    this.router.post('/mfa/disable', this.authMiddleware.isAuthenticated, this.authController.disableMfa);
   }
 
   getRouter(): express.Router {

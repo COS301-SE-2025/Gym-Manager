@@ -5,6 +5,9 @@ export interface User {
   email: string;
   phone?: string;
   passwordHash?: string;
+  mfaEnabled?: boolean;
+  mfaSecret?: string;
+  mfaBackupCodes?: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }

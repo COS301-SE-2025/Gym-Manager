@@ -13,6 +13,12 @@ export interface IAuthService {
   getUserStatus(
     userId: number,
   ): Promise<{ userId: number; roles: string[]; membershipStatus: string }>;
+  changePassword(userId: number, currentPassword: string, newPassword: string): Promise<void>;
+  enableMfa(userId: number, token: string): Promise<{ backupCodes: string[] }>;
+  disableMfa(userId: number, token: string): Promise<void>;
+  verifyMfaToken(userId: number, token: string): Promise<boolean>;
+  generateMfaSecret(userId: number): Promise<{ secret: string; qrCode: string }>;
+  verifyMfaBackupCode(userId: number, backupCode: string): Promise<boolean>;
 }
 
 export interface IUserRepository {
@@ -22,6 +28,9 @@ export interface IUserRepository {
   createUserWithRoles(userData: Omit<User, 'userId'>, roles: string[]): Promise<User>;
   getRolesByUserId(userId: number): Promise<string[]>;
   getMemberStatus(userId: number): Promise<string | null>;
+  updatePassword(userId: number, newPasswordHash: string): Promise<void>;
+  updateMfaSettings(userId: number, mfaEnabled: boolean, mfaSecret?: string, backupCodes?: string[]): Promise<void>;
+  getMfaSettings(userId: number): Promise<{ mfaEnabled: boolean; mfaSecret?: string; backupCodes?: string[] }>;
 }
 
 export interface IJwtService {
@@ -34,4 +43,12 @@ export interface IJwtService {
 export interface IPasswordService {
   hashPassword(password: string): Promise<string>;
   verifyPassword(password: string, hashedPassword: string): Promise<boolean>;
+}
+
+export interface IMfaService {
+  generateSecret(userEmail: string, serviceName?: string): string;
+  generateQRCode(secret: string, userEmail: string, serviceName?: string): Promise<string>;
+  verifyToken(token: string, secret: string): boolean;
+  generateBackupCodes(count?: number): string[];
+  verifyBackupCode(code: string, backupCodes: string[]): boolean;
 }

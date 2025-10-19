@@ -10,7 +10,7 @@ import {
   users,
 } from '../../db/schema';
 import { eq, and, asc, between } from 'drizzle-orm';
-import { format } from 'date-fns';
+import { format, addWeeks } from 'date-fns';
 import { parseISO as dateFnsParseISO } from 'date-fns';
 import { IAdminRepository } from '../../domain/interfaces/class.interface';
 import { Class, WeeklyScheduleInput } from '../../domain/entities/class.entity';
@@ -78,9 +78,9 @@ export class AdminRepository implements IAdminRepository {
   async getWeeklySchedule(tx?: Executor): Promise<any> {
     const today = new Date();
 
-    // Monday–Sunday window
+    // Show classes for the next 4 weeks instead of just current week
     const weekStart = format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-    const weekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    const weekEnd = format(addWeeks(endOfWeek(today, { weekStartsOn: 1 }), 3), 'yyyy-MM-dd');
 
     const rows = await this.exec(tx)
       .select({

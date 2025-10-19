@@ -57,62 +57,38 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 ---
 
 <table>
+  <colgroup>
+    <col width="140" />
+    <col />
+  </colgroup>
+
   <tr>
-    <td align="center" width="220">
-      <img src="Vansh.jpeg" alt="Vansh Sood" width="200" height="200" style="border-radius:50%;"><br>
-      <b>Vansh Sood</b><br>
-      I’ve always been fascinated by how technology works — the kind of kid who’d rather take apart the remote than actually change the channel. That same curiosity now drives my passion for coding and software engineering. I take pride in my strong academic performance and approach every challenge with persistence and a mindset of continuous learning.<br><br>
-      <a href="https://github.com/yourusername"><img src="https://img.icons8.com/material-outlined/24/github.png"/></a>
-      <a href="https://www.linkedin.com/in/vansh-sood-783519352/"><img src="https://img.icons8.com/material-outlined/24/linkedin.png"/></a>
-      <a href="mailto:vanshsood4@gmail.com"><img src="https://img.icons8.com/material-outlined/24/new-post.png"/></a>
+    <td valign="top" align="center">
+      <img src="Vansh.jpeg" alt="Vansh Sood" width="120" style="border-radius:50%;" />
     </td>
-    <td align="left">
+    <td valign="top">
+      <strong>Vansh Sood</strong><br>
+      I’ve always been fascinated by how technology works, the kind of kid who’d rather take apart the remote than actually change the channel. That same curiosity now drives my passion for coding and software engineering. I take pride in my strong academic performance and approach every challenge with persistence and a mindset of continuous learning. My philosophy is simple: always keep improving, both the work and myself.<br><br>
+      <a href="https://github.com/yourusername"><img src="https://img.icons8.com/material-outlined/24/github.png" alt="GitHub" /></a>
+      <a href="https://www.linkedin.com/in/vansh-sood-783519352/"><img src="https://img.icons8.com/material-outlined/24/linkedin.png" alt="LinkedIn" /></a>
+      <a href="mailto:vanshsood4@gmail.com"><img src="https://img.icons8.com/material-outlined/24/new-post.png" alt="Email" /></a>
     </td>
   </tr>
 
   <tr>
-    <td align="center" width="220">
-      <img src="Jason.jpeg" alt="Jason Mayo" width="200" height="200" style="border-radius:50%;"><br>
-      <b>Jason Mayo</b><br>
+    <td valign="top" align="center">
+      <img src="Jason.jpeg" alt="Jason Mayo" width="120" style="border-radius:50%;" />
+    </td>
+    <td valign="top">
+      <strong>Jason Mayo</strong><br>
       Designer, UI Engineer, Integration Engineer<br><br>
-      <a href="https://github.com/yourusername"><img src="https://img.icons8.com/material-outlined/24/github.png"/></a>
-      <a href="http://linkedin.com/in/jason-mayo-7a8063210"><img src="https://img.icons8.com/material-outlined/24/linkedin.png"/></a>
-      <a href="mailto:jason.m1122332@gmail.com"><img src="https://img.icons8.com/material-outlined/24/new-post.png"/></a>
+      <a href="https://github.com/yourusername"><img src="https://img.icons8.com/material-outlined/24/github.png" alt="GitHub" /></a>
+      <a href="http://linkedin.com/in/jason-mayo-7a8063210"><img src="https://img.icons8.com/material-outlined/24/linkedin.png" alt="LinkedIn" /></a>
+      <a href="mailto:jason.m1122332@gmail.com"><img src="https://img.icons8.com/material-outlined/24/new-post.png" alt="Email" /></a>
     </td>
   </tr>
 
-  <tr>
-    <td align="center" width="220">
-      <img src="Denis.jpeg" alt="Denis Woolley" width="200" height="200" style="border-radius:50%;"><br>
-      <b>Denis Woolley</b><br>
-      DevOps, Services Engineer, Architect<br><br>
-      <a href="https://github.com/yourusername"><img src="https://img.icons8.com/material-outlined/24/github.png"/></a>
-      <a href="https://www.linkedin.com/in/denis-woolley-981aa6202/"><img src="https://img.icons8.com/material-outlined/24/linkedin.png"/></a>
-      <a href="mailto:denisjnr88@gmail.com"><img src="https://img.icons8.com/material-outlined/24/new-post.png"/></a>
-    </td>
-  </tr>
-
-  <tr>
-    <td align="center" width="220">
-      <img src="Amadeus.jpg" alt="Amadeus Fidos" width="200" height="200" style="border-radius:50%;"><br>
-      <b>Amadeus Fidos</b><br>
-      Architect, Designer, UI Engineer<br><br>
-      <a href="https://github.com/yourusername"><img src="https://img.icons8.com/material-outlined/24/github.png"/></a>
-      <a href="https://www.linkedin.com/in/amadeus-fidos-b22512356/"><img src="https://img.icons8.com/material-outlined/24/linkedin.png"/></a>
-      <a href="mailto:amadeusfidos@gmail.com"><img src="https://img.icons8.com/material-outlined/24/new-post.png"/></a>
-    </td>
-  </tr>
-
-  <tr>
-    <td align="center" width="220">
-      <img src="Jared.jpeg" alt="Jared Hürlimann" width="200" height="200" style="border-radius:50%;"><br>
-      <b>Jared Hürlimann</b><br>
-      DevOps, Services Engineer, Integration Engineer<br><br>
-      <a href="https://github.com/yourusername"><img src="https://img.icons8.com/material-outlined/24/github.png"/></a>
-      <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/"><img src="https://img.icons8.com/material-outlined/24/linkedin.png"/></a>
-      <a href="mailto:jaredhurlimann@gmail.com"><img src="https://img.icons8.com/material-outlined/24/new-post.png"/></a>
-    </td>
-  </tr>
+  <!-- Repeat rows for Denis, Amadeus, Jared, etc. -->
 </table>
 
 

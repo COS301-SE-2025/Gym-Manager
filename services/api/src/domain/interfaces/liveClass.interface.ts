@@ -39,10 +39,10 @@ export interface ILiveClassService {
 
 export interface ILiveClassRepository {
   upsertFinal: any;
-  persistScoresFromLive(classId: number): unknown;
+  persistScoresFromLive(classId: number): Promise<number[]>;
   upsertScaling(classId: number, userId: number, scaling: string): unknown;
   getScaling(classId: number, userId: number): 'RX' | 'SC' | PromiseLike<'RX' | 'SC'>;
-  autoEndIfCapReached(classId: number): Promise<void>;
+  autoEndIfCapReached(classId: number): Promise<number[]>;
   getClassSession(classId: number): Promise<LiveSession | null>;
 
   getFinalLeaderboard(classId: number): Promise<any>;

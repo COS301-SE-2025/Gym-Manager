@@ -10,8 +10,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
 
   const handleLogout = async () => {
-    router.push('/');
+    // Clear all stored authentication data
     localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
+    document.cookie = 'authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie = 'refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    
+    router.push('/');
   };
 
   return (

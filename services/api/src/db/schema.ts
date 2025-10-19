@@ -46,6 +46,9 @@ export const users = pgTable(
     email: text().notNull(),
     phone: text(),
     passwordHash: text('password_hash').notNull(),
+    mfaEnabled: boolean('mfa_enabled').default(false).notNull(),
+    mfaSecret: text('mfa_secret'),
+    mfaBackupCodes: jsonb('mfa_backup_codes'),
   },
   (table) => [unique('users_email_key').on(table.email)],
 );
@@ -520,5 +523,58 @@ export const userActivities = pgTable(
       foreignColumns: [users.userId],
       name: 'user_activities_user_id_fkey',
     }).onDelete('cascade'),
+  ],
+);
+
+// Schedule Templates for Recurring Classes
+export const scheduleTemplates = pgTable(
+  'schedule_templates',
+  {
+    templateId: serial('template_id').primaryKey().notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdBy: integer('created_by').notNull(),
+    createdAt: timestamp('created_at', { mode: 'string' }).defaultNow(),
+    updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [admins.userId],
+      name: 'schedule_templates_created_by_fkey',
+    }).onDelete('cascade'),
+  ],
+);
+
+export const templateScheduleItems = pgTable(
+  'template_schedule_items',
+  {
+    itemId: serial('item_id').primaryKey().notNull(),
+    templateId: integer('template_id').notNull(),
+    dayOfWeek: integer('day_of_week').notNull(), // 0 = Sunday, 1 = Monday, etc.
+    scheduledTime: time('scheduled_time').notNull(),
+    durationMinutes: integer('duration_minutes').notNull(),
+    capacity: integer('capacity').notNull(),
+    coachId: integer('coach_id'),
+    workoutId: integer('workout_id'),
+    classTitle: varchar('class_title', { length: 255 }),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.templateId],
+      foreignColumns: [scheduleTemplates.templateId],
+      name: 'template_schedule_items_template_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.coachId],
+      foreignColumns: [coaches.userId],
+      name: 'template_schedule_items_coach_id_fkey',
+    }),
+    foreignKey({
+      columns: [table.workoutId],
+      foreignColumns: [workouts.workoutId],
+      name: 'template_schedule_items_workout_id_fkey',
+    }),
   ],
 );

@@ -15,6 +15,20 @@
       "when": 1758086631715,
       "tag": "0001_dry_iron_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1760537729745,
+      "tag": "0002_mighty_tony_stark",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1760886587021,
+      "tag": "0003_huge_mac_gargan",
+      "breakpoints": true
     }
   ]
 }

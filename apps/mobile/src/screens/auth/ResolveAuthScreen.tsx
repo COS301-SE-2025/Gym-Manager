@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import axios from 'axios';
-import { getToken } from '../../utils/authStorage';
+import { getToken, getUser } from '../../utils/authStorage';
 import config from '../../config';
 
 type ResolveAuthScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'ResolveAuth'>;

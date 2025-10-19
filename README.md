@@ -75,7 +75,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
       <p style="margin-top:8px;">
         <a href="https://github.com/Vansh-Sood" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/vansh-sood-783519352/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
-        <a href="mailto:vanshsood4@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+        <a href="mailto:vanshsood4@gmail.com"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
       </p>
     </td>
   </tr>
@@ -97,7 +97,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
       <p style="margin-top:8px;">
         <a href="https://github.com/JasonMayo23587572" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="http://linkedin.com/in/jason-mayo-7a8063210" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
-        <a href="mailto:Jason@tryonething.app" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+        <a href="mailto:Jason@tryonething.app"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
       </p>
     </td>
   </tr>
@@ -119,7 +119,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
       <p style="margin-top:8px;">
         <a href="https://github.com/denis-woolley" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/denis-woolley-981aa6202/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
-        <a href="mailto:denisjnr88@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+        <a href="mailto:denisjnr88@gmail.com"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
       </p>
     </td>
   </tr>
@@ -141,7 +141,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
       <p style="margin-top:8px;">
         <a href="https://github.com/u22526162" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/amadeus-fidos-b22512356/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
-        <a href="mailto:amadeusfidos@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+        <a href="mailto:amadeusfidos@gmail.com"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
       </p>
     </td>
   </tr>
@@ -163,7 +163,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
       <p style="margin-top:8px;">
         <a href="https://github.com/Jared-Hurlimann" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
-        <a href="mailto:jaredhurlimann@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+        <a href="mailto:jaredhurlimann@gmail.com"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
       </p>
     </td>
   </tr>

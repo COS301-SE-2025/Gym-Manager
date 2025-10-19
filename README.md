@@ -43,108 +43,18 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 --- -->
 ## 👥 Team Members
 
-<table style="border-width: 1px; width: 100%; font-family: Arial, sans-serif; border-collapse: collapse;">
-  <tr>
-    <td style="vertical-align: top; width:auto; border: 0; padding: 10px;">
-      <img src="Vansh.jpeg" width="220" height="auto" style="display: block; margin: 0 auto; border-radius: 30px;">
-    </td>
-    <td style="vertical-align: top; width: auto; border: 0; padding: 10px;">
-      <h2><b style="font-size: 18px;">Vansh Sood</b></h2>
-      <h3><b style="font-size: 16px;">Architect, Services Engineer, Data Engineer</b></h3><br>
-      I’ve always been fascinated by how technology works, the kind of kid who’d rather take apart the remote than actually change the channel. That same curiosity now drives my passion for coding and software engineering. I take pride in my strong academic performance and approach every challenge with persistence and a mindset of continuous learning. My philosophy is simple: always keep improving, both the work and myself.
-      <br><br>
-      <a href="https://github.com/yourusername" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/github.png"/>
-      </a>
-      <a href="https://www.linkedin.com/in/vansh-sood-783519352/" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/linkedin.png">
-      </a>
-      <a href="mailto:vanshsood4@gmail.com" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/new-post.png">
-      </a>
-    </td>
-  </tr>
+|  |  |
+|--------|-------------|
+| <img src="https://github.com/user-attachments/assets/58b0d878-079d-4c9c-8b63-e05fff5b479f" alt="Vansh Sood" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Vansh Sood**<br>I’ve always been fascinated by how technology works, the kind of kid who’d rather take apart the remote than actually change the channel. That same curiosity now drives my passion for coding and software engineering. I take pride in my strong academic performance and approach every challenge with persistence and a mindset of continuous learning. My philosophy is simple: always keep improving, both the work and myself.<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/vansh-sood-783519352/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:vanshsood4@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> |
+| <img src="https://github.com/user-attachments/assets/21cab385-bfe2-4511-b286-b9a03117331c" alt="Jason Mayo" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Jason Mayo**<br>Designer, UI Engineer, Integration Engineer<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="http://linkedin.com/in/jason-mayo-7a8063210" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:jason.m1122332@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> |
+| <img src="https://github.com/user-attachments/assets/797d7150-5dc4-4b59-b0b3-fbc0a16a5b4c" alt="Denis Woolley" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Denis Woolley**<br>DevOps, Services Engineer, Architect<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/denis-woolley-981aa6202/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:denisjnr88@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> |
+| <img src="https://github.com/user-attachments/assets/3c1e0f65-a0ee-4f0b-bcf6-7279a11d9275" alt="Amadeus Fidos" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Amadeus Fidos**<br>Architect, Designer, UI Engineer<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/amadeus-fidos-b22512356/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:amadeusfidos@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> |
+| <img src="https://github.com/user-attachments/assets/7fff96a3-9d24-421e-b2c7-c66812b6b5ac" alt="Jared Hürlimann" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Jared Hürlimann**<br>DevOps, Services Engineer, Integration Engineer<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:jaredhurlimann@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> |
 
-  <tr>
-    <td style="vertical-align: top; width:auto; border: 0; padding: 10px;">
-      <img src="Jason.jpeg" width="220" height="auto" style="display: block; margin: 0 auto; border-radius: 30px;">
-    </td>
-    <td style="vertical-align: top; width: auto; border: 0; padding: 10px;">
-      <h2><b style="font-size: 18px;">Jason Mayo</b></h2>
-      <h3><b style="font-size: 16px;">Designer, UI Engineer, Integration Engineer</b></h3><br>
-      <br>
-      <a href="https://github.com/yourusername" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/github.png"/>
-      </a>
-      <a href="http://linkedin.com/in/jason-mayo-7a8063210" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/linkedin.png">
-      </a>
-      <a href="mailto:jason.m1122332@gmail.com" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/new-post.png">
-      </a>
-    </td>
-  </tr>
 
-  <tr>
-    <td style="vertical-align: top; width:auto; border: 0; padding: 10px;">
-      <img src="Denis.jpeg" width="220" height="auto" style="display: block; margin: 0 auto; border-radius: 30px;">
-    </td>
-    <td style="vertical-align: top; width: auto; border: 0; padding: 10px;">
-      <h2><b style="font-size: 18px;">Denis Woolley</b></h2>
-      <h3><b style="font-size: 16px;">DevOps, Services Engineer, Architect</b></h3><br>
-      <br>
-      <a href="https://github.com/yourusername" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/github.png"/>
-      </a>
-      <a href="https://www.linkedin.com/in/denis-woolley-981aa6202/" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/linkedin.png">
-      </a>
-      <a href="mailto:denisjnr88@gmail.com" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/new-post.png">
-      </a>
-    </td>
-  </tr>
 
-  <tr>
-    <td style="vertical-align: top; width:auto; border: 0; padding: 10px;">
-      <img src="Amadeus.jpg" width="220" height="auto" style="display: block; margin: 0 auto; border-radius: 30px;">
-    </td>
-    <td style="vertical-align: top; width: auto; border: 0; padding: 10px;">
-      <h2><b style="font-size: 18px;">Amadeus Fidos</b></h2>
-      <h3><b style="font-size: 16px;">Architect, Designer, UI Engineer</b></h3><br>
-      <br>
-      <a href="https://github.com/yourusername" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/github.png"/>
-      </a>
-      <a href="https://www.linkedin.com/in/amadeus-fidos-b22512356/" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/linkedin.png">
-      </a>
-      <a href="mailto:amadeusfidos@gmail.com" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/new-post.png">
-      </a>
-    </td>
-  </tr>
 
-  <tr>
-    <td style="vertical-align: top; width:auto; border: 0; padding: 10px;">
-      <img src="Jared.jpeg" width="220" height="auto" style="display: block; margin: 0 auto; border-radius: 30px;">
-    </td>
-    <td style="vertical-align: top; width: auto; border: 0; padding: 10px;">
-      <h2><b style="font-size: 18px;">Jared Hürlimann</b></h2>
-      <h3><b style="font-size: 16px;">DevOps, Services Engineer, Integration Engineer</b></h3><br>
-      <br>
-      <a href="https://github.com/yourusername" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/github.png"/>
-      </a>
-      <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/linkedin.png">
-      </a>
-      <a href="mailto:jaredhurlimann@gmail.com" style="text-decoration: none; margin-right: 10px; display: inline-block; vertical-align: middle;" target="_blank">
-        <img src="https://img.icons8.com/material-outlined/24/new-post.png">
-      </a>
-    </td>
-  </tr>
-</table>
+---
 
 
 ## 🎥 System Demo

@@ -172,7 +172,7 @@ Research Background & Contribution: [Read the full write-up](https://github.com/
 
 # 🚀 Access the TrainWise System
 
-Easily access **TrainWise** on your preferred platform — iOS, Android, Web, or API.
+Easily access **TrainWise** on your preferred platform -- iOS, Android, Web, or API.
 
 | Platform | Access | Instructions |
 |-----------|---------|--------------|

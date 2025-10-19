@@ -34,23 +34,7 @@ HIIT environments
 
 ---
 
-<!-- ## 📋 Project Board
-
-We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
-
-🔗 **[View the Board](https://github.com/orgs/COS301-SE-2025/projects/218/views/2)**
-
---- -->
 ## 👥 Team Members
-
-
-<!-- |  |  |
-|--------|-------------|
-| <img src="Vansh.jpeg" alt="Vansh Sood" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Vansh Sood**<br>I’ve always been fascinated by how technology works, the kind of kid who’d rather take apart the remote than actually change the channel. That same curiosity now drives my passion for coding and software engineering. I take pride in my strong academic performance and approach every challenge with persistence and a mindset of continuous learning. My philosophy is simple: always keep improving, both the work and myself.<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/vansh-sood-783519352/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:vanshsood4@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> |
-| <img src="Jason.jpeg" alt="Jason Mayo" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Jason Mayo**<br>Designer, UI Engineer, Integration Engineer<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="http://linkedin.com/in/jason-mayo-7a8063210" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:jason.m1122332@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> |
-| <img src="Denis.jpeg" alt="Denis Woolley" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Denis Woolley**<br>DevOps, Services Engineer, Architect<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/denis-woolley-981aa6202/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:denisjnr88@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> |
-| <img src="Amadeus.jpg" alt="Amadeus Fidos" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Amadeus Fidos**<br>Architect, Designer, UI Engineer<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/amadeus-fidos-b22512356/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:amadeusfidos@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> |
-| <img src="Jared.jpeg" alt="Jared Hürlimann" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Jared Hürlimann**<br>DevOps, Services Engineer, Integration Engineer<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:jaredhurlimann@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> | -->
 
  <table style="width:100%; table-layout:fixed; border-collapse:collapse;">
    <colgroup>
@@ -186,24 +170,28 @@ Or watch [HERE]().
 Research Background & Contribution: [Read the full write-up](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/ResearchAndContribution.md)
 
 
-## 🚀 Try TrainWise
+## 🚀 Get Access to TrainWise
 
-<div align="center">
+Experience **TrainWise** across all platforms — mobile, web, and API.
 
-<p style="margin: 8px 0 16px 0;">
-  If you're on Apple, install TestFlight, open the link, accept the invite, then install the beta build. For Android, download and install the APK. Managers can use the web dashboard.
-</p>
+### 🍎 iOS (TestFlight)
+[Join on TestFlight →](https://testflight.apple.com/join/THhUcHa2)  
+Ensure you have the **TestFlight app** installed, then open the link to become a tester.
 
-<p>
-  <a href="https://testflight.apple.com/join/THhUcHa2" style="text-decoration:none;background:#111827;color:#ffffff;padding:10px 16px;border-radius:10px;margin:6px;display:inline-block;">TestFlight (iOS)</a>
-  <a href="https://github.com/COS301-SE-2025/Gym-Manager/releases/latest/download/trainwise.apk" style="text-decoration:none;background:#2563eb;color:#ffffff;padding:10px 16px;border-radius:10px;margin:6px;display:inline-block;">Android APK</a>
-  <a href="https://gym-manager-web.vercel.app/" style="text-decoration:none;background:#059669;color:#ffffff;padding:10px 16px;border-radius:10px;margin:6px;display:inline-block;">Web Dashboard</a>
-  <a href="https://gym-manager-api-new.vercel.app/" style="text-decoration:none;background:#6b7280;color:#ffffff;padding:10px 16px;border-radius:10px;margin:6px;display:inline-block;">REST API</a>
-</p>
+### 🤖 Android (APK)
+[Download Android APK →](./TrainWise.apk)  
+Simply install the APK on your Android device.
 
-<p style="font-size:12px;color:#6b7280;margin-top:8px;">Note: TestFlight betas may be full at times. You can try again later.</p>
+### 💻 Web Dashboard
+[Open Web Dashboard →](https://gym-manager-web.vercel.app/)  
+For managers and coaches to access sessions, members, and analytics.
 
-</div>
+### ⚙️ API
+[View API →](https://gym-manager-api-new.vercel.app/)  
+For developers and system integration.
+
+---
+
 
 <!-- 
 

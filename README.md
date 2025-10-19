@@ -56,40 +56,11 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 
 ---
 
-<table>
-  <colgroup>
-    <col width="140" />
-    <col />
-  </colgroup>
-
-  <tr>
-    <td valign="top" align="center">
-      <img src="Vansh.jpeg" alt="Vansh Sood" width="120" style="border-radius:50%;" />
-    </td>
-    <td valign="top">
-      <strong>Vansh Sood</strong><br>
-      I’ve always been fascinated by how technology works, the kind of kid who’d rather take apart the remote than actually change the channel. That same curiosity now drives my passion for coding and software engineering. I take pride in my strong academic performance and approach every challenge with persistence and a mindset of continuous learning. My philosophy is simple: always keep improving, both the work and myself.<br><br>
-      <a href="https://github.com/yourusername"><img src="https://img.icons8.com/material-outlined/24/github.png" alt="GitHub" /></a>
-      <a href="https://www.linkedin.com/in/vansh-sood-783519352/"><img src="https://img.icons8.com/material-outlined/24/linkedin.png" alt="LinkedIn" /></a>
-      <a href="mailto:vanshsood4@gmail.com"><img src="https://img.icons8.com/material-outlined/24/new-post.png" alt="Email" /></a>
-    </td>
-  </tr>
-
-  <tr>
-    <td valign="top" align="center">
-      <img src="Jason.jpeg" alt="Jason Mayo" width="120" style="border-radius:50%;" />
-    </td>
-    <td valign="top">
-      <strong>Jason Mayo</strong><br>
-      Designer, UI Engineer, Integration Engineer<br><br>
-      <a href="https://github.com/yourusername"><img src="https://img.icons8.com/material-outlined/24/github.png" alt="GitHub" /></a>
-      <a href="http://linkedin.com/in/jason-mayo-7a8063210"><img src="https://img.icons8.com/material-outlined/24/linkedin.png" alt="LinkedIn" /></a>
-      <a href="mailto:jason.m1122332@gmail.com"><img src="https://img.icons8.com/material-outlined/24/new-post.png" alt="Email" /></a>
-    </td>
-  </tr>
-
-  <!-- Repeat rows for Denis, Amadeus, Jared, etc. -->
-</table>
+| Profile | Profile |
+|---|---|
+| <img src="Vansh.jpeg" width="120" style="border-radius:50%;" /><br>**Vansh Sood**<br>I’ve always been... | <img src="Jason.jpeg" width="120" style="border-radius:50%;" /><br>**Jason Mayo**<br>Designer... |
+| <img src="Denis.jpeg" width="120" style="border-radius:50%;" /><br>**Denis Woolley**<br>DevOps... | <img src="Amadeus.jpg" width="120" style="border-radius:50%;" /><br>**Amadeus Fidos**<br>Architect... |
+| <img src="Jared.jpeg" width="120" style="border-radius:50%;" /><br>**Jared Hürlimann**<br>DevOps... |  |
 
 
 ## 🎥 System Demo

@@ -66,46 +66,17 @@ export type AuthStackParamList = {
   MemberAnalytics: undefined;
   Stats: undefined;
   WorkoutDetails: { workout: WorkoutData };
+  Home: undefined;
+  
+  // Progress pages (no longer tabs)
+  GamificationMain: undefined;
+  BadgesScreen: undefined;
+  LeaderboardScreen: undefined;
 };
 
 
 const Stack = createStackNavigator<AuthStackParamList>();
 const Tab = createBottomTabNavigator();
-const ProgressStack = createStackNavigator();
-
-function ProgressStackNavigator() {
-  return (
-    <ProgressStack.Navigator
-      screenOptions={{
-        headerShown: true,
-        headerStyle: { backgroundColor: '#1a1a1a' },
-        headerTintColor: '#D8FF3E',
-        headerTitleStyle: { fontWeight: 'bold', color: '#fff' },
-        headerBackTitleVisible: false,
-        gestureEnabled: false,
-      }}
-    >
-      <ProgressStack.Screen 
-        name="GamificationMain" 
-        component={GamificationScreen}
-        options={{ 
-          title: 'Your Progress',
-          headerLeft: () => null, // Remove back button from main screen
-        }}
-      />
-      <ProgressStack.Screen 
-        name="BadgesScreen" 
-        component={BadgesScreen}
-        options={{ title: 'All Badges' }}
-      />
-      <ProgressStack.Screen 
-        name="LeaderboardScreen" 
-        component={GamificationLeaderboardScreen}
-        options={{ title: 'Leaderboard' }}
-      />
-    </ProgressStack.Navigator>
-  );
-}
 
 function MemberTabNavigator() {
   return (
@@ -132,15 +103,6 @@ function MemberTabNavigator() {
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="podium-outline" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Progress"
-        component={ProgressStackNavigator}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="trophy-outline" color={color} size={size} />
           ),
         }}
       />
@@ -208,6 +170,41 @@ export default function AuthNavigator() {
       <Stack.Screen name="Stats" component={StatsScreen} />
       <Stack.Screen name="WorkoutDetails" component={WorkoutDetailsScreen} />
       <Stack.Screen name="MemberAnalytics" component={MemberAnalyticsScreen} />
+      
+      {/* Progress pages (no longer tabs) */}
+      <Stack.Screen 
+        name="GamificationMain" 
+        component={GamificationScreen}
+        options={{ 
+          headerShown: true,
+          headerStyle: { backgroundColor: '#1a1a1a' },
+          headerTintColor: '#D8FF3E',
+          headerTitleStyle: { fontWeight: 'bold', color: '#fff' },
+          title: 'Your Progress',
+        }}
+      />
+      <Stack.Screen 
+        name="BadgesScreen" 
+        component={BadgesScreen}
+        options={{ 
+          headerShown: true,
+          headerStyle: { backgroundColor: '#1a1a1a' },
+          headerTintColor: '#D8FF3E',
+          headerTitleStyle: { fontWeight: 'bold', color: '#fff' },
+          title: 'All Badges',
+        }}
+      />
+      <Stack.Screen 
+        name="LeaderboardScreen" 
+        component={GamificationLeaderboardScreen}
+        options={{ 
+          headerShown: true,
+          headerStyle: { backgroundColor: '#1a1a1a' },
+          headerTintColor: '#D8FF3E',
+          headerTitleStyle: { fontWeight: 'bold', color: '#fff' },
+          title: 'Leaderboard',
+        }}
+      />
     </Stack.Navigator>
   );
 }

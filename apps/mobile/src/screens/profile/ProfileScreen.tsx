@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Linking,
   Alert,
+  useWindowDimensions,
+  PixelRatio,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +27,18 @@ import { StreakCard } from '../../components/gamification/StreakCard';
 import { gamificationService } from '../../services/gamificationService';
 import { GamificationStats } from '../../types/gamification';
 import PasswordChangeModal from '../../components/auth/PasswordChangeModal';
+import { Image } from 'expo-image';
+
+const SPRITE_PX = 23 as const;
+
+// Static requires so Metro bundles the animated sprites
+const CHARACTER_SOURCES: Record<1 | 2 | 3 | 4 | 5, any> = {
+  1: require('../../../assets/character_level_1.gif'),
+  2: require('../../../assets/character_level_2.gif'),
+  3: require('../../../assets/character_level_3.gif'),
+  4: require('../../../assets/character_level_4.gif'),
+  5: require('../../../assets/character_level_5.gif'),
+};
 
 type ProfileScreenNavigationProp = StackNavigationProp<AuthStackParamList & CoachStackParamList>;
 
@@ -33,6 +47,7 @@ interface ProfileScreenProps {
 }
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
+  const { width } = useWindowDimensions();
   const [isLeaderboardPublic, setIsLeaderboardPublic] = useState<boolean | null>(null);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -46,6 +61,26 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const isCoach = !!currentUser?.roles?.includes('coach');
   const isMember = !!currentUser?.roles?.includes('member');
   const showLeaderboardSettings = isMember;
+
+  // Compute sprite size for character avatar
+  const spriteSizeDp = (() => {
+    const maxWidthDp = Math.max(0, width - 40);
+    const maxHeightDp = 200; // Smaller than the full progress page
+
+    const pr = PixelRatio.get();
+    const maxWidthPx = Math.floor(maxWidthDp * pr);
+    const maxHeightPx = Math.floor(maxHeightDp * pr);
+
+    const k = Math.max(
+      1,
+      Math.min(
+        Math.floor(maxWidthPx / SPRITE_PX),
+        Math.floor(maxHeightPx / SPRITE_PX)
+      )
+    );
+
+    return (SPRITE_PX * k) / pr;
+  })();
 
 
   useEffect(() => {
@@ -253,14 +288,26 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               </View>
             ) : gamificationStats ? (
               <View>
+                {/* Character Avatar */}
+                <View style={styles.characterContainer}>
+                  <Image
+                    source={CHARACTER_SOURCES[Math.min(5, Math.max(1, Number(gamificationStats.userStreak?.level ?? 1))) as 1 | 2 | 3 | 4 | 5]}
+                    style={{ width: spriteSizeDp, height: spriteSizeDp }}
+                    contentFit="contain"
+                    allowDownscaling={false}
+                  />
+                  <Text style={styles.characterLevel}>Level {Math.max(1, Number(gamificationStats.userStreak?.level ?? 1))}</Text>
+                  <Text style={styles.characterSub}>{Number(gamificationStats.userStreak?.totalWorkouts ?? 0)} classes completed</Text>
+                </View>
+
                 <StreakCard 
                   streak={gamificationStats.userStreak} 
-                  onPress={() => {/* TODO: Fix navigation to Progress screen */}}
+                  onPress={() => navigation.navigate('GamificationMain')}
                 />
                 
                 <TouchableOpacity
                   style={styles.settingItem}
-                  onPress={() => {/* TODO: Fix navigation to Progress screen */}}
+                  onPress={() => navigation.navigate('GamificationMain')}
                 >
                   <View style={styles.settingLeft}>
                     <Ionicons name="trophy-outline" size={24} color="#D8FF3E" />
@@ -615,5 +662,24 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 14,
     textAlign: 'center',
+  },
+  characterContainer: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  characterLevel: {
+    marginTop: 12,
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  characterSub: {
+    marginTop: 4,
+    color: '#888',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

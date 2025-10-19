@@ -5,7 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AuthNavigator from './src/navigation/AuthNavigator';
 import { View, Text, ActivityIndicator } from 'react-native';
 import config from './src/config';
-
+import { Ionicons } from '@expo/vector-icons';
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState(false);
@@ -42,6 +42,7 @@ export default function App() {
 
     testAPI();
   }, []);
+
 
   if (isLoading) {
     return (

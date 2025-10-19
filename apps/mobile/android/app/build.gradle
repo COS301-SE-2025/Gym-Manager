@@ -175,6 +175,6 @@ dependencies {
         implementation jscFlavor
     }
     
-    // Vector icons support
-    implementation project(':react-native-vector-icons')
+    // Vector icons support - removed for android
+    //implementation project(':react-native-vector-icons')
 }

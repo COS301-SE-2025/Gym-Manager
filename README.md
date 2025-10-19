@@ -75,7 +75,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
       <p style="margin-top:8px;">
         <a href="https://github.com/Vansh-Sood" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/vansh-sood-783519352/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
-        <a href="mailto:vanshsood4@gmail.com"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+        <img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"> <span style="vertical-align:middle">vanshsood4@gmail.com</span>
       </p>
     </td>
   </tr>
@@ -97,7 +97,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
       <p style="margin-top:8px;">
         <a href="https://github.com/JasonMayo23587572" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="http://linkedin.com/in/jason-mayo-7a8063210" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
-        <a href="mailto:Jason@tryonething.app"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+        <img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"> <span style="vertical-align:middle">Jason@tryonething.app</span>
       </p>
     </td>
   </tr>
@@ -119,7 +119,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
       <p style="margin-top:8px;">
         <a href="https://github.com/denis-woolley" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/denis-woolley-981aa6202/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
-        <a href="mailto:denisjnr88@gmail.com"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+        <img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"> <span style="vertical-align:middle">denisjnr88@gmail.com</span>
       </p>
     </td>
   </tr>
@@ -141,7 +141,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
       <p style="margin-top:8px;">
         <a href="https://github.com/u22526162" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/amadeus-fidos-b22512356/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
-        <a href="mailto:amadeusfidos@gmail.com"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+        <img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"> <span style="vertical-align:middle">amadeusfidos@gmail.com</span>
       </p>
     </td>
   </tr>
@@ -163,7 +163,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
       <p style="margin-top:8px;">
         <a href="https://github.com/Jared-Hurlimann" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
-        <a href="mailto:jaredhurlimann@gmail.com"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+        <img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"> <span style="vertical-align:middle">jaredhurlimann@gmail.com</span>
       </p>
     </td>
   </tr>
@@ -184,6 +184,19 @@ Or watch [HERE]().
 ## 📚 Research & Contribution
 
 Research Background & Contribution: [Read the full write-up](https://github.com/COS301-SE-2025/Gym-Manager/blob/main/ResearchAndContribution.md)
+
+
+## 🚀 Try TrainWise
+
+- iOS (TestFlight): [Join the beta](https://testflight.apple.com/join/THhUcHa2)
+- Android (APK): [Download APK](https://github.com/COS301-SE-2025/Gym-Manager/releases/latest/download/trainwise.apk)
+- Web Dashboard: [Open Web App](https://gym-manager-web.vercel.app/)
+- REST API: [Explore API](https://gym-manager-api-new.vercel.app/)
+
+Instructions
+- If you’re on Apple, install TestFlight, open the link above, accept the invite, then install the beta build. You’ll become a tester and receive new builds automatically. Learn more about TestFlight on Apple’s site.
+- For Android, download the APK and install it on your device.
+- For managers, access the web dashboard using the link above.
 
 <!-- 
 

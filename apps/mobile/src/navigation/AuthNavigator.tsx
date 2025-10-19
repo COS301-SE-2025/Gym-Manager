@@ -82,6 +82,7 @@ function ProgressStackNavigator() {
         headerTintColor: '#D8FF3E',
         headerTitleStyle: { fontWeight: 'bold', color: '#fff' },
         headerBackTitleVisible: false,
+        gestureEnabled: false,
       }}
     >
       <ProgressStack.Screen 
@@ -181,7 +182,7 @@ export default function AuthNavigator() {
   return (
     <Stack.Navigator
       initialRouteName="ResolveAuth"
-      screenOptions={{ headerShown: false }}
+      screenOptions={{ headerShown: false, gestureEnabled: false }}
     >
       <Stack.Screen name="ResolveAuth" component={ResolveAuthScreen} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />

@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AuthNavigator from './src/navigation/AuthNavigator';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, BackHandler } from 'react-native';
 import config from './src/config';
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState(false);
+  const navigationRef = useRef<any>(null);
 
   useEffect(() => {
     const testAPI = async () => {
@@ -43,6 +44,19 @@ export default function App() {
     testAPI();
   }, []);
 
+  // Disable Android hardware back button globally
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        // Return true to prevent default back behavior
+        return true;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, []);
+
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
@@ -67,7 +81,7 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <AuthNavigator />
         <StatusBar style="light" backgroundColor="#1a1a1a" />
       </NavigationContainer>

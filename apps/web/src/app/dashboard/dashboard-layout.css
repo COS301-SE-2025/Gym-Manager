@@ -167,3 +167,19 @@ main table {
   overflow: visible;
   box-sizing: border-box;
 }
+
+/* Print styles - hide sidebar and adjust layout */
+@media print {
+  .sidebar {
+    display: none !important;
+  }
+
+  main {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .dashboard-layout {
+    background: white !important;
+  }
+}

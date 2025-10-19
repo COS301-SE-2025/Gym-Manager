@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import './dashboard-layout.css';
 import { useRouter, usePathname } from 'next/navigation';
-import { HomeIcon, UsersIcon, PackageIcon, ChartBarIcon, LogOutIcon } from 'lucide-react';
+import { HomeIcon, UsersIcon, PackageIcon, ChartBarIcon, LogOutIcon, QrCodeIcon } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -52,6 +52,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <ChartBarIcon size={20} />
               Reports
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/dashboard/qr-code"
+              className={pathname === '/dashboard/qr-code' ? 'active' : ''}
+            >
+              <QrCodeIcon size={20} />
+              Registration QR
             </Link>
           </li>
         </ul>

@@ -2,8 +2,10 @@
 import { useState } from 'react';
 import UserTable from '@/components/tables/UserTable/page';
 import AddCoachModal from '@/components/modals/AddCoach/AddCoach';
+import AddAdminModal from '@/components/modals/AddAdmin/AddAdmin';
 export default function MembersList() {
   const [showAddCoachModal, setShowAddCoachModal] = useState(false);
+  const [showAddAdminModal, setShowAddAdminModal] = useState(false);
   return (
     <main className="users-page">
       <section className="user-section">
@@ -33,6 +35,20 @@ export default function MembersList() {
       <section className="user-section">
         <h2>Administrators</h2>
         <UserTable role="admin" />
+        <button
+          onClick={() => setShowAddAdminModal(true)}
+          style={{
+            padding: '8px 16px',
+            background: '#d8ff3e',
+            color: '#1e1e1e',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '500',
+          }}
+        >
+          Add Admin
+        </button>
       </section>
 
       {/* <section className="user-section">
@@ -44,6 +60,13 @@ export default function MembersList() {
         <AddCoachModal
           onClose={() => {
             setShowAddCoachModal(false);
+          }}
+        />
+      )}
+      {showAddAdminModal && (
+        <AddAdminModal
+          onClose={() => {
+            setShowAddAdminModal(false);
           }}
         />
       )}

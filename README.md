@@ -52,16 +52,16 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 | <img src="Amadeus.jpg" alt="Amadeus Fidos" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Amadeus Fidos**<br>Architect, Designer, UI Engineer<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/amadeus-fidos-b22512356/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:amadeusfidos@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> |
 | <img src="Jared.jpeg" alt="Jared Hürlimann" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Jared Hürlimann**<br>DevOps, Services Engineer, Integration Engineer<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:jaredhurlimann@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> | -->
 
-<table style="width:100%; table-layout:fixed; border-collapse:collapse;">
-  <colgroup>
-    <col style="width:220px; min-width:220px; max-width:220px;">
+ <table style="width:100%; table-layout:fixed; border-collapse:collapse;">
+   <colgroup>
+     <col style="width:320px; min-width:320px; max-width:320px;">
     <col>
   </colgroup>
 
   <!-- Vansh -->
-  <tr>
-    <td style="vertical-align:top; padding:12px;">
-      <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
+   <tr>
+     <td style="vertical-align:top; padding:12px;">
+       <div style="width:300px; height:300px; overflow:hidden; border-radius:50%; display:block;">
         <img
           src="Vansh.jpeg"
           alt="Vansh Sood"
@@ -81,9 +81,9 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
   </tr>
 
   <!-- Jason -->
-  <tr>
-    <td style="vertical-align:top; padding:12px;">
-      <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
+   <tr>
+     <td style="vertical-align:top; padding:12px;">
+       <div style="width:300px; height:300px; overflow:hidden; border-radius:50%; display:block;">
         <img
           src="Jason.jpeg"
           alt="Jason Mayo"
@@ -103,9 +103,9 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
   </tr>
 
   <!-- Denis -->
-  <tr>
-    <td style="vertical-align:top; padding:12px;">
-      <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
+   <tr>
+     <td style="vertical-align:top; padding:12px;">
+       <div style="width:300px; height:300px; overflow:hidden; border-radius:50%; display:block;">
         <img
           src="Denis.jpeg"
           alt="Denis Woolley"
@@ -125,9 +125,9 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
   </tr>
 
   <!-- Amadeus -->
-  <tr>
-    <td style="vertical-align:top; padding:12px;">
-      <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
+   <tr>
+     <td style="vertical-align:top; padding:12px;">
+       <div style="width:300px; height:300px; overflow:hidden; border-radius:50%; display:block;">
         <img
           src="Amadeus.jpg"
           alt="Amadeus Fidos"
@@ -147,9 +147,9 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
   </tr>
 
   <!-- Jared -->
-  <tr>
-    <td style="vertical-align:top; padding:12px;">
-      <div style="width:200px; height:200px; overflow:hidden; border-radius:50%; display:block;">
+   <tr>
+     <td style="vertical-align:top; padding:12px;">
+       <div style="width:300px; height:300px; overflow:hidden; border-radius:50%; display:block;">
         <img
           src="Jared.jpeg"
           alt="Jared Hürlimann"

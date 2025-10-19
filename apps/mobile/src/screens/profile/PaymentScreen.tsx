@@ -61,7 +61,7 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
       try {
         const user = await getUser();
         setCurrentUser(user);
-        
+
         // Fetch current credits balance
         if (user?.userId) {
           const url = `/members/${user.userId}/credits`;
@@ -73,11 +73,11 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
       } catch (error: any) {
         console.error('Failed to load user data:', error);
         console.error('Error details:', error.response?.data || error.message);
-        
+
         if (error.response?.status === 404) {
           Alert.alert(
-            'Account Not Found', 
-            'Your account is not set up as a member. Please contact support or try logging in again.'
+            'Account Not Found',
+            'Your account is not set up as a member. Please contact support or try logging in again.',
           );
         } else {
           Alert.alert('Error', 'Failed to load your account information. Please try again.');
@@ -92,21 +92,24 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
   }, []);
 
   const handlePurchaseCredits = async (packageId: number) => {
-    const selectedPackage = packages.find(pkg => pkg.packageId === packageId);
+    const selectedPackage = packages.find((pkg) => pkg.packageId === packageId);
     if (!selectedPackage || !currentUser?.userId) return;
 
     setIsProcessing(true);
 
     try {
       // Mock payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Purchase credits using the new payment packages system
-      const response = await apiClient.post(`/members/${currentUser.userId}/credits/purchase-package`, {
-        packageId: selectedPackage.packageId,
-        paymentMethod: 'mock_payment',
-        externalTransactionId: `mock_${Date.now()}`,
-      });
+      const response = await apiClient.post(
+        `/members/${currentUser.userId}/credits/purchase-package`,
+        {
+          packageId: selectedPackage.packageId,
+          paymentMethod: 'mock_payment',
+          externalTransactionId: `mock_${Date.now()}`,
+        },
+      );
 
       if (response.data.success) {
         setCurrentCredits(response.data.newBalance);
@@ -114,7 +117,7 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
         Alert.alert(
           'Payment Successful!',
           `You've successfully purchased ${response.data.creditsAdded} credits for ${formatPrice(selectedPackage.priceCents)}. Your new balance is ${response.data.newBalance} credits.`,
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
+          [{ text: 'OK', onPress: () => navigation.goBack() }],
         );
       } else {
         throw new Error('Payment failed');
@@ -124,7 +127,7 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
       Alert.alert(
         'Payment Failed',
         'There was an error processing your payment. Please try again.',
-        [{ text: 'OK' }]
+        [{ text: 'OK' }],
       );
     } finally {
       setIsProcessing(false);
@@ -168,15 +171,13 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
             <Text style={styles.balanceTitle}>Current Balance</Text>
           </View>
           <Text style={styles.balanceAmount}>{currentCredits} Credits</Text>
-          <Text style={styles.balanceDescription}>
-            Each credit allows you to book one class
-          </Text>
+          <Text style={styles.balanceDescription}>Each credit allows you to book one class</Text>
         </View>
 
         {/* Credit Packages */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Choose Your Package</Text>
-          
+
           {packagesLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#D8FF3E" />
@@ -203,14 +204,12 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
                     <Ionicons name="card-outline" size={32} color="#D8FF3E" />
                   </View>
                 </View>
-                
-                <Text style={styles.packageDescription}>
-                  {pkg.description || pkg.name}
-                </Text>
-                
+
+                <Text style={styles.packageDescription}>{pkg.description || pkg.name}</Text>
+
                 <View style={styles.packageFooter}>
                   <Text style={styles.packageValue}>
-                    R{((pkg.priceCents / 100) / pkg.creditsAmount).toFixed(2)} per credit
+                    R{(pkg.priceCents / 100 / pkg.creditsAmount).toFixed(2)} per credit
                   </Text>
                   {isProcessing ? (
                     <ActivityIndicator size="small" color="#D8FF3E" />
@@ -230,9 +229,9 @@ export default function PaymentScreen({ navigation }: PaymentScreenProps) {
             <View style={styles.infoContent}>
               <Text style={styles.infoTitle}>Mock Payment System</Text>
               <Text style={styles.infoDescription}>
-                This is a demonstration payment system. No real money will be charged. 
-                Credits will be added to your account immediately after "payment".
-                Prices are in South African Rands (ZAR).
+                This is a demonstration payment system. No real money will be charged. Credits will
+                be added to your account immediately after "payment". Prices are in South African
+                Rands (ZAR).
               </Text>
             </View>
           </View>

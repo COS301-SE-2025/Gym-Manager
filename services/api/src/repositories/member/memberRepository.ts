@@ -135,6 +135,7 @@ export class MemberRepository {
     const result = await db
       .select({
         classId: classes.classId,
+        workoutId: classes.workoutId,
         workoutName: workouts.workoutName,
         scheduledDate: classes.scheduledDate,
         scheduledTime: classes.scheduledTime,

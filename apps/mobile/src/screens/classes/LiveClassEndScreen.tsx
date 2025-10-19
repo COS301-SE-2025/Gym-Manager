@@ -10,7 +10,6 @@ import { LbFilter, useLeaderboardRealtime } from '../../hooks/useLeaderboardReal
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { getUser } from '../../utils/authStorage';
 
-
 type R = RouteProp<AuthStackParamList, 'LiveClassEnd'>;
 
 function toMillis(ts: any): number {
@@ -27,7 +26,7 @@ function fmt(t: number) {
   const s = Math.max(0, Math.floor(t));
   const m = Math.floor(s / 60);
   const ss = s % 60;
-  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  return `${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
 }
 
 export default function LiveClassEndScreen() {
@@ -76,20 +75,20 @@ export default function LiveClassEndScreen() {
     // AMRAP (reps)
     if (type === 'AMRAP') {
       const cum: number[] = (session.steps_cum_reps as number[]) ?? [];
-      const within = (prog?.current_step ?? 0) > 0 ? (cum[(prog!.current_step! - 1)] ?? 0) : 0;
+      const within = (prog?.current_step ?? 0) > 0 ? (cum[prog!.current_step! - 1] ?? 0) : 0;
       const repsPerRound = cum.length ? cum[cum.length - 1] : 0;
       const serverTotal = (prog as any)?.total_reps as number | undefined;
-      const total = serverTotal ?? (
-        (Number(prog?.rounds_completed ?? 0) * repsPerRound) +
-        within +
-        Number(prog?.dnf_partial_reps ?? 0)
-      );
+      const total =
+        serverTotal ??
+        Number(prog?.rounds_completed ?? 0) * repsPerRound +
+          within +
+          Number(prog?.dnf_partial_reps ?? 0);
       return `${total} reps`;
     }
 
     // EMOM (cumulative time from leaderboard)
     if (type === 'EMOM') {
-      const meRow = lb.find((r:any) => myUserId != null && String(r.user_id) === String(myUserId));
+      const meRow = lb.find((r: any) => myUserId != null && String(r.user_id) === String(myUserId));
       if (meRow?.elapsed_seconds != null) {
         return `Time: ${fmt(Number(meRow.elapsed_seconds))}`;
       }
@@ -97,7 +96,7 @@ export default function LiveClassEndScreen() {
     }
 
     // TABATA / INTERVAL — reps from leaderboard
-    if (['TABATA','INTERVAL'].includes(type)) {
+    if (['TABATA', 'INTERVAL'].includes(type)) {
       if (myUserId == null) return '—';
       const mine = lb.find((r: any) => Number(r.user_id) === Number(myUserId));
       const reps = Number(mine?.total_reps ?? 0);
@@ -106,7 +105,7 @@ export default function LiveClassEndScreen() {
 
     // Fallback (reps)
     const cum: number[] = (session.steps_cum_reps as number[]) ?? [];
-    const within = (prog?.current_step ?? 0) > 0 ? (cum[(prog!.current_step! - 1)] ?? 0) : 0;
+    const within = (prog?.current_step ?? 0) > 0 ? (cum[prog!.current_step! - 1] ?? 0) : 0;
     const reps = within + Number(prog?.dnf_partial_reps ?? 0);
     return `${reps} reps`;
   }, [session, prog, lb, myUserId, type]);
@@ -119,8 +118,14 @@ export default function LiveClassEndScreen() {
       }
     } catch {}
     // Fallback: attempt a home-like route, otherwise reset stack
-    try { nav.navigate('Home'); return; } catch {}
-    try { nav.navigate('Root'); return; } catch {}
+    try {
+      nav.navigate('Home');
+      return;
+    } catch {}
+    try {
+      nav.navigate('Root');
+      return;
+    } catch {}
     nav.popToTop();
   };
 
@@ -141,35 +146,42 @@ export default function LiveClassEndScreen() {
           <Text style={s.lbTitle}>Leaderboard</Text>
 
           {/* RX/SC filter */}
-          <View style={{ flexDirection:'row', justifyContent:'center', gap:6, marginBottom:8 }}>
-            {(['ALL','RX','SC'] as const).map(opt => (
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
+            {(['ALL', 'RX', 'SC'] as const).map((opt) => (
               <TouchableOpacity
                 key={opt}
-                onPress={()=>setScope(opt)}
+                onPress={() => setScope(opt)}
                 style={{
-                  paddingHorizontal:10, paddingVertical:6, borderRadius:999,
-                  backgroundColor: scope===opt ? '#2e3500' : '#1f1f1f',
-                  borderWidth:1, borderColor: scope===opt ? '#d8ff3e' : '#2a2a2a'
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 999,
+                  backgroundColor: scope === opt ? '#2e3500' : '#1f1f1f',
+                  borderWidth: 1,
+                  borderColor: scope === opt ? '#d8ff3e' : '#2a2a2a',
                 }}
               >
-                <Text style={{ color: scope===opt ? '#d8ff3e' : '#9aa', fontWeight:'800' }}>{opt}</Text>
+                <Text style={{ color: scope === opt ? '#d8ff3e' : '#9aa', fontWeight: '800' }}>
+                  {opt}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
 
           {lb.map((r: any, i: number) => {
             const displayName =
-              (r.first_name || r.last_name)
+              r.first_name || r.last_name
                 ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
                 : (r.name ?? `User ${r.user_id}`);
             return (
               <View key={`${r.user_id}-${i}`} style={s.row}>
                 <Text style={s.pos}>{i + 1}</Text>
                 <Text style={s.user}>
-                  {displayName} <Text style={{ color:'#9aa' }}>({(r.scaling ?? 'RX')})</Text>
+                  {displayName} <Text style={{ color: '#9aa' }}>({r.scaling ?? 'RX'})</Text>
                 </Text>
                 <Text style={s.score}>
-                  {r.finished ? fmt(Number(r.elapsed_seconds ?? 0)) : `${Number(r.total_reps ?? 0)} reps`}
+                  {r.finished
+                    ? fmt(Number(r.elapsed_seconds ?? 0))
+                    : `${Number(r.total_reps ?? 0)} reps`}
                 </Text>
               </View>
             );
@@ -181,8 +193,8 @@ export default function LiveClassEndScreen() {
 }
 
 const s = StyleSheet.create({
-  root:{ flex:1, backgroundColor:'#101010' },
-  pad:{ flex:1, padding:20, paddingTop: 8 },
+  root: { flex: 1, backgroundColor: '#101010' },
+  pad: { flex: 1, padding: 20, paddingTop: 8 },
 
   backBtn: {
     alignSelf: 'flex-start',
@@ -190,24 +202,24 @@ const s = StyleSheet.create({
     padding: 4,
   },
 
-  title:{ color:'#d8ff3e', fontWeight:'900', fontSize:28 },
-  sub:{ color:'#9aa', marginTop:8 },
-  big:{ color:'#fff', fontWeight:'900', fontSize:36, marginTop:4 },
+  title: { color: '#d8ff3e', fontWeight: '900', fontSize: 28 },
+  sub: { color: '#9aa', marginTop: 8 },
+  big: { color: '#fff', fontWeight: '900', fontSize: 36, marginTop: 4 },
 
-  btnPrimary:{
-    backgroundColor:'#d8ff3e',
-    padding:14,
-    borderRadius:10,
-    alignItems:'center',
-    flexDirection:'row',
-    justifyContent:'center'
+  btnPrimary: {
+    backgroundColor: '#d8ff3e',
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
-  btnPrimaryText:{ color:'#111', fontWeight:'900' },
+  btnPrimaryText: { color: '#111', fontWeight: '900' },
 
-  lb:{ backgroundColor:'#1a1a1a', borderRadius:14, padding:14, marginTop:20 },
-  lbTitle:{ color:'#fff', fontWeight:'800', marginBottom:8 },
-  row:{ flexDirection:'row', alignItems:'center', paddingVertical:6 },
-  pos:{ width:26, color:'#d8ff3e', fontWeight:'900' },
-  user:{ flex:1, color:'#e2e2e2' },
-  score:{ color:'#fff', fontWeight:'800' }
+  lb: { backgroundColor: '#1a1a1a', borderRadius: 14, padding: 14, marginTop: 20 },
+  lbTitle: { color: '#fff', fontWeight: '800', marginBottom: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6 },
+  pos: { width: 26, color: '#d8ff3e', fontWeight: '900' },
+  user: { flex: 1, color: '#e2e2e2' },
+  score: { color: '#fff', fontWeight: '800' },
 });

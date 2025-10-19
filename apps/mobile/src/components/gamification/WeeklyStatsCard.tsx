@@ -12,36 +12,34 @@ export const WeeklyStatsCard: React.FC<WeeklyStatsCardProps> = ({ weeklyStats })
   return (
     <View style={styles.container}>
       <Text style={styles.title}>This Week</Text>
-      
+
       <View style={styles.statsGrid}>
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>{workoutsThisWeek}</Text>
           <Text style={styles.statLabel}>Workouts</Text>
         </View>
-        
+
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>{pointsThisWeek}</Text>
           <Text style={styles.statLabel}>Points</Text>
         </View>
-        
+
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>{streakDays}</Text>
           <Text style={styles.statLabel}>Streak Days</Text>
         </View>
       </View>
-      
+
       <View style={styles.progressContainer}>
         <View style={styles.progressBar}>
-          <View 
+          <View
             style={[
-              styles.progressFill, 
-              { width: `${Math.min(100, (workoutsThisWeek / 7) * 100)}%` }
-            ]} 
+              styles.progressFill,
+              { width: `${Math.min(100, (workoutsThisWeek / 7) * 100)}%` },
+            ]}
           />
         </View>
-        <Text style={styles.progressText}>
-          {workoutsThisWeek}/7 workouts this week
-        </Text>
+        <Text style={styles.progressText}>{workoutsThisWeek}/7 workouts this week</Text>
       </View>
     </View>
   );

@@ -48,12 +48,12 @@ export default function BadgesScreen() {
   };
 
   const getEarnedBadgeIds = () => {
-    return new Set(userBadges.map(badge => badge.badgeId));
+    return new Set(userBadges.map((badge) => badge.badgeId));
   };
 
   const getUnearnedBadges = () => {
     const earnedIds = getEarnedBadgeIds();
-    return allBadges.filter(badge => !earnedIds.has(badge.badgeId));
+    return allBadges.filter((badge) => !earnedIds.has(badge.badgeId));
   };
 
   const renderBadgeItem = ({ item }: { item: UserBadge | BadgeDefinition }) => {
@@ -69,20 +69,18 @@ export default function BadgesScreen() {
     } else if (activeTab === 'all' && !('userBadgeId' in item)) {
       const badge = item as BadgeDefinition;
       const isEarned = getEarnedBadgeIds().has(badge.badgeId);
-      
+
       return (
         <View style={[styles.badgeContainer, !isEarned && styles.unearnedBadge]}>
           <View style={styles.badgeHeader}>
-            <Ionicons 
-              name={gamificationService.getBadgeIcon(badge.badgeType, badge.name) as any} 
-              size={32} 
-              color={isEarned ? "#D8FF3E" : "#666"} 
-              style={styles.badgeIcon} 
+            <Ionicons
+              name={gamificationService.getBadgeIcon(badge.badgeType, badge.name) as any}
+              size={32}
+              color={isEarned ? '#D8FF3E' : '#666'}
+              style={styles.badgeIcon}
             />
             <View style={styles.badgeInfo}>
-              <Text style={[styles.badgeName, !isEarned && styles.unearnedText]}>
-                {badge.name}
-              </Text>
+              <Text style={[styles.badgeName, !isEarned && styles.unearnedText]}>{badge.name}</Text>
               <Text style={styles.badgePoints}>+{badge.pointsValue} pts</Text>
             </View>
             {isEarned && (
@@ -91,18 +89,16 @@ export default function BadgesScreen() {
               </View>
             )}
           </View>
-          
+
           <Text style={[styles.badgeDescription, !isEarned && styles.unearnedText]}>
             {badge.description}
           </Text>
-          
+
           <View style={styles.badgeFooter}>
             <View style={styles.typeContainer}>
               <Text style={styles.typeText}>{badge.badgeType}</Text>
             </View>
-            {!isEarned && (
-              <Text style={styles.lockedText}>Locked</Text>
-            )}
+            {!isEarned && <Text style={styles.lockedText}>Locked</Text>}
           </View>
         </View>
       );
@@ -144,7 +140,7 @@ export default function BadgesScreen() {
             Earned ({userBadges.length})
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.tab, activeTab === 'all' && styles.activeTab]}
           onPress={() => setActiveTab('all')}
@@ -158,14 +154,10 @@ export default function BadgesScreen() {
       <FlatList
         data={getDataForActiveTab()}
         renderItem={renderBadgeItem}
-        keyExtractor={(item) => 
-          'userBadgeId' in item 
-            ? `earned-${item.userBadgeId}` 
-            : `all-${item.badgeId}`
+        keyExtractor={(item) =>
+          'userBadgeId' in item ? `earned-${item.userBadgeId}` : `all-${item.badgeId}`
         }
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />

@@ -1,7 +1,9 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, Pressable, StatusBar,
-  Modal, TextInput, TouchableOpacity, ActivityIndicator, Animated
+  TextInput, TouchableOpacity, ActivityIndicator, Animated, KeyboardAvoidingView, Platform,
+  TouchableNativeFeedback
+
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -16,7 +18,7 @@ import { getToken, getUser } from '../../utils/authStorage';
 import config from '../../config';
 import { HypeToast } from '../../components/HypeToast';
 import { useLeaderboardHype } from '../../hooks/useLeaderboardHype';
-
+import { calculateWorkoutDuration } from '../../utils/workoutDuration';
 
 type R = RouteProp<AuthStackParamList, 'AmrapLive'>;
 
@@ -30,7 +32,6 @@ function useNowSec() {
 }
 
 export default function AmrapLiveScreen() {
-
   const { params } = useRoute<R>();
   const classId = params.classId as number;
   const nav = useNavigation<any>();
@@ -39,18 +40,22 @@ export default function AmrapLiveScreen() {
   useFocusEffect(
     useCallback(() => {
       (async () => {
-        try { await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_LEFT); } catch {}
+        try {
+          await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_LEFT);
+        } catch {}
       })();
       return () => {
         (async () => {
-          try { await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP); } catch {}
+          try {
+            await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+          } catch {}
         })();
       };
-    }, [])
+    }, []),
   );
 
-  const session = useSession(classId);                // realtime + light poll
-  const progress = useMyProgress(classId);            // realtime + light poll
+  const session = useSession(classId); // realtime + light poll
+  const progress = useMyProgress(classId); // realtime + light poll
 
   const [scope, setScope] = useState<LbFilter>('ALL');
   const lb = useLeaderboardRealtime(classId, scope);
@@ -79,7 +84,7 @@ export default function AmrapLiveScreen() {
       hypeOptedOut,
       progressKeys: Object.keys(progress || {}),
       sessionKeys: Object.keys(session || {}),
-      lbLength: lb.length
+      lbLength: lb.length,
     });
   }, [myUserId, hypeOptedOut, progress, session, lb.length]);
 
@@ -102,15 +107,21 @@ export default function AmrapLiveScreen() {
   }, [ready, progress.current_step, stepCount]);
 
   // pause-aware timer
-  const nowSec       = useNowSec();
+  const nowSec = useNowSec();
   const startedAtSec = Number((session as any)?.started_at_s ?? 0);
-  const pausedAtSec  = Number((session as any)?.paused_at_s ?? 0);
-  const pauseAccum   = Number((session as any)?.pause_accum_seconds ?? 0);
-  const extraPaused  = session?.status === 'paused' && pausedAtSec ? Math.max(0, nowSec - pausedAtSec) : 0;
-  const elapsed      = startedAtSec ? Math.max(0, (nowSec - startedAtSec) - (pauseAccum + extraPaused)) : 0;
+  const pausedAtSec = Number((session as any)?.paused_at_s ?? 0);
+  const pauseAccum = Number((session as any)?.pause_accum_seconds ?? 0);
+  const extraPaused =
+    session?.status === 'paused' && pausedAtSec ? Math.max(0, nowSec - pausedAtSec) : 0;
+  const elapsed = startedAtSec
+    ? Math.max(0, nowSec - startedAtSec - (pauseAccum + extraPaused))
+    : 0;
 
-  const cap    = session?.time_cap_seconds ?? 0;
+  const cap = session?.time_cap_seconds ?? 0;
   const timeUp = cap > 0 && elapsed >= cap;
+
+  // Calculate workout duration for display
+  const workoutDuration = calculateWorkoutDuration(session);
 
   // AMRAP never "finishes" early; only ends when coach stops or cap reached
   const finished = false;
@@ -132,7 +143,7 @@ export default function AmrapLiveScreen() {
     if (!ready) return undefined;
     const roundsDone = Number(progress.rounds_completed ?? 0);
     const partial = Number(progress.dnf_partial_reps ?? 0);
-    return (roundsDone * repsPerRound) + withinRound + partial;
+    return roundsDone * repsPerRound + withinRound + partial;
   }, [ready, progress.rounds_completed, progress.dnf_partial_reps, repsPerRound, withinRound]);
 
   // We always ask for partial reps at end/stop for AMRAP
@@ -140,7 +151,21 @@ export default function AmrapLiveScreen() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [partial, setPartial] = useState('');
-  useEffect(() => { if (askPartial && !modalOpen) setModalOpen(true); }, [askPartial, modalOpen]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  useEffect(() => { 
+    if (askPartial && !modalOpen && !isSubmitting) {
+      setModalOpen(true);
+    }
+  }, [askPartial, modalOpen, isSubmitting]);
+  
+  // Cleanup modal state when component unmounts or navigation occurs
+  useEffect(() => {
+    return () => {
+      setModalOpen(false);
+      setIsSubmitting(false);
+    };
+  }, []);
 
   // Tutorial overlay state
   const [showTutorial, setShowTutorial] = useState(true);
@@ -155,20 +180,39 @@ export default function AmrapLiveScreen() {
   useEffect(() => {
     if (!showTutorial) return;
     const interval = setInterval(() => {
-      setTutorialStep(prev => (prev + 1) % 2);
+      setTutorialStep((prev) => (prev + 1) % 2);
     }, 800); // Switch every 800ms
     return () => clearInterval(interval);
   }, [showTutorial]);
 
   const sendPartial = async () => {
-    const token = await getToken();
-    await axios.post(`${config.BASE_URL}/live/${classId}/partial`, {
-      reps: Math.max(0, Number(partial) || 0)
-    }, { headers: { Authorization: `Bearer ${token}` } });
-    setModalOpen(false);
-    if (session?.status === 'ended' && !hasNavigatedRef.current) {
-      hasNavigatedRef.current = true;
-      nav.replace('LiveClassEnd', { classId });
+    if (isSubmitting) return; // Prevent double submission
+    
+    setIsSubmitting(true);
+    try {
+      const token = await getToken();
+      await axios.post(`${config.BASE_URL}/live/${classId}/partial`, {
+        reps: Math.max(0, Number(partial) || 0)
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      
+      setModalOpen(false);
+      
+      if (session?.status === 'ended' && !hasNavigatedRef.current) {
+        hasNavigatedRef.current = true;
+        nav.replace('LiveClassEnd', { classId });
+      }
+    } catch (error) {
+      console.error('Error submitting partial reps:', error);
+      // Still close modal on error to prevent getting stuck
+      setModalOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleModalClose = () => {
+    if (!isSubmitting) {
+      setModalOpen(false);
     }
   };
 
@@ -178,19 +222,23 @@ export default function AmrapLiveScreen() {
     if (stepCount === 0) return;
 
     // optimistic wrap for AMRAP
-    setLocalIdx(idx => {
+    setLocalIdx((idx) => {
       const next = (idx + (dir === 1 ? 1 : -1) + stepCount) % stepCount;
       return next;
     });
 
     try {
       const token = await getToken();
-      await axios.post(`${config.BASE_URL}/live/${classId}/advance`, {
-        direction: dir === 1 ? 'next' : 'prev'
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      await axios.post(
+        `${config.BASE_URL}/live/${classId}/advance`,
+        {
+          direction: dir === 1 ? 'next' : 'prev',
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
     } catch {
       // on failure, undo optimistic change (wrap back)
-      setLocalIdx(idx => {
+      setLocalIdx((idx) => {
         const prev = (idx + (dir === 1 ? -1 : 1) + stepCount) % stepCount;
         return prev;
       });
@@ -210,13 +258,17 @@ export default function AmrapLiveScreen() {
   // pause overlay animation
   const pausedAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(pausedAnim, { toValue: session?.status === 'paused' ? 1 : 0, duration: 250, useNativeDriver: true }).start();
+    Animated.timing(pausedAnim, {
+      toValue: session?.status === 'paused' ? 1 : 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
   }, [session?.status, pausedAnim]);
   const fadeOpacity = pausedAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.55] });
   const scaleIn = pausedAnim.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] });
 
-  const current  = ready ? steps[localIdx] : undefined;
-  const next     = ready ? steps[(localIdx + 1) % Math.max(1, stepCount)] : undefined;
+  const current = ready ? steps[localIdx] : undefined;
+  const next = ready ? steps[(localIdx + 1) % Math.max(1, stepCount)] : undefined;
 
   return (
     <View style={s.root}>
@@ -225,7 +277,9 @@ export default function AmrapLiveScreen() {
 
       {/* single timer */}
       <View pointerEvents="none" style={s.topOverlay}>
-        <Text style={s.timeTop} pointerEvents="none">{fmt(elapsed)}</Text>
+        <Text style={s.timeTop} pointerEvents="none">
+          {fmt(elapsed)}{workoutDuration > 0 ? ` / ${fmt(workoutDuration)}` : ''}
+        </Text>
       </View>
       {/* hype banner */}
       <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />
@@ -292,8 +346,39 @@ export default function AmrapLiveScreen() {
 
       {/* press zones */}
       <View style={s.row}>
-        <Pressable style={s.back} android_ripple={{color:'#000'}} onPress={() => go(-1)} disabled={!ready || session?.status !== 'live'} />
-        <Pressable style={s.next} android_ripple={{color:'#0a0'}} onPress={() => go(1)}  disabled={!ready || session?.status !== 'live'} />
+        {Platform.OS === 'android' ? (
+          <>
+            <TouchableNativeFeedback
+              onPress={() => go(-1)}
+              disabled={!ready || session?.status !== 'live'}
+              background={TouchableNativeFeedback.Ripple('#ff6464', false)}
+              useForeground={true}
+            >
+              <View style={s.back} />
+            </TouchableNativeFeedback>
+            <TouchableNativeFeedback
+              onPress={() => go(1)}
+              disabled={!ready || session?.status !== 'live'}
+              background={TouchableNativeFeedback.Ripple('#64ff64', false)}
+              useForeground={true}
+            >
+              <View style={s.next} />
+            </TouchableNativeFeedback>
+          </>
+        ) : (
+          <>
+            <Pressable
+              onPress={() => go(-1)}
+              disabled={!ready || session?.status !== 'live'}
+              style={({pressed}) => [s.back, pressed && {opacity: 0.7}]}
+            />
+            <Pressable
+              onPress={() => go(1)}
+              disabled={!ready || session?.status !== 'live'}
+              style={({pressed}) => [s.next, pressed && {opacity: 0.7}]}
+            />
+          </>
+        )}
       </View>
 
       {/* pause overlay */}
@@ -306,57 +391,158 @@ export default function AmrapLiveScreen() {
             <Text style={s.pausedSub}>waiting for coach...</Text>
           </Animated.View>
         </View>
-      )}
+        {/* hype banner */}
+        <HypeToast text={hype.text} show={hype.show} style={{ position: 'absolute', top: 46 }} />
 
-      {/* tutorial overlay */}
-      {showTutorial && (
-        <View style={s.tutorialOverlay} pointerEvents="none">
-          {/* Green region highlight */}
-          {tutorialStep === 0 && (
-            <Animated.View style={[s.tutorialHighlight, s.tutorialGreenHighlight]} pointerEvents="none">
-              <View style={s.tutorialLabelContainer}>
-                <Text style={s.tutorialLabel}>TAP FOR NEXT</Text>
+        {/* centered content */}
+        <View pointerEvents="box-none" style={s.centerOverlay}>
+          {!ready ? (
+            <>
+              <ActivityIndicator size="large" color="#D8FF3E" pointerEvents="none" />
+              <Text
+                style={{ color: '#a5a5a5', marginTop: 10, fontWeight: '700' }}
+                pointerEvents="none"
+              >
+                Getting class ready…
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={s.stepCounter} pointerEvents="none">
+                {String(localIdx + 1).padStart(2, '0')} / {String(stepCount).padStart(2, '0')}
+                {typeof progress.rounds_completed === 'number'
+                  ? `   •   Rounds: ${progress.rounds_completed}`
+                  : ''}
+              </Text>
+              {!!scoreSoFar && (
+                <Text style={s.score} pointerEvents="none">
+                  {scoreSoFar} reps
+                </Text>
+              )}
+              <Text style={s.current} pointerEvents="none">
+                {current?.name ?? '—'}
+              </Text>
+              <Text style={s.nextLabel} pointerEvents="none">
+                Next: {next?.name ?? '—'}
+              </Text>
+
+              <View style={[s.lb, { zIndex: 50, elevation: 6 }]} pointerEvents="box-none">
+                <Text style={s.lbTitle} pointerEvents="none">
+                  Leaderboard
+                </Text>
+
+                {/* RX/SC filter */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: 6,
+                    marginBottom: 8,
+                  }}
+                  pointerEvents="auto"
+                >
+                  {(['ALL', 'RX', 'SC'] as const).map((opt) => (
+                    <TouchableOpacity
+                      key={opt}
+                      onPress={() => setScope(opt)}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 999,
+                        backgroundColor: scope === opt ? '#2e3500' : '#1f1f1f',
+                        borderWidth: 1,
+                        borderColor: scope === opt ? '#d8ff3e' : '#2a2a2a',
+                      }}
+                    >
+                      <Text
+                        style={{ color: scope === opt ? '#d8ff3e' : '#9aa', fontWeight: '800' }}
+                      >
+                        {opt}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {lb.slice(0, 3).map((r: any, i: number) => {
+                  const displayName =
+                    r.first_name || r.last_name
+                      ? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
+                      : (r.name ?? `User ${r.user_id}`);
+                  return (
+                    <View key={`${r.user_id}-${i}`} style={s.lbRow} pointerEvents="none">
+                      <Text style={s.lbPos} pointerEvents="none">
+                        {i + 1}
+                      </Text>
+                      <Text style={s.lbUser} pointerEvents="none">
+                        {displayName}{' '}
+                        <Text style={{ color: '#9aa' }} pointerEvents="none">
+                          ({r.scaling ?? 'RX'})
+                        </Text>
+                      </Text>
+                      <Text style={s.lbScore} pointerEvents="none">
+                        {r.finished
+                          ? fmt(Number(r.elapsed_seconds ?? 0))
+                          : `${Number(r.total_reps ?? 0)} reps`}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
-            </Animated.View>
-          )}
-          
-          {/* Red region highlight */}
-          {tutorialStep === 1 && (
-            <Animated.View style={[s.tutorialHighlight, s.tutorialRedHighlight]} pointerEvents="none">
-              <View style={s.tutorialLabelContainer}>
-                <Text style={s.tutorialLabel}>TAP FOR BACK</Text>
-              </View>
-            </Animated.View>
+            </>
           )}
         </View>
       )}
 
-      {/* partial reps prompt */}
-      <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={()=>{}}>
-        <View style={s.modalWrap}>
-          <View style={s.modalCard}>
-            <Text style={s.modalTitle}>Time's up — last exercise reps</Text>
-            <TextInput
-              value={partial} onChangeText={setPartial} keyboardType="numeric"
-              style={s.modalInput} placeholder="0" placeholderTextColor="#7a7a7a"
+      {/* partial reps prompt - Custom overlay instead of Modal */}
+      {modalOpen && (
+        <View style={s.customModalOverlay}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={s.keyboardAvoidingView}
+          >
+            <TouchableOpacity 
+              style={s.modalBackdrop} 
+              activeOpacity={1} 
+              onPress={handleModalClose}
             />
-            <TouchableOpacity style={s.modalBtn} onPress={sendPartial}>
-              <Text style={s.modalBtnText}>Submit</Text>
-            </TouchableOpacity>
-          </View>
+            <View style={s.modalCard}>
+              <Text style={s.modalTitle}>Time's up — last exercise reps</Text>
+              <TextInput
+                value={partial} 
+                onChangeText={setPartial} 
+                keyboardType="numeric"
+                style={s.modalInput} 
+                placeholder="0" 
+                placeholderTextColor="#7a7a7a"
+                autoFocus={false}
+                selectTextOnFocus={true}
+                returnKeyType="done"
+                onSubmitEditing={sendPartial}
+                editable={!isSubmitting}
+              />
+              <TouchableOpacity 
+                style={[s.modalBtn, isSubmitting && s.modalBtnDisabled]} 
+                onPress={sendPartial}
+                disabled={isSubmitting}
+              >
+                <Text style={s.modalBtnText}>
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
         </View>
-      </Modal>
+      )}
       </SafeAreaView>
     </View>
   );
-
 }
 
 function fmt(t: number) {
   const s = Math.max(0, Math.floor(t));
   const m = Math.floor(s / 60);
   const ss = s % 60;
-  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  return `${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
 }
 
 const s = StyleSheet.create({
@@ -386,17 +572,44 @@ const s = StyleSheet.create({
   pausedTitle: { color:'#fff', fontWeight:'900', fontSize: 44, letterSpacing: 2, textAlign:'center' },
   pausedSub:   { color:'#eaeaea', fontWeight:'700', marginTop: 6, fontSize: 14, textAlign:'center' },
 
-  modalWrap: { flex:1, backgroundColor:'rgba(0,0,0,0.65)', alignItems:'center', justifyContent:'center' },
-  modalCard: { backgroundColor:'#151515', borderRadius:14, padding:18, width:'80%' },
+  customModalOverlay: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    bottom: 0, 
+    zIndex: 1000, 
+    backgroundColor: 'rgba(0,0,0,0.65)' 
+  },
+  keyboardAvoidingView: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  modalBackdrop: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    bottom: 0 
+  },
+  modalCard: { 
+    backgroundColor: '#151515', 
+    borderRadius: 14, 
+    padding: 18, 
+    width: '80%', 
+    maxWidth: 400 
+  },
   modalTitle:{ color:'#fff', fontWeight:'800', marginBottom:12, textAlign:'center' },
   modalInput:{ backgroundColor:'#222', borderRadius:10, color:'#fff', fontSize:24, fontWeight:'900', paddingVertical:8, textAlign:'center' },
   modalBtn:{ backgroundColor:'#d8ff3e', borderRadius:10, paddingVertical:14, marginTop:12 },
+  modalBtnDisabled:{ backgroundColor:'#666', opacity:0.6 },
   modalBtnText:{ color:'#111', fontWeight:'900', textAlign:'center' },
 
   tutorialOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 100 },
-  tutorialHighlight: { 
-    position: 'absolute', 
-    borderWidth: 4, 
+  tutorialHighlight: {
+    position: 'absolute',
+    borderWidth: 4,
     borderRadius: 8,
     shadowColor: '#fff',
     shadowOffset: { width: 0, height: 0 },
@@ -404,18 +617,18 @@ const s = StyleSheet.create({
     shadowRadius: 10,
     elevation: 20,
   },
-  tutorialGreenHighlight: { 
-    top: 0, 
-    right: 0, 
-    bottom: 0, 
+  tutorialGreenHighlight: {
+    top: 0,
+    right: 0,
+    bottom: 0,
     left: '25%', // Green area is flex: 3, so starts at 25%
     borderColor: '#4CAF50',
     backgroundColor: 'rgba(76, 175, 80, 0.15)',
   },
-  tutorialRedHighlight: { 
-    top: 0, 
-    left: 0, 
-    bottom: 0, 
+  tutorialRedHighlight: {
+    top: 0,
+    left: 0,
+    bottom: 0,
     right: '75%', // Red area is flex: 1, so takes 25% of screen
     borderColor: '#F44336',
     backgroundColor: 'rgba(244, 67, 54, 0.15)',

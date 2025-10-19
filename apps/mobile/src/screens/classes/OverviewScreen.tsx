@@ -1,6 +1,14 @@
 // apps/mobile/src/screens/classes/OverviewScreen.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, StatusBar, ActivityIndicator, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  StatusBar,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
@@ -25,20 +33,26 @@ type FlatStep = {
 
 async function setMyScaling(classId: number, scaling: 'RX' | 'SC') {
   const token = await getToken();
-  await axios.post(`${config.BASE_URL}/live/${classId}/scaling`, { scaling }, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
+  await axios.post(
+    `${config.BASE_URL}/live/${classId}/scaling`,
+    { scaling },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
 }
 
-async function getMyScaling(classId: number): Promise<'RX'|'SC'> {
+async function getMyScaling(classId: number): Promise<'RX' | 'SC'> {
   const token = await getToken();
   try {
     const { data } = await axios.get(`${config.BASE_URL}/live/${classId}/scaling`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token}` },
     });
     const s = (data?.scaling ?? 'RX').toUpperCase();
     return s === 'SC' ? 'SC' : 'RX';
-  } catch { return 'RX'; }
+  } catch {
+    return 'RX';
+  }
 }
 
 function fmtExerciseLabel(step: FlatStep) {
@@ -66,23 +80,35 @@ export default function OverviewScreen() {
   const liveClassData: any = (params as any).liveClassData ?? {};
   const preWorkoutId: number | undefined = liveClassData?.class?.workoutId;
   const preWorkoutName: string | undefined = liveClassData?.class?.workoutName;
-  const preDurationSeconds: number =
-    (Number(liveClassData?.class?.durationMinutes ?? 0) * 60) || 0;
+  const preDurationSeconds: number = Number(liveClassData?.class?.durationMinutes ?? 0) * 60 || 0;
   const preType: string | undefined = liveClassData?.class?.workoutType;
 
   const session = useSession(classId);
 
-  const [myScaling, setScaling] = useState<'RX'|'SC'>('RX');
-  useEffect(() => { getMyScaling(classId).then(setScaling).catch(()=>{}); }, [classId]);
+  const [myScaling, setScaling] = useState<'RX' | 'SC'>('RX');
+  useEffect(() => {
+    getMyScaling(classId)
+      .then(setScaling)
+      .catch(() => {});
+  }, [classId]);
 
   const chooseScaling = async (val: 'RX' | 'SC') => {
     setScaling(val);
-    try { await setMyScaling(classId, val); } catch {}
+    try {
+      await setMyScaling(classId, val);
+    } catch {}
   };
 
   // ---- ALWAYS load builder steps for accurate round/subround & quantity type ----
   const [builderSteps, setBuilderSteps] = useState<FlatStep[]>([]);
-  const [builderMeta, setBuilderMeta] = useState<{ number_of_rounds?: number; number_of_subrounds?: number; duration_seconds?: number; time_limit?: number; emom_repeats?: number[]; tabata_total_seconds?: number } | null>(null);
+  const [builderMeta, setBuilderMeta] = useState<{
+    number_of_rounds?: number;
+    number_of_subrounds?: number;
+    duration_seconds?: number;
+    time_limit?: number;
+    emom_repeats?: number[];
+    tabata_total_seconds?: number;
+  } | null>(null);
   const [fallbackLoading, setFallbackLoading] = useState(false);
 
   useEffect(() => {
@@ -92,27 +118,39 @@ export default function OverviewScreen() {
       try {
         setFallbackLoading(true);
         const token = await getToken();
-        const { data } = await axios.get(
-          `${config.BASE_URL}/workout/${preWorkoutId}/steps`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const { data } = await axios.get(`${config.BASE_URL}/workout/${preWorkoutId}/steps`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (stop) return;
         const steps: FlatStep[] = Array.isArray(data?.steps) ? data.steps : [];
-        setBuilderSteps(steps.map((s,i) => ({
-          index: typeof s.index === 'number' ? s.index : i,
-          name: s.name,
-          reps: typeof s.reps === 'number' ? s.reps : (s as any)?.quantity,
-          duration: typeof s.duration === 'number' ? s.duration : undefined,
-          round: Number(s.round ?? (s as any).roundNumber ?? 1),
-          subround: Number(s.subround ?? (s as any).subroundNumber ?? 1),
-          quantityType: (s as any)?.quantityType ?? (typeof s.reps === 'number' ? 'reps' : (typeof s.duration === 'number' ? 'duration' : undefined))
-        })));
-        const meta = (data?.metadata && typeof data.metadata === 'object') ? data.metadata : null;
+        setBuilderSteps(
+          steps.map((s, i) => ({
+            index: typeof s.index === 'number' ? s.index : i,
+            name: s.name,
+            reps: typeof s.reps === 'number' ? s.reps : (s as any)?.quantity,
+            duration: typeof s.duration === 'number' ? s.duration : undefined,
+            round: Number(s.round ?? (s as any).roundNumber ?? 1),
+            subround: Number(s.subround ?? (s as any).subroundNumber ?? 1),
+            quantityType:
+              (s as any)?.quantityType ??
+              (typeof s.reps === 'number'
+                ? 'reps'
+                : typeof s.duration === 'number'
+                  ? 'duration'
+                  : undefined),
+          })),
+        );
+        const meta = data?.metadata && typeof data.metadata === 'object' ? data.metadata : null;
         setBuilderMeta(meta);
-      } catch { /* noop */ }
-      finally { setFallbackLoading(false); }
+      } catch {
+        /* noop */
+      } finally {
+        setFallbackLoading(false);
+      }
     })();
-    return () => { stop = true; };
+    return () => {
+      stop = true;
+    };
   }, [preWorkoutId]);
 
   const displaySteps: FlatStep[] = useMemo(() => {
@@ -120,20 +158,17 @@ export default function OverviewScreen() {
     const ssteps = (Array.isArray(session?.steps) ? session!.steps! : []) as any[];
     return ssteps.map((s, i) => ({
       index: i,
-      name: s?.name ?? `Step ${i+1}`,
+      name: s?.name ?? `Step ${i + 1}`,
       reps: typeof s?.reps === 'number' ? s.reps : undefined,
       duration: typeof s?.duration === 'number' ? s.duration : undefined,
       round: Number(s?.round ?? 1),
       subround: Number(s?.subround ?? 1),
-      quantityType: s?.quantityType
+      quantityType: s?.quantityType,
     })) as FlatStep[];
   }, [builderSteps, session?.steps]);
 
   const workoutType: string =
-    (session?.workout_type as string) ||
-    (preType as string) ||
-    'FOR_TIME';
-
+    (session?.workout_type as string) || (preType as string) || 'FOR_TIME';
 
   const capSeconds: number = useMemo(() => {
     const t = (workoutType || '').toUpperCase();
@@ -146,26 +181,40 @@ export default function OverviewScreen() {
 
     // TABATA / INTERVAL: sum durations of *every* step
     if (t === 'TABATA' || t === 'INTERVAL') {
-      const stepsToSum = (builderSteps.length > 0 ? builderSteps : (Array.isArray(session?.steps) ? session!.steps! : [])) as Array<{ duration?: number }>;
+      const stepsToSum = (
+        builderSteps.length > 0
+          ? builderSteps
+          : Array.isArray(session?.steps)
+            ? session!.steps!
+            : []
+      ) as Array<{ duration?: number }>;
       const sum = stepsToSum.reduce((acc, s) => acc + (Number(s?.duration) || 0), 0);
       if (sum > 0) return sum;
       // fallback only if builder lacks per-step durations
-      return Number(builderMeta?.duration_seconds || 0) ||
-             Number(session?.time_cap_seconds || 0) ||
-             preDurationSeconds;
+      return (
+        Number(builderMeta?.duration_seconds || 0) ||
+        Number(session?.time_cap_seconds || 0) ||
+        preDurationSeconds
+      );
     }
 
     // FOR_TIME / AMRAP etc.
-    return Number(builderMeta?.time_limit ?? 0) * 60 ||
-           Number(builderMeta?.duration_seconds ?? 0) ||
-           Number(session?.time_cap_seconds ?? 0) ||
-           preDurationSeconds;
-  }, [workoutType, builderMeta, builderSteps, session?.steps, session?.time_cap_seconds, preDurationSeconds]);
+    return (
+      Number(builderMeta?.time_limit ?? 0) * 60 ||
+      Number(builderMeta?.duration_seconds ?? 0) ||
+      Number(session?.time_cap_seconds ?? 0) ||
+      preDurationSeconds
+    );
+  }, [
+    workoutType,
+    builderMeta,
+    builderSteps,
+    session?.steps,
+    session?.time_cap_seconds,
+    preDurationSeconds,
+  ]);
 
-
-  const workoutName: string =
-    (preWorkoutName as string) ||
-    'Workout';
+  const workoutName: string = (preWorkoutName as string) || 'Workout';
 
   // route when class goes live / ends
   useEffect(() => {
@@ -174,9 +223,9 @@ export default function OverviewScreen() {
 
     if (session.status === 'live') {
       if (t === 'FOR_TIME') nav.replace('ForTimeLive', { classId });
-      if (t === 'AMRAP')   nav.replace('AmrapLive',   { classId });
-      if (t == 'TABATA')   nav.replace('IntervalLive', { classId });
-      if (t === 'EMOM')    nav.replace('EmomLive', { classId });
+      if (t === 'AMRAP') nav.replace('AmrapLive', { classId });
+      if (t == 'TABATA') nav.replace('IntervalLive', { classId });
+      if (t === 'EMOM') nav.replace('EmomLive', { classId });
     }
     if (session.status === 'ended') {
       nav.replace('LiveClassEnd', { classId });
@@ -205,8 +254,14 @@ export default function OverviewScreen() {
         return;
       }
     } catch {}
-    try { nav.navigate('Home'); return; } catch {}
-    try { nav.navigate('Root'); return; } catch {}
+    try {
+      nav.navigate('Home');
+      return;
+    } catch {}
+    try {
+      nav.navigate('Root');
+      return;
+    } catch {}
     nav.popToTop();
   };
 
@@ -247,57 +302,87 @@ export default function OverviewScreen() {
           >
             <Text style={[s.pillText, myScaling === 'RX' && s.pillTextActive]}>RX</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => chooseScaling('SC')}
-            style={[s.pill, myScaling === 'SC' && s.pillActive]}
-          >
-            <Text style={[s.pillText, myScaling === 'SC' && s.pillTextActive]}>Scaled</Text>
-          </TouchableOpacity>
-        </View>
 
-        {(displaySteps.length === 0 && fallbackLoading) ? (
-          <View style={{ paddingVertical: 20 }}>
-            <ActivityIndicator size="large" color="#D8FF3E" />
-            <Text style={{ color: '#888', marginTop: 8, textAlign: 'center' }}>
-              Loading workout…
-            </Text>
+          <View style={s.headerBadge}>
+            <Text style={s.headerText}>LIVE CLASS</Text>
+            <Text style={s.headerRight}>{workoutName}</Text>
           </View>
-        ) : (
-          Object.keys(grouped).map((rKey) => {
-            const r = Number(rKey);
-            const sub = grouped[r];
-            return (
-              <View key={`round-${r}`} style={s.roundBox}>
-                {Object.keys(sub).map((srKey) => {
-                  const sr = Number(srKey);
-                  const exs = sub[sr];
-                  return (
-                     <View key={`sub-${r}-${sr}`} style={s.subroundBox}>
-                       {workoutType.toUpperCase() === 'EMOM' && builderMeta?.emom_repeats && Array.isArray(builderMeta.emom_repeats) && builderMeta.emom_repeats[sr - 1] && (
-                         <View style={s.multiplierContainer}>
-                           <Text style={s.multiplierText}>×{builderMeta.emom_repeats[sr - 1]}</Text>
-                         </View>
-                       )}
-                       {exs.map((e) => (
-                         <Text key={`step-${e.index}`} style={s.exerciseText}>
-                           {fmtExerciseLabel(e)}
-                         </Text>
-                       ))}
-                     </View>
-                  );
-                })}
-              </View>
-            );
-          })
-        )}
 
-        {session?.status === 'paused' ? (
-          <View style={s.paused}>
-            <Text style={s.pausedText}>PAUSED</Text>
+          <Text style={s.timeLabel}>Time Cap:</Text>
+          <Text style={s.timeBig}>{fmtHMS(capSeconds)}</Text>
+
+          <Text style={s.sectionTitle}>Workout of the Day:</Text>
+
+          <View style={s.typeRow}>
+            <TypePill label={(workoutType || 'FOR_TIME').replace('_', ' ')} active />
+            <TypePill label="Extreme" />
+            <Text style={s.roundCount}>{roundCount > 0 ? `${roundCount} ROUNDS` : '—'}</Text>
           </View>
-        ) : null}
-      </ScrollView>
-    </SafeAreaView>
+
+          <View style={[s.typeRow, { marginTop: 6 }]}>
+            <Text style={{ color: '#aaa', marginRight: 8, fontWeight: '800' }}>Scaling:</Text>
+            <TouchableOpacity
+              onPress={() => chooseScaling('RX')}
+              style={[s.pill, myScaling === 'RX' && s.pillActive]}
+            >
+              <Text style={[s.pillText, myScaling === 'RX' && s.pillTextActive]}>RX</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => chooseScaling('SC')}
+              style={[s.pill, myScaling === 'SC' && s.pillActive]}
+            >
+              <Text style={[s.pillText, myScaling === 'SC' && s.pillTextActive]}>Scaled</Text>
+            </TouchableOpacity>
+          </View>
+
+          {displaySteps.length === 0 && fallbackLoading ? (
+            <View style={{ paddingVertical: 20 }}>
+              <ActivityIndicator size="large" color="#D8FF3E" />
+              <Text style={{ color: '#888', marginTop: 8, textAlign: 'center' }}>
+                Loading workout…
+              </Text>
+            </View>
+          ) : (
+            Object.keys(grouped).map((rKey) => {
+              const r = Number(rKey);
+              const sub = grouped[r];
+              return (
+                <View key={`round-${r}`} style={s.roundBox}>
+                  {Object.keys(sub).map((srKey) => {
+                    const sr = Number(srKey);
+                    const exs = sub[sr];
+                    return (
+                      <View key={`sub-${r}-${sr}`} style={s.subroundBox}>
+                        {workoutType.toUpperCase() === 'EMOM' &&
+                          builderMeta?.emom_repeats &&
+                          Array.isArray(builderMeta.emom_repeats) &&
+                          builderMeta.emom_repeats[sr - 1] && (
+                            <View style={s.multiplierContainer}>
+                              <Text style={s.multiplierText}>
+                                ×{builderMeta.emom_repeats[sr - 1]}
+                              </Text>
+                            </View>
+                          )}
+                        {exs.map((e) => (
+                          <Text key={`step-${e.index}`} style={s.exerciseText}>
+                            {fmtExerciseLabel(e)}
+                          </Text>
+                        ))}
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })
+          )}
+
+          {session?.status === 'paused' ? (
+            <View style={s.paused}>
+              <Text style={s.pausedText}>PAUSED</Text>
+            </View>
+          ) : null}
+        </ScrollView>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }
@@ -327,7 +412,7 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   headerText: { fontWeight: '900', color: '#111', letterSpacing: 0.5 },
   headerRight: { color: '#111', opacity: 0.8 },
@@ -339,8 +424,12 @@ const s = StyleSheet.create({
 
   typeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   pill: {
-    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999,
-    backgroundColor: '#1f1f1f', borderWidth: 1, borderColor: '#2a2a2a'
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#1f1f1f',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
   },
   pillActive: { backgroundColor: '#2e3500', borderColor: '#d8ff3e' },
   pillText: { color: '#9aa', fontWeight: '700', fontSize: 12 },
@@ -349,8 +438,13 @@ const s = StyleSheet.create({
 
   roundBox: { backgroundColor: '#161616', borderRadius: 16, padding: 12, marginTop: 12 },
   subroundBox: {
-    borderWidth: 1.5, borderColor: '#EAE2C6', borderRadius: 12,
-    paddingVertical: 12, paddingHorizontal: 12, marginBottom: 12, backgroundColor: 'transparent'
+    borderWidth: 1.5,
+    borderColor: '#EAE2C6',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+    backgroundColor: 'transparent',
   },
   multiplierContainer: {
     backgroundColor: '#2e3500',
@@ -358,15 +452,21 @@ const s = StyleSheet.create({
     borderColor: '#d8ff3e',
     borderRadius: 12,
     paddingHorizontal: 8,
-    paddingVertical: 4
+    paddingVertical: 4,
   },
   multiplierText: {
     color: '#d8ff3e',
     fontWeight: '900',
-    fontSize: 12
+    fontSize: 12,
   },
   exerciseText: { color: '#ddd', paddingVertical: 4 },
 
-  paused: { marginTop: 14, backgroundColor: '#2a2a2a', padding: 12, borderRadius: 10, alignItems:'center' },
+  paused: {
+    marginTop: 14,
+    backgroundColor: '#2a2a2a',
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
   pausedText: { color: '#fff', fontWeight: '800' },
 });

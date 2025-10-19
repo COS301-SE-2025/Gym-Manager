@@ -42,10 +42,9 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
         throw new Error('No authentication token found');
       }
 
-      const response = await axios.get<CoachAnalytics>(
-        `${config.BASE_URL}/analytics/coach`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await axios.get<CoachAnalytics>(`${config.BASE_URL}/analytics/coach`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       setAnalytics(response.data);
     } catch (err: any) {
@@ -79,23 +78,20 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
       month: 'short',
       day: 'numeric',
     });
-    
+
     return (
       <View key={index} style={styles.trendItem}>
         <View style={styles.trendDate}>
           <Text style={styles.trendDateText}>{date}</Text>
         </View>
         <View style={styles.trendInfo}>
-          <Text style={styles.trendAttendance}>{trend.attendance}/{trend.capacity}</Text>
+          <Text style={styles.trendAttendance}>
+            {trend.attendance}/{trend.capacity}
+          </Text>
           <Text style={styles.trendFillRate}>{trend.fillRate.toFixed(0)}% filled</Text>
         </View>
         <View style={styles.trendBar}>
-          <View 
-            style={[
-              styles.trendBarFill, 
-              { width: `${Math.min(trend.fillRate, 100)}%` }
-            ]} 
-          />
+          <View style={[styles.trendBarFill, { width: `${Math.min(trend.fillRate, 100)}%` }]} />
         </View>
       </View>
     );
@@ -106,10 +102,7 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="#D8FF3E" />
           </TouchableOpacity>
           <IconLogo width={50} height={46} />
@@ -128,10 +121,7 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="#D8FF3E" />
           </TouchableOpacity>
           <IconLogo width={50} height={46} />
@@ -148,10 +138,7 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#D8FF3E" />
         </TouchableOpacity>
         <IconLogo width={50} height={46} />
@@ -172,19 +159,15 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
             {renderStatCard(
               'Average Attendance',
               analytics?.averageAttendance.toFixed(1) || '0',
-              'per class'
+              'per class',
             )}
-            {renderStatCard(
-              'Total Classes',
-              analytics?.totalClasses || 0,
-              'taught'
-            )}
+            {renderStatCard('Total Classes', analytics?.totalClasses || 0, 'taught')}
           </View>
           <View style={styles.statsContainer}>
             {renderStatCard(
               'Average Fill Rate',
               `${analytics?.averageFillRate.toFixed(1) || '0'}%`,
-              'capacity utilization'
+              'capacity utilization',
             )}
           </View>
         </View>
@@ -195,7 +178,7 @@ const CoachAnalyticsScreen: React.FC<CoachAnalyticsScreenProps> = ({ navigation 
           {analytics?.attendanceTrends && analytics.attendanceTrends.length > 0 ? (
             <View style={styles.trendsList}>
               {analytics.attendanceTrends.map((trend, index) =>
-                renderAttendanceTrendItem(trend, index)
+                renderAttendanceTrendItem(trend, index),
               )}
             </View>
           ) : (

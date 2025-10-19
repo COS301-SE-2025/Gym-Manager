@@ -34,7 +34,7 @@ export function useSession(classId?: number) {
           if (canceled) return;
           if (payload?.new) setSess(payload.new);
           // (If the row were ever deleted, you'd get payload.old; not expected in this flow.)
-        }
+        },
       )
       .subscribe();
 

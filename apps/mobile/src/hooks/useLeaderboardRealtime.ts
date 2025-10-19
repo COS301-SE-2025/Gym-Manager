@@ -29,7 +29,11 @@ export function useLeaderboardRealtime(classId: number, filter: LbFilter = 'ALL'
         headers: { Authorization: `Bearer ${token}` },
       });
       const rows = Array.isArray(data) ? data : [];
-      console.log('Leaderboard data received:', { classId, rowCount: rows.length, rows: rows.slice(0, 3) });
+      console.log('Leaderboard data received:', {
+        classId,
+        rowCount: rows.length,
+        rows: rows.slice(0, 3),
+      });
       setAllRows(rows);
     } catch (err) {
       console.log('Leaderboard fetch error:', err);
@@ -39,20 +43,50 @@ export function useLeaderboardRealtime(classId: number, filter: LbFilter = 'ALL'
   useEffect(() => {
     refresh();
 
-    const ch = supabase.channel(`lb-${classId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'class_sessions', filter: `class_id=eq.${classId}`}, refresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_progress', filter: `class_id=eq.${classId}`}, refresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_interval_scores', filter: `class_id=eq.${classId}`}, refresh)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'classattendance', filter: `class_id=eq.${classId}`}, refresh) // NEW: watch scaling & final scores
+    const ch = supabase
+      .channel(`lb-${classId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'class_sessions', filter: `class_id=eq.${classId}` },
+        refresh,
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'live_progress', filter: `class_id=eq.${classId}` },
+        refresh,
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'live_interval_scores',
+          filter: `class_id=eq.${classId}`,
+        },
+        refresh,
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'classattendance',
+          filter: `class_id=eq.${classId}`,
+        },
+        refresh,
+      ) // NEW: watch scaling & final scores
       .subscribe();
 
     const poll = setInterval(refresh, 2500);
-    return () => { supabase.removeChannel(ch); clearInterval(poll); };
+    return () => {
+      supabase.removeChannel(ch);
+      clearInterval(poll);
+    };
   }, [classId, refresh]);
 
   const rows = useMemo(() => {
     if (filter === 'ALL') return allRows;
-    return allRows.filter(r => (r.scaling ?? 'RX').toUpperCase() === filter);
+    return allRows.filter((r) => (r.scaling ?? 'RX').toUpperCase() === filter);
   }, [allRows, filter]);
 
   return rows;

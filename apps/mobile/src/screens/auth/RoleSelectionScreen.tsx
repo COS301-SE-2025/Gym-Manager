@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  Dimensions,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { CommonActions } from '@react-navigation/native';
@@ -48,7 +41,8 @@ export default function RoleSelectionScreen() {
       <View style={styles.titleContainer}>
         <Text style={styles.title}>Choose Your Profile</Text>
         <Text style={styles.subtitle}>
-          Select how you'd like to use the app - as a member to book classes and track your fitness, or as a coach to manage classes and members.
+          Select how you'd like to use the app - as a member to book classes and track your fitness,
+          or as a coach to manage classes and members.
         </Text>
       </View>
 

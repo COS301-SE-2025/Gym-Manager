@@ -43,7 +43,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const isMember = !!currentUser?.roles?.includes('member');
   const showLeaderboardSettings = isMember;
 
-
   useEffect(() => {
     const load = async () => {
       try {
@@ -235,7 +234,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         {isMember && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Your Progress</Text>
-            
+
             {isLoadingGamification ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#D8FF3E" />
@@ -243,11 +242,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               </View>
             ) : gamificationStats ? (
               <View>
-                <StreakCard 
-                  streak={gamificationStats.userStreak} 
+                <StreakCard
+                  streak={gamificationStats.userStreak}
                   onPress={() => navigation.navigate('MemberTabs', { screen: 'Progress' })}
                 />
-                
+
                 <TouchableOpacity
                   style={styles.settingItem}
                   onPress={() => navigation.navigate('MemberTabs', { screen: 'Progress' })}
@@ -272,8 +271,8 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           </View>
         )}
 
-                {/* Settings Section */}
-                <View style={styles.section}>
+        {/* Settings Section */}
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
 
           {/* Leaderboard Privacy — only for members */}
@@ -336,13 +335,16 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               <View style={styles.settingText}>
                 <Text style={styles.settingTitle}>Analytics</Text>
                 <Text style={styles.settingDescription}>
-                  {isMember ? 'View your performance data' : isCoach ? 'View your coaching analytics' : 'View analytics'}
+                  {isMember
+                    ? 'View your performance data'
+                    : isCoach
+                      ? 'View your coaching analytics'
+                      : 'View analytics'}
                 </Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={24} color="#888" />
           </TouchableOpacity>
-
 
           {/* Role Swap - Only show if user has multiple roles */}
           {currentUser?.roles && currentUser.roles.length > 1 && (

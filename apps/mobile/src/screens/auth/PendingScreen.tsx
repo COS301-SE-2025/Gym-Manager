@@ -42,7 +42,6 @@ export default function PendingScreen() {
       }
 
       const userStatus = await getUserStatus();
-      
 
       // If status is no longer pending, fetch full user and then navigate
       if (userStatus.membershipStatus !== 'pending') {
@@ -55,16 +54,22 @@ export default function PendingScreen() {
           console.warn('Failed to fetch/store user after approval:', e);
           // fallback: at least store roles from status
           const existing = await getUser();
-         await storeUser({ ...(existing || {}), roles: userStatus.roles });
+          await storeUser({ ...(existing || {}), roles: userStatus.roles });
         }
         if (userStatus.roles.includes('member') && userStatus.roles.includes('coach')) {
           navigation.reset({ index: 0, routes: [{ name: 'RoleSelection' as never }] } as never);
         } else if (userStatus.roles.includes('member')) {
-          navigation.reset({ index: 0, routes: [{ name: 'MemberTabs' as never, params: { screen: 'Home' } as never }] } as never);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'MemberTabs' as never, params: { screen: 'Home' } as never }],
+          } as never);
         } else if (userStatus.roles.includes('coach')) {
           navigation.reset({ index: 0, routes: [{ name: 'Coach' as never }] } as never);
         } else {
-          navigation.reset({ index: 0, routes: [{ name: 'MemberTabs' as never, params: { screen: 'Home' } as never }] } as never);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'MemberTabs' as never, params: { screen: 'Home' } as never }],
+          } as never);
         }
       }
     } catch (error) {
@@ -97,20 +102,20 @@ export default function PendingScreen() {
 
 
   useFocusEffect(
-     useCallback(() => {
-          let isActive = true;
+    useCallback(() => {
+      let isActive = true;
 
-          checkStatus();
-       
-          const interval = setInterval(() => {
-            if (isActive) checkStatus();
-          }, 30000);
-          return () => {
-            isActive = false;
-           clearInterval(interval);
-         };
-       }, [checkStatus])
-      );
+      checkStatus();
+
+      const interval = setInterval(() => {
+        if (isActive) checkStatus();
+      }, 30000);
+      return () => {
+        isActive = false;
+        clearInterval(interval);
+      };
+    }, [checkStatus]),
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -131,7 +136,7 @@ export default function PendingScreen() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor="#D8FF3E"
-            colors={["#D8FF3E"]}
+            colors={['#D8FF3E']}
           />
         }
       >
@@ -172,9 +177,7 @@ export default function PendingScreen() {
         </Text>
 
         {/* Pull to refresh hint */}
-        <Text style={styles.refreshHint}>
-          Pull down to check if your account has been approved
-        </Text>
+        <Text style={styles.refreshHint}>Pull down to check if your account has been approved</Text>
       </ScrollView>
 
       {/* Footer */}

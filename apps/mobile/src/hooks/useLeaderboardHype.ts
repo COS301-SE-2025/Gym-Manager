@@ -18,11 +18,7 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-export function useLeaderboardHype(
-  lb: LbRow[],
-  myUserId?: number | string,
-  optedOut?: boolean
-) {
+export function useLeaderboardHype(lb: LbRow[], myUserId?: number | string, optedOut?: boolean) {
   const [text, setText] = useState('');
   const [show, setShow] = useState(false);
   const lastShownAtRef = useRef(0);
@@ -44,7 +40,9 @@ export function useLeaderboardHype(
       optedOut,
       show,
       text,
-      lbUsers: lb.slice(0, 3).map(r => ({ id: r.user_id, name: r.first_name || r.last_name || r.name }))
+      lbUsers: lb
+        .slice(0, 3)
+        .map((r) => ({ id: r.user_id, name: r.first_name || r.last_name || r.name })),
     });
   }, [lb, myUserId, myRank, optedOut, show, text]);
 
@@ -71,7 +69,6 @@ export function useLeaderboardHype(
       // unchanged — occasionally hype Top 3
       if (myRank <= 3 && Math.random() < 0.12) msg = pick(TOP3_TEMPLATES)();
     }
-
 
     // DEBUG: Force a test message if we have a rank but no message
     if (!msg && myRank && lb.length > 0) {

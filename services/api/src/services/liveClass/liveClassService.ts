@@ -363,6 +363,10 @@ export class LiveClassService implements ILiveClassService {
       .toString()
       .toUpperCase();
 
+    // For EMOM, always use realtime leaderboard (even when ended) 
+    // because it properly calculates scores for all booked members
+    if (type === 'EMOM') return this.repo.realtimeEmomLeaderboard(classId);
+
     if (status === 'ended') {
       const finals = await this.repo.getFinalLeaderboard(classId);
 
@@ -412,7 +416,6 @@ export class LiveClassService implements ILiveClassService {
       return mapped;
     }
 
-    if (type === 'EMOM') return this.repo.realtimeEmomLeaderboard(classId);
     if (type === 'INTERVAL' || type === 'TABATA')
       return this.repo.realtimeIntervalLeaderboard(classId);
     if (type === 'AMRAP') return this.repo.realtimeAmrapLeaderboard(classId);

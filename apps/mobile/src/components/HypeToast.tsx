@@ -1,7 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, ViewStyle } from 'react-native';
 
-export function HypeToast({ text, show, style }: { text: string; show: boolean; style?: ViewStyle }) {
+export function HypeToast({
+  text,
+  show,
+  style,
+}: {
+  text: string;
+  show: boolean;
+  style?: ViewStyle;
+}) {
   const anim = useRef(new Animated.Value(0)).current;
 
   // Debug logging

@@ -333,8 +333,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       const response = await apiClient.post('/book', { classId: classId });
 
       if (response.data.success) {
-        Alert.alert('Success!', 'Class booked successfully.');
-
         // Remove the booked class from the upcoming list
         const numericClassId = parseInt(classId, 10);
         setUpcomingClasses((prev) => {
@@ -393,8 +391,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       const response = await apiClient.post('/cancel', { classId: parseInt(classId, 10) });
 
       if (response.data?.success) {
-        Alert.alert('Cancelled', 'Your booking has been cancelled.');
-
+        Alert.alert('Cancellation Successful', 'Your booking has been cancelled.');
         // Remove from booked list
         setBookedClasses((prev) => prev.filter((c) => c.id !== classId));
 

@@ -371,8 +371,6 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
           numberOfRounds: roundsFromMeta,
           subRounds: subRounds,
         });
-
-        Alert.alert('Success!', `Loaded workout "${workoutName}" with ${subRounds.length} sub-rounds.`);
       }
     } catch (error: any) {
       console.error('Failed to load workout:', error);
@@ -629,7 +627,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
         <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
         <View style={styles.header}>
           <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
-            <Text style={styles.backButtonText}>←</Text>
+            <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Set Workout</Text>
           <View style={styles.headerSpacer} />
@@ -670,7 +668,7 @@ export default function SetWorkoutScreen({ route, navigation }: SetWorkoutScreen
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleCancel} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{editMode ? 'Edit Workout' : 'Set Workout'}</Text>
         <View style={styles.headerSpacer} />
@@ -987,17 +985,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#2a2a2a',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
+    padding: 4,
   },
   headerTitle: {
     flex: 1,

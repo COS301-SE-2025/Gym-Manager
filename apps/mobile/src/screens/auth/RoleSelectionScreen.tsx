@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { CommonActions } from '@react-navigation/native';
 import IconLogo from '../../components/common/IconLogo';
 
 const { width } = Dimensions.get('window');
@@ -17,12 +18,21 @@ export default function RoleSelectionScreen() {
   const navigation = useNavigation();
 
   const handleMemberPress = () => {
-
-    navigation.navigate('MemberTabs' as never);
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'MemberTabs' }],
+      })
+    );
   };
 
   const handleCoachPress = () => {
-    navigation.navigate('Coach' as never);
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Coach' }],
+      })
+    );
   };
 
   return (

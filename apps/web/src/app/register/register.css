@@ -3,20 +3,21 @@ body {
   background-color: #1a1a1a;
 }
 
-.login-container {
+.register-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   background-color: #1a1a1a;
+  padding: 20px;
 }
 
-.login-card {
+.register-card {
   background: #252525;
   border-radius: 8px;
   padding: 40px;
   width: 100%;
-  max-width: 400px;
+  max-width: 500px;
   border: 1px solid #3a3a3a;
 }
 
@@ -26,22 +27,44 @@ body {
   margin-bottom: 20px;
 }
 
-.login-header {
+.register-header {
   text-align: center;
   margin-bottom: 24px;
 }
 
-.login-header h1 {
+.register-header h1 {
   font-size: 28px;
   color: white;
   margin-bottom: 8px;
   font-weight: 600;
 }
 
-.login-header h3 {
+.register-header h3 {
   font-size: 16px;
   color: #ccc;
   font-weight: 400;
+}
+
+.success-banner {
+  background-color: #1f3a1f;
+  color: #b3ffb3;
+  border: 1px solid #2b6b2b;
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.success-banner .website-link {
+  color: #d8ff3e;
+  text-decoration: underline;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.success-banner .website-link:hover {
+  color: #fff;
 }
 
 .error-banner {
@@ -50,10 +73,11 @@ body {
   border: 1px solid #6b1f1f;
   border-radius: 6px;
   padding: 12px 14px;
-  margin: 12px 0 16px 0;
+  margin: 0 0 20px 0;
+  font-size: 14px;
 }
 
-.login-form {
+.register-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -83,7 +107,7 @@ body {
   -webkit-text-fill-color: white !important;
 }
 
-/* Placeholder styles */
+/* Placeholder styles - must come before autofill styles */
 .form-group input::placeholder {
   color: #666 !important;
   opacity: 0.7 !important;
@@ -115,23 +139,41 @@ body {
   -webkit-text-fill-color: white !important;
   background-color: #2a2a2a !important;
   color: white !important;
-  border: 1px solid #3a3a3a !important;
+  border: 1px solid #3a3a3a;
   transition: background-color 5000s ease-in-out 0s;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #3a3a3a !important;
+  border-color: #3a3a3a;
 }
 
-.form-options {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 14px;
+.form-group input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.login-button {
+.form-group input.input-error {
+  border-color: #FF6B6B;
+  border-width: 2px;
+}
+
+.error-text {
+  color: #FF6B6B;
+  font-size: 12px;
+  margin-top: 4px;
+  margin-left: 4px;
+}
+
+.password-hint {
+  color: #888;
+  font-size: 11px;
+  margin-top: 4px;
+  margin-left: 4px;
+  line-height: 1.4;
+}
+
+.register-button {
   background-color: #d8ff3e;
   color: #1a1a1a;
   border: none;
@@ -144,26 +186,27 @@ body {
   transition: background-color 0.2s;
 }
 
-.login-button:hover:not(:disabled) {
+.register-button:hover:not(:disabled) {
   background-color: #748c24;
 }
 
-.login-button:disabled {
+.register-button:disabled {
   background-color: #666;
   opacity: 0.6;
   cursor: not-allowed;
 }
 
 @media (max-width: 600px) {
-  .login-card {
+  .register-card {
     padding: 30px 20px;
   }
 
-  .login-header h1 {
+  .register-header h1 {
     font-size: 24px;
   }
 
-  .login-header h3 {
+  .register-header h3 {
     font-size: 14px;
   }
 }
+

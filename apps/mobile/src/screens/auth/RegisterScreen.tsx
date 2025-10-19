@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { CommonActions } from '@react-navigation/native';
 import TrainwiseLogo from '../../components/common/TrainwiseLogo';
 import axios from 'axios';
 import config from '../../config';
@@ -216,15 +217,12 @@ export default function RegisterScreen() {
       }
 
 
-      Alert.alert(
-        'Registration Successful!',
-        'Your account has been created successfully. Please proceed to select your role.',
-        [
-          {
-            text: 'Continue',
-            onPress: () => navigation.navigate('Pending' as never),
-          },
-        ],
+      // Navigate to pending screen
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Pending' }],
+        })
       );
     } catch (error: any) {
       console.error('Register error:', error);

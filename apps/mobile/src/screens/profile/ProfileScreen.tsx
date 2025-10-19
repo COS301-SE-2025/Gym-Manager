@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { CommonActions } from '@react-navigation/native';
 import IconLogo from '../../components/common/IconLogo';
 import { getUser, User, removeToken, removeUser } from '../../utils/authStorage';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -98,12 +99,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     try {
       await updateUserVisibility(newValue);
       setIsLeaderboardPublic(newValue);
-
-      Alert.alert(
-        'Settings Updated',
-        `Your leaderboard visibility has been ${newValue ? 'enabled' : 'disabled'}.`,
-        [{ text: 'OK' }],
-      );
     } catch (error) {
       console.error('Failed to update visibility:', error);
       Alert.alert(
@@ -122,7 +117,12 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       await removeUser();
       await supabase.auth.signOut();
 
-      navigation.navigate('Login');
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        })
+      );
     } catch (error) {
       console.error('Failed to logout:', error);
     }
@@ -348,7 +348,12 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           {currentUser?.roles && currentUser.roles.length > 1 && (
             <TouchableOpacity
               style={styles.settingItem}
-              onPress={() => navigation.navigate('RoleSelection')}
+              onPress={() => navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'RoleSelection' }],
+                })
+              )}
             >
               <View style={styles.settingLeft}>
                 <Ionicons name="swap-horizontal-outline" size={24} color="#D8FF3E" />

@@ -77,7 +77,7 @@ function CoachTabNavigator() {
 
 const CoachNavigator = () => {
   return (
-    <Stack.Navigator initialRouteName="CoachTabs" screenOptions={{ headerShown: false }}>
+    <Stack.Navigator initialRouteName="CoachTabs" screenOptions={{ headerShown: false, gestureEnabled: false }}>
       <Stack.Screen name="CoachTabs" component={CoachTabNavigator} />
       <Stack.Screen name="SetWorkout" component={SetWorkoutScreen} />
       {/* <Stack.Screen name="EditWorkout" component={EditWorkoutScreen} /> */}

@@ -1,0 +1,280 @@
+.qr-code-page {
+  margin-left: 280px;
+  padding: 40px;
+  max-width: calc(100% - 280px);
+  background-color: #1e1e1e;
+  min-height: 100vh;
+}
+
+.loading {
+  text-align: center;
+  font-size: 18px;
+  color: #aaa;
+  padding: 60px 20px;
+}
+
+.qr-code-header {
+  margin-bottom: 40px;
+}
+
+.qr-code-header h1 {
+  font-size: 32px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 12px;
+}
+
+.qr-code-header p {
+  font-size: 16px;
+  color: #ccc;
+  line-height: 1.6;
+  max-width: 800px;
+}
+
+.qr-code-content {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.qr-code-display {
+  background: #2a2a2a;
+  border-radius: 12px;
+  padding: 40px;
+  border: 1px solid #434343;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.qr-code-wrapper {
+  background: #1e1e1e;
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid #d8ff3e;
+}
+
+.qr-code-label {
+  text-align: center;
+}
+
+.qr-code-label h3 {
+  font-size: 24px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.qr-code-label .url-text {
+  font-size: 14px;
+  color: #d8ff3e;
+  word-break: break-all;
+  font-family: monospace;
+  background: #1e1e1e;
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: inline-block;
+  max-width: 100%;
+  border: 1px solid #434343;
+}
+
+.qr-code-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.action-button {
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-button.primary {
+  background-color: #d8ff3e;
+  color: #1a1a1a;
+}
+
+.action-button.primary:hover {
+  background-color: #748c24;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.action-button.secondary {
+  background-color: #434343;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.action-button.secondary:hover {
+  background-color: #748c24;
+  transform: translateY(-1px);
+}
+
+.qr-code-instructions {
+  background: #2a2a2a;
+  border-radius: 12px;
+  padding: 32px;
+  border: 1px solid #434343;
+}
+
+.qr-code-instructions h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 20px;
+}
+
+.qr-code-instructions ol {
+  list-style: decimal;
+  padding-left: 24px;
+  margin: 0;
+}
+
+.qr-code-instructions ol li {
+  margin-bottom: 16px;
+  font-size: 16px;
+  color: #ccc;
+  line-height: 1.6;
+}
+
+.qr-code-instructions ol li strong {
+  color: #d8ff3e;
+  font-weight: 600;
+}
+
+.qr-code-tips {
+  background: #2a2a2a;
+  border-radius: 12px;
+  padding: 32px;
+  border: 1px solid #434343;
+  border-left: 4px solid #d8ff3e;
+}
+
+.qr-code-tips h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 16px;
+}
+
+.qr-code-tips ul {
+  list-style: disc;
+  padding-left: 24px;
+  margin: 0;
+}
+
+.qr-code-tips ul li {
+  margin-bottom: 12px;
+  font-size: 15px;
+  color: #ccc;
+  line-height: 1.6;
+}
+
+/* Print styles */
+@media print {
+  /* Reset page layout for printing */
+  body {
+    background: white !important;
+  }
+
+  .qr-code-page {
+    margin-left: 0 !important;
+    padding: 20px !important;
+    max-width: 100% !important;
+    background: white !important;
+  }
+
+  /* Hide all non-essential elements */
+  .qr-code-header,
+  .qr-code-actions,
+  .qr-code-instructions,
+  .qr-code-tips {
+    display: none !important;
+  }
+
+  /* Center and style the QR code display */
+  .qr-code-display {
+    background: white !important;
+    box-shadow: none !important;
+    border: 2px solid #1e1e1e !important;
+    page-break-inside: avoid;
+    margin: 0 auto;
+  }
+
+  .qr-code-wrapper {
+    background: #1e1e1e !important;
+    border-color: #d8ff3e !important;
+  }
+
+  .qr-code-label h3 {
+    color: #1e1e1e !important;
+  }
+
+  .qr-code-label .url-text {
+    background: #1e1e1e !important;
+    color: #d8ff3e !important;
+    border: 1px solid #d8ff3e !important;
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .qr-code-page {
+    padding: 20px;
+    margin-left: 0;
+    max-width: 100%;
+  }
+
+  .qr-code-header h1 {
+    font-size: 24px;
+  }
+
+  .qr-code-header p {
+    font-size: 14px;
+  }
+
+  .qr-code-display {
+    padding: 24px;
+  }
+
+  .qr-code-wrapper {
+    padding: 16px;
+  }
+
+  #qr-code-svg {
+    width: 250px !important;
+    height: 250px !important;
+  }
+
+  .qr-code-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .action-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .qr-code-instructions,
+  .qr-code-tips {
+    padding: 24px;
+  }
+
+  .qr-code-instructions h2,
+  .qr-code-tips h3 {
+    font-size: 20px;
+  }
+}
+

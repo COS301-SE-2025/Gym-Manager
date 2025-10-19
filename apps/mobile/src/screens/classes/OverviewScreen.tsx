@@ -218,8 +218,7 @@ export default function OverviewScreen() {
 
         {/* Back button */}
         <TouchableOpacity style={s.backBtn} onPress={goBackSmart} accessibilityLabel="Back">
-          <Ionicons name="chevron-back" size={20} color="#d8ff3e" />
-          <Text style={s.backText}>Back</Text>
+          <Ionicons name="arrow-back" size={24} color="#d8ff3e" />
         </TouchableOpacity>
 
         <View style={s.headerBadge}>
@@ -317,12 +316,9 @@ const s = StyleSheet.create({
 
   backBtn: {
     alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
     marginBottom: 10,
+    padding: 4,
   },
-  backText: { color: '#d8ff3e', fontWeight: '900' },
 
   headerBadge: {
     backgroundColor: '#d8ff3e',

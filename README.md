@@ -52,23 +52,27 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
 | <img src="Jared.jpeg" alt="Jared Hürlimann" width="200" height="200" style="border-radius:50%; object-fit:cover;"> | **Jared Hürlimann**<br>DevOps, Services Engineer, Integration Engineer<br><br><a href="https://github.com/yourusername" target="_blank">![GitHub](https://img.icons8.com/material-outlined/24/github.png)</a> <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" target="_blank">![LinkedIn](https://img.icons8.com/material-outlined/24/linkedin.png)</a> <a href="mailto:jaredhurlimann@gmail.com" target="_blank">![Email](https://img.icons8.com/material-outlined/24/new-post.png)</a> |
 
 
-<!-- Repeat one of these blocks for each team member -->
-<div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:20px;">
-  <img
-    src="https://github.com/user-attachments/assets/58b0d878-079d-4c9c-8b63-e05fff5b479f"
-    alt="Vansh Sood"
-    style="width:200px; height:200px; min-width:200px; min-height:200px; border-radius:50%; object-fit:cover; display:block;"
-  />
-  <div>
-    <strong>Vansh Sood</strong><br/>
-    I’ve always been fascinated by how technology works, the kind of kid who’d rather take apart the remote than actually change the channel. That same curiosity now drives my passion for coding and software engineering. I take pride in my strong academic performance and approach every challenge with persistence and a mindset of continuous learning. My philosophy is simple: always keep improving, both the work and myself.
-    <p style="margin-top:8px;">
-      <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
-      <a href="https://www.linkedin.com/in/vansh-sood-783519352/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
-      <a href="mailto:vanshsood4@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
-    </p>
-  </div>
-</div>
+<table>
+  <tr>
+    <td style="width:220px; vertical-align:top; padding-right:12px;">
+      <img
+        src="https://github.com/user-attachments/assets/58b0d878-079d-4c9c-8b63-e05fff5b479f"
+        alt="Vansh Sood"
+        style="width:200px; height:200px; min-width:200px; min-height:200px; border-radius:50%; object-fit:cover; display:block;"
+      />
+    </td>
+    <td style="vertical-align:top;">
+      <strong>Vansh Sood</strong><br/>
+      I’ve always been fascinated by how technology works, the kind of kid who’d rather take apart the remote than actually change the channel. That same curiosity now drives my passion for coding and software engineering. I take pride in my strong academic performance and approach every challenge with persistence and a mindset of continuous learning. My philosophy is simple: always keep improving, both the work and myself.
+      <p style="margin-top:8px;">
+        <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
+        <a href="https://www.linkedin.com/in/vansh-sood-783519352/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>
+        <a href="mailto:vanshsood4@gmail.com" target="_blank" rel="noopener noreferrer"><img alt="Email" src="https://img.icons8.com/material-outlined/24/new-post.png" style="vertical-align:middle"></a>
+      </p>
+    </td>
+  </tr>
+  <!-- Add more rows for each person -->
+</table>
 
 
 ---

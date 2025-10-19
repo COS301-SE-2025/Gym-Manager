@@ -159,7 +159,7 @@ We use a GitHub Project board to track epics, user stories, bugs and QA tasks.
     </td>
     <td style="vertical-align:top; padding:12px;">
       <strong>Jared Hürlimann</strong><br/>
-      DevOps, Services Engineer, Integration Engineer.
+      I wasn’t always into technology. Growing up, I was the kind of kid who spent most of my time outside, playing sports, exploring, and rarely thinking about what was going on behind a screen. It wasn’t until the during COVID pandemic that I picked up coding out of curiosity. That curiosity quickly turned into a passion. Teaching myself how to code opened up a whole new world of problem-solving, creativity, and constant learning. Since then, I’ve been hooked. What started as a way to pass the time has become something I genuinely love, building things, solving problems, and continuously pushing myself to grow as a developer. 
       <p style="margin-top:8px;">
         <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer"><img alt="GitHub" src="https://img.icons8.com/material-outlined/24/github.png" style="vertical-align:middle"></a>
         <a href="https://www.linkedin.com/in/jared-h%C3%BCrlimann-695ba82a4/" target="_blank" rel="noopener noreferrer"><img alt="LinkedIn" src="https://img.icons8.com/material-outlined/24/linkedin.png" style="vertical-align:middle"></a>

@@ -1395,5 +1395,8 @@ export class LiveClassRepository implements ILiveClassRepository {
       }
       return persistedUserIds;
     }
+
+    // Return empty array for unhandled workout types
+    return [];
   }
 }

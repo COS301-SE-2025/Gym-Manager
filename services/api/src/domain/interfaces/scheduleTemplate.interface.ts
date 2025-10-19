@@ -7,6 +7,16 @@ import {
   ScheduleTemplateWithItems,
 } from '../entities/scheduleTemplate.entity';
 
+// Re-export types from entity for convenience
+export type {
+  ScheduleTemplate,
+  TemplateScheduleItem,
+  CreateScheduleTemplateRequest,
+  UpdateScheduleTemplateRequest,
+  GenerateScheduleFromTemplateRequest,
+  ScheduleTemplateWithItems,
+};
+
 export interface IScheduleTemplateRepository {
   createTemplate(request: CreateScheduleTemplateRequest): Promise<ScheduleTemplate>;
   getTemplateById(templateId: number): Promise<ScheduleTemplateWithItems | null>;

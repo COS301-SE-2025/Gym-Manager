@@ -24,7 +24,7 @@ export class ScheduleTemplateRepository implements IScheduleTemplateRepository {
 
     // Insert schedule items
     if (request.scheduleItems.length > 0) {
-      const itemsToInsert = request.scheduleItems.map(item => ({
+      const itemsToInsert = request.scheduleItems.map((item: Omit<TemplateScheduleItem, 'itemId' | 'templateId'>) => ({
         templateId: template.templateId,
         dayOfWeek: item.dayOfWeek,
         scheduledTime: item.scheduledTime,
@@ -38,7 +38,12 @@ export class ScheduleTemplateRepository implements IScheduleTemplateRepository {
       await db.insert(templateScheduleItems).values(itemsToInsert);
     }
 
-    return template;
+    return {
+      ...template,
+      description: template.description ?? undefined,
+      createdAt: template.createdAt ?? new Date().toISOString(),
+      updatedAt: template.updatedAt ?? new Date().toISOString(),
+    };
   }
 
   async getTemplateById(templateId: number): Promise<ScheduleTemplateWithItems | null> {
@@ -60,15 +65,30 @@ export class ScheduleTemplateRepository implements IScheduleTemplateRepository {
 
     return {
       ...template[0],
-      scheduleItems: items,
+      description: template[0].description ?? undefined,
+      createdAt: template[0].createdAt ?? new Date().toISOString(),
+      updatedAt: template[0].updatedAt ?? new Date().toISOString(),
+      scheduleItems: items.map(item => ({
+        ...item,
+        coachId: item.coachId ?? undefined,
+        workoutId: item.workoutId ?? undefined,
+        classTitle: item.classTitle ?? undefined,
+      })),
     };
   }
 
   async getAllTemplates(): Promise<ScheduleTemplate[]> {
-    return await db
+    const templates = await db
       .select()
       .from(scheduleTemplates)
       .orderBy(scheduleTemplates.createdAt);
+
+    return templates.map(template => ({
+      ...template,
+      description: template.description ?? undefined,
+      createdAt: template.createdAt ?? new Date().toISOString(),
+      updatedAt: template.updatedAt ?? new Date().toISOString(),
+    }));
   }
 
   async updateTemplate(templateId: number, request: UpdateScheduleTemplateRequest): Promise<ScheduleTemplate> {
@@ -93,7 +113,7 @@ export class ScheduleTemplateRepository implements IScheduleTemplateRepository {
 
       // Insert new items
       if (request.scheduleItems.length > 0) {
-        const itemsToInsert = request.scheduleItems.map(item => ({
+        const itemsToInsert = request.scheduleItems.map((item: Omit<TemplateScheduleItem, 'itemId' | 'templateId'>) => ({
           templateId: templateId,
           dayOfWeek: item.dayOfWeek,
           scheduledTime: item.scheduledTime,
@@ -108,7 +128,12 @@ export class ScheduleTemplateRepository implements IScheduleTemplateRepository {
       }
     }
 
-    return updatedTemplate;
+    return {
+      ...updatedTemplate,
+      description: updatedTemplate.description ?? undefined,
+      createdAt: updatedTemplate.createdAt ?? new Date().toISOString(),
+      updatedAt: updatedTemplate.updatedAt ?? new Date().toISOString(),
+    };
   }
 
   async deleteTemplate(templateId: number): Promise<boolean> {
@@ -122,7 +147,7 @@ export class ScheduleTemplateRepository implements IScheduleTemplateRepository {
       .delete(scheduleTemplates)
       .where(eq(scheduleTemplates.templateId, templateId));
 
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async generateScheduleFromTemplate(request: GenerateScheduleFromTemplateRequest): Promise<number[]> {
@@ -142,7 +167,7 @@ export class ScheduleTemplateRepository implements IScheduleTemplateRepository {
       const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
 
       // Find schedule items for this day
-      const dayItems = template.scheduleItems.filter(item => item.dayOfWeek === dayOfWeek);
+      const dayItems = template.scheduleItems.filter((item: TemplateScheduleItem) => item.dayOfWeek === dayOfWeek);
 
       // Create classes for each schedule item
       for (const item of dayItems) {

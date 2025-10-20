@@ -68,6 +68,10 @@ export default function GamificationScreen() {
     navigation.navigate('BadgesScreen');
   };
 
+  const handleViewAllBadges = () => {
+    navigation.navigate('BadgesScreen');
+  };
+
   const handleViewLeaderboard = () => {
     navigation.navigate('LeaderboardScreen');
   };
@@ -162,6 +166,9 @@ export default function GamificationScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Badges</Text>
+          <TouchableOpacity onPress={handleViewAllBadges}>
+            <Text style={styles.viewAllText}>View All</Text>
+          </TouchableOpacity>
         </View>
 
         {stats.recentBadges.length > 0 ? (
@@ -182,8 +189,12 @@ export default function GamificationScreen() {
         )}
       </View>
 
-      {/* Hall of Fame */}
+      {/* Quick Actions */}
       <View style={styles.section}>
+        <TouchableOpacity style={styles.actionButton} onPress={handleViewAllBadges}>
+          <Text style={styles.actionButtonText}>All Badges</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.hallOfFameButton} onPress={handleViewLeaderboard}>
           <View style={styles.hallOfFameContent}>
             <Ionicons name="trophy" size={28} color="#1a1a1a" />

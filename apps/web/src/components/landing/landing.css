@@ -167,10 +167,16 @@
 
 .apple-btn {
   background: var(--card);
-  color: var(--muted);
+  color: var(--text);
   border: 1px solid var(--border);
-  cursor: not-allowed;
-  opacity: 0.6;
+  cursor: pointer;
+}
+
+.apple-btn:hover {
+  background: #252525;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
+  border-color: var(--accent);
 }
 
 .download-icon {

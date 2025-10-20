@@ -162,9 +162,7 @@ HIIT environments
 ## 🎥 System Demo
 
 
-https://github.com/user-attachments/assets/d8b17ba1-d6c7-44a3-9e94-10e0920d1e0a
-
-Or watch [HERE]().
+Watch [HERE](https://youtu.be/LTqZ-eM_5go)
 
  
 

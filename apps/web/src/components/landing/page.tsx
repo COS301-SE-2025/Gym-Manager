@@ -54,7 +54,7 @@ export default function LandingPage() {
           <p>Access Trainwise on the go with our mobile app</p>
           <div className="download-buttons">
             <a 
-              href="https://github.com/COS301-SE-2025/Gym-Manager/releases/download/v1.0.0/TrainWise.apk"
+              href="https://github.com/COS301-SE-2025/Gym-Manager/releases/download/1.2.0/TrainWise.apk"
               className="download-btn android-btn"
               download
             >

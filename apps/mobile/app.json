@@ -25,7 +25,9 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.trainwise.gymmanager",
-      "minSdkVersion": 26
+      "minSdkVersion": 26,
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35
     },
     "androidStatusBar": {
       "hidden": true,
@@ -39,14 +41,24 @@
       "EXPO_PUBLIC_SUPABASE_URL": "https://ecqfwjomzhjmmfwzmxkw.supabase.co",
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjcWZ3am9temhqbW1md3pteGt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2NTg2MTMsImV4cCI6MjA3NDIzNDYxM30.KmBwfIEcKXSMbaWgbSbh4Xp_u0aVM6swAKAwDbwTKAY",
       "eas": {
-        "projectId": "f5a02d9b-da6f-413f-bbbd-f48e31deb025"
+        "projectId": "dc0570b6-3310-4def-bf62-96cb578df0e7"
       }
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35
+          }
+        }
+      ],
       "react-native-health",
       "expo-asset",
       "expo-font"
     ],
-    "owner": "amadeusfidos"
+    "owner": "trainwise"
   }
 }
